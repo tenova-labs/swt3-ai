@@ -1,0 +1,97 @@
+# ============================================================
+# SOVEREIGN PUSH PROTOCOL — Allowlist .gitignore
+# ============================================================
+# Strategy: DENY ALL, then explicitly allow only public-safe
+# paths. This is the last line of defense — the push protocol
+# uses explicit `git add` with a curated file list.
+# ============================================================
+
+# --- DENY EVERYTHING AT ROOT ---
+/*
+
+# --- ALLOW: Root community files ---
+!.gitignore
+!README.md
+!LICENSE
+!CONTRIBUTING.md
+
+# --- ALLOW: GitHub community templates ---
+!.github/
+
+# --- ALLOW: SDK packages ---
+!packages/
+
+# --- ALLOW: Public documentation ---
+!docs/
+
+# --- ALLOW: Control definitions and human summaries ---
+!config/
+
+# --- ALLOW: Policy documents ---
+!policies/
+
+# ============================================================
+# RE-DENY: Dangerous items within allowed directories
+# ============================================================
+
+# -- Internal context files (anywhere) --
+**/CLAUDE.md
+**/CHANGELOG.md
+
+# -- Build artifacts and caches --
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
+**/.next/
+**/dist/
+**/build/
+**/.venv/
+**/venv/
+
+# -- Package archives (published via npm/PyPI, not git) --
+**/*.tgz
+
+# -- Lock files --
+**/package-lock.json
+
+# -- Environment and secrets --
+**/.env*
+**/*.env
+
+# -- OS artifacts --
+**/.DS_Store
+
+# -- Binary / large files --
+**/*.db
+**/*.zip
+**/*.tar.gz
+**/*.pdf
+
+# -- Internal SDK files --
+**/smoke_test.py
+**/.npmrc
+
+# -- docs/ allowlist (deny all, then permit specific) --
+docs/*
+!docs/SWT3-MANIFESTO-v1.0.md
+!docs/data-flow.md
+!docs/sovereign-sync.md
+!docs/factor-handoff-protocol.md
+!docs/tos-clearing-addendum.md
+!docs/compliance-overlay-cmmc.md
+!docs/compliance-overlay-sr117.md
+
+# -- config/ allowlist (deny all, then permit specific) --
+config/*
+!config/controls/
+!config/modules/
+!config/human-summaries.json
+
+# config/controls: only YAML
+config/controls/*
+!config/controls/*.yaml
+
+# config/modules: only YAML
+config/modules/*
+!config/modules/*.yaml

@@ -1,0 +1,170 @@
+family: "CM"
+family_name: "Configuration Management"
+controls:
+  # -------------------------------------------------------------------
+  # CM-2: Baseline Configuration — Installed Features & Roles
+  # DISA Windows Server 2022 STIG: V-254258
+  # -------------------------------------------------------------------
+  - id: "CM-2.1"
+    parent_control: "CM-2"
+    name: "Baseline Configuration - Installed Server Features"
+    platform: "windows"
+    windows_command: "(Get-WindowsFeature | Where-Object { $_.Installed } | Measure-Object).Count"
+    factor_a: 50
+    factor_a_label: "max_installed_features"
+    factor_b_source: "stdout_int"
+    factor_b_label: "installed_features"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-2"
+    nist_800_171_ref: "3.4.1"
+    disa_stig_id: "V-254258"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # CM-3: Configuration Change Control — Scheduled Tasks
+  # -------------------------------------------------------------------
+  - id: "CM-3.1"
+    parent_control: "CM-3"
+    name: "Configuration Change Control - Scheduled Tasks Count"
+    platform: "windows"
+    windows_command: "(Get-ScheduledTask | Where-Object { $_.State -ne 'Disabled' } | Measure-Object).Count"
+    factor_a: 80
+    factor_a_label: "max_scheduled_tasks"
+    factor_b_source: "stdout_int"
+    factor_b_label: "active_scheduled_tasks"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-3"
+    nist_800_171_ref: "3.4.3"
+    disa_stig_id: "V-254259"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # CM-6: Configuration Settings — Registry Hardening
+  # DISA Windows Server 2022 STIG: V-254260 thru V-254266
+  # -------------------------------------------------------------------
+  - id: "CM-6.1"
+    parent_control: "CM-6"
+    name: "Configuration Settings - SMBv1 Disabled"
+    platform: "windows"
+    windows_command: "if ((Get-SmbServerConfiguration | Select-Object -ExpandProperty EnableSMB1Protocol) -eq $false) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "smbv1_disabled_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "smbv1_disabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-6"
+    nist_800_171_ref: "3.4.2"
+    disa_stig_id: "V-254260"
+    stig_severity: "CAT I"
+
+  - id: "CM-6.2"
+    parent_control: "CM-6"
+    name: "Configuration Settings - PowerShell Script Block Logging"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptBlockLogging' -Name 'EnableScriptBlockLogging' -ErrorAction SilentlyContinue).EnableScriptBlockLogging"
+    factor_a: 1
+    factor_a_label: "script_block_logging_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "script_block_logging_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-6"
+    nist_800_171_ref: "3.4.2"
+    disa_stig_id: "V-254261"
+    stig_severity: "CAT II"
+
+  - id: "CM-6.3"
+    parent_control: "CM-6"
+    name: "Configuration Settings - WinRM Encrypted Traffic"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WinRM\\Service' -Name 'AllowUnencryptedTraffic' -ErrorAction SilentlyContinue).AllowUnencryptedTraffic; if ($? -eq $false) { 0 }"
+    factor_a: 0
+    factor_a_label: "unencrypted_traffic_max"
+    factor_b_source: "stdout_int"
+    factor_b_label: "unencrypted_traffic_allowed"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-6"
+    nist_800_171_ref: "3.4.2"
+    disa_stig_id: "V-254262"
+    stig_severity: "CAT I"
+
+  - id: "CM-6.4"
+    parent_control: "CM-6"
+    name: "Configuration Settings - WDigest Authentication Disabled"
+    platform: "windows"
+    windows_command: "$v = (Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\WDigest' -Name 'UseLogonCredential' -ErrorAction SilentlyContinue).UseLogonCredential; if ($null -eq $v) { 0 } else { $v }"
+    factor_a: 0
+    factor_a_label: "wdigest_disabled_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "wdigest_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-6"
+    nist_800_171_ref: "3.4.2"
+    disa_stig_id: "V-254263"
+    stig_severity: "CAT I"
+
+  - id: "CM-6.5"
+    parent_control: "CM-6"
+    name: "Configuration Settings - AutoRun Disabled"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer' -Name 'NoDriveTypeAutoRun' -ErrorAction SilentlyContinue).NoDriveTypeAutoRun"
+    factor_a: 255
+    factor_a_label: "autorun_disabled_value"
+    factor_b_source: "stdout_int"
+    factor_b_label: "autorun_setting"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-6"
+    nist_800_171_ref: "3.4.2"
+    disa_stig_id: "V-254264"
+    stig_severity: "CAT I"
+
+  # -------------------------------------------------------------------
+  # CM-7: Least Functionality
+  # DISA Windows Server 2022 STIG: V-254267
+  # -------------------------------------------------------------------
+  - id: "CM-7.1"
+    parent_control: "CM-7"
+    name: "Least Functionality - Print Spooler Disabled on DC"
+    platform: "windows"
+    windows_command: "if ((Get-Service -Name Spooler -ErrorAction SilentlyContinue).Status -eq 'Stopped') { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "spooler_stopped_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "spooler_stopped"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-7"
+    nist_800_171_ref: "3.4.6"
+    disa_stig_id: "V-254267"
+    stig_severity: "CAT I"
+
+  - id: "CM-7.2"
+    parent_control: "CM-7"
+    name: "Least Functionality - FTP Service Absent"
+    platform: "windows"
+    windows_command: "if ($null -eq (Get-Service -Name 'FTPSVC' -ErrorAction SilentlyContinue)) { 0 } else { 1 }"
+    factor_a: 0
+    factor_a_label: "ftp_service_max"
+    factor_b_source: "stdout_int"
+    factor_b_label: "ftp_service_present"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "CONFIGURATION"
+    nist_800_53_ref: "CM-7"
+    nist_800_171_ref: "3.4.6"
+    disa_stig_id: "V-254268"
+    stig_severity: "CAT II"

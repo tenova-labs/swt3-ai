@@ -1,0 +1,33 @@
+family: "PL"
+family_name: "Planning"
+check_type: "attestation"
+controls:
+  - id: "PL-1.1"
+    parent_control: "PL-1"
+    name: "Security Planning Policy"
+    description: "Organization has a documented security planning policy"
+    attestation_prompt: "Confirm your organization has a current security planning policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PL-1"
+    nist_800_171_ref: "3.12.1"
+
+  - id: "PL-2.1"
+    parent_control: "PL-2"
+    name: "System Security Plan"
+    description: "A system security plan (SSP) exists describing the system boundary, environment, and controls"
+    attestation_prompt: "Confirm a System Security Plan exists and has been reviewed within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PL-2"
+    nist_800_171_ref: "3.12.4"
+
+  - id: "PL-4.1"
+    parent_control: "PL-4"
+    name: "Rules of Behavior"
+    description: "Rules of behavior are established and signed by all users"
+    attestation_prompt: "Confirm all users have signed the current rules of behavior / acceptable use policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PL-4"
+    nist_800_171_ref: "3.1.9"

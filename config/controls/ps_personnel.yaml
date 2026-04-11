@@ -1,0 +1,53 @@
+family: "PS"
+family_name: "Personnel Security"
+check_type: "attestation"
+controls:
+  - id: "PS-1.1"
+    parent_control: "PS-1"
+    name: "Personnel Security Policy"
+    description: "Organization has a documented personnel security policy"
+    check_type: "policy_file"
+    policy_path: "/opt/axiom/policies/ps-personnel-security.md"
+    policy_template: "ps-personnel-security"
+    command: "FILE=/opt/axiom/policies/ps-personnel-security.md; test -f \"$FILE\" && echo $(( ($(date +%s) - $(stat -c %Y \"$FILE\")) / 86400 )) || echo 9999"
+    factor_a: 365
+    factor_a_label: "max_policy_age_days"
+    factor_b_source: "stdout_int"
+    factor_b_label: "policy_age_days"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    attestation_prompt: "Confirm your organization has a current personnel security policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PS-1"
+    nist_800_171_ref: "3.9.1"
+
+  - id: "PS-3.1"
+    parent_control: "PS-3"
+    name: "Personnel Screening"
+    description: "Personnel are screened before being granted access"
+    attestation_prompt: "Confirm background checks are completed before granting system access."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PS-3"
+    nist_800_171_ref: "3.9.1"
+
+  - id: "PS-4.1"
+    parent_control: "PS-4"
+    name: "Personnel Termination"
+    description: "Access is revoked upon personnel termination"
+    attestation_prompt: "Confirm a documented process exists to revoke all access within 24 hours of termination."
+    review_interval_days: 180
+    uct_category: "POL"
+    nist_800_53_ref: "PS-4"
+    nist_800_171_ref: "3.9.2"
+
+  - id: "PS-5.1"
+    parent_control: "PS-5"
+    name: "Personnel Transfer"
+    description: "Access is reviewed and adjusted upon personnel reassignment"
+    attestation_prompt: "Confirm access rights are reviewed and adjusted when personnel change roles."
+    review_interval_days: 180
+    uct_category: "POL"
+    nist_800_53_ref: "PS-5"
+    nist_800_171_ref: "3.9.2"

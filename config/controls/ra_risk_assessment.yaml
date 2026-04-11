@@ -1,0 +1,33 @@
+family: "RA"
+family_name: "Risk Assessment"
+check_type: "attestation"
+controls:
+  - id: "RA-1.1"
+    parent_control: "RA-1"
+    name: "Risk Assessment Policy"
+    description: "Organization has a documented risk assessment policy"
+    attestation_prompt: "Confirm your organization has a current risk assessment policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "RA-1"
+    nist_800_171_ref: "3.11.1"
+
+  - id: "RA-3.1"
+    parent_control: "RA-3"
+    name: "Risk Assessment"
+    description: "A risk assessment is conducted at least annually"
+    attestation_prompt: "Confirm a risk assessment has been completed within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "RA-3"
+    nist_800_171_ref: "3.11.1"
+
+  - id: "RA-5.1"
+    parent_control: "RA-5"
+    name: "Vulnerability Scanning"
+    description: "Vulnerability scans are conducted on the information system"
+    attestation_prompt: "Confirm vulnerability scans are run at least monthly and findings are tracked to remediation."
+    review_interval_days: 90
+    uct_category: "POL"
+    nist_800_53_ref: "RA-5"
+    nist_800_171_ref: "3.11.2"

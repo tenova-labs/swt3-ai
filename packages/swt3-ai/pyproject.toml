@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "swt3-ai"
+version = "0.2.6"
+description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+authors = [{ name = "TeNova", email = "engineering@tenovaai.com" }]
+keywords = ["ai", "compliance", "witness", "attestation", "swt3", "eu-ai-act", "nist-ai-rmf"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+
+# Zero hard dependencies — only stdlib
+dependencies = []
+
+[project.optional-dependencies]
+openai = ["openai>=1.0"]
+anthropic = ["anthropic>=0.20"]
+all = ["openai>=1.0", "anthropic>=0.20"]
+dev = ["pytest", "pytest-cov", "mypy", "ruff"]
+
+[project.urls]
+Homepage = "https://tenova.io"
+Documentation = "https://sovereign.tenova.io/docs/"
+Repository = "https://github.com/tenova-labs/swt3-ai"
+Issues = "https://github.com/tenova-labs/swt3-ai/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["swt3_ai"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["smoke_test.py", "test-vectors.json", "tests/", ".claude/"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.mypy]
+python_version = "3.9"
+strict = true

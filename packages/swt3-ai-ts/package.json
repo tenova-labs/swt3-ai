@@ -1,0 +1,62 @@
+{
+  "name": "@tenova/swt3-ai",
+  "version": "0.2.6",
+  "description": "SWT3 AI Witness SDK: cryptographic attestation for AI inference",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "swt3-demo": "./dist/demo.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
+    "test:vectors": "npx tsx test/fingerprint.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "compliance",
+    "witness",
+    "attestation",
+    "swt3",
+    "eu-ai-act",
+    "nist-ai-rmf",
+    "openai",
+    "anthropic"
+  ],
+  "author": "TeNova <engineering@tenovaai.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tenova-labs/swt3-ai"
+  },
+  "homepage": "https://tenova.io",
+  "bugs": {
+    "url": "https://github.com/tenova-labs/swt3-ai/issues"
+  },
+  "peerDependencies": {
+    "openai": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "openai": "^4.70.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.2"
+  }
+}

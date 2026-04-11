@@ -1,0 +1,133 @@
+family: "SC"
+family_name: "System and Communications Protection"
+controls:
+  # -------------------------------------------------------------------
+  # SC-7: Boundary Protection — Windows Firewall
+  # DISA Windows Server 2022 STIG: V-254269, V-254270, V-254271
+  # -------------------------------------------------------------------
+  - id: "SC-7.7"
+    parent_control: "SC-7"
+    name: "Boundary Protection - Windows Firewall Domain Profile"
+    platform: "windows"
+    windows_command: "(Get-NetFirewallProfile -Profile Domain -ErrorAction SilentlyContinue).Enabled -as [int]"
+    factor_a: 1
+    factor_a_label: "firewall_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "domain_firewall_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-7"
+    nist_800_171_ref: "3.13.1"
+    disa_stig_id: "V-254269"
+    stig_severity: "CAT I"
+
+  - id: "SC-7.8"
+    parent_control: "SC-7"
+    name: "Boundary Protection - Windows Firewall Private Profile"
+    platform: "windows"
+    windows_command: "(Get-NetFirewallProfile -Profile Private -ErrorAction SilentlyContinue).Enabled -as [int]"
+    factor_a: 1
+    factor_a_label: "firewall_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "private_firewall_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-7"
+    nist_800_171_ref: "3.13.1"
+    disa_stig_id: "V-254270"
+    stig_severity: "CAT I"
+
+  - id: "SC-7.9"
+    parent_control: "SC-7"
+    name: "Boundary Protection - Windows Firewall Public Profile"
+    platform: "windows"
+    windows_command: "(Get-NetFirewallProfile -Profile Public -ErrorAction SilentlyContinue).Enabled -as [int]"
+    factor_a: 1
+    factor_a_label: "firewall_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "public_firewall_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-7"
+    nist_800_171_ref: "3.13.1"
+    disa_stig_id: "V-254271"
+    stig_severity: "CAT I"
+
+  - id: "SC-7.6"
+    parent_control: "SC-7"
+    name: "Boundary Protection - Inbound Firewall Default Block"
+    platform: "windows"
+    windows_command: "if ((Get-NetFirewallProfile -Profile Domain,Private,Public | Where-Object { $_.DefaultInboundAction -eq 'Block' } | Measure-Object).Count -eq 3) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "default_block_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "default_block_configured"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-7"
+    nist_800_171_ref: "3.13.1"
+    disa_stig_id: "V-254272"
+    stig_severity: "CAT I"
+
+  # -------------------------------------------------------------------
+  # SC-8: Transmission Confidentiality — TLS Settings
+  # DISA Windows Server 2022 STIG: V-254273, V-254274
+  # -------------------------------------------------------------------
+  - id: "SC-8.1"
+    parent_control: "SC-8"
+    name: "Transmission Confidentiality - SSL 3.0 Disabled"
+    platform: "windows"
+    windows_command: "$v = (Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\SSL 3.0\\Server' -Name 'Enabled' -ErrorAction SilentlyContinue).Enabled; if ($null -eq $v -or $v -eq 0) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "ssl3_disabled_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "ssl3_disabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-8"
+    nist_800_171_ref: "3.13.8"
+    disa_stig_id: "V-254273"
+    stig_severity: "CAT I"
+
+  - id: "SC-8.2"
+    parent_control: "SC-8"
+    name: "Transmission Confidentiality - TLS 1.0 Disabled"
+    platform: "windows"
+    windows_command: "$v = (Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.0\\Server' -Name 'Enabled' -ErrorAction SilentlyContinue).Enabled; if ($null -eq $v -or $v -eq 0) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "tls10_disabled_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "tls10_disabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-8"
+    nist_800_171_ref: "3.13.8"
+    disa_stig_id: "V-254274"
+    stig_severity: "CAT I"
+
+  # -------------------------------------------------------------------
+  # SC-28: Protection of Information at Rest — BitLocker
+  # DISA Windows Server 2022 STIG: V-254275
+  # -------------------------------------------------------------------
+  - id: "SC-28.1"
+    parent_control: "SC-28"
+    name: "Protection at Rest - BitLocker System Drive"
+    platform: "windows"
+    windows_command: "$bl = Get-WmiObject -Namespace 'Root\\CIMv2\\Security\\MicrosoftVolumeEncryption' -Class Win32_EncryptableVolume -Filter \"DriveLetter='C:'\" -ErrorAction SilentlyContinue; if ($null -ne $bl -and $bl.ProtectionStatus -eq 1) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "bitlocker_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "bitlocker_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "NETWORK"
+    nist_800_53_ref: "SC-28"
+    nist_800_171_ref: "3.13.16"
+    disa_stig_id: "V-254275"
+    stig_severity: "CAT I"

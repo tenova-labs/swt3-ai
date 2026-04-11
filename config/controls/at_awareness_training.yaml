@@ -1,0 +1,43 @@
+family: "AT"
+family_name: "Awareness and Training"
+check_type: "attestation"
+controls:
+  - id: "AT-1.1"
+    parent_control: "AT-1"
+    name: "Security Awareness Policy"
+    description: "Organization has a documented security awareness and training policy"
+    attestation_prompt: "Confirm your organization has a current security awareness policy document."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "AT-1"
+    nist_800_171_ref: "3.2.1"
+
+  - id: "AT-2.1"
+    parent_control: "AT-2"
+    name: "Security Awareness Training"
+    description: "All users complete security awareness training before access and annually thereafter"
+    attestation_prompt: "Confirm all personnel have completed security awareness training within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "AT-2"
+    nist_800_171_ref: "3.2.1"
+
+  - id: "AT-3.1"
+    parent_control: "AT-3"
+    name: "Role-Based Security Training"
+    description: "Personnel with security roles receive specialized training"
+    attestation_prompt: "Confirm privileged users and security staff have completed role-specific training."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "AT-3"
+    nist_800_171_ref: "3.2.2"
+
+  - id: "AT-4.1"
+    parent_control: "AT-4"
+    name: "Training Records"
+    description: "Organization maintains and retains training records"
+    attestation_prompt: "Confirm training completion records are maintained and accessible for audit."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "AT-4"
+    nist_800_171_ref: "3.2.3"
