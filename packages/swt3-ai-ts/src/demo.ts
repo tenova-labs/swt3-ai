@@ -17,6 +17,7 @@ const G = isColor ? "\x1b[32m" : "";
 const A = isColor ? "\x1b[33m" : "";
 const C = isColor ? "\x1b[36m" : "";
 const W = isColor ? "\x1b[37m" : "";
+const RD = isColor ? "\x1b[31m" : "";
 const R = isColor ? "\x1b[0m" : "";
 
 function sha256(data: string, len = 64): string {
@@ -112,28 +113,60 @@ async function main() {
   console.log(`   Match:      ${G}✓ Anchor is independently verifiable${R}`);
   console.log();
 
-  console.log(`${D}${"─".repeat(56)}${R}`);
-  console.log(`${B}What just happened:${R}`);
-  console.log("  • AI inference was simulated locally");
-  console.log("  • Prompt and response were SHA-256 hashed (raw text never transmitted)");
-  console.log("  • 3 compliance factors extracted (latency, tokens, guardrails)");
-  console.log("  • Clearing Level 1 purged raw data from the wire payload");
-  console.log("  • 3 SWT3 Witness Anchors minted with tamper-evident fingerprints");
-  console.log("  • Any party can re-derive the fingerprint using the same formula");
+  // ── Regulatory Translation Layer ──
   console.log();
-  console.log(`  ${G}✓ 3 anchors verified locally.${R}`);
+  console.log(`  ${G}[SWT3] 3 Evidence Anchors Verified.${R}`);
+  console.log(`  ${D}${"─".repeat(50)}${R}`);
+  console.log(`  ${B}REGULATORY COVERAGE SUMMARY (NIST AI RMF / EU AI ACT)${R}`);
   console.log();
-  console.log(`  → Track your Integrity Debt Score and generate a Compliance Passport:`);
-  console.log(`    ${C}https://sovereign.tenova.io/signup${R} ${D}(free, no credit card)${R}`);
+
+  // Covered obligations — mapped to EU AI Act articles
+  const coverageMap: [string, string, string, string][] = [
+    ["AI-INF.1", "Art. 12(1)",  "Automatic Logging of Use Periods", "PASS"],
+    ["AI-MDL.1", "Art. 9(4a)",  "Model Risk Identification",        "PASS"],
+    ["AI-GRD.1", "Art. 9(2a)",  "Risk Mitigation Measures",         "PASS"],
+  ];
+  for (const [proc, article, desc, verdict] of coverageMap) {
+    console.log(`  ${G}✓${R} ${W}${proc}${R} → ${article}: ${desc} ${G}[${verdict}]${R}`);
+  }
+
+  console.log(`  ${D}${"─".repeat(50)}${R}`);
+
+  // Uncovered obligations
+  const uncovered: [string, string, string][] = [
+    ["AI-INF.2",  "Art. 15(3)",  "Performance Consistency"],
+    ["AI-INF.3",  "Art. 12(1)",  "Volume & Usage Logging"],
+    ["AI-MDL.2",  "Art. 12(2b)", "Version & Lineage Tracking"],
+    ["AI-MDL.3",  "Art. 72(1)",  "Post-Market Drift Monitoring"],
+    ["AI-MDL.4",  "Art. 15(4)",  "Feedback Loop Isolation"],
+    ["AI-GRD.2",  "Art. 9(4b)",  "Content Safety Filtering"],
+    ["AI-GRD.3",  "Art. 10(2f)", "PII & Data Protection"],
+    ["AI-EXPL.1", "Art. 13(1)",  "Transparency & Explainability"],
+    ["AI-EXPL.2", "Art. 13(3b)", "Confidence Calibration"],
+  ];
+  console.log(`  ${A}⚠ ${uncovered.length}/12 obligations uncovered:${R}`);
+  for (const [proc, article, desc] of uncovered) {
+    console.log(`  ${D}  ${proc} → ${article}: ${desc}${R}`);
+  }
+
+  console.log(`  ${D}${"─".repeat(50)}${R}`);
   console.log();
-  console.log(`${B}Ready for production?${R}`);
-  console.log(`  Start free:               ${C}https://sovereign.tenova.io/signup${R}`);
-  console.log(`  SDK docs:                 ${C}https://sovereign.tenova.io/docs/${R}`);
-  console.log(`  Book a pilot:             ${C}https://calendly.com/tenova-axiom/30min${R}`);
-  console.log(`  GitHub:                   ${C}https://github.com/tenova-labs/swt3-ai${R}`);
+
+  // EU AI Act countdown
+  const deadline = new Date("2026-08-02T00:00:00Z");
+  const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / 86400000);
+  if (daysLeft > 0) {
+    const dc = daysLeft < 60 ? RD : daysLeft < 120 ? A : C;
+    console.log(`  ${dc}EU AI Act enforcement in ${daysLeft} days (Aug 2, 2026)${R}`);
+    console.log();
+  }
+
+  console.log(`  ${D}Full conformity requires all 12 procedures. Connect to close the gap:${R}`);
+  console.log(`  ${C}https://sovereign.tenova.io/signup?ref=sdk_demo${R}`);
   console.log();
-  console.log(`${D}One Protocol. Every Model. Any Language. Zero Trust Required.${R}`);
-  console.log(`${D}TeNova — Defining the AI Accountability Standard.${R}`);
+  console.log(`  ${D}SDK docs:     ${C}https://sovereign.tenova.io/docs/${R}`);
+  console.log(`  ${D}Book a pilot: ${C}https://calendly.com/tenova-axiom/30min${R}`);
+  console.log(`  ${D}GitHub:       ${C}https://github.com/tenova-labs/swt3-ai${R}`);
   console.log();
 }
 

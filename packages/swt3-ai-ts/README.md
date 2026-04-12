@@ -23,7 +23,7 @@ npm install @tenova/swt3-ai
 npx swt3-demo
 ```
 
-You'll see the full SWT3 witnessing pipeline: hash, extract, clear, anchor, verify, all running locally. When you're ready for production, keep reading.
+You'll see the full SWT3 witnessing pipeline: hash, extract, clear, anchor, verify — plus a **Regulatory Coverage Summary** mapping each procedure to EU AI Act articles. The demo shows 3/12 obligations covered, with the 9 uncovered gaps listed by article citation. When you're ready to close those gaps, keep reading.
 
 ## Three Lines of Code
 
@@ -177,7 +177,24 @@ console.log(response.choices[0].message.content);
 //   - Full factor data for independent verification
 ```
 
-When you're ready for production, [create a free account](https://sovereign.tenova.io/signup) to get your tenant ID and API key. Point the SDK at your enclave and every inference is witnessed, anchored, and verifiable.
+When you're ready for production, [create a free account](https://sovereign.tenova.io/signup?ref=sdk) to get your tenant ID and API key. Point the SDK at your enclave and every inference is witnessed, anchored, and verifiable.
+
+## Local SDK vs Axiom Engine
+
+| Capability | Local SDK | + Axiom Engine (free) |
+|---|---|---|
+| Mint anchors | ✓ | ✓ |
+| Verify one anchor | ✓ | ✓ |
+| Evidence retention | 0 (files on disk) | 7 days (free) / 90 days (Pro) |
+| Compliance dashboard | — | ✓ |
+| Auditor share links | — | ✓ (Pro) |
+| EU AI Act conformity | — | ✓ (Pro) |
+| Compliance Passport | — | ✓ (Pro) |
+| Enclave integrity proof | — | ✓ (Enclave) |
+| **Survives an audit** | **No** | **Yes** |
+
+> **Local anchors prove it to you. Axiom proves it to your auditor.**
+> [Create a free account →](https://sovereign.tenova.io/signup?ref=sdk)
 
 ## What Happens Per Inference
 
@@ -359,7 +376,7 @@ SWT3 AI Witness is available as a managed service through [Axiom Sovereign Engin
 
 Get an API key and start witnessing in under 10 minutes:
 
-- [Create a Free Account](https://sovereign.tenova.io/signup) - instant API key, start witnessing in 5 minutes
+- [Create a Free Account](https://sovereign.tenova.io/signup?ref=sdk) - instant API key, start witnessing in 5 minutes
 - [Quickstart Guide](https://sovereign.tenova.io/guides/ai-witness-quickstart.html) - 10-minute integration walkthrough
 - [Book a Strategy Call](https://calendly.com/tenova-axiom/30min) - enterprise, on-prem, or Sovereign tier
 

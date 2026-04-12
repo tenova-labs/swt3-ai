@@ -61,6 +61,7 @@ class WitnessBuffer:
         self._stopped = False
         self._receipts: List[WitnessReceipt] = []
         self._consecutive_failures = 0
+        self._cta_shown = False
 
         # Start daemon flush thread
         self._thread = threading.Thread(target=self._flush_loop, daemon=True)
@@ -251,6 +252,14 @@ class WitnessBuffer:
                     )
                 else:
                     logger.debug("Batch flush: %d anchors accepted", accepted)
+
+                if not self._cta_shown and accepted > 0:
+                    self._cta_shown = True
+                    print(
+                        f"\n  [SWT3] {accepted} anchors delivered to {self._config.endpoint}"
+                        f"\n  [SWT3] Dashboard & audit reports \u2192 https://sovereign.tenova.io/signup?ref=sdk"
+                        f"\n  [SWT3] EU AI Act deadline: Aug 2, 2026. Is your AI ready?\n"
+                    )
 
                 return receipts
 

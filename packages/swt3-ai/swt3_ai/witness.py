@@ -308,6 +308,13 @@ class Witness:
                     tenant_id=self._tenant_id,
                     handoff_path=self._config.factor_handoff_path,
                 )
+                if not getattr(self, "_handoff_warned", False):
+                    self._handoff_warned = True
+                    print(
+                        f"\n  [SWT3] {len(payloads)} anchors saved locally to {self._config.factor_handoff_path}"
+                        f"\n  [SWT3] \u26a0 Local anchors won\u2019t survive a compliance audit."
+                        f"\n  [SWT3] Connect to Axiom Engine \u2192 https://sovereign.tenova.io/signup?ref=sdk (free)\n"
+                    )
             except OSError as e:
                 logger.error(
                     "Factor handoff FAILED for %s — payload NOT transmitted. "

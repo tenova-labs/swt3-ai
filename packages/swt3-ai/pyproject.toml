@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "swt3-ai"
-version = "0.2.6"
+version = "0.2.8"
 description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference"
 readme = "README.md"
 license = {text = "Apache-2.0"}

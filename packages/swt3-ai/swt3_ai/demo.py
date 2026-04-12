@@ -19,6 +19,7 @@ import sys
 RESET = "\033[0m"
 BOLD = "\033[1m"
 DIM = "\033[2m"
+RED = "\033[31m"
 GREEN = "\033[32m"
 AMBER = "\033[33m"
 CYAN = "\033[36m"
@@ -26,7 +27,7 @@ WHITE = "\033[37m"
 
 # Disable colors if not a terminal
 if not sys.stdout.isatty():
-    RESET = BOLD = DIM = GREEN = AMBER = CYAN = WHITE = ""
+    RESET = BOLD = DIM = RED = GREEN = AMBER = CYAN = WHITE = ""
 
 
 def _sha256(data: str, length: int = 64) -> str:
@@ -132,29 +133,57 @@ def main() -> None:
     print(f"   Match:      {GREEN}✓ Anchor is independently verifiable{RESET}")
     print()
 
-    # ── Summary ──
-    print(f"{DIM}{'─' * 56}{RESET}")
-    print(f"{BOLD}What just happened:{RESET}")
-    print(f"  • AI inference was simulated locally")
-    print(f"  • Prompt and response were SHA-256 hashed (raw text never transmitted)")
-    print(f"  • 3 compliance factors extracted (latency, tokens, guardrails)")
-    print(f"  • Clearing Level 1 purged raw data from the wire payload")
-    print(f"  • 3 SWT3 Witness Anchors minted with tamper-evident fingerprints")
-    print(f"  • Any party can re-derive the fingerprint using the same formula")
+    # ── Regulatory Translation Layer ──
     print()
-    print(f"  {GREEN}✓ 3 anchors verified locally.{RESET}")
+    print(f"  {GREEN}[SWT3] 3 Evidence Anchors Verified.{RESET}")
+    print(f"  {DIM}{'─' * 50}{RESET}")
+    print(f"  {BOLD}REGULATORY COVERAGE SUMMARY (NIST AI RMF / EU AI ACT){RESET}")
     print()
-    print(f"  → Track your Integrity Debt Score and generate a Compliance Passport:")
-    print(f"    {CYAN}https://sovereign.tenova.io/signup{RESET} {DIM}(free, no credit card){RESET}")
+
+    # Covered obligations — mapped to EU AI Act articles
+    coverage_map = [
+        ("AI-INF.1", "Art. 12(1)", "Automatic Logging of Use Periods", "PASS"),
+        ("AI-MDL.1", "Art. 9(4a)", "Model Risk Identification",       "PASS"),
+        ("AI-GRD.1", "Art. 9(2a)", "Risk Mitigation Measures",        "PASS"),
+    ]
+    for proc, article, desc, verdict in coverage_map:
+        print(f"  {GREEN}✓{RESET} {WHITE}{proc}{RESET} → {article}: {desc} {GREEN}[{verdict}]{RESET}")
+
+    print(f"  {DIM}{'─' * 50}{RESET}")
+
+    # Uncovered obligations
+    uncovered = [
+        ("AI-INF.2", "Art. 15(3)", "Performance Consistency"),
+        ("AI-INF.3", "Art. 12(1)", "Volume & Usage Logging"),
+        ("AI-MDL.2", "Art. 12(2b)", "Version & Lineage Tracking"),
+        ("AI-MDL.3", "Art. 72(1)", "Post-Market Drift Monitoring"),
+        ("AI-MDL.4", "Art. 15(4)", "Feedback Loop Isolation"),
+        ("AI-GRD.2", "Art. 9(4b)", "Content Safety Filtering"),
+        ("AI-GRD.3", "Art. 10(2f)", "PII & Data Protection"),
+        ("AI-EXPL.1", "Art. 13(1)", "Transparency & Explainability"),
+        ("AI-EXPL.2", "Art. 13(3b)", "Confidence Calibration"),
+    ]
+    print(f"  {AMBER}⚠ {len(uncovered)}/12 obligations uncovered:{RESET}")
+    for proc, article, desc in uncovered:
+        print(f"  {DIM}  {proc} → {article}: {desc}{RESET}")
+
+    print(f"  {DIM}{'─' * 50}{RESET}")
     print()
-    print(f"{BOLD}Ready for production?{RESET}")
-    print(f"  Start free:               {CYAN}https://sovereign.tenova.io/signup{RESET}")
-    print(f"  SDK docs:                 {CYAN}https://sovereign.tenova.io/docs/{RESET}")
-    print(f"  Book a pilot:             {CYAN}https://calendly.com/tenova-axiom/30min{RESET}")
-    print(f"  GitHub:                   {CYAN}https://github.com/tenova-labs/swt3-ai{RESET}")
+
+    # EU AI Act countdown
+    from datetime import date as _date
+    _days_left = (_date(2026, 8, 2) - _date.today()).days
+    if _days_left > 0:
+        _color = RED if _days_left < 60 else AMBER if _days_left < 120 else CYAN
+        print(f"  {_color}EU AI Act enforcement in {_days_left} days (Aug 2, 2026){RESET}")
+        print()
+
+    print(f"  {DIM}Full conformity requires all 12 procedures. Connect to close the gap:{RESET}")
+    print(f"  {CYAN}https://sovereign.tenova.io/signup?ref=sdk_demo{RESET}")
     print()
-    print(f"{DIM}One Protocol. Every Model. Any Language. Zero Trust Required.{RESET}")
-    print(f"{DIM}TeNova — Defining the AI Accountability Standard.{RESET}")
+    print(f"  {DIM}SDK docs:     {CYAN}https://sovereign.tenova.io/docs/{RESET}")
+    print(f"  {DIM}Book a pilot: {CYAN}https://calendly.com/tenova-axiom/30min{RESET}")
+    print(f"  {DIM}GitHub:       {CYAN}https://github.com/tenova-labs/swt3-ai{RESET}")
     print()
 
 

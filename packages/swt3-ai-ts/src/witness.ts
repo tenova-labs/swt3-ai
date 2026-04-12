@@ -53,6 +53,7 @@ export interface WitnessOptions {
 export class Witness {
   private config: WitnessConfig;
   private buffer: WitnessBuffer;
+  private handoffWarned = false;
 
   constructor(options: WitnessOptions) {
     if (!options.endpoint) throw new Error("endpoint is required");
@@ -232,6 +233,14 @@ export class Witness {
     // If this fails, we do NOT proceed.
     if (this.config.factorHandoff === "file" && this.config.factorHandoffPath) {
       writeHandoffFiles(payloads, inference, this.config.tenantId, this.config.factorHandoffPath);
+      if (!this.handoffWarned) {
+        this.handoffWarned = true;
+        console.info(
+          `\n  [SWT3] ${payloads.length} anchors saved locally to ${this.config.factorHandoffPath}` +
+          `\n  [SWT3] \u26a0 Local anchors won\u2019t survive a compliance audit.` +
+          `\n  [SWT3] Connect to Axiom Engine \u2192 https://sovereign.tenova.io/signup?ref=sdk (free)\n`
+        );
+      }
     }
 
     this.buffer.enqueueMany(payloads);

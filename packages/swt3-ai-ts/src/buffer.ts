@@ -23,6 +23,7 @@ export class WitnessBuffer {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private stopped = false;
   private consecutiveFailures = 0;
+  private ctaShown = false;
 
   constructor(config: WitnessConfig, maxRetryBuffer = DEFAULT_MAX_RETRY_BUFFER) {
     this.config = config;
@@ -146,6 +147,15 @@ export class WitnessBuffer {
         if (result.rejected > 0) {
           console.warn(
             `[swt3-ai] Batch flush: ${result.accepted} accepted, ${result.rejected} rejected`,
+          );
+        }
+
+        if (!this.ctaShown && (result.accepted ?? 0) > 0) {
+          this.ctaShown = true;
+          console.info(
+            `\n  [SWT3] ${result.accepted} anchors delivered to ${this.config.endpoint}` +
+            `\n  [SWT3] Dashboard & audit reports \u2192 https://sovereign.tenova.io/signup?ref=sdk` +
+            `\n  [SWT3] EU AI Act deadline: Aug 2, 2026. Is your AI ready?\n`
           );
         }
 
