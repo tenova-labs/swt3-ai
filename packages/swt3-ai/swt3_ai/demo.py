@@ -52,6 +52,92 @@ def _mint_anchor(
     return f"SWT3-E-{provider}-AI-{procedure}-{verdict}-{epoch}-{fingerprint}"
 
 
+def _generate_html_report(
+    coverage_map: list,
+    uncovered: list,
+    anchors: list[str],
+    days_left: int,
+) -> str:
+    from datetime import datetime
+    ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    covered_rows = "".join(
+        f'<tr><td style="font-family:monospace">{p}</td><td>{a}</td><td>{d}</td>'
+        f'<td style="color:#4ADE80;font-weight:700">[{v}]</td></tr>'
+        for p, a, d, v in coverage_map
+    )
+    uncovered_rows = "".join(
+        f'<tr><td style="font-family:monospace;color:#FBBF24">{p}</td><td>{a}</td><td>{d}</td></tr>'
+        for p, a, d in uncovered
+    )
+    anchor_text = "\n".join(anchors)
+    countdown = f"EU AI Act enforcement in {days_left} days (August 2, 2026)" if days_left > 0 else "EU AI Act enforcement has begun."
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SWT3 AI Witness — Coverage Report</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#070504;color:#E0D9D1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:2.5rem;line-height:1.6}}
+.c{{max-width:800px;margin:0 auto}}
+h1{{color:#E8A87C;font-size:1.5rem;margin-bottom:.25rem}}
+h2{{color:#E8A87C;font-size:1.1rem;margin:1.5rem 0 .75rem}}
+.meta{{color:#6B7280;font-size:.8rem;margin-bottom:1.5rem}}
+.score{{font-size:2.5rem;font-weight:800;margin:1rem 0}}
+.score .pass{{color:#4ADE80}}
+.score .total{{color:#6B7280}}
+table{{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.9rem}}
+th{{text-align:left;padding:.5rem .75rem;color:#E8A87C;border-bottom:1px solid #222;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em}}
+td{{padding:.5rem .75rem;border-bottom:1px solid #151312}}
+pre{{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8rem;color:#9CA3AF;margin:.75rem 0;border:1px solid #222}}
+.countdown{{font-size:1rem;font-weight:600;color:#FBBF24;margin:1.5rem 0}}
+.cta{{display:inline-block;margin-top:1.25rem;padding:.75rem 2rem;background:#E8A87C;color:#070504;font-weight:700;text-decoration:none;border-radius:6px;font-size:.9rem;letter-spacing:.03em}}
+.cta:hover{{opacity:.9}}
+.footer{{color:#6B7280;font-size:.75rem;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid #222}}
+.warn{{color:#FBBF24}}
+.sep{{border:none;border-top:1px solid #222;margin:1.5rem 0}}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>SWT3 AI Witness — Coverage Report</h1>
+<p class="meta">Generated {ts} UTC | SWT3 Protocol v0.2.9 | Demo Environment</p>
+
+<div class="score"><span class="pass">3</span><span class="total"> / 12 obligations covered</span></div>
+
+<h2>Covered — EU AI Act Article Mapping</h2>
+<table>
+<tr><th>Procedure</th><th>EU AI Act</th><th>Obligation</th><th>Status</th></tr>
+{covered_rows}
+</table>
+
+<h2 class="warn">Uncovered Obligations ({len(uncovered)})</h2>
+<table>
+<tr><th>Procedure</th><th>EU AI Act</th><th>Obligation</th></tr>
+{uncovered_rows}
+</table>
+
+<hr class="sep">
+
+<p class="countdown">{countdown}</p>
+
+<h2>Anchor Evidence (Demo)</h2>
+<pre>{anchor_text}</pre>
+
+<p>Full conformity requires all 12 procedures across inference, model governance, guardrails, and explainability domains.</p>
+<a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap — Free Account</a>
+
+<div class="footer">
+<p>SWT3 Protocol — Patent Pending — Apache 2.0</p>
+<p>TeNova: Defining the AI Accountability Standard.</p>
+<p style="margin-top:.5rem">This report was generated locally by the SWT3 AI Witness SDK demo. No data was transmitted.</p>
+</div>
+</div>
+</body>
+</html>"""
+
+
 def main() -> None:
     print()
     print(f"{BOLD}SWT3 AI Witness SDK — Live Demo{RESET}")
@@ -118,9 +204,11 @@ def main() -> None:
     print(f"{CYAN}5. Minting SWT3 Witness Anchors...{RESET}")
     print()
 
+    anchors_list: list[str] = []
     for proc_id, fa, fb, fc, verdict, desc in procedures:
         fp = _mint_fingerprint(tenant, proc_id, fa, fb, fc, ts_ms)
         anchor = _mint_anchor(tenant, provider, proc_id, verdict, epoch, fp)
+        anchors_list.append(anchor)
         color = GREEN if verdict == "PASS" else AMBER
         print(f"   {color}■ {verdict}{RESET}  {WHITE}{proc_id}{RESET}  {DIM}{desc}{RESET}")
         print(f"     {DIM}{anchor}{RESET}")
@@ -185,6 +273,16 @@ def main() -> None:
     print(f"  {DIM}Book a pilot: {CYAN}https://calendly.com/tenova-axiom/30min{RESET}")
     print(f"  {DIM}GitHub:       {CYAN}https://github.com/tenova-labs/swt3-ai{RESET}")
     print()
+
+    # ── Write HTML coverage report (best-effort) ──
+    try:
+        html = _generate_html_report(coverage_map, uncovered, anchors_list, _days_left)
+        with open("swt3-coverage-report.html", "w", encoding="utf-8") as f:
+            f.write(html)
+        print(f"  {GREEN}[SWT3] Coverage report saved \u2192 swt3-coverage-report.html{RESET}")
+        print()
+    except Exception:
+        pass  # best-effort — never fail the demo
 
 
 if __name__ == "__main__":

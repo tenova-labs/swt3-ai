@@ -203,7 +203,7 @@ When you're ready for production, [create a free account](https://sovereign.teno
 3. **Extract**: Model hash, latency, token count, refusal status as numeric factors
 4. **Clear**: Raw text is purged from the wire payload (configurable clearing level)
 5. **Buffer**: Factors queued in background, flushed to the SWT3 ledger asynchronously
-6. **Return**: Your original response returns untouched, zero added latency
+6. **Return**: Your original response returns untouched. Witnessing runs in a background thread — median overhead is <1ms on the hot path (hash + buffer, no network call)
 
 For streaming: chunks arrive to the developer in real-time. The SDK accumulates content in the background and witnesses after the stream completes.
 
@@ -282,6 +282,10 @@ const witness = new Witness({
   maxRetries: 5,        // retry before dead-lettering
 });
 ```
+
+## Zero Lock-in
+
+Remove the `witness.wrap()` call. Your code works exactly as before. Anchors already minted remain in the ledger.
 
 ## Cross-Language Parity
 
@@ -370,7 +374,7 @@ SWT3 AI Witness is available as a managed service through [Axiom Sovereign Engin
 | **Enclave** | 1 year | + OSCAL, Gate API, attestations, webhook feeds | $9,500/mo |
 | **Sovereign** | Custom | + White-glove ATO sprint, mock assessment, on-prem | [Book Assessment](https://calendly.com/tenova-axiom/30min) |
 
-1,100+ downloads across npm and PyPI. 151 procedures. 13 frameworks. Patent pending.
+1,600+ downloads across npm and PyPI. 151 procedures. 13 frameworks. Patent pending.
 
 ## Ready to Witness Your AI?
 

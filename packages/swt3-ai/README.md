@@ -8,7 +8,7 @@ Witness your AI agents, don't just monitor them. Deterministic accountability fo
 
 **SWT3 AI Witness SDK**:continuous, cryptographic attestation for AI systems. Prove your models are running approved weights, safety guardrails are active, inferences are traceable, and fairness thresholds are met. All without your prompts or responses ever leaving your infrastructure.
 
-Built on the [SWT3 Protocol](https://tenova.io/swt3), the same cryptographic witnessing layer trusted for federal compliance (NIST 800-53, CMMC, FedRAMP).
+Built on the [SWT3 Protocol](https://github.com/tenova-labs/swt3-ai), the same cryptographic witnessing layer trusted for federal compliance (NIST 800-53, CMMC, FedRAMP).
 
 ## Why SWT3?
 
@@ -104,9 +104,26 @@ When you're ready for production, [create a free account](https://sovereign.teno
 3. **Extract**: Model version, latency, token count, guardrail status captured as numeric factors
 4. **Clear**: Raw text is purged from the wire payload (configurable clearing level)
 5. **Anchor**: Factors are batched and flushed to the SWT3 Witness Ledger in the background
-6. **Return**: Your original response returns untouched, zero added latency
+6. **Return**: Your original response returns untouched. Witnessing runs in a background thread — median overhead is <1ms on the hot path (hash + buffer, no network call)
 
 The result: an immutable, cryptographic proof that your AI followed the rules, without the auditor ever needing to see the sensitive data.
+
+## What Gets Witnessed
+
+Each inference produces anchors for these AI procedures:
+
+| Procedure | Domain | What it proves |
+|-----------|--------|---------------|
+| AI-INF.1 | Inference | Prompt and response were captured (provenance) |
+| AI-INF.2 | Inference | Latency within threshold (detects model swaps) |
+| AI-MDL.1 | Model | Deployed model matches approved hash (integrity) |
+| AI-MDL.2 | Model | Model version identifier recorded (tracking) |
+| AI-GRD.1 | Guardrail | Required safety filters were active (enforcement) |
+| AI-GRD.2 | Safety | No refusal or content filter triggered (content safety) |
+| AI-TOOL.1 | Tool Use | Agent tool/function call recorded (latency, success) |
+| AI-ID.1 | Identity | Witness instance identity attested (agent accountability) |
+
+Each procedure maps to both **NIST AI RMF** functions and **EU AI Act** articles. When a CISO looks at the ledger, they don't see "inference captured." They see "Article 12 Compliance: Verified."
 
 ## Supported Providers
 
@@ -114,9 +131,9 @@ The result: an immutable, cryptographic proof that your AI followed the rules, w
 |----------|--------|--------|
 | OpenAI | `openai.OpenAI` | **Supported** |
 | Anthropic | `anthropic.Anthropic` | **Supported** |
+| Azure OpenAI | `openai.AzureOpenAI` | **Supported** (via `openai` SDK) |
+| Ollama / vLLM | `openai.OpenAI(base_url=...)` | **Supported** (OpenAI-compatible) |
 | AWS Bedrock | `bedrock-runtime` | Planned |
-| Azure OpenAI | `openai.AzureOpenAI` | Planned |
-| Ollama / vLLM | Local models | Planned |
 
 ### OpenAI
 
@@ -172,23 +189,6 @@ witness = Witness(
 
 At Level 1+, raw prompts and responses **never leave your infrastructure**. Only SHA-256 hashes and numeric factors travel on the wire. This satisfies both GDPR Article 17 (right to erasure) and EU AI Act Article 12 (record-keeping) simultaneously.
 
-## What Gets Witnessed
-
-Each inference produces anchors for these AI procedures:
-
-| Procedure | Domain | What it proves |
-|-----------|--------|---------------|
-| AI-INF.1 | Inference | Prompt and response were captured (provenance) |
-| AI-INF.2 | Inference | Latency within threshold (detects model swaps) |
-| AI-MDL.1 | Model | Deployed model matches approved hash (integrity) |
-| AI-MDL.2 | Model | Model version identifier recorded (tracking) |
-| AI-GRD.1 | Guardrail | Required safety filters were active (enforcement) |
-| AI-GRD.2 | Safety | No refusal or content filter triggered (content safety) |
-| AI-TOOL.1 | Tool Use | Agent tool/function call recorded (latency, success) |
-| AI-ID.1 | Identity | Witness instance identity attested (agent accountability) |
-
-Each procedure maps to both **NIST AI RMF** functions and **EU AI Act** articles. When a CISO looks at the ledger, they don't see "inference captured." They see "Article 12 Compliance: Verified."
-
 ## View an Anchor
 
 A Level 1 anchor for AI-INF.1 (Inference Provenance). This is what reaches the witness ledger. No prompts, no responses, just cryptographic proof.
@@ -235,6 +235,10 @@ witness = Witness(
 # Check dead-letter status
 print(f"Pending: {witness.pending}")
 ```
+
+## Zero Lock-in
+
+Remove the `witness.wrap()` call. Your code works exactly as before. Anchors already minted remain in the ledger.
 
 ## Configuration
 
@@ -329,7 +333,7 @@ SWT3 AI Witness is available as a managed service through [Axiom Sovereign Engin
 | **Enclave** | 1 year | + OSCAL, Gate API, attestations, webhook feeds | $9,500/mo |
 | **Sovereign** | Custom | + White-glove ATO sprint, mock assessment, on-prem | [Book Assessment](https://calendly.com/tenova-axiom/30min) |
 
-1,100+ downloads across npm and PyPI. 151 procedures. 13 frameworks. Patent pending.
+1,600+ downloads across npm and PyPI. 151 procedures. 13 frameworks. Patent pending.
 
 ## Ready to Witness Your AI?
 

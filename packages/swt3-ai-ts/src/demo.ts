@@ -9,6 +9,7 @@
  */
 
 import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
 
 const isColor = process.stdout.isTTY;
 const B = isColor ? "\x1b[1m" : "";
@@ -98,9 +99,11 @@ async function main() {
   console.log(`${C}5. Minting SWT3 Witness Anchors...${R}`);
   console.log();
 
+  const anchors: string[] = [];
   for (const [procId, fa, fb, fc, verdict, desc] of procedures) {
     const fp = mintFingerprint(tenant, procId, fa, fb, fc, tsMs);
     const anchor = `SWT3-E-${provider}-AI-${procId}-${verdict}-${epoch}-${fp}`;
+    anchors.push(anchor);
     const color = verdict === "PASS" ? G : A;
     console.log(`   ${color}■ ${verdict}${R}  ${W}${procId}${R}  ${D}${desc}${R}`);
     console.log(`     ${D}${anchor}${R}`);
@@ -168,6 +171,99 @@ async function main() {
   console.log(`  ${D}Book a pilot: ${C}https://calendly.com/tenova-axiom/30min${R}`);
   console.log(`  ${D}GitHub:       ${C}https://github.com/tenova-labs/swt3-ai${R}`);
   console.log();
+
+  // ── Write HTML coverage report (best-effort) ──
+  try {
+    const html = generateHtmlReport(coverageMap, uncovered, anchors, daysLeft);
+    writeFileSync("swt3-coverage-report.html", html, "utf-8");
+    console.log(`  ${G}[SWT3] Coverage report saved \u2192 swt3-coverage-report.html${R}`);
+    console.log();
+  } catch { /* best-effort — never fail the demo */ }
+}
+
+function generateHtmlReport(
+  coverageMap: [string, string, string, string][],
+  uncoveredList: [string, string, string][],
+  anchorList: string[],
+  daysLeft: number,
+): string {
+  const ts = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const coveredRows = coverageMap.map(([p, a, d, v]) =>
+    `<tr><td style="font-family:monospace">${p}</td><td>${a}</td><td>${d}</td><td style="color:#4ADE80;font-weight:700">[${v}]</td></tr>`
+  ).join("\n");
+  const uncoveredRows = uncoveredList.map(([p, a, d]) =>
+    `<tr><td style="font-family:monospace;color:#FBBF24">${p}</td><td>${a}</td><td>${d}</td></tr>`
+  ).join("\n");
+  const anchorText = anchorList.join("\n");
+  const countdown = daysLeft > 0
+    ? `EU AI Act enforcement in ${daysLeft} days (August 2, 2026)`
+    : "EU AI Act enforcement has begun.";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SWT3 AI Witness \u2014 Coverage Report</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#070504;color:#E0D9D1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:2.5rem;line-height:1.6}
+.c{max-width:800px;margin:0 auto}
+h1{color:#E8A87C;font-size:1.5rem;margin-bottom:.25rem}
+h2{color:#E8A87C;font-size:1.1rem;margin:1.5rem 0 .75rem}
+.meta{color:#6B7280;font-size:.8rem;margin-bottom:1.5rem}
+.score{font-size:2.5rem;font-weight:800;margin:1rem 0}
+.score .pass{color:#4ADE80}
+.score .total{color:#6B7280}
+table{width:100%;border-collapse:collapse;margin:.75rem 0;font-size:.9rem}
+th{text-align:left;padding:.5rem .75rem;color:#E8A87C;border-bottom:1px solid #222;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em}
+td{padding:.5rem .75rem;border-bottom:1px solid #151312}
+pre{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8rem;color:#9CA3AF;margin:.75rem 0;border:1px solid #222}
+.countdown{font-size:1rem;font-weight:600;color:#FBBF24;margin:1.5rem 0}
+.cta{display:inline-block;margin-top:1.25rem;padding:.75rem 2rem;background:#E8A87C;color:#070504;font-weight:700;text-decoration:none;border-radius:6px;font-size:.9rem;letter-spacing:.03em}
+.cta:hover{opacity:.9}
+.footer{color:#6B7280;font-size:.75rem;margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid #222}
+.warn{color:#FBBF24}
+.sep{border:none;border-top:1px solid #222;margin:1.5rem 0}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>SWT3 AI Witness \u2014 Coverage Report</h1>
+<p class="meta">Generated ${ts} UTC | SWT3 Protocol v0.2.9 | Demo Environment</p>
+
+<div class="score"><span class="pass">3</span><span class="total"> / 12 obligations covered</span></div>
+
+<h2>Covered \u2014 EU AI Act Article Mapping</h2>
+<table>
+<tr><th>Procedure</th><th>EU AI Act</th><th>Obligation</th><th>Status</th></tr>
+${coveredRows}
+</table>
+
+<h2 class="warn">Uncovered Obligations (${uncoveredList.length})</h2>
+<table>
+<tr><th>Procedure</th><th>EU AI Act</th><th>Obligation</th></tr>
+${uncoveredRows}
+</table>
+
+<hr class="sep">
+
+<p class="countdown">${countdown}</p>
+
+<h2>Anchor Evidence (Demo)</h2>
+<pre>${anchorText}</pre>
+
+<p>Full conformity requires all 12 procedures across inference, model governance, guardrails, and explainability domains.</p>
+<a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap \u2014 Free Account</a>
+
+<div class="footer">
+<p>SWT3 Protocol \u2014 Patent Pending \u2014 Apache 2.0</p>
+<p>TeNova: Defining the AI Accountability Standard.</p>
+<p style="margin-top:.5rem">This report was generated locally by the SWT3 AI Witness SDK demo. No data was transmitted.</p>
+</div>
+</div>
+</body>
+</html>`;
 }
 
 main();
