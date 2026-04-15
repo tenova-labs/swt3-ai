@@ -93,13 +93,17 @@ def _make_interceptor(real_method: Any, witness: "Witness") -> Any:
         prompt_text = _extract_prompt_text(messages, system)
         prompt_hash = sha256_truncated(prompt_text)
 
+        # Hash system prompt separately (instruction drift detection)
+        system_prompt_text = _extract_system_only(system)
+        system_prompt_hash = sha256_truncated(system_prompt_text) if system_prompt_text else None
+
         # ── Call the real method and measure latency ──
         start = time.monotonic()
         response = real_method(*args, **kwargs)
         elapsed_ms = int((time.monotonic() - start) * 1000)
 
         # ── Post-call: extract factors ──
-        record = _extract_record(response, model, prompt_hash, elapsed_ms)
+        record = _extract_record(response, model, prompt_hash, elapsed_ms, system_prompt_hash)
         witness.record(record)
 
         # ── Return UNTOUCHED response ──
@@ -109,6 +113,22 @@ def _make_interceptor(real_method: Any, witness: "Witness") -> Any:
     interceptor.__qualname__ = "messages.create"
     interceptor.__doc__ = getattr(real_method, "__doc__", None)
     return interceptor
+
+
+def _extract_system_only(system: Any) -> str | None:
+    """Extract system prompt text from Anthropic's system parameter.
+
+    Returns None if no system prompt is provided.
+    """
+    if isinstance(system, str) and system:
+        return system
+    if isinstance(system, list):
+        parts: list[str] = []
+        for block in system:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "\n".join(parts) if parts else None
+    return None
 
 
 def _extract_prompt_text(messages: Any, system: Any = "") -> str:
@@ -152,6 +172,7 @@ def _extract_record(
     model: str,
     prompt_hash: str,
     elapsed_ms: int,
+    system_prompt_hash: str | None = None,
 ) -> InferenceRecord:
     """Extract an InferenceRecord from an Anthropic Message response.
 
@@ -213,4 +234,5 @@ def _extract_record(
         output_tokens=output_tokens,
         has_refusal=has_refusal,
         provider="anthropic",
+        system_prompt_hash=system_prompt_hash,
     )

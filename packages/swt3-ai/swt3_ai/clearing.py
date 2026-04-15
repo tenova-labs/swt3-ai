@@ -59,6 +59,7 @@ def extract_payloads(
     procedures: Optional[List[str]] = None,
     agent_id: Optional[str] = None,
     signing_key: Optional[str] = None,
+    cycle_id: Optional[str] = None,
 ) -> List[WitnessPayload]:
     """Extract witness payloads from an inference record.
 
@@ -70,6 +71,60 @@ def extract_payloads(
 
     # Build raw factors for each procedure, then clear based on level
     proc_factors: List[Dict[str, Any]] = []
+
+    # Access control records produce only AI-ACC.1 (skip inference procedures)
+    if record.access_target:
+        proc_factors.append({
+            "procedure_id": "AI-ACC.1",
+            "factor_a": 1,
+            "factor_b": 1 if not record.access_scope or record.access_granted else 0,
+            "factor_c": 1 if record.access_granted else 0,
+        })
+
+        if procedures:
+            proc_factors = [p for p in proc_factors if p["procedure_id"] in procedures]
+
+        for pf in proc_factors:
+            proc_id = pf["procedure_id"]
+            fa, fb, fc = pf["factor_a"], pf["factor_b"], pf["factor_c"]
+            fp = mint_fingerprint(tenant_id, proc_id, fa, fb, fc, ts)
+
+            payload = WitnessPayload(
+                procedure_id=proc_id,
+                factor_a=fa,
+                factor_b=fb,
+                factor_c=fc,
+                clearing_level=clearing_level,
+                anchor_fingerprint=fp,
+                anchor_epoch=epoch,
+                fingerprint_timestamp_ms=ts,
+            )
+
+            if clearing_level <= 2:
+                payload.ai_latency_ms = record.latency_ms
+            if clearing_level <= 1:
+                payload.ai_model_id = record.model_id
+                payload.ai_context = {
+                    "provider": "access",
+                    "access_target": record.access_target,
+                }
+                if record.access_scope:
+                    payload.ai_context["access_scope"] = record.access_scope
+                payload.ai_context["access_granted"] = record.access_granted
+                if cycle_id:
+                    payload.ai_context["cycle_id"] = cycle_id
+
+            if agent_id:
+                payload.agent_id = agent_id
+            if cycle_id:
+                payload.cycle_id = cycle_id
+            if signing_key:
+                from .signing import sign_payload
+                payload.payload_signature = sign_payload(signing_key, fp, agent_id)
+
+            payloads.append(payload)
+
+        return payloads
 
     # Tool call records produce only AI-TOOL.1 (skip inference procedures)
     if record.tool_name:
@@ -112,10 +167,14 @@ def extract_payloads(
                 }
                 if record.tool_call_id:
                     payload.ai_context["tool_call_id"] = record.tool_call_id
+                if cycle_id:
+                    payload.ai_context["cycle_id"] = cycle_id
 
-            # agent_id survives all clearing levels
+            # agent_id and cycle_id survive all clearing levels
             if agent_id:
                 payload.agent_id = agent_id
+            if cycle_id:
+                payload.cycle_id = cycle_id
             if signing_key:
                 from .signing import sign_payload
                 payload.payload_signature = sign_payload(signing_key, fp, agent_id)
@@ -216,9 +275,11 @@ def extract_payloads(
         # Apply clearing level to determine what metadata travels on the wire
         _apply_clearing(payload, record, clearing_level)
 
-        # agent_id survives all clearing levels (operational metadata)
+        # agent_id and cycle_id survive all clearing levels (operational metadata)
         if agent_id:
             payload.agent_id = agent_id
+        if cycle_id:
+            payload.cycle_id = cycle_id
         if signing_key:
             from .signing import sign_payload
             payload.payload_signature = sign_payload(signing_key, fp, agent_id)
@@ -250,7 +311,7 @@ def _apply_clearing(
         payload.ai_output_tokens = record.output_tokens
 
     if level <= 1:
-        # Levels 0-1: include full ai_context
+        # Levels 0-1: include full ai_context + system prompt hash
         payload.ai_model_id = record.model_id
         payload.ai_context = {
             "provider": record.provider,
@@ -259,6 +320,10 @@ def _apply_clearing(
             payload.ai_context["guardrails"] = record.guardrail_names
         if record.system_fingerprint:
             payload.ai_context["system_fingerprint"] = record.system_fingerprint
+        if payload.cycle_id:
+            payload.ai_context["cycle_id"] = payload.cycle_id
+        if record.system_prompt_hash:
+            payload.ai_system_prompt_hash = record.system_prompt_hash
     elif level == 2:
         # Level 2: model_id in cleartext, but no ai_context
         payload.ai_model_id = record.model_id

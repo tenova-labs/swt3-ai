@@ -183,6 +183,11 @@
     {
       "input": "gpt-4o-2024-11-20:fp_abc123",
       "expected_16": "0f6b04241d237297"
+    },
+    {
+      "input": "You are a helpful fraud detection assistant. Flag any transaction over $10,000.",
+      "expected_16": "27af40902672f666",
+      "description": "System prompt hash for instruction drift detection"
     }
   ]
 }

@@ -29,9 +29,65 @@ export function extractPayloads(
   procedures?: string[],
   agentId?: string,
   signingKey?: string,
+  cycleId?: string,
 ): WitnessPayload[] {
   const [ts, epoch] = timestampMs();
   const payloads: WitnessPayload[] = [];
+
+  // Access control records produce only AI-ACC.1 (skip inference procedures)
+  if (record.accessTarget) {
+    let accFactors = [
+      {
+        procedureId: "AI-ACC.1",
+        factorA: 1,
+        factorB: !record.accessScope || record.accessGranted ? 1 : 0,
+        factorC: record.accessGranted ? 1 : 0,
+      },
+    ];
+
+    if (procedures) {
+      const allowed = new Set(procedures);
+      accFactors = accFactors.filter((p) => allowed.has(p.procedureId));
+    }
+
+    for (const pf of accFactors) {
+      const fp = mintFingerprint(tenantId, pf.procedureId, pf.factorA, pf.factorB, pf.factorC, ts);
+      const payload: WitnessPayload = {
+        procedure_id: pf.procedureId,
+        factor_a: pf.factorA,
+        factor_b: pf.factorB,
+        factor_c: pf.factorC,
+        clearing_level: clearingLevel,
+        anchor_fingerprint: fp,
+        anchor_epoch: epoch,
+        fingerprint_timestamp_ms: ts,
+      };
+
+      if (clearingLevel <= 2) {
+        payload.ai_latency_ms = record.latencyMs;
+      }
+      if (clearingLevel <= 1) {
+        payload.ai_model_id = record.modelId;
+        const ctx: WitnessPayload["ai_context"] = {
+          provider: "access",
+          access_target: record.accessTarget,
+          access_granted: record.accessGranted,
+        };
+        if (record.accessScope) {
+          ctx.access_scope = record.accessScope;
+        }
+        if (cycleId) ctx.cycle_id = cycleId;
+        payload.ai_context = ctx;
+      }
+
+      if (agentId) payload.agent_id = agentId;
+      if (cycleId) payload.cycle_id = cycleId;
+      if (signingKey) payload.payload_signature = signPayload(signingKey, fp, agentId);
+
+      payloads.push(payload);
+    }
+    return payloads;
+  }
 
   // Tool call records produce only AI-TOOL.1 (skip inference procedures)
   if (record.toolName) {
@@ -69,10 +125,12 @@ export function extractPayloads(
         if (record.toolCallId) {
           ctx.tool_call_id = record.toolCallId;
         }
+        if (cycleId) ctx.cycle_id = cycleId;
         payload.ai_context = ctx;
       }
 
       if (agentId) payload.agent_id = agentId;
+      if (cycleId) payload.cycle_id = cycleId;
       if (signingKey) payload.payload_signature = signPayload(signingKey, fp, agentId);
 
       payloads.push(payload);
@@ -175,8 +233,9 @@ export function extractPayloads(
     // absent from JSON.stringify output, not just null.
     applyClearingLevel(payload, record, clearingLevel);
 
-    // agent_id survives all clearing levels (operational metadata)
+    // agent_id and cycle_id survive all clearing levels (operational metadata)
     if (agentId) payload.agent_id = agentId;
+    if (cycleId) payload.cycle_id = cycleId;
     if (signingKey) payload.payload_signature = signPayload(signingKey, fp, agentId);
 
     payloads.push(payload);
@@ -207,7 +266,7 @@ function applyClearingLevel(
   }
 
   if (level <= 1) {
-    // Levels 0-1: include full ai_context
+    // Levels 0-1: include full ai_context + system prompt hash
     payload.ai_model_id = record.modelId;
     const ctx: WitnessPayload["ai_context"] = {
       provider: record.provider,
@@ -218,7 +277,13 @@ function applyClearingLevel(
     if (record.systemFingerprint) {
       ctx.system_fingerprint = record.systemFingerprint;
     }
+    if (payload.cycle_id) {
+      ctx.cycle_id = payload.cycle_id;
+    }
     payload.ai_context = ctx;
+    if (record.systemPromptHash) {
+      payload.ai_system_prompt_hash = record.systemPromptHash;
+    }
   } else if (level === 2) {
     // Level 2: model_id in cleartext, NO ai_context
     payload.ai_model_id = record.modelId;

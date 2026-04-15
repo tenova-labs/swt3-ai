@@ -115,13 +115,17 @@ def _make_interceptor(
         prompt_text = _extract_prompt_text(messages)
         prompt_hash = sha256_truncated(prompt_text)
 
+        # Hash system prompt separately (instruction drift detection)
+        system_prompt = _extract_system_prompt(messages)
+        system_prompt_hash = sha256_truncated(system_prompt) if system_prompt else None
+
         # ── Call the real method and measure latency ──
         start = time.monotonic()
         response = real_method(*args, **kwargs)
         elapsed_ms = int((time.monotonic() - start) * 1000)
 
         # ── Post-call: extract factors from response ──
-        record = _extract_record(response, model, prompt_hash, elapsed_ms)
+        record = _extract_record(response, model, prompt_hash, elapsed_ms, system_prompt_hash)
 
         # ── Hand to witness (non-blocking) ──
         witness.record(record)
@@ -135,6 +139,37 @@ def _make_interceptor(
     interceptor.__doc__ = getattr(real_method, "__doc__", None)
 
     return interceptor
+
+
+def _extract_system_prompt(messages: Any) -> str | None:
+    """Extract only the system message(s) from OpenAI message format.
+
+    Returns the concatenated text of all role="system" messages,
+    or None if no system messages are present.
+    """
+    if not isinstance(messages, (list, tuple)):
+        return None
+
+    parts: list[str] = []
+    for msg in messages:
+        role = None
+        content = ""
+        if isinstance(msg, dict):
+            role = msg.get("role")
+            content = msg.get("content", "")
+        elif hasattr(msg, "role"):
+            role = getattr(msg, "role", None)
+            content = getattr(msg, "content", "")
+
+        if role == "system":
+            if isinstance(content, str):
+                parts.append(content)
+            elif isinstance(content, list):
+                for part in content:
+                    if isinstance(part, dict) and part.get("type") == "text":
+                        parts.append(part.get("text", ""))
+
+    return "\n".join(parts) if parts else None
 
 
 def _extract_prompt_text(messages: Any) -> str:
@@ -174,6 +209,7 @@ def _extract_record(
     model: str,
     prompt_hash: str,
     elapsed_ms: int,
+    system_prompt_hash: str | None = None,
 ) -> InferenceRecord:
     """Extract an InferenceRecord from an OpenAI ChatCompletion response.
 
@@ -236,4 +272,5 @@ def _extract_record(
         has_refusal=has_refusal,
         provider="openai",
         system_fingerprint=system_fingerprint,
+        system_prompt_hash=system_prompt_hash,
     )

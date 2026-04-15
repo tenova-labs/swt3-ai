@@ -66,6 +66,7 @@ class Witness:
         factor_handoff_path: Optional[str] = None,
         agent_id: Optional[str] = None,
         signing_key: Optional[str] = None,
+        cycle_id: Optional[str] = None,
     ) -> None:
         # Validate handoff config
         if factor_handoff and factor_handoff != "file":
@@ -86,6 +87,7 @@ class Witness:
             factor_handoff_path=factor_handoff_path,
             agent_id=agent_id,
             signing_key=signing_key,
+            cycle_id=cycle_id,
         )
         self._buffer = WitnessBuffer(self._config)
         self._latency_threshold_ms = latency_threshold_ms
@@ -264,6 +266,103 @@ class Witness:
             return decorator(fn)
         return decorator
 
+    def wrap_access(
+        self,
+        fn: Optional[F] = None,
+        *,
+        resource_name: Optional[str] = None,
+        scope: Optional[str] = None,
+    ) -> Any:
+        """Wrap a function as a witnessed access attempt (AI-ACC.1).
+
+        Can be used as a decorator or as a wrapper:
+            @witness.wrap_access(resource_name="prod-db", scope="read-only")
+            def query(sql: str) -> list: ...
+
+            # Or:
+            wrapped = witness.wrap_access(my_fn, resource_name="api-gateway")
+
+        Each call mints an AI-ACC.1 anchor with:
+            factor_a = 1 (access attempt occurred)
+            factor_b = 1 if within declared scope (or no scope set), 0 if out of scope
+            factor_c = 1 if access granted, 0 if denied/failed
+        """
+        import asyncio
+        import uuid
+
+        def decorator(func: F) -> F:
+            name = resource_name or getattr(func, "__name__", "unknown-resource")
+
+            @functools.wraps(func)
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                start = time.monotonic()
+                granted = True
+                result = None
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception:
+                    granted = False
+                    raise
+                finally:
+                    elapsed_ms = int((time.monotonic() - start) * 1000)
+                    input_hash = sha256_truncated(str(args) + str(kwargs))
+                    output_hash = sha256_truncated(
+                        str(result) if granted else "ACCESS_DENIED"
+                    )
+                    record = InferenceRecord(
+                        model_id=name,
+                        model_hash=sha256_truncated(name),
+                        prompt_hash=input_hash,
+                        response_hash=output_hash,
+                        latency_ms=elapsed_ms,
+                        provider="access",
+                        has_refusal=not granted,
+                        access_target=name,
+                        access_granted=granted,
+                        access_scope=scope,
+                    )
+                    self.record(record)
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                start = time.monotonic()
+                granted = True
+                result = None
+                try:
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception:
+                    granted = False
+                    raise
+                finally:
+                    elapsed_ms = int((time.monotonic() - start) * 1000)
+                    input_hash = sha256_truncated(str(args) + str(kwargs))
+                    output_hash = sha256_truncated(
+                        str(result) if granted else "ACCESS_DENIED"
+                    )
+                    record = InferenceRecord(
+                        model_id=name,
+                        model_hash=sha256_truncated(name),
+                        prompt_hash=input_hash,
+                        response_hash=output_hash,
+                        latency_ms=elapsed_ms,
+                        provider="access",
+                        has_refusal=not granted,
+                        access_target=name,
+                        access_granted=granted,
+                        access_scope=scope,
+                    )
+                    self.record(record)
+
+            if asyncio.iscoroutinefunction(func):
+                return async_wrapper  # type: ignore[return-value]
+            return sync_wrapper  # type: ignore[return-value]
+
+        if fn is not None:
+            return decorator(fn)
+        return decorator
+
     def record(
         self,
         inference: InferenceRecord,
@@ -295,6 +394,7 @@ class Witness:
             procedures=procedures or self._config.procedures,
             agent_id=self._config.agent_id,
             signing_key=self._config.signing_key,
+            cycle_id=self._config.cycle_id,
         )
 
         # Factor handoff: write full (uncleared) data to custody destination

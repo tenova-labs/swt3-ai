@@ -44,9 +44,15 @@ npm test
 
 The SWT3 fingerprint formula and clearing level semantics (0-3) are locked. Changes to the core protocol require an RFC discussion in GitHub Issues before any implementation.
 
-## License
+## License and Intellectual Property
 
 By contributing, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).
+
+The SWT3 Protocol is patent pending (Tenable Nova LLC). Your contributions are licensed under Apache 2.0 and do not affect the patent status. Contributing code grants other users the right to use your contribution under Apache 2.0 terms. The patent applies to the protocol specification and core mechanisms, not to community-contributed adapters, integrations, or tooling built on top of the protocol.
+
+## Security
+
+To report a security vulnerability, see [SECURITY.md](.github/SECURITY.md).
 
 ## Questions?
 

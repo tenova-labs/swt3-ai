@@ -19,6 +19,7 @@ export interface WitnessConfig {
   factorHandoffPath?: string;
   agentId?: string;
   signingKey?: string;
+  cycleId?: string;
 }
 
 export interface WitnessPayload {
@@ -33,6 +34,7 @@ export interface WitnessPayload {
   ai_model_id?: string;
   ai_prompt_hash?: string;
   ai_response_hash?: string;
+  ai_system_prompt_hash?: string;
   ai_latency_ms?: number;
   ai_input_tokens?: number;
   ai_output_tokens?: number;
@@ -42,8 +44,13 @@ export interface WitnessPayload {
     system_fingerprint?: string;
     tool_name?: string;
     tool_call_id?: string;
+    access_target?: string;
+    access_scope?: string;
+    access_granted?: boolean;
+    cycle_id?: string;
   };
   agent_id?: string;
+  cycle_id?: string;
   payload_signature?: string;
 }
 
@@ -81,9 +88,13 @@ export interface InferenceRecord {
   hasRefusal: boolean;
   provider: string;
   systemFingerprint?: string;
+  systemPromptHash?: string;
   guardrailNames: string[];
   toolName?: string;
   toolCallId?: string;
+  accessTarget?: string;
+  accessGranted?: boolean;
+  accessScope?: string;
 }
 
 /** Valid AI procedure IDs from SWT3 Spec v1.2.0 */
@@ -97,4 +108,5 @@ export const AI_PROCEDURES = new Set([
   "AI-EXPL.1", "AI-EXPL.2",
   "AI-TOOL.1",
   "AI-ID.1",
+  "AI-ACC.1",
 ]);

@@ -1,4 +1,4 @@
-Witness your AI agents, don't just monitor them. Deterministic accountability for every AI action.
+Witness your AI. Prove it followed the rules. Cryptographic accountability for every inference, tool call, and resource access.
 
 [![PyPI](https://img.shields.io/pypi/v/swt3-ai)](https://pypi.org/project/swt3-ai/)
 [![Downloads](https://img.shields.io/pypi/dm/swt3-ai)](https://pypi.org/project/swt3-ai/)
@@ -6,62 +6,224 @@ Witness your AI agents, don't just monitor them. Deterministic accountability fo
 
 # swt3-ai
 
-**SWT3 AI Witness SDK**:continuous, cryptographic attestation for AI systems. Prove your models are running approved weights, safety guardrails are active, inferences are traceable, and fairness thresholds are met. All without your prompts or responses ever leaving your infrastructure.
+**SWT3 AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
-Built on the [SWT3 Protocol](https://github.com/tenova-labs/swt3-ai), the same cryptographic witnessing layer trusted for federal compliance (NIST 800-53, CMMC, FedRAMP).
+The EU AI Act takes effect **August 2, 2026**. When regulators ask "prove your AI followed the rules," you need more than logs. You need cryptographic proof.
 
-## Why SWT3?
-
-AI agents are making production decisions, but when regulators ask "prove your AI followed the rules," most teams have nothing but logs and dashboards. SWT3 produces cryptographic, tamper-proof evidence of every AI action. No prompt data leaves your infrastructure. The EU AI Act (enforcement: August 2, 2026) requires exactly this.
-
-## See It Work in 10 Seconds
-
-No API keys. No account. No network calls.
+## See It Work (No Account Needed)
 
 ```bash
 pip install swt3-ai
 python -m swt3_ai.demo
 ```
 
-You'll see the full SWT3 witnessing pipeline: hash, extract, clear, anchor, verify — plus a **Regulatory Coverage Summary** mapping each procedure to EU AI Act articles. The demo shows 3/12 obligations covered, with the 9 uncovered gaps listed by article citation. When you're ready to close those gaps, keep reading.
+The demo runs the full pipeline locally: hash, extract, clear, anchor, verify. It shows a Regulatory Coverage Summary mapping each check to EU AI Act articles, with gaps highlighted. No API keys, no network calls.
 
-## Three Lines of Code
+## Three Lines to Start Witnessing
 
 ```python
 from swt3_ai import Witness
 from openai import OpenAI
 
 witness = Witness(
-    endpoint="https://sovereign.tenova.io",
+    endpoint="https://your-witness-endpoint.example.com",
     api_key="axm_live_...",
-    tenant_id="YOUR_ENCLAVE",
+    tenant_id="YOUR_TENANT",
 )
 client = witness.wrap(OpenAI())
 
-# That's it. Every inference is now witnessed.
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "Summarize this contract..."}],
 )
-# response is untouched, use it exactly as before
+# response is untouched. Witnessing runs in the background.
 print(response.choices[0].message.content)
 ```
 
-No code changes. No performance impact. No data leakage.
+No code changes to your existing logic. No performance impact. The SDK wraps your AI client transparently and witnesses every call.
 
-## Quick Start (Try It Locally)
+## What the SDK Does
 
-Want to see the SDK work before connecting to a live endpoint? Use `factor_handoff` to write witness anchors to local JSON files. No account needed.
+When your AI makes a call, the SDK:
+
+1. **Hashes** the prompt and response locally using SHA-256 (the raw text never leaves your machine)
+2. **Extracts** numeric factors: model version, latency, token count, guardrail status
+3. **Clears** sensitive metadata based on your clearing level (you control what goes on the wire)
+4. **Anchors** the factors into a cryptographic fingerprint that anyone can independently verify
+5. **Buffers** and flushes anchors in the background (median overhead: under 1ms)
+6. **Returns** your original response completely untouched
+
+The result: an immutable record that your AI ran the right model, with the right guardrails, within the right boundaries. Without the auditor ever seeing the data.
+
+## Witness Agent Tool Calls
+
+If your AI agent calls tools or functions, wrap them to create a record of every invocation:
 
 ```python
-from swt3_ai import Witness
-from openai import OpenAI
+@witness.wrap_tool(tool_name="search_database")
+def search(query: str) -> list:
+    return db.execute(query)
 
+# Every call to search() now mints an anchor recording:
+#   - Tool name
+#   - Input/output hashes
+#   - Latency
+#   - Success or failure
+```
+
+This produces an **AI-TOOL.1** anchor. When an auditor asks "what tools did your agent use and did they work?" you have the cryptographic record.
+
+## Witness Agent Resource Access
+
+New in v0.2.10. Wrap any function your agent uses to access external resources. The SDK records what was accessed and whether it was within the agent's declared scope:
+
+```python
+@witness.wrap_access(resource_name="customer-database", scope="read-only analytics")
+def query_customers(sql: str) -> list:
+    return db.execute(sql)
+
+# If the agent calls query_customers("DROP TABLE users"),
+# the access is witnessed and compared against the declared scope.
+# Out-of-scope access produces a FAIL verdict.
+```
+
+This produces an **AI-ACC.1** anchor with three factors:
+- **Was it accessed?** (yes/no)
+- **Was it within scope?** (yes/no)
+- **Was access granted?** (yes/no)
+
+When a CISO asks "can you prove your AI agent only accessed what it was authorized to access?" this is the answer.
+
+## Detect Instruction Drift
+
+New in v0.2.10. The SDK separately hashes the system prompt (base instructions) for each inference. If your agent's instructions change between audit periods, the hash changes and the platform flags it as instruction drift.
+
+This happens automatically. No configuration needed. The system prompt hash is extracted from:
+- OpenAI: messages where `role == "system"`
+- Anthropic: the `system` parameter
+
+The hash is included at clearing levels 0 and 1, stripped at levels 2 and 3.
+
+## Agent Identity
+
+Bind a unique identity to every anchor your agent produces:
+
+```python
 witness = Witness(
-    endpoint="https://sovereign.tenova.io",
-    api_key="test",                # any string, handoff runs before network flush
+    endpoint="...",
+    api_key="axm_...",
+    tenant_id="...",
+    agent_id="fraud-detector-prod",
+    signing_key="swt3_sk_...",  # HMAC-SHA256 signing for non-repudiation
+)
+```
+
+The `agent_id` survives all clearing levels. The `signing_key` produces a cryptographic signature on every anchor, proving which agent instance created it. This enables:
+- Per-agent compliance passports
+- Fleet-wide governance dashboards
+- Agent-scoped evidence packages for auditors
+
+## What Gets Witnessed
+
+Each inference produces anchors for these checks. Every check maps to a regulation.
+
+| Check | What It Proves | Plain English | Regulation |
+|-------|---------------|---------------|------------|
+| AI-INF.1 | Prompt and response were captured | "Was the inference logged?" | EU AI Act Art. 12 |
+| AI-INF.2 | Latency was within threshold | "Was response time acceptable?" | NIST AI RMF MEASURE 2.6 |
+| AI-MDL.1 | Deployed model matches approved hash | "Is this the right model?" | EU AI Act Art. 9 |
+| AI-MDL.2 | Model version was recorded | "Is the model version tracked?" | EU AI Act Art. 72 |
+| AI-GRD.1 | Required safety guardrails were active | "Are enough guardrails running?" | NIST AI RMF MANAGE 4.1 |
+| AI-GRD.2 | No refusal or content filter triggered | "Did a safety filter trigger?" | EU AI Act Art. 9 |
+| AI-TOOL.1 | Tool/function call was recorded | "Did the tool call succeed?" | NIST AI RMF MANAGE 4.1 |
+| AI-ACC.1 | Resource access was within scope | "Was the access authorized?" | EU AI Act Art. 14 |
+| AI-ID.1 | Agent identity was attested | "Is the agent identified?" | EU AI Act Art. 13 |
+
+## How Verdicts Work
+
+Every anchor carries three numbers:
+
+- **factor_a** = the threshold (what should happen)
+- **factor_b** = the observation (what actually happened)
+- **factor_c** = context (extra detail)
+
+The verdict is a simple comparison. No AI, no probability. Just math.
+
+### Reading an Anchor
+
+```
+Check: AI-GRD.1    factor_a: 2    factor_b: 3    factor_c: 1    Verdict: PASS
+
+Translation: "We required 2 guardrails. 3 were active. All passed."
+```
+
+```
+Check: AI-INF.2    factor_a: 30000    factor_b: 842    factor_c: 0    Verdict: PASS
+
+Translation: "Latency limit was 30,000ms. Actual was 842ms. Under the limit."
+```
+
+```
+Check: AI-ACC.1    factor_a: 1    factor_b: 0    factor_c: 0    Verdict: FAIL
+
+Translation: "Access attempt occurred. Target was outside declared scope. Access denied."
+```
+
+### Factor Reference
+
+| Check | factor_a | factor_b | factor_c | Verdict Rule |
+|-------|----------|----------|----------|-------------|
+| AI-INF.1 | 1 (required) | 1 if hashes present | 0 | PASS if b >= a |
+| AI-INF.2 | Latency limit (ms) | Actual latency (ms) | 1 if over limit | PASS if b <= a |
+| AI-MDL.1 | 1 (required) | 1 if hash present | 0 | PASS if b >= a |
+| AI-MDL.2 | 1 (required) | 1 if version recorded | 0 | PASS if b >= a |
+| AI-GRD.1 | Required count | Active count | 1 if all passed | PASS if b >= a |
+| AI-GRD.2 | 1 (clean expected) | 0 if refusal | 0 | PASS if b >= a |
+| AI-TOOL.1 | 1 (called) | Latency (ms) | 1=success, 0=error | PASS if b >= a |
+| AI-ACC.1 | 1 (accessed) | 1=in scope, 0=out | 1=granted, 0=denied | PASS if b >= a |
+| AI-ID.1 | 1 (required) | 1 if identity present | 0 | PASS if b >= a |
+
+### Verify Any Anchor From Your Terminal
+
+```bash
+echo -n "WITNESS:DEMO_TENANT:AI-INF.1:1:1:0:1774800000000" | sha256sum | cut -c1-12
+# Produces a 12-character fingerprint. Compare it to the anchor. If it matches, the anchor is real.
+```
+
+No SDK needed. Works on any machine, any language. That is what independently verifiable means.
+
+## Clearing Levels (Privacy Control)
+
+You control what leaves your infrastructure. The SDK always returns the full response to your code. Clearing only affects the witness payload.
+
+| Level | Name | What Goes on the Wire | Use Case |
+|-------|------|-----------------------|----------|
+| 0 | Analytics | Everything: hashes, factors, model, provider, guardrails, prompt hash | Internal analytics |
+| 1 | Standard | Hashes, factors, model, provider (no raw text ever) | **Default.** Production apps |
+| 2 | Sensitive | Hashes, factors, model only. No provider, no guardrail names | Healthcare, legal, PII |
+| 3 | Classified | Numeric factors only. Model name hashed. Zero metadata | Defense, air-gapped |
+
+```python
+witness = Witness(
+    endpoint="...",
+    api_key="axm_...",
+    tenant_id="...",
+    clearing_level=2,  # Sensitive: strips provider and guardrail names
+)
+```
+
+At every level, raw prompts and responses **never leave your infrastructure**. Only SHA-256 hashes and numeric factors travel on the wire.
+
+## Local Mode (No Account Needed)
+
+Try the SDK locally before connecting to a live endpoint:
+
+```python
+witness = Witness(
+    endpoint="https://your-witness-endpoint.example.com",
+    api_key="test",
     tenant_id="LOCAL_TEST",
-    factor_handoff="file",         # write anchors to ./swt3-handoff/ as JSON
+    factor_handoff="file",  # Writes anchors to ./swt3-handoff/ as JSON
 )
 client = witness.wrap(OpenAI())
 
@@ -69,158 +231,41 @@ response = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "What is the EU AI Act?"}],
 )
-print(response.choices[0].message.content)
-
-# Check ./swt3-handoff/ - you'll see a JSON file per inference with:
-#   - SHA-256 fingerprint
-#   - Model ID, latency, token count
-#   - Clearing level applied
-#   - Full factor data for independent verification
+# Check ./swt3-handoff/ for JSON files with full anchor data
 ```
 
-When you're ready for production, [create a free account](https://sovereign.tenova.io/signup?ref=sdk) to get your tenant ID and API key. Point the SDK at your enclave and every inference is witnessed, anchored, and verifiable.
+## Local SDK vs Connected
 
-## Local SDK vs Axiom Engine
-
-| Capability | Local SDK | + Axiom Engine (free) |
+| Capability | Local SDK | Connected (free tier) |
 |---|---|---|
-| Mint anchors | ✓ | ✓ |
-| Verify one anchor | ✓ | ✓ |
-| Evidence retention | 0 (files on disk) | 7 days (free) / 90 days (Pro) |
-| Compliance dashboard | — | ✓ |
-| Auditor share links | — | ✓ (Pro) |
-| EU AI Act conformity | — | ✓ (Pro) |
-| Compliance Passport | — | ✓ (Pro) |
-| Enclave integrity proof | — | ✓ (Enclave) |
+| Mint anchors | Yes | Yes |
+| Verify one anchor | Yes | Yes |
+| Evidence retention | Files on disk | 7 days (free) / 90 days (Pro) |
+| Compliance dashboard | No | Yes |
+| Agent Passport | No | Yes (Pro) |
+| Fleet dashboard | No | Yes (Pro) |
+| EU AI Act conformity | No | Yes (Pro) |
+| Auditor evidence packages | No | Yes (Pro) |
+| Access violation tracking | No | Yes (Pro) |
 | **Survives an audit** | **No** | **Yes** |
 
-> **Local anchors prove it to you. Axiom proves it to your auditor.**
-> [Create a free account →](https://sovereign.tenova.io/signup?ref=sdk)
-
-## What Happens Per Inference
-
-1. **Intercept**: The SDK wraps your AI client transparently
-2. **Hash**: Prompts and responses are SHA-256 hashed locally
-3. **Extract**: Model version, latency, token count, guardrail status captured as numeric factors
-4. **Clear**: Raw text is purged from the wire payload (configurable clearing level)
-5. **Anchor**: Factors are batched and flushed to the SWT3 Witness Ledger in the background
-6. **Return**: Your original response returns untouched. Witnessing runs in a background thread — median overhead is <1ms on the hot path (hash + buffer, no network call)
-
-The result: an immutable, cryptographic proof that your AI followed the rules, without the auditor ever needing to see the sensitive data.
-
-## What Gets Witnessed
-
-Each inference produces anchors for these AI procedures:
-
-| Procedure | Domain | What it proves |
-|-----------|--------|---------------|
-| AI-INF.1 | Inference | Prompt and response were captured (provenance) |
-| AI-INF.2 | Inference | Latency within threshold (detects model swaps) |
-| AI-MDL.1 | Model | Deployed model matches approved hash (integrity) |
-| AI-MDL.2 | Model | Model version identifier recorded (tracking) |
-| AI-GRD.1 | Guardrail | Required safety filters were active (enforcement) |
-| AI-GRD.2 | Safety | No refusal or content filter triggered (content safety) |
-| AI-TOOL.1 | Tool Use | Agent tool/function call recorded (latency, success) |
-| AI-ID.1 | Identity | Witness instance identity attested (agent accountability) |
-
-Each procedure maps to both **NIST AI RMF** functions and **EU AI Act** articles. When a CISO looks at the ledger, they don't see "inference captured." They see "Article 12 Compliance: Verified."
+> Local anchors prove it to you. A connected engine proves it to your auditor.
 
 ## Supported Providers
 
 | Provider | Client | Status |
 |----------|--------|--------|
-| OpenAI | `openai.OpenAI` | **Supported** |
-| Anthropic | `anthropic.Anthropic` | **Supported** |
-| Azure OpenAI | `openai.AzureOpenAI` | **Supported** (via `openai` SDK) |
-| Ollama / vLLM | `openai.OpenAI(base_url=...)` | **Supported** (OpenAI-compatible) |
+| OpenAI | `openai.OpenAI` | Supported |
+| Anthropic | `anthropic.Anthropic` | Supported |
+| Azure OpenAI | `openai.AzureOpenAI` | Supported (via openai SDK) |
+| Ollama / vLLM | `openai.OpenAI(base_url=...)` | Supported (OpenAI-compatible) |
 | AWS Bedrock | `bedrock-runtime` | Planned |
-
-### OpenAI
-
-```python
-from swt3_ai import Witness
-from openai import OpenAI
-
-witness = Witness(endpoint="...", api_key="axm_...", tenant_id="...")
-client = witness.wrap(OpenAI())
-
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": "Hello"}],
-)
-```
-
-### Anthropic
-
-```python
-from swt3_ai import Witness
-from anthropic import Anthropic
-
-witness = Witness(endpoint="...", api_key="axm_...", tenant_id="...")
-client = witness.wrap(Anthropic())
-
-message = client.messages.create(
-    model="claude-sonnet-4-20250514",
-    max_tokens=1024,
-    messages=[{"role": "user", "content": "Hello"}],
-)
-```
-
-## Clearing Levels
-
-The Clearing Engine controls what leaves your infrastructure. Your code always gets the full response. Clearing only affects the wire payload sent to the witness ledger.
-
-| Level | Name | What's on the wire | Use case |
-|-------|------|-------------------|----------|
-| 0 | Analytics | Hashes + factors + model ID + provider + guardrail names | Internal analytics, non-sensitive workloads |
-| 1 | Standard | Hashes + factors + model ID + provider metadata | **Default.** Production SaaS, enterprise apps |
-| 2 | Sensitive | Hashes + factors + model ID only | Healthcare, legal, PII-adjacent workloads |
-| 3 | Classified | Numeric factors only. Model ID hashed. No metadata. | Defense, classified environments, air-gapped |
-
-```python
-# Level 2: Sensitive, no provider names, no guardrail names on the wire
-witness = Witness(
-    endpoint="...",
-    api_key="axm_...",
-    tenant_id="...",
-    clearing_level=2,
-)
-```
-
-At Level 1+, raw prompts and responses **never leave your infrastructure**. Only SHA-256 hashes and numeric factors travel on the wire. This satisfies both GDPR Article 17 (right to erasure) and EU AI Act Article 12 (record-keeping) simultaneously.
-
-## View an Anchor
-
-A Level 1 anchor for AI-INF.1 (Inference Provenance). This is what reaches the witness ledger. No prompts, no responses, just cryptographic proof.
-
-```json
-{
-  "procedure_id": "AI-INF.1",
-  "factor_a": 1,
-  "factor_b": 1,
-  "factor_c": 0,
-  "clearing_level": 1,
-  "anchor_fingerprint": "c059eb5938c0",
-  "anchor_epoch": 1774800000,
-  "fingerprint_timestamp_ms": 1774800000000,
-  "ai_prompt_hash": "315f5bdb76d078c4",
-  "ai_response_hash": "a1b2c3d4e5f60718",
-  "ai_latency_ms": 842,
-  "ai_model_id": "gpt-4o",
-  "ai_context": {
-    "provider": "openai",
-    "guardrails": ["content-filter", "pii-redaction"]
-  }
-}
-```
-
-The `anchor_fingerprint` is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}:{fc}:{ts}")`. Anyone with the factors can independently verify the math.
 
 ## Resilience (Flight Recorder)
 
-The SDK never blocks your inference call. Witnessing happens in a background thread.
+The SDK never blocks your inference. Witnessing runs in a background thread.
 
-If the witness endpoint is unreachable (network outage, air-gapped deployment), payloads move to a **dead-letter queue** instead of being dropped. When connectivity is restored, the backlog drains automatically with exponential backoff.
+If the witness endpoint is unreachable, payloads move to a dead-letter queue. When connectivity returns, the backlog drains automatically with exponential backoff. Your production system is never affected.
 
 ```python
 witness = Witness(
@@ -229,78 +274,29 @@ witness = Witness(
     tenant_id="...",
     buffer_size=50,       # flush every 50 anchors
     flush_interval=10.0,  # or every 10 seconds
-    max_retries=5,        # retry 5 times before dead-lettering
+    max_retries=5,        # retry before dead-lettering
 )
-
-# Check dead-letter status
-print(f"Pending: {witness.pending}")
 ```
-
-## Zero Lock-in
-
-Remove the `witness.wrap()` call. Your code works exactly as before. Anchors already minted remain in the ledger.
 
 ## Configuration
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `endpoint` | *required* | Witness endpoint URL |
-| `api_key` | *required* | API key (`axm_*` prefix) |
-| `tenant_id` | *required* | Your enclave identifier |
-| `clearing_level` | `1` | Clearing level (0-3) |
-| `buffer_size` | `10` | Flush after N anchors |
-| `flush_interval` | `5.0` | Flush after N seconds |
-| `timeout` | `10.0` | HTTP timeout for flush |
-| `max_retries` | `3` | Retry count before dead-letter |
-| `latency_threshold_ms` | `30000` | AI-INF.2 latency threshold |
-| `guardrails_required` | `0` | AI-GRD.1 required guardrail count |
-| `guardrail_names` | `[]` | Names of active guardrails |
-| `factor_handoff` | `None` | `"file"` to enable local factor export |
-| `factor_handoff_path` | `None` | Directory for factor handoff files |
-
-## Factor Handoff (Clearing Level 2+)
-
-At Clearing Level 2 or 3, some or all verifiable data is stripped from the wire before it reaches the witness endpoint. The Factor Handoff ensures your factors are safely written to a local directory **before** clearing proceeds. If the write fails, the payload is not transmitted.
-
-```python
-witness = Witness(
-    endpoint="https://sovereign.tenova.io",
-    api_key="axm_live_...",
-    tenant_id="YOUR_ENCLAVE",
-    clearing_level=3,
-    factor_handoff="file",
-    factor_handoff_path="/secure/vault/factors/",
-)
-```
-
-Each anchor gets its own JSON file (named by fingerprint) containing the full uncleared factors and metadata needed for independent re-verification. Files are written with 0600 permissions.
-
-For the full protocol specification, see the [Factor Handoff Protocol](https://sovereign.tenova.io/docs/factor-handoff-protocol.html).
-
-## Custom Pipelines
-
-For non-standard LLM integrations, use the decorator or manual API:
-
-```python
-@witness.inference()
-def my_custom_llm(prompt: str) -> str:
-    # Your custom inference logic
-    return result
-
-# Or manual recording
-from swt3_ai.types import InferenceRecord
-from swt3_ai.fingerprint import sha256_truncated
-
-record = InferenceRecord(
-    model_id="my-model-v2",
-    model_hash=sha256_truncated("my-model-v2"),
-    prompt_hash=sha256_truncated(prompt),
-    response_hash=sha256_truncated(response),
-    latency_ms=elapsed_ms,
-    provider="custom",
-)
-witness.record(record)
-```
+| `endpoint` | required | Witness endpoint URL |
+| `api_key` | required | API key (axm_ prefix) |
+| `tenant_id` | required | Your tenant identifier |
+| `clearing_level` | 1 | Privacy level (0-3) |
+| `buffer_size` | 10 | Flush after N anchors |
+| `flush_interval` | 5.0 | Flush after N seconds |
+| `timeout` | 10.0 | HTTP timeout for flush |
+| `max_retries` | 3 | Retries before dead-letter |
+| `latency_threshold_ms` | 30000 | AI-INF.2 latency limit |
+| `guardrails_required` | 0 | AI-GRD.1 required count |
+| `guardrail_names` | [] | Names of active guardrails |
+| `agent_id` | None | Agent identity (survives all clearing levels) |
+| `signing_key` | None | HMAC-SHA256 key for payload signing |
+| `factor_handoff` | None | "file" for local factor export |
+| `factor_handoff_path` | None | Directory for handoff files |
 
 ## Installation
 
@@ -318,55 +314,25 @@ pip install swt3-ai[all]
 The SWT3 AI Witnessing Profile maps to:
 
 - **EU AI Act**: Articles 9, 10, 12, 13, 14, 53, 72
-- **NIST AI RMF**: GOVERN, MAP, MEASURE, MANAGE (10 subcategories)
+- **NIST AI RMF**: GOVERN, MAP, MEASURE, MANAGE functions
 - **ISO 42001**: Annex A AI management controls
 - **NIST 800-53**: SI-7 (integrity), AU-2/AU-3 (audit), AC controls
+- **SR 11-7**: Model risk management (financial services)
 
-## AI Witness-as-a-Service
+## Zero Lock-in
 
-SWT3 AI Witness is available as a managed service through [Axiom Sovereign Engine](https://tenova.io):
+Remove the `witness.wrap()` call. Your code works exactly as before. Anchors already minted stay in the ledger. There is nothing to undo.
 
-| Tier | Retention | Key Features | Price |
-|------|-----------|-------------|-------|
-| **Open** | 7 days | SDK, dashboard, public verify | Free |
-| **Pro** | 90 days | + AI conformity exports, regulatory reports | $499/mo |
-| **Enclave** | 1 year | + OSCAL, Gate API, attestations, webhook feeds | $9,500/mo |
-| **Sovereign** | Custom | + White-glove ATO sprint, mock assessment, on-prem | [Book Assessment](https://calendly.com/tenova-axiom/30min) |
+## Cross-Language Parity
 
-1,600+ downloads across npm and PyPI. 151 procedures. 13 frameworks. Patent pending.
+This SDK produces identical fingerprints to the TypeScript SDK (`@tenova/swt3-ai`). A unified audit trail across your entire stack, verified by shared test vectors at build time.
 
-## Ready to Witness Your AI?
+## Privacy
 
-Get an API key and start witnessing in under 10 minutes:
-
-- [Create a Free Account](https://sovereign.tenova.io/signup?ref=sdk) - instant API key, start witnessing in 5 minutes
-- [Quickstart Guide](https://sovereign.tenova.io/guides/ai-witness-quickstart.html) - 10-minute integration walkthrough
-- [Book a Strategy Call](https://calendly.com/tenova-axiom/30min) - enterprise, on-prem, or Sovereign tier
-
-## Compliance & Privacy
-
-Your prompts and responses **never leave your infrastructure**. The SDK computes SHA-256 hashes locally and transmits only irreversible hashes and numeric factors. At Clearing Level 3, even the model name is hashed.
-
-- [Data Flow and Privacy Architecture](https://github.com/tenova-labs/swt3-ai/blob/main/docs/data-flow.md) - Visual data boundary for legal and DPO review
-- [Clearing & Data Sovereignty Addendum](https://sovereign.tenova.io/terms/clearing-addendum) - Shared responsibility, incident response SLA, regulatory applicability
-- [Air-Gap Deployment Guide](https://github.com/tenova-labs/swt3-ai/blob/main/docs/sovereign-sync.md) - Zero-egress operation, sneakernet sync, offline verification
-
-## Documentation
-
-- [SDK Developer Docs](https://sovereign.tenova.io/docs/) - Quickstart, providers, clearing levels, configuration
-- [Factor Handoff Protocol](https://sovereign.tenova.io/docs/factor-handoff-protocol.html) - How factors are securely transferred to your custody
-- [CMMC Compliance Overlay](https://sovereign.tenova.io/guides/cmmc-overlay.html) - Control mappings for defense industrial base
-
----
-
-## Support the Standard
-
-If you believe AI systems should prove they followed the rules, [give us a star](https://github.com/tenova-labs/swt3-ai). Every star signals that the industry is ready for an accountability standard.
+Your prompts and responses **never leave your infrastructure**. The SDK computes SHA-256 hashes locally and transmits only irreversible hashes and numeric factors. At Clearing Level 3, even the model name is hashed. The witness endpoint is a blind registrar: it stores cryptographic proofs, not your data.
 
 ---
 
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
-
-*TeNova: Defining the AI Accountability Standard. One protocol. Zero Integrity Debt. Total Sovereignty.*
 
 SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.

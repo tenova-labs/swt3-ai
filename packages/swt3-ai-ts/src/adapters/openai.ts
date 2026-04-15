@@ -74,6 +74,10 @@ function createInterceptor(
     const promptText = extractPromptText(messages);
     const promptHash = sha256Truncated(promptText);
 
+    // Hash system prompt separately (instruction drift detection)
+    const systemPromptText = extractSystemPrompt(messages);
+    const systemPromptHash = systemPromptText ? sha256Truncated(systemPromptText) : undefined;
+
     // Start latency timer
     const start = performance.now();
 
@@ -82,13 +86,13 @@ function createInterceptor(
 
     if (isStreaming) {
       // Streaming: wrap the async iterable to accumulate chunks
-      return handleStreaming(result, witness, model, promptHash, start);
+      return handleStreaming(result, witness, model, promptHash, start, systemPromptHash);
     }
 
     // Non-streaming: result is a Promise<ChatCompletion>
     return (result as Promise<unknown>).then((response: unknown) => {
       const elapsedMs = Math.round(performance.now() - start);
-      const record = extractRecord(response, model, promptHash, elapsedMs);
+      const record = extractRecord(response, model, promptHash, elapsedMs, systemPromptHash);
       witness.record(record);
       return response; // Return UNTOUCHED
     });
@@ -112,6 +116,7 @@ async function* streamAccumulator(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): AsyncGenerator<unknown, void, undefined> {
   const textParts: string[] = [];
   let actualModel = model;
@@ -177,6 +182,7 @@ async function* streamAccumulator(
     hasRefusal,
     provider: "openai",
     systemFingerprint,
+    systemPromptHash,
     guardrailNames: [],
   };
 
@@ -189,17 +195,18 @@ function handleStreaming(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): unknown {
   // The stream result is a Promise that resolves to the stream object
   // (OpenAI SDK returns Promise<Stream<ChatCompletionChunk>>)
   if (streamResult && typeof (streamResult as Promise<unknown>).then === "function") {
     return (streamResult as Promise<unknown>).then((stream: unknown) => {
-      return wrapStream(stream, witness, model, promptHash, startTime);
+      return wrapStream(stream, witness, model, promptHash, startTime, systemPromptHash);
     });
   }
 
   // Direct stream object (shouldn't happen but handle gracefully)
-  return wrapStream(streamResult, witness, model, promptHash, startTime);
+  return wrapStream(streamResult, witness, model, promptHash, startTime, systemPromptHash);
 }
 
 function wrapStream(
@@ -208,6 +215,7 @@ function wrapStream(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): unknown {
   const s = stream as Record<string | symbol, unknown>;
 
@@ -218,6 +226,7 @@ function wrapStream(
     model,
     promptHash,
     startTime,
+    systemPromptHash,
   );
 
   // Return a proxy that preserves all stream methods but overrides the iterator
@@ -239,6 +248,32 @@ function wrapStream(
 }
 
 // ── Factor Extraction ──────────────────────────────────────────────
+
+function extractSystemPrompt(messages: unknown): string | undefined {
+  if (!Array.isArray(messages)) return undefined;
+
+  const parts: string[] = [];
+  for (const msg of messages) {
+    if (typeof msg === "object" && msg !== null) {
+      const m = msg as Record<string, unknown>;
+      if (m.role !== "system") continue;
+      const content = m.content;
+      if (typeof content === "string") {
+        parts.push(content);
+      } else if (Array.isArray(content)) {
+        for (const part of content) {
+          if (typeof part === "object" && part !== null) {
+            const p = part as Record<string, unknown>;
+            if (p.type === "text" && typeof p.text === "string") {
+              parts.push(p.text);
+            }
+          }
+        }
+      }
+    }
+  }
+  return parts.length > 0 ? parts.join("\n") : undefined;
+}
 
 function extractPromptText(messages: unknown): string {
   if (typeof messages === "string") return messages;
@@ -271,6 +306,7 @@ function extractRecord(
   model: string,
   promptHash: string,
   elapsedMs: number,
+  systemPromptHash?: string,
 ): InferenceRecord {
   const r = response as Record<string, unknown>;
   let responseText = "";
@@ -315,6 +351,7 @@ function extractRecord(
     hasRefusal,
     provider: "openai",
     systemFingerprint,
+    systemPromptHash,
     guardrailNames: [],
   };
 }

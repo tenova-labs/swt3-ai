@@ -22,6 +22,7 @@ class WitnessConfig:
     factor_handoff_path: Optional[str] = None  # directory for factor handoff files
     agent_id: Optional[str] = None  # SDK instance identity (survives all clearing levels)
     signing_key: Optional[str] = None  # HMAC-SHA256 shared secret for payload signing
+    cycle_id: Optional[str] = None  # Multi-agent chain link (survives all clearing levels)
 
     def __post_init__(self) -> None:
         if not self.endpoint:
@@ -53,11 +54,13 @@ class WitnessPayload:
     ai_model_id: Optional[str] = None
     ai_prompt_hash: Optional[str] = None
     ai_response_hash: Optional[str] = None
+    ai_system_prompt_hash: Optional[str] = None
     ai_latency_ms: Optional[int] = None
     ai_input_tokens: Optional[int] = None
     ai_output_tokens: Optional[int] = None
     ai_context: Optional[Dict[str, Any]] = None
     agent_id: Optional[str] = None  # operational metadata, survives all clearing levels
+    cycle_id: Optional[str] = None  # multi-agent chain link, survives all clearing levels
     payload_signature: Optional[str] = None  # HMAC-SHA256 hex string
 
     def to_dict(self) -> Dict[str, Any]:
@@ -79,6 +82,8 @@ class WitnessPayload:
             d["ai_prompt_hash"] = self.ai_prompt_hash
         if self.ai_response_hash is not None:
             d["ai_response_hash"] = self.ai_response_hash
+        if self.ai_system_prompt_hash is not None:
+            d["ai_system_prompt_hash"] = self.ai_system_prompt_hash
         if self.ai_latency_ms is not None:
             d["ai_latency_ms"] = self.ai_latency_ms
         if self.ai_input_tokens is not None:
@@ -89,6 +94,8 @@ class WitnessPayload:
             d["ai_context"] = self.ai_context
         if self.agent_id is not None:
             d["agent_id"] = self.agent_id
+        if self.cycle_id is not None:
+            d["cycle_id"] = self.cycle_id
         if self.payload_signature is not None:
             d["payload_signature"] = self.payload_signature
         return d
@@ -125,6 +132,10 @@ class InferenceRecord:
     has_refusal: bool = False
     provider: str = "unknown"
     system_fingerprint: Optional[str] = None
+    system_prompt_hash: Optional[str] = None  # SHA-256[:16] of system prompt only (instruction drift detection)
     guardrail_names: List[str] = field(default_factory=list)
     tool_name: Optional[str] = None  # for AI-TOOL.1 procedure
     tool_call_id: Optional[str] = None  # auto-generated UUID for tool calls
+    access_target: Optional[str] = None  # for AI-ACC.1: URI/endpoint/resource name
+    access_granted: bool = True  # for AI-ACC.1: whether access succeeded
+    access_scope: Optional[str] = None  # for AI-ACC.1: declared authorization scope

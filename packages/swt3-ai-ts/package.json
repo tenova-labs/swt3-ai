@@ -1,6 +1,6 @@
 {
   "name": "@tenova/swt3-ai",
-  "version": "0.2.9",
+  "version": "0.3.1",
   "description": "SWT3 AI Witness SDK: cryptographic attestation for AI inference",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

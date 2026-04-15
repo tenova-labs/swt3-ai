@@ -81,19 +81,24 @@ function createInterceptor(
 
     const promptText = extractPromptText(messages, system);
     const promptHash = sha256Truncated(promptText);
+
+    // Hash system prompt separately (instruction drift detection)
+    const systemPromptText = extractSystemOnly(system);
+    const systemPromptHash = systemPromptText ? sha256Truncated(systemPromptText) : undefined;
+
     const start = performance.now();
 
     const result = realMethod.call(this, ...args);
 
     if (isStreaming) {
       // Streaming via create({ stream: true }) — returns a Stream
-      return handleStreaming(result, witness, model, promptHash, start);
+      return handleStreaming(result, witness, model, promptHash, start, systemPromptHash);
     }
 
     // Non-streaming — result is Promise<Message>
     return (result as Promise<unknown>).then((response: unknown) => {
       const elapsedMs = Math.round(performance.now() - start);
-      const record = extractRecord(response, model, promptHash, elapsedMs);
+      const record = extractRecord(response, model, promptHash, elapsedMs, systemPromptHash);
       witness.record(record);
       return response;
     });
@@ -114,10 +119,14 @@ function createStreamInterceptor(
 
     const promptText = extractPromptText(messages, system);
     const promptHash = sha256Truncated(promptText);
+
+    const systemPromptText = extractSystemOnly(system);
+    const systemPromptHash = systemPromptText ? sha256Truncated(systemPromptText) : undefined;
+
     const start = performance.now();
 
     const result = realMethod.call(this, ...args);
-    return handleStreaming(result, witness, model, promptHash, start);
+    return handleStreaming(result, witness, model, promptHash, start, systemPromptHash);
   };
 }
 
@@ -129,6 +138,7 @@ async function* streamAccumulator(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): AsyncGenerator<unknown, void, undefined> {
   const textParts: string[] = [];
   let actualModel = model;
@@ -183,6 +193,7 @@ async function* streamAccumulator(
     guardrailPassed: true,
     hasRefusal,
     provider: "anthropic",
+    systemPromptHash,
     guardrailNames: [],
   };
 
@@ -195,15 +206,16 @@ function handleStreaming(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): unknown {
   // Anthropic's stream() returns a MessageStream directly (not a Promise)
   // But create({ stream: true }) may return a Promise<Stream>
   if (streamResult && typeof (streamResult as Promise<unknown>).then === "function") {
     return (streamResult as Promise<unknown>).then((stream: unknown) =>
-      wrapAnthropicStream(stream, witness, model, promptHash, startTime),
+      wrapAnthropicStream(stream, witness, model, promptHash, startTime, systemPromptHash),
     );
   }
-  return wrapAnthropicStream(streamResult, witness, model, promptHash, startTime);
+  return wrapAnthropicStream(streamResult, witness, model, promptHash, startTime, systemPromptHash);
 }
 
 function wrapAnthropicStream(
@@ -212,6 +224,7 @@ function wrapAnthropicStream(
   model: string,
   promptHash: string,
   startTime: number,
+  systemPromptHash?: string,
 ): unknown {
   const s = stream as Record<string | symbol, unknown>;
 
@@ -221,6 +234,7 @@ function wrapAnthropicStream(
     model,
     promptHash,
     startTime,
+    systemPromptHash,
   );
 
   return new Proxy(s, {
@@ -249,6 +263,23 @@ function wrapAnthropicStream(
 }
 
 // ── Factor Extraction ──────────────────────────────────────────────
+
+function extractSystemOnly(system: unknown): string | undefined {
+  if (typeof system === "string" && system) return system;
+  if (Array.isArray(system)) {
+    const parts: string[] = [];
+    for (const block of system) {
+      if (typeof block === "object" && block !== null) {
+        const b = block as Record<string, unknown>;
+        if (b.type === "text" && typeof b.text === "string") {
+          parts.push(b.text);
+        }
+      }
+    }
+    return parts.length > 0 ? parts.join("\n") : undefined;
+  }
+  return undefined;
+}
 
 function extractPromptText(messages: unknown, system: unknown = ""): string {
   const parts: string[] = [];
@@ -297,6 +328,7 @@ function extractRecord(
   model: string,
   promptHash: string,
   elapsedMs: number,
+  systemPromptHash?: string,
 ): InferenceRecord {
   const r = response as Record<string, unknown>;
 
@@ -335,6 +367,7 @@ function extractRecord(
     guardrailPassed: true,
     hasRefusal,
     provider: "anthropic",
+    systemPromptHash,
     guardrailNames: [],
   };
 }
