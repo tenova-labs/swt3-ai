@@ -104,6 +104,123 @@ This happens automatically. No configuration needed. The system prompt hash is e
 
 The hash is included at clearing levels 0 and 1, stripped at levels 2 and 3.
 
+## RAG Context Witnessing
+
+New in v0.4.3. Witness what context chunks your RAG pipeline retrieves, from which corpus, and how relevant they are. Chunk text is never transmitted -- only SHA-256 hashes.
+
+```python
+# Zero-friction: pass raw strings, SDK handles hashing
+witness.witness_rag_context(
+    ["chunk text 1", "chunk text 2", "chunk text 3"],
+    corpus_id="legal-docs-v3",
+)
+```
+
+This mints an AI-RAG.1 (Context Retrieval Provenance) anchor. Add similarity scores to also get AI-RAG.2 (Context Relevance):
+
+```python
+from swt3_ai import RagChunk
+
+witness.witness_rag_context(
+    [
+        RagChunk(content_hash="abc123...", source_id="doc-7/p3", similarity_score=0.92),
+        RagChunk(content_hash="def456...", source_id="doc-2/p1", similarity_score=0.78),
+        RagChunk(content_hash="789abc...", source_id="doc-4/p2", similarity_score=0.61),
+    ],
+    corpus_id="legal-docs-v3",
+    embedding_model="text-embedding-3-small",
+    similarity_threshold=0.75,  # triggers AI-RAG.2
+)
+```
+
+One call. Two procedures. Complete retrieval attestation.
+
+**LangChain auto-witnessing**: If you use the `SWT3CallbackHandler`, retriever events are captured automatically -- no code changes needed.
+
+Maps to: EU AI Act Art. 12(2)(a) (reference database logging), Art. 10(2) (data quality), NIST AI RMF MAP 3.5 (data provenance).
+
+## Model Weight Integrity
+
+Witness the actual model weights, not just the model name string. Accepts a file path (auto-hashes) or pre-computed hash:
+
+```python
+# File path: SDK streams SHA-256 automatically
+witness.witness_model_weights("/models/llama-3.1-70b.safetensors")
+
+# Pre-computed hash with verification
+from swt3_ai import ModelWeightInfo
+witness.witness_model_weights(
+    ModelWeightInfo(file_hash="abc123...", format="safetensors"),
+    expected_hash="abc123...",  # PASS if match, FAIL if mismatch
+)
+```
+
+Witness adapter stacks and quantization in the same pipeline:
+
+```python
+from swt3_ai import AdapterInfo
+witness.witness_adapter_stack(
+    [AdapterInfo(name="lora-legal", adapter_hash="aaa111")],
+    base_model_id="llama-3.1-70b",
+)
+witness.witness_quantization("gptq", bits=4, group_size=128)
+```
+
+Maps to: EU AI Act Art. 15(4) (resilience against modification), Art. 12(2)(b) (version logging).
+
+## Skill Manifest Attestation
+
+Witness which skills, tools, and plugins are loaded in your agent:
+
+```python
+# Zero-friction: just names
+witness.witness_skill_manifest(["code_exec", "web_search", "file_read"])
+
+# With memory context
+from swt3_ai import MemorySource
+witness.witness_memory_context([
+    MemorySource(source_type="vector_store", source_id="pinecone-prod"),
+    MemorySource(source_type="conversation", source_id="session-123"),
+])
+
+# Reward model binding
+witness.witness_reward_model("rm-v3-legal", method="dpo")
+```
+
+Maps to: EU AI Act Art. 12(2)(b) (capability tracking), NIST AI RMF GOVERN 1.7 (capability documentation).
+
+## Multi-Agent Chains, Violations, and Safety (v0.5.0)
+
+New in v0.5.0. Convenience methods for 8 additional procedures covering multi-agent orchestration, policy enforcement, human oversight, and training data governance:
+
+```python
+# Multi-agent chain handoff (AI-CHAIN.1)
+witness.witness_chain_handoff(depth=3, target_agent="step-2-reviewer")
+
+# Policy violation reporting (AI-VIO.1)
+witness.witness_violation(severity=3, description="PII in output", auto_detected=True, policy_category="data")
+
+# Agent charter attestation (AI-CHR.1)
+witness.witness_charter(charter_text="You are a fraud detection assistant...")
+
+# Model registry check (AI-MDL.8)
+witness.witness_model_registry("gpt-4o-2025-04-16", "eu-approved-models-v3")
+
+# Reviewer identity binding for four-eyes rule (AI-HITL.3)
+witness.witness_reviewer_identity(required=2, actual=2, method="cryptographic")
+
+# Safe state attestation (AI-SAFE.1)
+witness.witness_safe_state(mechanism_exists=True, safe_state_confirmed=True)
+
+# Training data statistics (AI-DATA.3)
+witness.witness_training_stats(row_count=50000, feature_count=128, class_balance_ratio=0.85)
+
+# Training data PII lifecycle (AI-DATA.4)
+witness.witness_training_pii_lifecycle(records_affected=10000, event_type="pseudonymization", dataset_id="training-v3")
+```
+
+Maps to: EU AI Act Art. 10(3), Art. 10(5), Art. 12(2)(a), Art. 12(3)(d), Art. 13, Art. 14(4)(e), Art. 14(5), Art. 51. NIST AI RMF MANAGE 3.2, MANAGE 4.1, GOVERN 1.2.
+
 ## Agent Identity
 
 Bind a unique identity to every anchor your agent produces:
@@ -118,10 +235,14 @@ witness = Witness(
 )
 ```
 
-The `agent_id` survives all clearing levels. The `signing_key` produces a cryptographic signature on every anchor, proving which agent instance created it. This enables:
+The `agent_id` survives all clearing levels. The `signing_key` produces an HMAC-SHA256 signature on every anchor, proving which agent instance created it. When a signing key is registered server-side, the server validates the signature on ingestion and rejects tampered payloads. This enables:
+- **Payload authenticity** -- server verifies the SDK that minted the anchor held the registered secret
+- **Tamper detection** -- any modification after signing causes rejection (422)
 - Per-agent compliance passports
 - Fleet-wide governance dashboards
 - Agent-scoped evidence packages for auditors
+
+Receipts include `signature_verified: true` when the server confirms the signature.
 
 ## Gatekeeper Mode (Pre-Call Enforcement)
 
@@ -207,7 +328,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-All 36 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
+All 42 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -224,7 +345,7 @@ All 36 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 3 procedures using simulated data. All 36 are available in production with real inference data. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 42 are available in production with real inference data. 36 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -349,6 +470,8 @@ response = client.chat.completions.create(
 | Ollama / vLLM | `openai.OpenAI(base_url=...)` | Supported (OpenAI-compatible) |
 | AWS Bedrock | `boto3` (`bedrock-runtime`) | Supported |
 | LiteLLM | `litellm` module | Supported (100+ providers) |
+| NVIDIA Dynamo | `@witness_endpoint()` decorator | Supported (infrastructure-layer) |
+
 
 ### LiteLLM (100+ Providers)
 
@@ -371,6 +494,27 @@ response = await llm.acompletion(model="gpt-4o", messages=[...])
 ```
 
 Install: `pip install swt3-ai litellm`
+
+### NVIDIA Dynamo (Infrastructure-Layer Witnessing)
+
+New in v0.4.1. Witness inference at the infrastructure layer without modifying application code. The decorator wraps any async generator endpoint that serves OpenAI-compatible responses:
+
+```python
+from swt3_ai.adapters.dynamo import witness_endpoint
+
+@witness_endpoint(
+    dsn="https://axm_live_key@sovereign.tenova.io/YOUR_TENANT",
+    clearing_level=1,
+)
+async def generate(request):
+    async for chunk in upstream_model(request):
+        yield chunk
+    # Every response is witnessed automatically. Zero application changes.
+```
+
+The `dsn` connection string follows the Sentry/Supabase pattern: `https://<api_key>@<host>/<tenant_id>`. You can also use individual env vars (`SWT3_ENDPOINT`, `SWT3_API_KEY`, `SWT3_TENANT_ID`).
+
+Install: `pip install swt3-ai[dynamo]`
 
 ### Async Support
 
@@ -422,7 +566,7 @@ witness = Witness(
 | `guardrails_required` | 0 | AI-GRD.1 required count |
 | `guardrail_names` | [] | Names of active guardrails |
 | `agent_id` | None | Agent identity (survives all clearing levels) |
-| `signing_key` | None | HMAC-SHA256 key for payload signing |
+| `signing_key` | None | HMAC-SHA256 key for payload signing (register server-side for validation) |
 | `cycle_id` | None | Multi-agent chain link (survives all clearing levels) |
 | `policy_version` | None | Policy config identifier (hashed in payloads) |
 | `strict` | False | Gatekeeper mode: block inference if guardrails insufficient |
@@ -514,26 +658,6 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 This SDK produces identical fingerprints to the TypeScript SDK (`@tenova/swt3-ai`). A unified audit trail across your entire stack, verified by shared test vectors at build time.
 
-## MCP Server (Agentic AI)
-
-AI agents can discover SWT3 compliance tools automatically via the Model Context Protocol. No developer integration required. The agent finds the tools and uses them on its own.
-
-```bash
-npm install @tenova/swt3-mcp
-```
-
-Add to your MCP config:
-
-```json
-{ "mcpServers": { "swt3": { "command": "npx", "args": ["@tenova/swt3-mcp"] } } }
-```
-
-Zero configuration required. Works immediately in demo mode. Add `SWT3_API_KEY` to connect to a production ledger. Compatible with Claude, GPT, and any MCP-compatible agent.
-
-**Tools provided:** `witness_inference`, `verify_anchor`, `list_anchors`, `posture`, `signup`, `health`
-
-This is the first compliance protocol with native MCP support. Agents discover witnessing through standard tool enumeration, making compliance an infrastructure capability rather than a developer burden.
-
 ## Privacy
 
 Your prompts and responses **never leave your infrastructure**. The SDK computes SHA-256 hashes locally and transmits only irreversible hashes and numeric factors. At Clearing Level 3, even the model name is hashed. The witness endpoint is a blind registrar: it stores cryptographic proofs, not your data.
@@ -549,6 +673,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
 - [UCT Registry](https://sovereign.tenova.io/registry) -- 162 procedures, full factor definitions
 - [Anchor Verifier](https://sovereign.tenova.io/verify) -- verify any anchor, zero server calls
+- [EU AI Act Regulatory Architecture](https://sovereign.tenova.io/guides/futurium-submission.html) -- VI+CJT+ALF+LAVR framework mapping for conformity assessment bodies
 
 ---
 
