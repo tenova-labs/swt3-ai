@@ -1,0 +1,105 @@
+{
+  "name": "@tenova/swt3-ai",
+  "version": "0.5.3",
+  "description": "SWT3 AI Witness SDK: cryptographic attestation for AI inference",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./exporters/otel": {
+      "import": "./dist/exporters/otel.js",
+      "types": "./dist/exporters/otel.d.ts"
+    }
+  },
+  "bin": {
+    "swt3-demo": "./dist/demo.js",
+    "swt3": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
+    "test:vectors": "npx tsx test/fingerprint.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "compliance",
+    "witness",
+    "attestation",
+    "swt3",
+    "eu-ai-act",
+    "nist-ai-rmf",
+    "openai",
+    "anthropic",
+    "ai-governance",
+    "ai-audit",
+    "ai-accountability",
+    "ai-observability",
+    "llm-monitoring",
+    "llm-observability",
+    "model-risk-management",
+    "compliance-as-code",
+    "responsible-ai",
+    "ai-safety",
+    "ai-trust",
+    "mlops",
+    "nist-800-53",
+    "cmmc",
+    "fedramp",
+    "gdpr",
+    "sr-11-7",
+    "cryptographic-attestation",
+    "audit-trail",
+    "agentic-ai",
+    "multi-agent",
+    "ai-agent",
+    "guardrails",
+    "ai-risk",
+    "model-governance",
+    "inference-logging",
+    "ai-compliance-automation",
+    "ollama",
+    "vllm",
+    "bedrock",
+    "vercel-ai",
+    "nvidia-dynamo"
+  ],
+  "author": "TeNova <engineering@tenovaai.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tenova-labs/swt3-ai"
+  },
+  "homepage": "https://tenova.io",
+  "bugs": {
+    "url": "https://github.com/tenova-labs/swt3-ai/issues"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": ">=1.0.0",
+    "openai": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    },
+    "@opentelemetry/api": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "openai": "^4.70.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.2.4",
+    "yaml": "^2.9.0"
+  }
+}

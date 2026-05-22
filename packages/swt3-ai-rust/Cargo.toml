@@ -1,0 +1,16 @@
+[package]
+name = "swt3-ai"
+version = "0.5.3"
+edition = "2021"
+description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference"
+license = "Apache-2.0"
+repository = "https://github.com/tenova-labs/swt3-ai"
+homepage = "https://tenova.io"
+readme = "README.md"
+keywords = ["ai", "compliance", "witness", "swt3", "eu-ai-act"]
+categories = ["api-bindings", "cryptography"]
+
+[dependencies]
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"

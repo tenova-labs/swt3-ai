@@ -1,0 +1,105 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.tenova/swt3-witness",
+  "title": "SWT3 AI Witness",
+  "description": "EU AI Act, NIST AI RMF, OWASP, CMMC, SR 11-7 compliance. Cryptographic AI witnessing and trust mesh.",
+  "websiteUrl": "https://tenova.io",
+  "repository": {
+    "url": "https://github.com/tenova-labs/swt3-ai",
+    "source": "github"
+  },
+  "version": "0.5.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@tenova/swt3-mcp",
+      "version": "0.5.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "SWT3 API key (starts with axm_). Omit for zero-config demo mode.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "SWT3_API_KEY"
+        },
+        {
+          "description": "Your tenant identifier",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SWT3_TENANT_ID"
+        },
+        {
+          "description": "Path to swt3.yaml config file for policy-as-code",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SWT3_CONFIG_FILE"
+        },
+        {
+          "description": "Data clearing level: 0=analytics, 1=standard, 2=sensitive, 3=classified",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SWT3_CLEARING_LEVEL"
+        },
+        {
+          "description": "Agent identity for AI-ID.1 witnessing",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SWT3_AGENT_ID"
+        },
+        {
+          "description": "HMAC-SHA256 signing key for non-repudiation",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "SWT3_SIGNING_KEY"
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "categories": ["security", "governance", "compliance", "observability"],
+      "keywords": [
+        "eu-ai-act",
+        "nist-ai-rmf",
+        "owasp-agentic-top10",
+        "cmmc",
+        "nist-800-53",
+        "sr-11-7",
+        "iso-42001",
+        "gdpr",
+        "ai-governance",
+        "ai-compliance",
+        "ai-audit",
+        "ai-safety",
+        "ai-accountability",
+        "cryptographic-attestation",
+        "audit-trail",
+        "non-repudiation",
+        "trust-mesh",
+        "policy-as-code",
+        "tool-policy-gate",
+        "inference-witnessing",
+        "agent-security",
+        "clearing-levels"
+      ],
+      "frameworks": [
+        "EU AI Act",
+        "NIST AI RMF",
+        "OWASP Agentic Top 10",
+        "CMMC",
+        "NIST 800-53",
+        "SR 11-7",
+        "ISO 42001",
+        "FedRAMP"
+      ]
+    }
+  }
+}

@@ -1,0 +1,55 @@
+# SWT3 Profile: Granite Sovereign (IBM Granite 4.1 + Air-Gap Ready)
+# Apache 2.0 model + Apache 2.0 SDK. Full sovereignty, zero cloud leak.
+#
+# Designed for IBM Granite 4.1 (3B/8B) on local or air-gapped infrastructure.
+# Granite Guardian pre-filter recommended for input safety gating.
+# Compatible with ISO 42001, NIST AI RMF, EU AI Act (Annex IV).
+#
+# Usage:
+#   profile: granite-sovereign
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+#   signing_key_env: SWT3_SIGNING_KEY
+
+clearing_level: 2
+
+policy:
+  require_signing: true
+  require_agent_id: true
+  min_clearing_level: 2
+  required_procedures:
+    - AI-INF.1     # Inference provenance
+    - AI-GRD.1     # Guardrail presence (Granite Guardian)
+    - AI-MDL.5     # Model weight integrity
+    - AI-MDL.7     # Quantization witnessing
+    - AI-HW.1      # Hardware inventory
+  require_jurisdiction: false   # sovereign = no external jurisdiction dependency
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 3            # requires hardware attestation
+  require_signature: true
+  freshness_window: 3600
+
+hardware:
+  require_attestation: true
+  attestation_freshness: 3600
+  allowed_methods: ["tpm_2.0"]
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  exempt_tools: []
+  require_trust_level: 3
+  auto_witness: true
+  block_on_failure: true
+
+density_policy:
+  min_anchors_per_1000_tokens: 2
+  max_chain_gap_seconds: 300
+  require_signing_key: true
+  min_trust_level: 3
+
+merkle:
+  enabled: true
+  accumulator_interval: 60

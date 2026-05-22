@@ -1,0 +1,58 @@
+{
+  "name": "@tenova/libswt3",
+  "version": "1.0.3",
+  "description": "SWT3 Protocol: Sovereign Witness Traceability for compliance evidence integrity",
+  "license": "Apache-2.0",
+  "author": "Tenable Nova LLC <engineering@tenovaai.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tenova-labs/swt3-ai"
+  },
+  "homepage": "https://tenova.io",
+  "bugs": {
+    "url": "https://github.com/tenova-labs/swt3-ai/issues"
+  },
+  "keywords": [
+    "compliance",
+    "CMMC",
+    "NIST",
+    "FedRAMP",
+    "evidence",
+    "witness",
+    "SHA-256",
+    "OSCAL",
+    "GRC",
+    "SWT3"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "swt3-verify": "./dist/bin/swt3-verify.js"
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "!dist/merkle.*",
+    "SWT3-SPEC-v1.0.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/__tests__/swt3.test.js",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

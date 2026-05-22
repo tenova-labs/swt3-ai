@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>swt3-ai</PackageId>
+    <Version>0.5.3</Version>
+    <Authors>TeNova Labs</Authors>
+    <Company>TeNova Labs</Company>
+    <Description>SWT3 AI Witness SDK: cryptographic attestation for AI inference</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/tenova-labs/swt3-ai</RepositoryUrl>
+    <PackageProjectUrl>https://tenova.io</PackageProjectUrl>
+    <PackageTags>ai;compliance;witness;swt3;eu-ai-act;nist-ai-rmf;ai-governance;ai-audit;ai-accountability;ai-safety;agentic-ai;guardrails;model-governance;cryptographic-attestation;nist-800-53;cmmc;gdpr</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

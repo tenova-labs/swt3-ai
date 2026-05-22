@@ -1,0 +1,56 @@
+# SWT3 Profile: EU AI Act High-Risk System (Article 6, Annex III)
+# Compliance target: Regulation 2024/1689, high-risk classification
+# Deadline: December 2, 2027 (postponed from August 2, 2026)
+#
+# This profile enables the minimum witnessing and trust mesh configuration
+# required for EU AI Act Article 9 (risk management), Article 11 (technical
+# documentation), Article 13 (transparency), Article 14 (human oversight),
+# and Article 15 (accuracy, robustness, cybersecurity).
+#
+# Usage:
+#   profile: eu-ai-act-high-risk
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+#   jurisdiction: DE        # your ISO 3166-1 code
+
+clearing_level: 2
+
+policy:
+  require_signing: true
+  min_clearing_level: 2
+  required_procedures:
+    - AI-INF.1     # Inference provenance (Art. 11, 12)
+    - AI-GRD.1     # Guardrail presence (Art. 9, 15)
+    - AI-FAIR.1    # Bias monitoring (Art. 10)
+    - AI-EXPL.1    # Explainability (Art. 13)
+    - AI-DATA.1    # Data governance (Art. 10)
+    - AI-HITL.1    # Human oversight (Art. 14)
+  require_agent_id: true
+  require_jurisdiction: true
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 2
+  require_signature: true
+  freshness_window: 3600
+  required_procedures:
+    - AI-INF.1
+    - AI-GRD.1
+
+density_policy:
+  min_anchors_per_1000_tokens: 1
+  max_chain_gap_seconds: 60
+  require_signing_key: true
+  min_trust_level: 2
+
+hardware:
+  require_attestation: false
+  attestation_freshness: 3600
+
+mcp_policy:
+  witnessed_tools: ["*"]       # witness all MCP tool calls
+  exempt_tools: []
+  require_trust_level: 2       # match trust_mesh.min_trust_level
+  auto_witness: true
+  block_on_failure: true        # EU AI Act: must not proceed without evidence

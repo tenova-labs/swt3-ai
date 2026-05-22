@@ -1,0 +1,65 @@
+# SWT3 Profile: Mythos Defense (Exploit Chain Containment)
+# Post-breach hardening profile. Strict rate limiting, chain depth caps,
+# and tool blocklists to contain exploit chains and lateral movement.
+#
+# Designed for environments where a frontier AI model may attempt
+# multi-step exploit chaining. Prioritizes containment over throughput.
+# Compatible with NIST AI RMF, EU AI Act, ISO 42001.
+#
+# Usage:
+#   profile: mythos-defense
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+#   signing_key_env: SWT3_SIGNING_KEY
+#   jurisdiction: US         # required by this profile
+
+clearing_level: 3
+
+policy:
+  require_signing: true
+  require_agent_id: true
+  min_clearing_level: 2
+  require_jurisdiction: true
+  required_procedures:
+    - AI-INF.1     # Inference provenance
+    - AI-GRD.1     # Guardrail presence
+    - AI-CHAIN.1   # Exploit chain monitoring
+    - AI-TOOL.1    # Tool call witnessing
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 2
+  require_signature: true
+  freshness_window: 1800
+
+hardware:
+  require_attestation: false
+  allowed_methods: ["tpm_2.0", "secure_enclave"]
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  exempt_tools: []
+  require_trust_level: 2
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "4/30s"
+  max_chain_depth: 5
+  tool_blocklist:
+    - "shell_*"
+    - "exec_*"
+    - "run_command"
+    - "write_file"
+    - "delete_*"
+  fail_secure: true
+  max_tokens_per_session: 50000
+
+density_policy:
+  min_anchors_per_1000_tokens: 3
+  max_chain_gap_seconds: 120
+  require_signing_key: true
+  min_trust_level: 2
+
+merkle:
+  enabled: true
+  accumulator_interval: 30

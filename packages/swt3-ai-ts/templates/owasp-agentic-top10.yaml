@@ -1,0 +1,50 @@
+# SWT3 Profile: OWASP Agentic Top 10 (Runtime Containment)
+# Maps SWT3 enforcement controls to the OWASP Top 10 for Agentic AI.
+# Addresses: unbounded tool access, exploit chaining, resource exhaustion,
+# unmonitored execution, and insufficient audit trails.
+#
+# Compatible with NIST AI RMF, EU AI Act, ISO 42001.
+#
+# Usage:
+#   profile: owasp-agentic-top10
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+#   signing_key_env: SWT3_SIGNING_KEY
+
+clearing_level: 1
+
+policy:
+  require_signing: true
+  require_agent_id: true
+  required_procedures:
+    - AI-INF.1     # Inference provenance (OWASP: traceability)
+    - AI-GRD.1     # Guardrail presence (OWASP: output validation)
+    - AI-TOOL.1    # Tool call witnessing (OWASP: unbounded tool access)
+    - AI-CHAIN.1   # Chain monitoring (OWASP: exploit chaining)
+
+trust_mesh:
+  mode: permissive
+  min_trust_level: 1
+  require_signature: false
+  freshness_window: 3600
+
+mcp_policy:
+  witnessed_tools: ["*"]               # OWASP: no unmonitored tool execution
+  exempt_tools: []
+  require_trust_level: 1
+  auto_witness: true
+  block_on_failure: true               # OWASP: fail closed on witness failure
+  max_velocity: "10/60s"               # OWASP: prevent rapid automated scanning
+  max_chain_depth: 8                   # OWASP: limit exploit chain length
+  max_tokens_per_session: 100000       # OWASP: prevent resource exhaustion
+  fail_secure: true
+
+density_policy:
+  min_anchors_per_1000_tokens: 1       # OWASP: continuous operational monitoring
+  max_chain_gap_seconds: 300
+  require_signing_key: true
+
+merkle:
+  enabled: true                        # OWASP: audit trail integrity
+  accumulator_interval: 60

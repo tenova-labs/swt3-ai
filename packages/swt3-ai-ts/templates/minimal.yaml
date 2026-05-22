@@ -1,0 +1,38 @@
+# SWT3 Profile: Minimal (development / evaluation)
+# No enforcement, monitor-only trust mesh
+#
+# Use this profile to get started quickly. All witnessing is enabled
+# but nothing is blocked. Upgrade to a compliance profile when ready.
+#
+# Usage:
+#   profile: minimal
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+
+clearing_level: 0
+
+policy:
+  require_signing: false
+  require_agent_id: false
+
+trust_mesh:
+  mode: monitor
+  min_trust_level: 0
+  require_signature: false
+  freshness_window: 86400
+
+density_policy:
+  min_anchors_per_1000_tokens: 0
+  max_chain_gap_seconds: 0
+  require_signing_key: false
+  min_trust_level: 0
+
+hardware:
+  require_attestation: false
+
+mcp_policy:
+  witnessed_tools: []           # no tools witnessed by default
+  exempt_tools: ["*"]           # everything passes through
+  require_trust_level: 0
+  auto_witness: false
+  block_on_failure: false

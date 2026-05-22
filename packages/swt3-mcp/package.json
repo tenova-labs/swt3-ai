@@ -1,0 +1,84 @@
+{
+  "name": "@tenova/swt3-mcp",
+  "version": "0.5.3",
+  "mcpName": "io.tenova/swt3-witness",
+  "description": "Cryptographic compliance witnessing and security governance for AI agents. EU AI Act, NIST AI RMF, OWASP Agentic Top 10, CMMC, SR 11-7. Tool policy gates, trust mesh, inference attestation, audit sessions. Zero-config demo.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "swt3-mcp": "./dist/bin/swt3-mcp.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "compliance",
+    "witness",
+    "swt3",
+    "attestation",
+    "eu-ai-act",
+    "nist-ai-rmf",
+    "owasp-agentic-top10",
+    "ai-governance",
+    "ai-audit",
+    "ai-accountability",
+    "ai-observability",
+    "ai-safety",
+    "agent-security",
+    "trust-mesh",
+    "policy-as-code",
+    "nist-800-53",
+    "cmmc",
+    "sr-11-7",
+    "iso-42001",
+    "fedramp",
+    "gdpr",
+    "cryptographic-attestation",
+    "audit-trail",
+    "non-repudiation",
+    "tool-policy-gate"
+  ],
+  "author": "TeNova <engineering@tenovaai.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tenova-labs/swt3-ai"
+  },
+  "homepage": "https://tenova.io",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "peerDependencies": {
+    "ioredis": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ioredis": "^5.6.1",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

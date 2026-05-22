@@ -1,0 +1,47 @@
+# SWT3 Profile: NIST AI RMF (AI 100-1) / NIST 800-53 GovCon
+# Compliance target: NIST AI Risk Management Framework + 800-53 controls
+# Also covers: CMMC 2.0, FedRAMP, NIST 800-171
+#
+# This profile enables witnessing aligned with the GOVERN, MAP, MEASURE,
+# and MANAGE functions of the AI RMF. Permissive trust mesh allows
+# gradual adoption without blocking existing workflows.
+#
+# Usage:
+#   profile: nist-ai-rmf
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+
+clearing_level: 1
+
+policy:
+  require_signing: false
+  min_clearing_level: 1
+  required_procedures:
+    - AI-INF.1     # Inference provenance (AU-2, AU-12)
+    - AI-GRD.1     # Guardrail presence (SI-7, CM-3)
+    - AI-MDL.1     # Model integrity (SA-10, CM-14)
+  require_agent_id: true
+  max_flush_interval: 30
+
+trust_mesh:
+  mode: permissive
+  min_trust_level: 1
+  require_signature: false
+  freshness_window: 86400
+
+density_policy:
+  min_anchors_per_1000_tokens: 1
+  max_chain_gap_seconds: 120
+  require_signing_key: false
+  min_trust_level: 1
+
+hardware:
+  require_attestation: false
+
+mcp_policy:
+  witnessed_tools: ["*"]       # witness all tool calls
+  exempt_tools: []
+  require_trust_level: 1
+  auto_witness: true
+  block_on_failure: false       # permissive: log failures, do not block
