@@ -13,6 +13,17 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compati
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
+## What's New in v0.5.3
+
+- **Chain Enforcer** -- 5-layer policy witnessing: tool blocklist/allowlist, velocity limiting, chain depth, token budgets. Every policy violation minted as an anchor. [Details](#agent-cost-governance)
+- **Agent Cost Governance** -- per-session token budgets with `max_tokens_per_session`. Halt and record on exceeded. `cost-conscious` profile ships built-in. [Details](#agent-cost-governance)
+- **Sentinel Client** -- IPC integration with the independent evidence custody daemon. Protected WAL, cross-process budgets, key isolation. Evidence the agent cannot tamper with.
+- **AI-MARK.1** -- Content provenance witnessing (text, image, audio with C2PA/watermark/metadata tagging)
+- **AI-BASE.1** -- Agent behavioral baseline (deviation scoring against established patterns)
+- **7 Built-in Profiles** -- `cost-conscious`, `owasp-agentic-top10`, `mythos-defense`, `granite-sovereign`, `eu-ai-act-high-risk`, `nist-ai-rmf`, `minimal`
+- **NSA MCP Security Mapping** -- [7 of 9 NSA AISC recommendations](https://sovereign.tenova.io/guides/nsa-mcp-security-mapping.html) addressed at the SDK layer (CSI U/OO/6030316-26, May 2026)
+- **47 procedures**, 23 namespaces, 40 cross-language test vectors, 928 tests passing
+
 ## MCP Server -- Official Registry
 
 `@tenova/swt3-mcp` is listed on the official Model Context Protocol Registry as `io.tenova/swt3-witness`. Zero-config compliance governance for Claude Code, Cursor, Windsurf, and any MCP-compatible host.
