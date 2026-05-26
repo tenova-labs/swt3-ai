@@ -129,7 +129,7 @@ pre{{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8
 <h2>Anchor Evidence (Demo)</h2>
 <pre>{anchor_text}</pre>
 
-<p>Full conformity requires all 40 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
+<p>Full conformity requires all 47 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
 <a class="cta-secondary" href="https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public">See Live Auditor View →</a>
 <a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap — Free Account</a>
 <p style="margin-top:.75rem;font-size:.8rem;color:#9CA3AF">Preview a real tenant's EU AI Act posture (no account required) — then create your own.</p>
@@ -321,7 +321,7 @@ def main() -> None:
     print(f"  {DIM}Preview a live auditor view (no account required):{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public{RESET}")
     print()
-    print(f"  {DIM}Full conformity requires all 40 AI procedures. Connect to close the gap:{RESET}")
+    print(f"  {DIM}Full conformity requires all 47 AI procedures. Connect to close the gap:{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/signup?ref=sdk_demo{RESET}")
     print()
     print(f"  {DIM}SDK docs:     {CYAN}https://sovereign.tenova.io/docs/{RESET}")

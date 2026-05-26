@@ -101,6 +101,7 @@ const VALID_MERKLE_KEYS = new Set([
 ]);
 
 const VALID_PROFILES = new Set([
+  "cost-conscious",
   "eu-ai-act-high-risk",
   "granite-sovereign",
   "mythos-defense",

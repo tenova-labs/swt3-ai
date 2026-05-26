@@ -487,12 +487,16 @@ Supports single files or chains (`extends: [base.yaml, team.yaml]`). Merge order
 
 ### Built-in Profiles
 
-Three profiles ship with the SDK:
+Seven profiles ship with the SDK:
 
 | Profile | Use Case |
 |---------|----------|
 | `eu-ai-act-high-risk` | EU AI Act high-risk: clearing 2, signing required, jurisdiction required |
 | `nist-ai-rmf` | NIST AI RMF: full procedure coverage, moderate policy |
+| `cost-conscious` | Token budget governance: 25K/session ceiling, cost attribution |
+| `owasp-agentic-top10` | OWASP Agentic Top 10: fail-closed, 100K tokens, depth 8 |
+| `mythos-defense` | Exploit chain containment: clearing 3, strict trust, depth 5 |
+| `granite-sovereign` | IBM Granite on-prem: air-gap ready, hardware attestation |
 | `minimal` | Development: clearing 0, no policy enforcement |
 
 ### Diagnostics
@@ -585,6 +589,35 @@ Gatekeeper mode mints an **AI-GRD.3** anchor with:
 - **factor_b** = actual guardrail count
 - **factor_c** = 1 if gate passed, 0 if blocked
 
+## Agent Cost Governance
+
+Every inference witnessed by the SDK captures prompt and completion token counts from the API response. Combined with `max_tokens_per_session`, this gives you a per-agent, per-session cost ceiling with a complete audit trail.
+
+```yaml
+# .swt3.yaml
+profile: cost-conscious        # Built-in budget profile (25K tokens)
+
+mcp_policy:
+  max_tokens_per_session: 25000  # Hard cutoff per session
+  fail_secure: true              # Halt and record on budget exceeded
+```
+
+```typescript
+import { Witness } from "@tenova/swt3-ai";
+
+const witness = new Witness({ /* ... */ });
+const client = witness.wrap(new OpenAI()) as OpenAI;
+
+// Every call through the wrapped client automatically tracks tokens.
+// When the session budget is exhausted, the chain enforcer halts
+// further calls and mints a token_budget violation anchor.
+
+// Manual token recording (for custom pipelines):
+witness.recordSessionTokens(1500);
+```
+
+Token usage flows into the witness ledger alongside every other anchor. Your auditor sees what the agent did, whether it complied, and what it cost -- in one export.
+
 ## Multi-Agent Chain Linking
 
 New in v0.3.4. Link anchors across agents in a multi-step pipeline using `cycleId`:
@@ -634,7 +667,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-All 43 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
+All 47 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -651,7 +684,7 @@ All 43 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 43 are available in production with real inference data. 38 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 47 are available in production with real inference data. 40 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -920,7 +953,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [10-Minute Quickstart](https://sovereign.tenova.io/guides/ai-witness-quickstart.html) -- from install to first anchor
 - [SWT3 Protocol Spec](https://sovereign.tenova.io/guides/swt3-protocol.html) -- formal specification with ABNF grammar
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
-- [UCT Registry](https://sovereign.tenova.io/registry) -- 162 procedures, full factor definitions
+- [UCT Registry](https://sovereign.tenova.io/registry) -- full procedure catalog with factor definitions
 - [Anchor Verifier](https://sovereign.tenova.io/verify) -- verify any anchor, zero server calls
 - [EU AI Act Regulatory Architecture](https://sovereign.tenova.io/guides/futurium-submission.html) -- VI+CJT+ALF+LAVR framework mapping for conformity assessment bodies
 - [Five Eyes Agentic AI Overlay](https://sovereign.tenova.io/guides/five-eyes-overlay.html) -- CISA/NSA guidance mapped to SWT3 procedures

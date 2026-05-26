@@ -60,6 +60,7 @@ _VALID_MCP_POLICY_KEYS = frozenset({
 })
 
 _VALID_PROFILES = frozenset({
+    "cost-conscious",
     "eu-ai-act-high-risk",
     "granite-sovereign",
     "mythos-defense",

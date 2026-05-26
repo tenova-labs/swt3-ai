@@ -167,7 +167,7 @@ async function main() {
   console.log(`  ${D}Preview a live auditor view (no account required):${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public${R}`);
   console.log();
-  console.log(`  ${D}Full conformity requires all 40 AI procedures. Connect to close the gap:${R}`);
+  console.log(`  ${D}Full conformity requires all 47 AI procedures. Connect to close the gap:${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/signup?ref=sdk_demo${R}`);
   console.log();
   console.log(`  ${D}SDK docs:     ${C}https://sovereign.tenova.io/docs${R}`);
@@ -259,7 +259,7 @@ ${uncoveredRows}
 <h2>Anchor Evidence (Demo)</h2>
 <pre>${anchorText}</pre>
 
-<p>Full conformity requires all 40 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
+<p>Full conformity requires all 47 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
 <a class="cta-secondary" href="https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public">See Live Auditor View \u2192</a>
 <a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap \u2014 Free Account</a>
 <p style="margin-top:.75rem;font-size:.8rem;color:#9CA3AF">Preview a real tenant's EU AI Act posture (no account required) \u2014 then create your own.</p>

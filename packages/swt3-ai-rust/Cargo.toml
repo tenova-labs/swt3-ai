@@ -2,10 +2,11 @@
 name = "swt3-ai"
 version = "0.5.3"
 edition = "2021"
-description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference"
+description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 47 procedures, 5 languages, 7 profiles. EU AI Act, NIST AI RMF, CMMC, SR 11-7."
 license = "Apache-2.0"
 repository = "https://github.com/tenova-labs/swt3-ai"
 homepage = "https://tenova.io"
+documentation = "https://sovereign.tenova.io/docs/"
 readme = "README.md"
 keywords = ["ai", "compliance", "witness", "swt3", "eu-ai-act"]
 categories = ["api-bindings", "cryptography"]

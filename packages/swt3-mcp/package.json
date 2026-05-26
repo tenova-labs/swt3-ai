@@ -2,7 +2,7 @@
   "name": "@tenova/swt3-mcp",
   "version": "0.5.3",
   "mcpName": "io.tenova/swt3-witness",
-  "description": "Cryptographic compliance witnessing and security governance for AI agents. EU AI Act, NIST AI RMF, OWASP Agentic Top 10, CMMC, SR 11-7. Tool policy gates, trust mesh, inference attestation, audit sessions. Zero-config demo.",
+  "description": "Cryptographic compliance witnessing and accountability governance for AI agents. EU AI Act, NIST AI RMF, OWASP Agentic Top 10, CMMC, SR 11-7. Tool policy gates, trust mesh, inference attestation, audit sessions. Zero-config demo.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

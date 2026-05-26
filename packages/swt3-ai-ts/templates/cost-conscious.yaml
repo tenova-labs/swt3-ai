@@ -1,0 +1,35 @@
+# SWT3 Profile: Cost-Conscious (Agent Token Budget Governance)
+# Enforce per-session token budgets with early warnings. Every token
+# consumed by every agent is recorded in the witness ledger, giving
+# finance and compliance teams a single audit trail for both
+# accountability and cost attribution.
+#
+# Designed for production deployments where runaway inference spend
+# is an operational risk. Compatible with any framework.
+#
+# Usage:
+#   profile: cost-conscious
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agent
+
+clearing_level: 1
+
+policy:
+  require_agent_id: true
+  required_procedures:
+    - AI-INF.1     # Inference provenance (captures prompt + completion tokens)
+    - AI-INF.2     # Model selection (cost varies by model)
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: false
+  max_tokens_per_session: 25000
+  max_velocity: "10/60s"
+  max_chain_depth: 10
+  fail_secure: true
+
+density_policy:
+  min_anchors_per_1000_tokens: 2
+  max_chain_gap_seconds: 300
