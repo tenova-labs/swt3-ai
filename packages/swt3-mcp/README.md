@@ -236,7 +236,7 @@ Every anchor maps to specific regulatory obligations:
 `witness_authorization` -- witness pre-inference authorization decisions.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (151+ controls).
+`list_procedures` -- browse the UCT procedure registry (204+ controls).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

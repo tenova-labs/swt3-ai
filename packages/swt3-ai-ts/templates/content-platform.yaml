@@ -1,0 +1,68 @@
+# SWT3 Profile: Content Platform AI (DSA + Art. 50 + GPAI Code)
+# AI governance for recommendation engines, content moderation,
+# generative AI outputs, and algorithmic curation systems.
+#
+# Covers EU Digital Services Act (DSA), EU AI Act Art. 50 (AI content
+# labeling), GPAI Code of Practice, and platform transparency
+# obligations for algorithmic systems.
+#
+# Content platforms operate at high throughput with user-facing AI
+# decisions. Permissive trust mesh and lower clearing levels support
+# volume while maintaining content marking, watermark verification,
+# and incident reporting obligations.
+#
+# Usage:
+#   profile: content-platform
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: recommendation-engine-v6
+
+clearing_level: 1   # Standard (user content metadata)
+
+policy:
+  require_agent_id: true
+  require_signing: false       # Optional for high-throughput
+  min_clearing_level: 1
+  required_procedures:
+    # Inference provenance
+    - AI-INF.1     # Prompt/response hash capture
+    # Content safety (platform obligation)
+    - AI-GRD.1     # Safety guardrail enforcement
+    - AI-GRD.2     # Content safety filter
+    # AI content marking (Art. 50)
+    - AI-MARK.1    # Content provenance marking
+    - AI-WATERMARK.1 # Watermark verification
+    # Transparency (DSA obligation)
+    - AI-TRANS.1   # Transparency disclosure
+    # Fairness (recommendation bias)
+    - AI-FAIR.1    # Bias disparity measurement
+    # Testing
+    - AI-REDTEAM.1 # Adversarial testing (jailbreak, bypass)
+    # User rights
+    - AI-CONSENT.1 # User consent
+    # Multi-agent (content pipeline orchestration)
+    - AI-MULTI.1   # Multi-agent delegation
+    # Monitoring
+    - AI-AUDIT.1   # Audit log integrity
+    - AI-PERF.1    # Recommendation quality metrics
+    - AI-DRIFT.1   # Distribution shift detection
+    - AI-INCIDENT.1 # Incident reporting (DSA obligation)
+
+trust_mesh:
+  mode: permissive             # High throughput, lower friction
+  min_trust_level: 1
+  require_signature: false
+  freshness_window: 7200       # 2 hours
+
+density_policy:
+  min_anchors_per_1000_tokens: 1   # Volume-friendly
+  max_chain_gap_seconds: 600       # Relaxed for batch processing
+  require_signing_key: false
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: false      # Log-only for content throughput
+  max_velocity: "50/60s"       # High throughput
+  max_chain_depth: 15
+  fail_secure: false

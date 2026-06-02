@@ -66,6 +66,13 @@ _VALID_PROFILES = frozenset({
     "mythos-defense",
     "nist-ai-rmf",
     "owasp-agentic-top10",
+    "telecom-compliance",
+    "healthcare-clinical",
+    "fintech-model-risk",
+    "defense-govcon",
+    "autonomous-systems",
+    "insurance-underwriting",
+    "content-platform",
     "minimal",
 })
 

@@ -35,7 +35,7 @@ _KNOWN_TOP_LEVEL: Set[str] = {
     "api_key", "api_key_env", "tenant_id", "clearing_level", "endpoint",
     "buffer_size", "flush_interval", "max_retries", "latency_threshold_ms",
     "guardrails_required", "guardrail_names", "factor_handoff", "factor_handoff_path",
-    "agent_id", "signing_key", "signing_key_env", "signing_key_id", "signing_key_version",
+    "agent_id", "signing_key", "signing_key_env", "signing_key_id", "signing_key_version", "signing_algorithm",
     "cycle_id", "policy_version", "jurisdiction", "legal_basis", "purpose_class",
     "on_flush", "gateway_mode", "wal_path", "replay_window",
     "token_budget", "procedures", "strict",
@@ -145,6 +145,14 @@ def validate_schema(raw: Dict[str, Any]) -> ValidationResult:
         cl = raw["clearing_level"]
         if not isinstance(cl, int) or cl not in (0, 1, 2, 3):
             errors.append(ValidationError("clearing_level", "must be 0, 1, 2, or 3", "error"))
+
+    # signing_algorithm: hmac-sha256 or ml-dsa-65
+    if "signing_algorithm" in raw:
+        sa = raw["signing_algorithm"]
+        if not isinstance(sa, str):
+            errors.append(ValidationError("signing_algorithm", "expected string", "error"))
+        elif sa not in ("hmac-sha256", "ml-dsa-65"):
+            errors.append(ValidationError("signing_algorithm", 'must be "hmac-sha256" or "ml-dsa-65"', "error"))
 
     # digest_algorithm: only sha256 in this version
     if "digest_algorithm" in raw:

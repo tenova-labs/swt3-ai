@@ -6,7 +6,7 @@ module Swt3Ai
     :fingerprint_timestamp_ms, :ai_model_id, :ai_prompt_hash,
     :ai_response_hash, :ai_latency_ms, :ai_input_tokens,
     :ai_output_tokens, :agent_id, :cycle_id,
-    :payload_signature, :signing_key_id, :signing_key_version,
+    :payload_signature, :signing_algorithm, :signing_key_id, :signing_key_version,
     :policy_version_hash, :jurisdiction, :legal_basis,
     :purpose_class, :authorization_id,
     :revocation_target, :revocation_reason,
@@ -24,11 +24,14 @@ module Swt3Ai
   WitnessConfig = Struct.new(
     :endpoint, :api_key, :tenant_id, :clearing_level,
     :buffer_size, :flush_interval, :timeout, :max_retries,
-    :agent_id, :signing_key, :signing_key_id, :signing_key_version,
+    :agent_id, :signing_key, :signing_algorithm, :signing_key_id, :signing_key_version,
     :cycle_id, :policy_version,
     :jurisdiction, :legal_basis, :purpose_class,
     keyword_init: true
   )
+
+  # Valid signing algorithms.
+  SIGNING_ALGORITHMS = %w[hmac-sha256 ml-dsa-65].freeze
 
   # Revocation reason codes for AI-REV.1 anchors.
   REVOCATION_REASONS = {

@@ -22,6 +22,7 @@ public class WitnessPayload
     public string? AgentId { get; set; }
     public string? CycleId { get; set; }
     public string? PayloadSignature { get; set; }
+    public string? SigningAlgorithm { get; set; }
     public string? SigningKeyId { get; set; }
     public int? SigningKeyVersion { get; set; }
     public string? PolicyVersionHash { get; set; }
@@ -63,6 +64,7 @@ public class WitnessConfig
     public int MaxRetries { get; set; } = 3;
     public string? AgentId { get; set; }
     public string? SigningKey { get; set; }
+    public string? SigningAlgorithm { get; set; }
     public string? SigningKeyId { get; set; }
     public int? SigningKeyVersion { get; set; }
     public string? CycleId { get; set; }

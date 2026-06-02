@@ -1,0 +1,70 @@
+# SWT3 Profile: Autonomous Systems (EU Machinery Reg + EO 14110 + ISO 26262)
+# AI governance for robotics, autonomous vehicles, drones, industrial
+# control systems, and safety-critical autonomous decision-making.
+#
+# Covers EU Machinery Regulation 2023/1230, EO 14110 (dual-use/safety),
+# ISO 26262 (automotive functional safety), EU AI Act Art. 6 (high-risk),
+# and IEC 61508 (industrial safety).
+#
+# Autonomous AI operates without continuous human supervision. Safe state
+# transitions, incident reporting, robustness testing, and high-density
+# witnessing are critical for systems that affect physical safety.
+#
+# Usage:
+#   profile: autonomous-systems
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: nav-controller-v3
+
+clearing_level: 2   # Sensitive (operational telemetry)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 2
+  require_jurisdiction: true
+  required_procedures:
+    # Inference provenance
+    - AI-INF.1     # Prompt/response hash capture
+    # Safety (critical for autonomous systems)
+    - AI-SAFE.1    # Safe state transition (emergency stop)
+    - AI-INCIDENT.1 # Incident reporting (Art. 62)
+    # Performance and robustness
+    - AI-PERF.1    # Performance metrics (functional safety)
+    - AI-ROBUST.1  # Robustness testing (environmental conditions)
+    - AI-CYBER.1   # Cybersecurity assessment
+    # Model lifecycle
+    - AI-MDL.1     # Model weight integrity
+    - AI-MDL.3     # Model drift scoring
+    - AI-DRIFT.1   # Continuous drift monitoring
+    # Human oversight
+    - AI-HITL.1    # Human override capability (Art. 14)
+    # Multi-agent coordination
+    - AI-CHAIN.1   # Multi-agent chain witnessing
+    # Classification
+    - AI-DUALUSE.1 # Dual-use model classification (EO 14110)
+    # Environment and hardware
+    - AI-ENV.1     # Runtime environment attestation
+    - AI-HW.1      # Hardware attestation (sensors, actuators)
+    # Transparency and audit
+    - AI-TRANS.1   # Transparency disclosure
+    - AI-AUDIT.1   # Audit log integrity
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 3
+  require_signature: true
+  freshness_window: 300       # 5 minutes (real-time operations)
+
+density_policy:
+  min_anchors_per_1000_tokens: 5   # High density for safety-critical
+  max_chain_gap_seconds: 30        # Very tight gap
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "30/60s"      # High throughput for real-time
+  max_chain_depth: 10
+  fail_secure: true

@@ -17,7 +17,7 @@ GPAI transparency obligations are enforceable now. EU AI Act high-risk enforceme
 - **`timestamp_ms`** -- millisecond-precision timestamps matching the protocol clock
 - **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `RevocationReason` structs ready for serialization
 
-All output is byte-identical to the Python, TypeScript, C#, and Ruby SDKs. Verified by 40 shared test vectors at build time.
+All output is byte-identical to the Python, TypeScript, C#, and Ruby SDKs. Verified by 207 shared test vectors at build time.
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-swt3-ai = "0.5.2"
+swt3-ai = "0.5.4"
 ```
 
 Mint a fingerprint:

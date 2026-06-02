@@ -42,6 +42,7 @@ const KEY_MAP: Record<string, string> = {
   signing_key: "signingKey",
   signing_key_id: "signingKeyId",
   signing_key_version: "signingKeyVersion",
+  signing_algorithm: "signingAlgorithm",
   cycle_id: "cycleId",
   policy_version: "policyVersion",
   legal_basis: "legalBasis",
@@ -107,6 +108,13 @@ const VALID_PROFILES = new Set([
   "mythos-defense",
   "nist-ai-rmf",
   "owasp-agentic-top10",
+  "telecom-compliance",
+  "healthcare-clinical",
+  "fintech-model-risk",
+  "defense-govcon",
+  "autonomous-systems",
+  "insurance-underwriting",
+  "content-platform",
   "minimal",
 ]);
 

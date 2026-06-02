@@ -37,6 +37,7 @@ export function extractPayloads(
   legalBasis?: string,
   purposeClass?: string,
   authorizationId?: string,
+  signingAlgorithm?: string,
 ): WitnessPayload[] {
   const [ts, epoch] = timestampMs();
   const payloads: WitnessPayload[] = [];
@@ -87,7 +88,7 @@ export function extractPayloads(
         payload.ai_context = ctx;
       }
 
-      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId);
+      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
 
       payloads.push(payload);
     }
@@ -134,7 +135,7 @@ export function extractPayloads(
         payload.ai_context = ctx;
       }
 
-      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId);
+      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
 
       payloads.push(payload);
     }
@@ -237,7 +238,7 @@ export function extractPayloads(
     applyClearingLevel(payload, record, clearingLevel);
 
     // Operational metadata survives all clearing levels
-    applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId);
+    applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
 
     payloads.push(payload);
   }
@@ -259,6 +260,7 @@ function applyOperationalMetadata(
   legalBasis?: string,
   purposeClass?: string,
   authorizationId?: string,
+  signingAlgorithm?: string,
 ): void {
   if (agentId) payload.agent_id = agentId;
   if (cycleId) payload.cycle_id = cycleId;
@@ -268,7 +270,9 @@ function applyOperationalMetadata(
   if (purposeClass) payload.purpose_class = purposeClass;
   if (authorizationId) payload.authorization_id = authorizationId;
   if (signingKey) {
-    payload.payload_signature = signPayload(signingKey, fingerprint, agentId);
+    const algo = (signingAlgorithm ?? "hmac-sha256") as import("./signing.js").SigningAlgorithm;
+    payload.payload_signature = signPayload(signingKey, fingerprint, agentId, algo);
+    payload.signing_algorithm = algo;
     if (signingKeyId) payload.signing_key_id = signingKeyId;
     if (signingKeyVersion !== undefined) payload.signing_key_version = signingKeyVersion;
   }
@@ -356,6 +360,7 @@ export function extractGatekeeperPayload(
   jurisdiction?: string,
   legalBasis?: string,
   purposeClass?: string,
+  signingAlgorithm?: string,
 ): WitnessPayload {
   const [ts, epoch] = timestampMs();
   const fa = required;
@@ -374,7 +379,7 @@ export function extractGatekeeperPayload(
     fingerprint_timestamp_ms: ts,
   };
 
-  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass);
+  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, undefined, signingAlgorithm);
 
   return payload;
 }
@@ -411,6 +416,7 @@ export function extractRevocationPayload(
   jurisdiction?: string,
   legalBasis?: string,
   purposeClass?: string,
+  signingAlgorithm?: string,
 ): WitnessPayload {
   const [ts, epoch] = timestampMs();
   const reasonCode = REVOCATION_REASONS[reason] ?? 0;
@@ -432,7 +438,7 @@ export function extractRevocationPayload(
     revocation_reason: reason,
   };
 
-  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass);
+  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, undefined, signingAlgorithm);
 
   return payload;
 }
@@ -459,6 +465,7 @@ export function extractChainTrustDegradationPayload(
   signingKeyVersion?: number,
   cycleId?: string,
   policyVersionHash?: string,
+  signingAlgorithm?: string,
 ): WitnessPayload {
   const [ts, epoch] = timestampMs();
   const fa = previousTrustLevel;
@@ -477,7 +484,7 @@ export function extractChainTrustDegradationPayload(
     fingerprint_timestamp_ms: ts,
   };
 
-  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash);
+  applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, undefined, undefined, undefined, undefined, signingAlgorithm);
 
   return payload;
 }

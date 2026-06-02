@@ -105,10 +105,10 @@ pre{{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8
 <body>
 <div class="c">
 <h1>SWT3 AI Witness — Coverage Report</h1>
-<p class="meta">Generated {ts} UTC | SWT3 Protocol v0.4.2 | Demo Environment</p>
+<p class="meta">Generated {ts} UTC | SWT3 Protocol v1.6.0 | Demo Environment</p>
 
-<div class="score"><span class="pass">14</span><span class="total"> / 14 obligations mapped</span></div>
-<p style="color:#9CA3AF;font-size:.95rem;margin-top:-.5rem">5 demonstrated locally · 9 need production data</p>
+<div class="score"><span class="pass">15</span><span class="total"> / 15 obligations mapped</span></div>
+<p style="color:#9CA3AF;font-size:.95rem;margin-top:-.5rem">6 demonstrated locally · 9 need production data</p>
 
 <h2>Demonstrated Locally</h2>
 <table>
@@ -129,7 +129,7 @@ pre{{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8
 <h2>Anchor Evidence (Demo)</h2>
 <pre>{anchor_text}</pre>
 
-<p>Full conformity requires all 47 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
+<p>Full conformity requires all 48 AI procedures across inference, model governance, guardrails, RAG, skills, licensing, and explainability domains.</p>
 <a class="cta-secondary" href="https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public">See Live Auditor View →</a>
 <a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap — Free Account</a>
 <p style="margin-top:.75rem;font-size:.8rem;color:#9CA3AF">Preview a real tenant's EU AI Act posture (no account required) — then create your own.</p>
@@ -148,6 +148,10 @@ def main() -> None:
     print()
     print(f"{BOLD}SWT3 AI Witness SDK — Live Demo{RESET}")
     print(f"{DIM}No API keys. No account. No network calls.{RESET}")
+    print(f"{DIM}{'─' * 56}{RESET}")
+    print(f"  {GREEN}New in v0.5.4:{RESET} AI-LIC.1 License Provenance,")
+    print(f"  OpenMDW-1.1 support, MCP governance, 65 procedures.")
+    print(f"  {DIM}License guide: sovereign.tenova.io/guides/openmdw-license-provenance.html{RESET}")
     print(f"{DIM}{'─' * 56}{RESET}")
     print()
 
@@ -271,9 +275,46 @@ def main() -> None:
     print(f"     {DIM}{rag_anchor2}{RESET}")
     print()
 
+    # ── License Provenance (AI-LIC.1) ──
+    print(f"{CYAN}8. License Provenance Witnessing (AI-LIC.1)...{RESET}")
+    print()
+    print(f"   {DIM}Base model:  Apache-2.0 (permissive){RESET}")
+    print(f"   {DIM}LoRA adapter: CC-BY-4.0 (permissive){RESET}")
+    print(f"   {DIM}Training data: OpenMDW-1.1 (openmdw){RESET}")
+
+    lic_fa = 3  # components checked
+    lic_fb = 1  # all compliant
+    lic_fc = 0  # permissive (primary type)
+    lic_fp = _mint_fingerprint(tenant, "AI-LIC.1", lic_fa, lic_fb, lic_fc, ts_ms)
+    lic_anchor = _mint_anchor(tenant, provider, "AI-LIC.1", "PASS", epoch, lic_fp)
+    anchors_list.append(lic_anchor)
+    print()
+    print(f"   {GREEN}■ PASS{RESET}  {WHITE}AI-LIC.1{RESET}  {DIM}3 license components verified, all compliant{RESET}")
+    print(f"     {DIM}{lic_anchor}{RESET}")
+    print()
+
+    # ── Summary Table ──
+    print(f"  {DIM}{'─' * 56}{RESET}")
+    print(f"  {BOLD}WITNESS SUMMARY{RESET}")
+    print(f"  {DIM}{'─' * 56}{RESET}")
+    print(f"  {'Procedure':<14}{'Verdict':<10}{'Fingerprint'}")
+    print(f"  {DIM}{'─' * 56}{RESET}")
+    summary_items = [
+        ("AI-INF.1", "PASS"), ("AI-MDL.1", "PASS"), ("AI-GRD.1", "PASS"),
+        ("AI-RAG.1", "PASS"), ("AI-RAG.2", "PASS"), ("AI-LIC.1", "PASS"),
+    ]
+    for i, (proc, verdict) in enumerate(summary_items):
+        fp_val = anchors_list[i].split("-")[-1] if i < len(anchors_list) else "?"
+        color = GREEN if verdict == "PASS" else RED
+        print(f"  {WHITE}{proc:<14}{RESET}{color}{verdict:<10}{RESET}{DIM}{fp_val}{RESET}")
+    print(f"  {DIM}{'─' * 56}{RESET}")
+    anchor_count = len(anchors_list)
+    print(f"  {GREEN}{anchor_count} anchors{RESET} {DIM}| 0 violations | local demo{RESET}")
+    print()
+
     # ── Regulatory Translation Layer ──
     print()
-    print(f"  {GREEN}[SWT3] 5 Evidence Anchors Verified.{RESET}")
+    print(f"  {GREEN}[SWT3] {anchor_count} Evidence Anchors Verified.{RESET}")
     print(f"  {DIM}{'─' * 50}{RESET}")
     print(f"  {BOLD}REGULATORY COVERAGE SUMMARY (NIST AI RMF / EU AI ACT){RESET}")
     print()
@@ -285,6 +326,7 @@ def main() -> None:
         ("AI-GRD.1",  "Art. 9(2a)",    "Risk Mitigation Measures",          "DEMONSTRATED"),
         ("AI-RAG.1",  "Art. 12(2)(a)", "Reference Database Logging",        "DEMONSTRATED"),
         ("AI-RAG.2",  "Art. 10(2)",    "Data Quality & Relevance",          "DEMONSTRATED"),
+        ("AI-LIC.1",  "Art. 53(1d)",   "Training Data Licensing (GPAI)",     "DEMONSTRATED"),
     ]
     for proc, article, desc, verdict in coverage_map:
         print(f"  {GREEN}✓{RESET} {WHITE}{proc}{RESET} → {article}: {desc} {GREEN}[{verdict}]{RESET}")
@@ -321,11 +363,11 @@ def main() -> None:
     print(f"  {DIM}Preview a live auditor view (no account required):{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public{RESET}")
     print()
-    print(f"  {DIM}Full conformity requires all 47 AI procedures. Connect to close the gap:{RESET}")
+    print(f"  {DIM}Full conformity requires all 48 AI procedures. Connect to close the gap:{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/signup?ref=sdk_demo{RESET}")
     print()
     print(f"  {DIM}SDK docs:     {CYAN}https://sovereign.tenova.io/docs/{RESET}")
-    print(f"  {DIM}Book a pilot: {CYAN}https://calendly.com/tenova-axiom/30min{RESET}")
+    print(f"  {DIM}Contact:      {CYAN}engineering@tenovaai.com{RESET}")
     print(f"  {DIM}GitHub:       {CYAN}https://github.com/tenova-labs/swt3-ai{RESET}")
     print()
 
@@ -434,8 +476,149 @@ def run_mesh_test() -> None:
     print()
 
 
+def run_telecom_demo() -> None:
+    """Simulate a telecom fraud scoring model lifecycle."""
+    print()
+    print(f"{BOLD}SWT3 AI Witness -- Telecom Fraud Detection Demo{RESET}")
+    print(f"{DIM}Simulating a telecom fraud scoring model lifecycle.{RESET}")
+    sep = "\u2500" * 56
+    print(f"{DIM}{sep}{RESET}")
+    print(f"  {DIM}Profile: telecom-compliance | Clearing: 2 (Sensitive){RESET}")
+    print(f"  {DIM}Use case: Real-time fraud detection on call detail records{RESET}")
+    print(f"{DIM}{sep}{RESET}")
+    print()
+
+    tenant = "TELECOM_DEMO"
+    provider = "LOCAL"
+    model_id = "fraud-scoring-v3.2.1"
+    ts_ms = int(time.time() * 1000)
+    epoch = ts_ms // 1000
+    anchors: list[str] = []
+
+    # Step 1: Model inference on call record
+    print(f"{CYAN}1. Fraud model inference on call detail record...{RESET}")
+    print(f"   Model:     {WHITE}{model_id}{RESET}")
+    print(f"   Input:     {DIM}CDR #8847291 (international call, 47min, new SIM){RESET}")
+    print(f"   Score:     {AMBER}0.87 (HIGH RISK){RESET}")
+    print(f"   Latency:   {WHITE}23ms{RESET}")
+    time.sleep(0.3)
+
+    # Step 2: Bias check
+    print()
+    print(f"{CYAN}2. Bias disparity check across demographic groups...{RESET}")
+    print(f"   Groups tested:   {WHITE}12{RESET}")
+    print(f"   Disparities:     {GREEN}0 above threshold{RESET}")
+    print(f"   Max disparity:   {WHITE}4.2%{RESET} (below 10% threshold)")
+    time.sleep(0.2)
+
+    # Step 3: Drift detection
+    print()
+    print(f"{CYAN}3. Model drift check against production baseline...{RESET}")
+    print(f"   Metrics evaluated: {WHITE}8{RESET}")
+    print(f"   Drifted:           {GREEN}0{RESET}")
+    print(f"   Drift type:        {DIM}data (distribution stable){RESET}")
+    time.sleep(0.2)
+
+    # Step 4: Performance metrics
+    print()
+    print(f"{CYAN}4. Performance validation against declared accuracy...{RESET}")
+    print(f"   Precision: {GREEN}94.2%{RESET}  Recall: {GREEN}91.8%{RESET}  F1: {GREEN}93.0%{RESET}")
+    print(f"   Benchmark: {WHITE}fraud-detection-v3 (weekly){RESET}")
+    time.sleep(0.2)
+
+    # Step 5: Automated decision
+    print()
+    print(f"{CYAN}5. Automated decision: flagging transaction for review...{RESET}")
+    print(f"   Decision:  {AMBER}FLAGGED{RESET} (score > 0.75 threshold)")
+    print(f"   Type:      {WHITE}fraud_flag (legal/financial effect){RESET}")
+    print(f"   GDPR basis: {WHITE}Art. 22 -- automated decision notification sent{RESET}")
+    time.sleep(0.2)
+
+    # Step 6: Human review
+    print()
+    print(f"{CYAN}6. Human analyst reviews flagged transaction...{RESET}")
+    print(f"   Reviewer:  {WHITE}analyst-7829{RESET}")
+    print(f"   Decision:  {GREEN}CONFIRMED FRAUD{RESET}")
+    print(f"   Override:  {DIM}none (model agreed){RESET}")
+    time.sleep(0.2)
+
+    # Step 7: Explainability
+    print()
+    print(f"{CYAN}7. Generating explanation for affected customer...{RESET}")
+    print(f"   Top features: {WHITE}call_duration (0.34), new_sim (0.28), international (0.21){RESET}")
+    print(f"   Confidence:   {GREEN}0.87{RESET}")
+    time.sleep(0.2)
+
+    # Step 8: Transparency disclosure
+    print()
+    print(f"{CYAN}8. Transparency notification to customer...{RESET}")
+    print(f"   Disclosure: {WHITE}AI-assisted fraud detection was used{RESET}")
+    print(f"   Recipient:  {WHITE}data_subject (account holder){RESET}")
+    print(f"   FCC + Art. 13 requirement satisfied")
+    time.sleep(0.2)
+
+    # Mint anchors
+    procedures = [
+        ("AI-INF.1",   1, 1, 1,  "PASS", "Fraud inference witnessed"),
+        ("AI-FAIR.3", 12, 0, 42, "PASS", "Bias audit: 12 groups, 0 disparities"),
+        ("AI-DRIFT.1",  8, 0, 0, "PASS", "Drift check: 8 metrics stable"),
+        ("AI-PERF.1",   3, 3, 3, "PASS", "Performance: 3/3 metrics passing"),
+        ("AI-AUTO.1",   1, 1, 0, "PASS", "Automated decision notified"),
+        ("AI-HITL.1",   1, 1, 0, "PASS", "Human review completed"),
+        ("AI-EXPL.1",   3, 1, 0, "PASS", "Explanation generated (3 features)"),
+        ("AI-TRANS.1",  1, 0, 1, "PASS", "Transparency disclosure sent"),
+    ]
+
+    print()
+    print(f"{CYAN}9. Minting SWT3 Witness Anchors...{RESET}")
+    print()
+
+    for proc_id, fa, fb, fc, verdict, desc in procedures:
+        fp = _mint_fingerprint(tenant, proc_id, fa, fb, fc, ts_ms)
+        anchor = f"SWT3-E-{provider}-AI-{proc_id}-{verdict}-{epoch}-{fp}"
+        anchors.append(anchor)
+        print(f"   {GREEN}\u25a0 {verdict}{RESET}  {WHITE}{proc_id:<14}{RESET}{DIM}{desc}{RESET}")
+        print(f"     {DIM}{anchor}{RESET}")
+        print()
+
+    # Summary
+    print(f"  {DIM}{sep}{RESET}")
+    print(f"  {BOLD}TELECOM FRAUD DETECTION -- WITNESS CHAIN{RESET}")
+    print(f"  {DIM}{sep}{RESET}")
+    print(f"  {'Procedure':<16}{'Verdict':<10}{'Regulation':<16}Fingerprint")
+    print(f"  {DIM}{sep}{RESET}")
+
+    reg_map = {
+        "AI-INF.1": "Art. 12(1)",
+        "AI-FAIR.3": "Art. 10(2f)",
+        "AI-DRIFT.1": "Art. 9(2b)",
+        "AI-PERF.1": "Art. 15(1)",
+        "AI-AUTO.1": "GDPR Art. 22",
+        "AI-HITL.1": "Art. 14(1)",
+        "AI-EXPL.1": "Art. 13(1)",
+        "AI-TRANS.1": "FCC + Art. 13",
+    }
+
+    for i, (proc, _fa, _fb, _fc, verdict, _desc) in enumerate(procedures):
+        fp_val = anchors[i].rsplit("-", 1)[-1] if i < len(anchors) else "?"
+        reg = reg_map.get(proc, "")
+        print(f"  {WHITE}{proc:<16}{RESET}{GREEN}{verdict:<10}{RESET}{DIM}{reg:<16}{fp_val}{RESET}")
+
+    print(f"  {DIM}{sep}{RESET}")
+    print(f"  {GREEN}{len(anchors)} anchors{RESET} {DIM}| Full fraud lifecycle witnessed | telecom-compliance profile{RESET}")
+    print()
+    print(f"  {DIM}Telecom profile: swt3 init --profile telecom-compliance{RESET}")
+    print(f"  {DIM}Covers: FCC AI transparency, EU AI Act Art. 9-15, GDPR Art. 22{RESET}")
+    print()
+    print(f"  {DIM}Connect to production:{RESET}")
+    print(f"  {CYAN}https://sovereign.tenova.io/signup?ref=telecom_demo{RESET}")
+    print()
+
+
 if __name__ == "__main__":
     if "--mesh-test" in sys.argv:
         run_mesh_test()
+    elif "--scenario" in sys.argv and "telecom-fraud" in sys.argv:
+        run_telecom_demo()
     else:
         main()

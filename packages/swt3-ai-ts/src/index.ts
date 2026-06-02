@@ -33,10 +33,11 @@ export type {
   SkillInfo,
   MemorySource,
 } from "./types.js";
-export { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES } from "./types.js";
+export { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES } from "./types.js";
 export { mintFingerprint, sha256Truncated, sha256Hex, timestampMs } from "./fingerprint.js";
 export { extractPayloads, extractGatekeeperPayload, extractRevocationPayload, extractChainTrustDegradationPayload, REVOCATION_REASONS } from "./clearing.js";
-export { signPayload } from "./signing.js";
+export { signPayload, generateMldsaKeypair, verifyMldsa, SIGNING_ALGORITHM_HMAC, SIGNING_ALGORITHM_MLDSA, VALID_SIGNING_ALGORITHMS, DEFAULT_SIGNING_ALGORITHM } from "./signing.js";
+export type { SigningAlgorithm } from "./signing.js";
 export { loadConfig, loadFullConfig, computeConfigHash } from "./config.js";
 export type { TrustMeshConfig, HardwareConfig, RuntimeProfileConfig, SkillCardConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, LoadedConfig, ChainRule, ChainPolicyViolation } from "./types.js";
 export { validateSchema } from "./schema.js";

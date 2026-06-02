@@ -1,0 +1,67 @@
+# SWT3 Profile: Healthcare Clinical AI (HIPAA + FDA AI/ML + EU MDR)
+# AI governance for clinical decision support, diagnostic AI, patient
+# risk scoring, and treatment recommendation systems.
+#
+# Covers HIPAA Privacy/Security Rules, FDA AI/ML SaMD guidance,
+# EU Medical Device Regulation (MDR), GDPR Art. 22/35, and
+# NIST AI RMF GOVERN/MAP/MEASURE/MANAGE.
+#
+# Clinical AI processes protected health information (PHI) and makes
+# decisions with direct patient safety implications. Maximum clearing
+# level and strict human oversight are non-negotiable.
+#
+# Usage:
+#   profile: healthcare-clinical
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: diagnostic-radiology-v2
+
+clearing_level: 3   # Classified (PHI and clinical data)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 3
+  require_jurisdiction: true   # HIPAA / MDR jurisdiction tracking
+  required_procedures:
+    # Inference provenance
+    - AI-INF.1     # Prompt/response hash capture
+    # Fairness (diagnostic equity across demographics)
+    - AI-FAIR.1    # Bias disparity measurement
+    - AI-FAIR.3    # Bias audit witnessing
+    # Explainability (clinical decision transparency)
+    - AI-EXPL.1    # Explanation generation (feature attribution)
+    - AI-EXPL.2    # Confidence scoring (diagnostic certainty)
+    # Automated decisions (clinical recommendations)
+    - AI-AUTO.1    # Automated decision notification
+    # Human oversight (clinician review -- mandatory)
+    - AI-HITL.1    # Human review completion
+    - AI-HITL.2    # Human override event tracking
+    # Patient rights
+    - AI-CONSENT.1 # Patient consent (HIPAA authorization)
+    - AI-DPIA.1    # Data protection impact assessment
+    - AI-TRANS.1   # Transparency disclosure to patients
+    # Continuous monitoring
+    - AI-PERF.1    # Diagnostic accuracy metrics
+    - AI-SAFE.1    # Clinical safe state (failover to human)
+    - AI-AUDIT.1   # Audit log integrity (HIPAA requirement)
+    - AI-DRIFT.1   # Model drift (population shift detection)
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 3
+  require_signature: true
+  freshness_window: 1800   # 30 minutes (clinical shift-aligned)
+
+density_policy:
+  min_anchors_per_1000_tokens: 4
+  max_chain_gap_seconds: 60    # Tight gap for clinical decisions
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true    # Never allow unwitnessed clinical decisions
+  max_velocity: "15/60s"
+  max_chain_depth: 5
+  fail_secure: true

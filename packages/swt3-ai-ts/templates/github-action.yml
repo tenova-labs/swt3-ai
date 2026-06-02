@@ -1,0 +1,44 @@
+# SWT3 AI Witness -- Config Validation for CI/CD
+# Ensures your governance config (swt3.yaml) is valid before deploy.
+#
+# Setup:
+#   1. Run: npx swt3 init --profile <profile> --tenant <your-tenant>
+#   2. Commit swt3.yaml to your repo
+#   3. Copy this file to .github/workflows/swt3-ci.yml
+#   4. (Optional) Add SWT3_API_KEY to repository secrets for cloud mode
+#
+# This validates config structure, not runtime behavior.
+# Runtime witnessing happens in your application code via the SDK.
+
+name: SWT3 Config Validation
+
+on:
+  push:
+    branches: [main]
+    paths: [swt3.yaml, .swt3.yaml]
+  pull_request:
+    branches: [main]
+    paths: [swt3.yaml, .swt3.yaml]
+
+jobs:
+  swt3-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install SWT3 SDK
+        run: npm install @tenova/swt3-ai
+
+      - name: Validate governance config
+        env:
+          SWT3_API_KEY: ${{ secrets.SWT3_API_KEY }}
+        run: |
+          if [ ! -f swt3.yaml ] && [ ! -f .swt3.yaml ]; then
+            echo "No swt3.yaml found. Run: npx swt3 init"
+            exit 1
+          fi
+          npx swt3 doctor --ci

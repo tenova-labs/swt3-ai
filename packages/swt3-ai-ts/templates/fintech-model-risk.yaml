@@ -1,0 +1,69 @@
+# SWT3 Profile: Fintech Model Risk (SR 11-7 + GDPR + Basel III/IV)
+# AI governance for credit decisioning, fraud scoring, AML detection,
+# trading algorithms, and customer risk classification models.
+#
+# Covers Federal Reserve SR 11-7 (model risk management), OCC 2011-12,
+# GDPR Art. 22 (automated decisions), Basel III/IV operational risk,
+# ECOA/Reg B (fair lending), and FCRA (adverse action notices).
+#
+# Financial AI models directly affect credit access, fraud flags, and
+# regulatory reporting. Explainability for adverse actions and bias
+# monitoring for protected classes are regulatory requirements.
+#
+# Usage:
+#   profile: fintech-model-risk
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: credit-scoring-v4
+
+clearing_level: 2   # Sensitive (financial PII)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 2
+  require_jurisdiction: true   # Multi-jurisdiction financial regulation
+  required_procedures:
+    # Inference provenance
+    - AI-INF.1     # Prompt/response hash capture
+    - AI-INF.2     # Latency monitoring (SLA compliance)
+    # Model lifecycle
+    - AI-MDL.1     # Model validation (SR 11-7 requirement)
+    # Fairness (lending, credit, insurance bias)
+    - AI-FAIR.1    # Bias disparity measurement (ECOA/Reg B)
+    - AI-FAIR.3    # Bias audit witnessing
+    # Explainability (adverse action notices -- FCRA/ECOA)
+    - AI-EXPL.1    # Explanation generation
+    - AI-EXPL.2    # Confidence scoring
+    # Automated decisions (credit, fraud, AML)
+    - AI-AUTO.1    # Automated decision notification (GDPR Art. 22)
+    # Human oversight
+    - AI-HITL.1    # Human review of denials/flags
+    - AI-HITL.2    # Human override event tracking
+    # Data governance
+    - AI-CONSENT.1 # Data subject consent
+    - AI-DPIA.1    # Data protection impact assessment
+    - AI-TRANS.1   # Transparency disclosure
+    # Continuous monitoring (SR 11-7 ongoing validation)
+    - AI-DRIFT.1   # Model decay detection
+    - AI-PERF.1    # Model performance metrics
+    - AI-AUDIT.1   # Audit log integrity
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 3
+  require_signature: true
+  freshness_window: 3600   # 1 hour
+
+density_policy:
+  min_anchors_per_1000_tokens: 3
+  max_chain_gap_seconds: 120
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "20/60s"
+  max_chain_depth: 8
+  fail_secure: true

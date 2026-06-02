@@ -20,6 +20,7 @@ pub struct WitnessPayload {
     pub agent_id: Option<String>,
     pub cycle_id: Option<String>,
     pub payload_signature: Option<String>,
+    pub signing_algorithm: Option<SigningAlgorithm>,
     pub signing_key_id: Option<String>,
     pub signing_key_version: Option<u32>,
     pub policy_version_hash: Option<String>,
@@ -57,11 +58,30 @@ pub struct WitnessConfig {
     pub max_retries: u32,
     pub agent_id: Option<String>,
     pub signing_key: Option<String>,
+    pub signing_algorithm: Option<SigningAlgorithm>,
     pub cycle_id: Option<String>,
     pub policy_version: Option<String>,
     pub jurisdiction: Option<String>,
     pub legal_basis: Option<String>,
     pub purpose_class: Option<String>,
+}
+
+/// Signing algorithm for payload signatures.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SigningAlgorithm {
+    /// HMAC-SHA256 (default, symmetric).
+    HmacSha256,
+    /// ML-DSA-65 / FIPS 204 (post-quantum, asymmetric).
+    MlDsa65,
+}
+
+impl SigningAlgorithm {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::HmacSha256 => "hmac-sha256",
+            Self::MlDsa65 => "ml-dsa-65",
+        }
+    }
 }
 
 /// Revocation reason codes for AI-REV.1 anchors.

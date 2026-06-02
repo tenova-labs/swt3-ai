@@ -1,0 +1,77 @@
+# SWT3 Profile: Defense / GovCon AI (CMMC + NIST 800-171 + FedRAMP)
+# AI governance for defense contractors, intelligence community,
+# and federal systems processing CUI or classified inference data.
+#
+# Covers CMMC v2.0 Level 2+, NIST 800-171 Rev 2, NIST 800-53 Rev 5,
+# FedRAMP Moderate/High, EO 14028 (supply chain), and DoD AI Ethical
+# Principles.
+#
+# Defense AI requires maximum assurance: hardware attestation, supply
+# chain verification, adversarial testing, and classified clearing
+# levels. Every inference must produce a verifiable evidence chain.
+#
+# Usage:
+#   profile: defense-govcon
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: mission-planning-v2
+
+clearing_level: 3   # Classified (CUI / FOUO / Secret)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 3
+  require_jurisdiction: true
+  required_procedures:
+    # Inference provenance
+    - AI-INF.1     # Prompt/response hash capture
+    # Model integrity (NIST SI-7)
+    - AI-MDL.1     # Model weight integrity verification
+    - AI-MDL.5     # Weight file hash verification
+    # Security (adversarial threat landscape)
+    - AI-SEC.1     # Adversarial threat detection
+    - AI-SEC.2     # Input validation and sanitization
+    # Hardware attestation (TPM / secure enclave)
+    - AI-HW.1      # Hardware runtime attestation
+    - AI-HW.3      # TPM platform attestation
+    # Supply chain (EO 14028)
+    - AI-SBOM.1    # AI bill of materials
+    - AI-SUPPLY.1  # Supply chain risk assessment
+    - AI-ENV.1     # Runtime environment attestation
+    - AI-ENV.2     # Dependency manifest attestation
+    # Testing and validation
+    - AI-REDTEAM.1 # Adversarial test campaigns
+    - AI-DRIFT.1   # Model drift detection
+    - AI-PERF.1    # Performance validation
+    # Safety and audit
+    - AI-SAFE.1    # Safe state transition
+    - AI-AUDIT.1   # Audit log integrity
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 4          # Maximum trust required
+  require_signature: true
+  freshness_window: 900       # 15 minutes (operational tempo)
+
+hardware:
+  require_attestation: true
+  attestation_freshness: 3600
+  allowed_methods:
+    - tpm2
+    - sgx
+    - sev
+    - nitro
+
+density_policy:
+  min_anchors_per_1000_tokens: 5
+  max_chain_gap_seconds: 60
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "5/60s"       # Low velocity (controlled environment)
+  max_chain_depth: 5
+  fail_secure: true

@@ -242,7 +242,7 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
       "Checks that the anchor's fingerprint matches the recomputed value " +
       "from the original factors, proving the evidence has not been tampered with.",
     inputSchema: {
-      token: z.string().describe("SWT3 anchor token (e.g., SWT3-E-VULTR-AI-AIINF1-PASS-1700000000-96b7d56c0245)"),
+      token: z.string().describe("SWT3 anchor token (e.g., SWT3-E-AWS-AI-AIINF1-PASS-1700000000-96b7d56c0245)"),
     },
     annotations: { readOnlyHint: true },
   }, async (args) => {

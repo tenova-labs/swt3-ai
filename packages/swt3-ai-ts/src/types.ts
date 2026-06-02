@@ -21,6 +21,7 @@ export interface WitnessConfig {
   signingKey?: string;
   signingKeyId?: string;
   signingKeyVersion?: number;
+  signingAlgorithm?: "hmac-sha256" | "ml-dsa-65";
   cycleId?: string;
   policyVersion?: string;
   jurisdiction?: string;
@@ -51,6 +52,7 @@ export interface WitnessPayload {
   agent_id?: string;
   cycle_id?: string;
   payload_signature?: string;
+  signing_algorithm?: string;
   signing_key_id?: string;
   signing_key_version?: number;
   policy_version_hash?: string;
@@ -143,6 +145,24 @@ export const AI_PROCEDURES = new Set([
   "AI-ENV.2",
   "AI-MARK.1",
   "AI-BASE.1",
+  "AI-LIC.1",
+  "AI-SBOM.1",
+  "AI-REDTEAM.1",
+  "AI-CONSENT.1",
+  "AI-MULTI.1",
+  "AI-DRIFT.1",
+  "AI-AUDIT.1",
+  "AI-INCIDENT.1",
+  "AI-PERF.1",
+  "AI-ROBUST.1",
+  "AI-CYBER.1",
+  "AI-TRANS.1",
+  "AI-WATERMARK.1",
+  "AI-DPIA.1",
+  "AI-AUTO.1",
+  "AI-DUALUSE.1",
+  "AI-SUPPLY.1",
+  "AI-PMM.1",
 ]);
 
 /** A single retrieved context chunk for RAG witnessing. */
@@ -232,6 +252,110 @@ export const MARKING_METHODS = [
 /** Baseline mode codes for AI-BASE.1 agent behavioral baseline. */
 export const BASELINE_MODE_CODES: Record<string, number> = {
   establishing: 0, monitoring: 1, drift_detected: 2, baseline_reset: 3,
+};
+
+/** License type codes for AI-LIC.1 license provenance witnessing. */
+export const LICENSE_TYPE_CODES: Record<string, number> = {
+  permissive: 0, copyleft: 1, proprietary: 2, dual: 3, openmdw: 4, unknown: 5,
+};
+
+/** SBOM format codes for AI-SBOM.1 AI bill of materials witnessing. */
+export const SBOM_FORMAT_CODES: Record<string, number> = {
+  cyclonedx: 0, spdx: 1, custom: 2, unknown: 3,
+};
+
+/** Red team coverage category codes for AI-REDTEAM.1 adversarial test witnessing. */
+export const REDTEAM_CATEGORY_CODES: Record<string, number> = {
+  prompt_injection: 0, jailbreak: 1, data_poisoning: 2, model_extraction: 3,
+  membership_inference: 4, adversarial_examples: 5, supply_chain: 6,
+  denial_of_service: 7, output_manipulation: 8, privilege_escalation: 9,
+  comprehensive: 10,
+};
+
+/** GDPR lawful basis codes for AI-CONSENT.1 data subject consent witnessing. */
+export const CONSENT_BASIS_CODES: Record<string, number> = {
+  consent: 0, contract: 1, legal_obligation: 2, vital_interest: 3,
+  public_task: 4, legitimate_interest: 5,
+};
+
+/** Drift type codes for AI-DRIFT.1 model drift detection. */
+export const DRIFT_TYPE_CODES: Record<string, number> = {
+  data: 0, concept: 1, prediction: 2, feature: 3, label: 4, prior_probability: 5,
+};
+
+/** Log format codes for AI-AUDIT.1 audit log integrity. */
+export const LOG_FORMAT_CODES: Record<string, number> = {
+  jsonl: 0, syslog: 1, otel: 2, custom: 3,
+};
+
+/** Incident severity codes for AI-INCIDENT.1. */
+export const INCIDENT_SEVERITY_CODES: Record<string, number> = {
+  low: 1, medium: 2, high: 3, critical: 4,
+};
+
+/** Incident type codes for AI-INCIDENT.1 incident reporting. */
+export const INCIDENT_TYPE_CODES: Record<string, number> = {
+  safety: 0, rights: 1, security: 2, performance: 3, bias: 4, other: 5,
+};
+
+/** Benchmark type codes for AI-PERF.1 performance metrics. */
+export const BENCHMARK_TYPE_CODES: Record<string, number> = {
+  accuracy: 0, precision: 1, recall: 2, f1: 3, auc: 4, custom: 5,
+};
+
+/** Perturbation type codes for AI-ROBUST.1 robustness testing. */
+export const PERTURBATION_TYPE_CODES: Record<string, number> = {
+  noise: 0, corruption: 1, missing_data: 2, out_of_distribution: 3, edge_case: 4, adversarial_input: 5,
+};
+
+/** Cybersecurity framework codes for AI-CYBER.1. */
+export const CYBER_FRAMEWORK_CODES: Record<string, number> = {
+  nist_csf: 0, iso27001: 1, owasp: 2, cis: 3, custom: 4,
+};
+
+/** Disclosure type codes for AI-TRANS.1 transparency disclosure. */
+export const DISCLOSURE_TYPE_CODES: Record<string, number> = {
+  ai_usage: 0, data_processing: 1, automated_decision: 2, profiling: 3, capability_limitation: 4,
+};
+
+/** Recipient type codes for AI-TRANS.1 transparency disclosure. */
+export const RECIPIENT_TYPE_CODES: Record<string, number> = {
+  deployer: 0, end_user: 1, data_subject: 2, authority: 3,
+};
+
+/** Detection method codes for AI-WATERMARK.1 watermark verification. */
+export const DETECTION_METHOD_CODES: Record<string, number> = {
+  c2pa_verify: 0, synthid_check: 1, metadata_scan: 2, spectral_analysis: 3, classifier: 4,
+};
+
+/** Processing type codes for AI-DPIA.1 data protection impact assessment. */
+export const PROCESSING_TYPE_CODES: Record<string, number> = {
+  profiling: 0, automated_decision: 1, large_scale_monitoring: 2, sensitive_data: 3, combined: 4,
+};
+
+/** Decision type codes for AI-AUTO.1 automated decision notification. */
+export const DECISION_TYPE_CODES: Record<string, number> = {
+  credit: 0, employment: 1, insurance: 2, benefits: 3, legal: 4, other: 5,
+};
+
+/** Classification codes for AI-DUALUSE.1 dual-use model classification. */
+export const CLASSIFICATION_CODES: Record<string, number> = {
+  standard: 0, dual_use: 1, high_impact: 2,
+};
+
+/** Reporting status codes for AI-DUALUSE.1. */
+export const REPORTING_STATUS_CODES: Record<string, number> = {
+  not_required: 0, pending: 1, notified: 2, acknowledged: 3,
+};
+
+/** Supply chain risk level codes for AI-SUPPLY.1. */
+export const SUPPLY_RISK_CODES: Record<string, number> = {
+  low: 0, medium: 1, high: 2, critical: 3,
+};
+
+/** Post-market monitoring type codes for AI-PMM.1. */
+export const PMM_TYPE_CODES: Record<string, number> = {
+  performance: 0, fairness: 1, safety: 2, security: 3, comprehensive: 4,
 };
 
 // ── Declarative Governance Config Types ────────────────────────────────

@@ -43,6 +43,10 @@ async function main() {
   console.log(`${B}SWT3 AI Witness SDK — Live Demo${R}`);
   console.log(`${D}No API keys. No account. No network calls.${R}`);
   console.log(`${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${G}New in v0.5.4:${R} AI-LIC.1 License Provenance,`);
+  console.log(`  OpenMDW-1.1 support, MCP governance, 65 procedures.`);
+  console.log(`  ${D}License guide: sovereign.tenova.io/guides/openmdw-license-provenance.html${R}`);
+  console.log(`${D}${"─".repeat(56)}${R}`);
   console.log();
 
   const tenant = "DEMO_TENANT";
@@ -116,9 +120,44 @@ async function main() {
   console.log(`   Match:      ${G}✓ Anchor is independently verifiable${R}`);
   console.log();
 
+  // ── License Provenance (AI-LIC.1) ──
+  console.log(`${C}7. License Provenance Witnessing (AI-LIC.1)...${R}`);
+  console.log();
+  console.log(`   ${D}Base model:   Apache-2.0 (permissive)${R}`);
+  console.log(`   ${D}LoRA adapter: CC-BY-4.0 (permissive)${R}`);
+  console.log(`   ${D}Training data: OpenMDW-1.1 (openmdw)${R}`);
+
+  const licFp = mintFingerprint(tenant, "AI-LIC.1", 3, 1, 0, tsMs);
+  const licAnchor = `SWT3-E-${provider}-AI-AI-LIC.1-PASS-${epoch}-${licFp}`;
+  anchors.push(licAnchor);
+  console.log();
+  console.log(`   ${G}■ PASS${R}  ${W}AI-LIC.1${R}  ${D}3 license components verified, all compliant${R}`);
+  console.log(`     ${D}${licAnchor}${R}`);
+  console.log();
+
+  // ── Summary Table ──
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${B}WITNESS SUMMARY${R}`);
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${"Procedure".padEnd(14)}${"Verdict".padEnd(10)}Fingerprint`);
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  const summaryItems: [string, string][] = [
+    ["AI-INF.1", "PASS"], ["AI-MDL.1", "PASS"], ["AI-GRD.1", "PASS"],
+    ["AI-LIC.1", "PASS"],
+  ];
+  for (let i = 0; i < summaryItems.length; i++) {
+    const [proc, verdict] = summaryItems[i];
+    const fpVal = anchors[i]?.split("-").pop() ?? "?";
+    const color = verdict === "PASS" ? G : RD;
+    console.log(`  ${W}${proc.padEnd(14)}${R}${color}${verdict.padEnd(10)}${R}${D}${fpVal}${R}`);
+  }
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${G}${anchors.length} anchors${R} ${D}| 0 violations | local demo${R}`);
+  console.log();
+
   // ── Regulatory Translation Layer ──
   console.log();
-  console.log(`  ${G}[SWT3] 3 Evidence Anchors Verified.${R}`);
+  console.log(`  ${G}[SWT3] ${anchors.length} Evidence Anchors Verified.${R}`);
   console.log(`  ${D}${"─".repeat(50)}${R}`);
   console.log(`  ${B}REGULATORY COVERAGE SUMMARY (NIST AI RMF / EU AI ACT)${R}`);
   console.log();
@@ -128,6 +167,7 @@ async function main() {
     ["AI-INF.1", "Art. 12(1)",  "Automatic Logging of Use Periods", "DEMONSTRATED"],
     ["AI-MDL.1", "Art. 9(4a)",  "Model Risk Identification",        "DEMONSTRATED"],
     ["AI-GRD.1", "Art. 9(2a)",  "Risk Mitigation Measures",         "DEMONSTRATED"],
+    ["AI-LIC.1", "Art. 53(1d)", "Training Data Licensing (GPAI)",    "DEMONSTRATED"],
   ];
   for (const [proc, article, desc, verdict] of coverageMap) {
     console.log(`  ${G}✓${R} ${W}${proc}${R} → ${article}: ${desc} ${G}[${verdict}]${R}`);
@@ -167,11 +207,11 @@ async function main() {
   console.log(`  ${D}Preview a live auditor view (no account required):${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public${R}`);
   console.log();
-  console.log(`  ${D}Full conformity requires all 47 AI procedures. Connect to close the gap:${R}`);
+  console.log(`  ${D}Full conformity requires all 48 AI procedures. Connect to close the gap:${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/signup?ref=sdk_demo${R}`);
   console.log();
   console.log(`  ${D}SDK docs:     ${C}https://sovereign.tenova.io/docs${R}`);
-  console.log(`  ${D}Book a pilot: ${C}https://calendly.com/tenova-axiom/30min${R}`);
+  console.log(`  ${D}Contact:      ${C}engineering@tenovaai.com${R}`);
   console.log(`  ${D}GitHub:       ${C}https://github.com/tenova-labs/swt3-ai${R}`);
   console.log();
 
@@ -235,10 +275,10 @@ pre{background:#111;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.8r
 <body>
 <div class="c">
 <h1>SWT3 AI Witness \u2014 Coverage Report</h1>
-<p class="meta">Generated ${ts} UTC | SWT3 Protocol v0.3.3 | Demo Environment</p>
+<p class="meta">Generated ${ts} UTC | SWT3 Protocol v1.6.0 | Demo Environment</p>
 
-<div class="score"><span class="pass">12</span><span class="total"> / 12 obligations mapped</span></div>
-<p style="color:#9CA3AF;font-size:.95rem;margin-top:-.5rem">3 demonstrated locally \u00b7 9 need production data</p>
+<div class="score"><span class="pass">13</span><span class="total"> / 13 obligations mapped</span></div>
+<p style="color:#9CA3AF;font-size:.95rem;margin-top:-.5rem">4 demonstrated locally \u00b7 9 need production data</p>
 
 <h2>Demonstrated Locally</h2>
 <table>
@@ -259,7 +299,7 @@ ${uncoveredRows}
 <h2>Anchor Evidence (Demo)</h2>
 <pre>${anchorText}</pre>
 
-<p>Full conformity requires all 47 AI procedures across inference, model governance, guardrails, RAG, skills, and explainability domains.</p>
+<p>Full conformity requires all 48 AI procedures across inference, model governance, guardrails, RAG, skills, licensing, and explainability domains.</p>
 <a class="cta-secondary" href="https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public">See Live Auditor View \u2192</a>
 <a class="cta" href="https://sovereign.tenova.io/signup?ref=sdk_demo">Close the Gap \u2014 Free Account</a>
 <p style="margin-top:.75rem;font-size:.8rem;color:#9CA3AF">Preview a real tenant's EU AI Act posture (no account required) \u2014 then create your own.</p>
@@ -367,8 +407,150 @@ export async function runMeshTest() {
   console.log();
 }
 
+async function runTelecomDemo() {
+  console.log();
+  console.log(`${B}SWT3 AI Witness -- Telecom Fraud Detection Demo${R}`);
+  console.log(`${D}Simulating a telecom fraud scoring model lifecycle.${R}`);
+  console.log(`${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${D}Profile: telecom-compliance | Clearing: 2 (Sensitive)${R}`);
+  console.log(`  ${D}Use case: Real-time fraud detection on call detail records${R}`);
+  console.log(`${D}${"─".repeat(56)}${R}`);
+  console.log();
+
+  const tenant = "TELECOM_DEMO";
+  const provider = "LOCAL";
+  const modelId = "fraud-scoring-v3.2.1";
+  const tsMs = Date.now();
+  const epoch = Math.floor(tsMs / 1000);
+  const anchors: string[] = [];
+
+  // Step 1: Model inference on call record
+  console.log(`${C}1. Fraud model inference on call detail record...${R}`);
+  console.log(`   Model:     ${W}${modelId}${R}`);
+  console.log(`   Input:     ${D}CDR #8847291 (international call, 47min, new SIM)${R}`);
+  console.log(`   Score:     ${A}0.87 (HIGH RISK)${R}`);
+  console.log(`   Latency:   ${W}23ms${R}`);
+  await sleep(300);
+
+  // Step 2: Bias check
+  console.log();
+  console.log(`${C}2. Bias disparity check across demographic groups...${R}`);
+  console.log(`   Groups tested:   ${W}12${R}`);
+  console.log(`   Disparities:     ${G}0 above threshold${R}`);
+  console.log(`   Max disparity:   ${W}4.2%${R} (below 10% threshold)`);
+  await sleep(200);
+
+  // Step 3: Drift detection
+  console.log();
+  console.log(`${C}3. Model drift check against production baseline...${R}`);
+  console.log(`   Metrics evaluated: ${W}8${R}`);
+  console.log(`   Drifted:           ${G}0${R}`);
+  console.log(`   Drift type:        ${D}data (distribution stable)${R}`);
+  await sleep(200);
+
+  // Step 4: Performance metrics
+  console.log();
+  console.log(`${C}4. Performance validation against declared accuracy...${R}`);
+  console.log(`   Precision: ${G}94.2%${R}  Recall: ${G}91.8%${R}  F1: ${G}93.0%${R}`);
+  console.log(`   Benchmark: ${W}fraud-detection-v3 (weekly)${R}`);
+  await sleep(200);
+
+  // Step 5: Automated decision
+  console.log();
+  console.log(`${C}5. Automated decision: flagging transaction for review...${R}`);
+  console.log(`   Decision:  ${A}FLAGGED${R} (score > 0.75 threshold)`);
+  console.log(`   Type:      ${W}fraud_flag (legal/financial effect)${R}`);
+  console.log(`   GDPR basis: ${W}Art. 22 -- automated decision notification sent${R}`);
+  await sleep(200);
+
+  // Step 6: Human review
+  console.log();
+  console.log(`${C}6. Human analyst reviews flagged transaction...${R}`);
+  console.log(`   Reviewer:  ${W}analyst-7829${R}`);
+  console.log(`   Decision:  ${G}CONFIRMED FRAUD${R}`);
+  console.log(`   Override:  ${D}none (model agreed)${R}`);
+  await sleep(200);
+
+  // Step 7: Explainability
+  console.log();
+  console.log(`${C}7. Generating explanation for affected customer...${R}`);
+  console.log(`   Top features: ${W}call_duration (0.34), new_sim (0.28), international (0.21)${R}`);
+  console.log(`   Confidence:   ${G}0.87${R}`);
+  await sleep(200);
+
+  // Step 8: Transparency disclosure
+  console.log();
+  console.log(`${C}8. Transparency notification to customer...${R}`);
+  console.log(`   Disclosure: ${W}AI-assisted fraud detection was used${R}`);
+  console.log(`   Recipient:  ${W}data_subject (account holder)${R}`);
+  console.log(`   FCC + Art. 13 requirement satisfied`);
+  await sleep(200);
+
+  // Mint anchors
+  const procedures: [string, number, number, number, string, string][] = [
+    ["AI-INF.1",     1, 1, 1,   "PASS", "Fraud inference witnessed"],
+    ["AI-FAIR.3",   12, 0, 42,  "PASS", "Bias audit: 12 groups, 0 disparities"],
+    ["AI-DRIFT.1",   8, 0, 0,   "PASS", "Drift check: 8 metrics stable"],
+    ["AI-PERF.1",    3, 3, 3,   "PASS", "Performance: 3/3 metrics passing"],
+    ["AI-AUTO.1",    1, 1, 0,   "PASS", "Automated decision notified"],
+    ["AI-HITL.1",    1, 1, 0,   "PASS", "Human review completed"],
+    ["AI-EXPL.1",    3, 1, 0,   "PASS", "Explanation generated (3 features)"],
+    ["AI-TRANS.1",   1, 0, 1,   "PASS", "Transparency disclosure sent"],
+  ];
+
+  console.log();
+  console.log(`${C}9. Minting SWT3 Witness Anchors...${R}`);
+  console.log();
+
+  for (const [procId, fa, fb, fc, verdict, desc] of procedures) {
+    const fp = mintFingerprint(tenant, procId, fa, fb, fc, tsMs);
+    const anchor = `SWT3-E-${provider}-AI-${procId}-${verdict}-${epoch}-${fp}`;
+    anchors.push(anchor);
+    console.log(`   ${G}\u25a0 ${verdict}${R}  ${W}${procId.padEnd(14)}${R}${D}${desc}${R}`);
+    console.log(`     ${D}${anchor}${R}`);
+    console.log();
+  }
+
+  // Summary
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${B}TELECOM FRAUD DETECTION -- WITNESS CHAIN${R}`);
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${"Procedure".padEnd(16)}${"Verdict".padEnd(10)}${"Regulation".padEnd(16)}Fingerprint`);
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+
+  const regMap: Record<string, string> = {
+    "AI-INF.1": "Art. 12(1)",
+    "AI-FAIR.3": "Art. 10(2f)",
+    "AI-DRIFT.1": "Art. 9(2b)",
+    "AI-PERF.1": "Art. 15(1)",
+    "AI-AUTO.1": "GDPR Art. 22",
+    "AI-HITL.1": "Art. 14(1)",
+    "AI-EXPL.1": "Art. 13(1)",
+    "AI-TRANS.1": "FCC + Art. 13",
+  };
+
+  for (let i = 0; i < procedures.length; i++) {
+    const [proc, , , , verdict] = procedures[i];
+    const fpVal = anchors[i]?.split("-").pop() ?? "?";
+    const reg = regMap[proc] ?? "";
+    console.log(`  ${W}${proc.padEnd(16)}${R}${G}${verdict.padEnd(10)}${R}${D}${reg.padEnd(16)}${fpVal}${R}`);
+  }
+
+  console.log(`  ${D}${"─".repeat(56)}${R}`);
+  console.log(`  ${G}${anchors.length} anchors${R} ${D}| Full fraud lifecycle witnessed | telecom-compliance profile${R}`);
+  console.log();
+  console.log(`  ${D}Telecom profile: swt3 init --profile telecom-compliance${R}`);
+  console.log(`  ${D}Covers: FCC AI transparency, EU AI Act Art. 9-15, GDPR Art. 22${R}`);
+  console.log();
+  console.log(`  ${D}Connect to production:${R}`);
+  console.log(`  ${C}https://sovereign.tenova.io/signup?ref=telecom_demo${R}`);
+  console.log();
+}
+
 if (process.argv.includes("--mesh-test")) {
   runMeshTest();
+} else if (process.argv.includes("--scenario") && process.argv.includes("telecom-fraud")) {
+  runTelecomDemo();
 } else {
   main();
 }

@@ -1,0 +1,1062 @@
+family: "AI"
+family_name: "AI Governance & Inference Integrity"
+controls:
+  # ── Technical Controls (automated via AI witness pipeline) ──────
+
+  - id: "AI-1.1"
+    parent_control: "AI-1"
+    name: "Inference Provenance - Prompt Hashing"
+    description: "All AI inference prompts are SHA-256 hashed and anchored to the SWT3 ledger"
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check prompt-hashing"
+    factor_a: 1
+    factor_a_label: "prompt_hashing_required"
+    factor_b_source: "api_check"
+    factor_b_label: "prompt_hashing_active"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+
+  - id: "AI-1.2"
+    parent_control: "AI-1"
+    name: "Inference Provenance - Response Anchoring"
+    description: "All AI inference responses are SHA-256 hashed and anchored to the SWT3 ledger"
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check response-anchoring"
+    factor_a: 1
+    factor_a_label: "response_anchoring_required"
+    factor_b_source: "api_check"
+    factor_b_label: "response_anchoring_active"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+
+  - id: "AI-1.3"
+    parent_control: "AI-1"
+    name: "Inference Provenance - Model Identifier Recorded"
+    description: "Model identifier (name + version) is captured with each inference anchor. Optional lifecycle_stage field (design, development, testing, deployment, monitoring, decommission) enables MAP 1.3 lifecycle stage characterization."
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check model-identifier"
+    factor_a: 1
+    factor_a_label: "model_id_required"
+    factor_b_source: "api_check"
+    factor_b_label: "model_id_present"
+    factor_c_source: "none"
+    factor_c_label: "lifecycle_stage"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MAP 4.1"
+    supplemental_ai_rmf_ref: "MAP 1.3"
+
+  - id: "AI-2.1"
+    parent_control: "AI-2"
+    name: "Inference Logging - Witness Anchor Minting"
+    description: "Each AI inference produces a cryptographic SWT3 Witness Anchor in the ledger"
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check witness-minting"
+    factor_a: 1
+    factor_a_label: "witness_minting_required"
+    factor_b_source: "api_check"
+    factor_b_label: "witness_minting_active"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "AU-2"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+
+  - id: "AI-2.2"
+    parent_control: "AI-2"
+    name: "Inference Logging - Latency Threshold"
+    description: "AI inference latency is captured and stays within defined threshold (< 30s)"
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check latency-threshold"
+    factor_a: 30000
+    factor_a_label: "max_latency_ms"
+    factor_b_source: "api_check"
+    factor_b_label: "p95_latency_ms"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+
+  - id: "AI-2.3"
+    parent_control: "AI-2"
+    name: "Inference Logging - Token Usage Tracking"
+    description: "Token consumption (input + output) is recorded per inference"
+    command: "${AXIOM_HOME}/tools/axiom-ai-witness --check token-tracking"
+    factor_a: 1
+    factor_a_label: "token_tracking_required"
+    factor_b_source: "api_check"
+    factor_b_label: "token_tracking_active"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+
+  # ── Attestation Controls (organizational/procedural) ────────────
+
+  - id: "AI-3.1"
+    parent_control: "AI-3"
+    name: "AI Risk Management Framework"
+    check_type: "attestation"
+    description: "Organization has adopted an AI risk management framework aligned with NIST AI RMF"
+    attestation_prompt: "Confirm your organization has adopted a documented AI risk management framework."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PL-2"
+    nist_ai_rmf_ref: "GOVERN 1.1"
+
+  - id: "AI-3.2"
+    parent_control: "AI-3"
+    name: "AI Model Inventory"
+    check_type: "attestation"
+    description: "Organization maintains an inventory of all AI/ML models in production"
+    attestation_prompt: "Confirm an up-to-date inventory of deployed AI/ML models is maintained."
+    review_interval_days: 90
+    uct_category: "POL"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+
+  - id: "AI-3.3"
+    parent_control: "AI-3"
+    name: "AI Acceptable Use Policy"
+    check_type: "attestation"
+    description: "Organization has documented acceptable use policies for AI systems"
+    attestation_prompt: "Confirm AI acceptable use policies are documented and communicated to users."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PL-4"
+    nist_ai_rmf_ref: "GOVERN 2.1"
+
+  - id: "AI-4.1"
+    parent_control: "AI-4"
+    name: "AI Output Review Process"
+    check_type: "attestation"
+    description: "Human review processes exist for high-impact AI decisions"
+    attestation_prompt: "Confirm human-in-the-loop review processes exist for critical AI outputs."
+    review_interval_days: 180
+    uct_category: "POL"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+
+  - id: "AI-4.2"
+    parent_control: "AI-4"
+    name: "AI Incident Response"
+    check_type: "attestation"
+    description: "Organization has incident response procedures for AI system failures or misuse"
+    attestation_prompt: "Confirm incident response procedures address AI-specific failure modes."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "IR-4"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+
+  - id: "AI-4.3"
+    parent_control: "AI-4"
+    name: "AI Data Governance"
+    check_type: "attestation"
+    description: "Data used for AI training and inference is governed under data management policies"
+    attestation_prompt: "Confirm data governance policies cover AI training data and inference inputs."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MAP 4.1"
+
+  # ── AI RMF Gap Closure Procedures (v5.43.0) ──────────────────────
+
+  - id: "AI-GOV.6"
+    parent_control: "AI-GOV"
+    name: "AI Risk Management Scope Definition"
+    check_type: "attestation"
+    description: "Organization has documented which AI systems are in scope for risk management, their intended purposes, deployment contexts, and risk tolerances"
+    attestation_prompt: "Confirm AI risk management scope is documented including in-scope systems, intended purposes, and risk tolerances."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "SA-3"
+    nist_ai_rmf_ref: "GOVERN 1.3"
+
+  - id: "AI-RISK.1"
+    parent_control: "AI-RISK"
+    name: "AI Risk Identification and Categorization"
+    check_type: "attestation"
+    description: "Organization has identified AI risk sources, assigned risk categories, and documented residual risk acceptance decisions"
+    attestation_prompt: "Confirm AI risk register exists with identified risk sources, assigned categories, and documented residual risk."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "RA-2"
+    nist_ai_rmf_ref: "MAP 2.1"
+
+  - id: "AI-IR.1"
+    parent_control: "AI-IR"
+    name: "AI Incident Response Capability"
+    check_type: "attestation"
+    description: "Organization has AI-specific incident response procedures covering detection, containment, recovery, and post-incident review for AI system failures"
+    attestation_prompt: "Confirm AI incident response plan exists covering model recall, guardrail bypass, data contamination, and shadow AI scenarios."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "IR-8"
+    nist_ai_rmf_ref: "MANAGE 3.1"
+
+  - id: "AI-GOV.7"
+    parent_control: "AI-GOV"
+    name: "AI Governance Resource Allocation"
+    check_type: "attestation"
+    description: "Organization has allocated adequate resources (budget, staffing, compute) for AI risk management and governance activities"
+    attestation_prompt: "Confirm budget, staffing, and compute resources are allocated for AI governance and documented in the QMS."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PM-3"
+    nist_ai_rmf_ref: "GOVERN 2.2"
+
+  - id: "AI-IMPACT.1"
+    parent_control: "AI-IMPACT"
+    name: "AI Societal Impact Assessment"
+    check_type: "attestation"
+    description: "Organization has conducted a community and societal-level impact assessment for deployed AI systems beyond individual bias metrics"
+    attestation_prompt: "Confirm societal impact assessment is documented including affected communities, disproportionate impact evaluation, and mitigation measures."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "MAP 5.2"
+
+  - id: "AI-CHAIN.1"
+    parent_control: "AI-CHAIN"
+    name: "Multi-Agent Chain Witnessing"
+    check_type: "attestation"
+    description: "Witness a handoff between agents in a multi-agent chain with cycle tracking"
+    attestation_prompt: "Confirm multi-agent chain handoffs are witnessed with cycle_id binding and chain depth tracking."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+    eu_ai_act_ref: "Art. 12(2)(a)"
+
+  - id: "AI-VIO.1"
+    parent_control: "AI-VIO"
+    name: "Violation Reporting"
+    check_type: "attestation"
+    description: "Witness a policy violation detected during or after inference"
+    attestation_prompt: "Confirm policy violations detected during inference are witnessed with severity and policy classification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MANAGE 3.2"
+    eu_ai_act_ref: "Art. 9(4)(a)"
+
+  - id: "AI-CHR.1"
+    parent_control: "AI-CHR"
+    name: "Agent Charter Attestation"
+    check_type: "attestation"
+    description: "Witness the charter or system prompt hash governing an agent's behavior"
+    attestation_prompt: "Confirm agent charter hashes are attested at deployment and verified before inference."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SA-4"
+    nist_ai_rmf_ref: "GOVERN 1.2"
+    eu_ai_act_ref: "Art. 13"
+
+  - id: "AI-MDL.8"
+    parent_control: "AI-MDL"
+    name: "Model Registry Check"
+    check_type: "attestation"
+    description: "Witness that a model was verified against an approved registry before deployment"
+    attestation_prompt: "Confirm models are checked against the approved registry before production deployment."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 51"
+
+  - id: "AI-HITL.3"
+    parent_control: "AI-HITL"
+    name: "Reviewer Identity Binding"
+    check_type: "attestation"
+    description: "Witness the identity of the natural person who performed a human review or override"
+    attestation_prompt: "Confirm reviewer identity is cryptographically bound to human oversight decisions with four-eyes enforcement where required."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.4"
+    eu_ai_act_ref: "Art. 12(3)(d), Art. 14(5)"
+
+  - id: "AI-SAFE.1"
+    parent_control: "AI-SAFE"
+    name: "Safe State Attestation"
+    check_type: "attestation"
+    description: "Witness that a stop or interrupt mechanism exists and the system reached safe state"
+    attestation_prompt: "Confirm stop/interrupt mechanism is implemented, tested, and system safe state is verified after invocation."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CP-2"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+    eu_ai_act_ref: "Art. 14(4)(e)"
+
+  - id: "AI-HW.1"
+    parent_control: "AI-HW"
+    name: "Hardware Attestation"
+    check_type: "attestation"
+    description: "Witness accelerator hardware inventory (GPU count, topology, interconnect) at service startup"
+    attestation_prompt: "Confirm GPU hardware inventory is attested at service startup with topology and health verification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 15(4)"
+
+  - id: "AI-HW.3"
+    parent_control: "AI-HW"
+    name: "TPM Platform Attestation"
+    check_type: "attestation"
+    description: "Witness TPM 2.0 PCR register state proving host firmware integrity and hardware root of trust"
+    attestation_prompt: "Confirm TPM 2.0 platform attestation is performed at service startup with PCR register integrity verification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SC-12"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 15(4)"
+
+  - id: "AI-TRUST.1"
+    parent_control: "AI-TRUST"
+    name: "Trust Verification"
+    check_type: "attestation"
+    description: "Witness mutual compliance trust verification between AI agents before interaction"
+    attestation_prompt: "Confirm agents verify counterpart compliance posture before exchanging data or invoking tools."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "IA-8"
+    nist_ai_rmf_ref: "GOVERN 1.2"
+    eu_ai_act_ref: "Art. 9(4)(c)"
+
+  - id: "AI-TRUST.2"
+    parent_control: "AI-TRUST"
+    name: "Trust Handshake"
+    check_type: "attestation"
+    description: "Witness the detailed handshake result of a trust verification between agents"
+    attestation_prompt: "Confirm trust handshake details (checks performed, checks passed, grant/deny) are recorded per interaction."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+    eu_ai_act_ref: "Art. 12(2)(a)"
+
+  # ── SDK Procedure Attestation Entries (v5.71.0) ────────────────
+  # These procedures are witnessed by the SDK during inference.
+  # Attestation entries enable organizational tracking and review.
+
+  # --- Inference (INF) ---
+
+  - id: "AI-INF.1"
+    parent_control: "AI-INF"
+    name: "Inference Provenance"
+    check_type: "attestation"
+    description: "All AI inference prompts and responses are SHA-256 hashed and anchored to the SWT3 ledger for provenance tracking"
+    attestation_prompt: "Confirm inference provenance hashing is active and all prompt/response pairs are witnessed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 12(1)"
+
+  - id: "AI-INF.2"
+    parent_control: "AI-INF"
+    name: "Inference Latency"
+    check_type: "attestation"
+    description: "AI inference latency is captured and stays within defined performance threshold"
+    attestation_prompt: "Confirm inference latency monitoring is configured with appropriate thresholds."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 12(2)"
+
+  - id: "AI-INF.3"
+    parent_control: "AI-INF"
+    name: "Inference Volume"
+    check_type: "attestation"
+    description: "AI inference volume is governed with hourly rate limits to prevent abuse and ensure resource allocation"
+    attestation_prompt: "Confirm inference rate limits are configured and volume monitoring is active."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 12(1)"
+
+  # --- Model Lifecycle (MDL) ---
+
+  - id: "AI-MDL.1"
+    parent_control: "AI-MDL"
+    name: "Model Weight Integrity"
+    check_type: "attestation"
+    description: "Deployed model hash matches the approved hash in the model registry"
+    attestation_prompt: "Confirm model weight integrity verification is active and hash mismatches trigger alerts."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 9(4)(a)"
+
+  - id: "AI-MDL.2"
+    parent_control: "AI-MDL"
+    name: "Model Version Tracking"
+    check_type: "attestation"
+    description: "Model version identifier is recorded with each inference anchor"
+    attestation_prompt: "Confirm model version identifiers are captured and recorded with every inference."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 12(2)(b)"
+
+  - id: "AI-MDL.3"
+    parent_control: "AI-MDL"
+    name: "Model Drift Detection"
+    check_type: "attestation"
+    description: "Model drift scoring detects distribution shift and behavioral changes over time"
+    attestation_prompt: "Confirm drift detection is configured with defined thresholds and review cadence."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 72(1)"
+
+  - id: "AI-MDL.5"
+    parent_control: "AI-MDL"
+    name: "Weight File Integrity"
+    check_type: "attestation"
+    description: "Model weight file SHA-256 hash is verified before deployment to prevent unauthorized modification"
+    attestation_prompt: "Confirm weight file hash verification is performed before every model load or deployment."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 11"
+
+  - id: "AI-MDL.6"
+    parent_control: "AI-MDL"
+    name: "Adapter Stack Attestation"
+    check_type: "attestation"
+    description: "LoRA/PEFT adapter stack configuration is attested and tracked for each model deployment"
+    attestation_prompt: "Confirm adapter stack configurations are recorded and verified against approved adapters."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 11"
+
+  - id: "AI-MDL.7"
+    parent_control: "AI-MDL"
+    name: "Quantization Attestation"
+    check_type: "attestation"
+    description: "Model quantization parameters are recorded to track precision and performance tradeoffs"
+    attestation_prompt: "Confirm quantization parameters are documented and performance impact is assessed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+
+  # --- Guardrails (GRD) ---
+
+  - id: "AI-GRD.1"
+    parent_control: "AI-GRD"
+    name: "Guardrail Enforcement"
+    check_type: "attestation"
+    description: "Safety guardrails are active and enforced on all AI inference outputs"
+    attestation_prompt: "Confirm safety guardrails are deployed, tested, and enforced on all production inference."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-10"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 9(2)(a)"
+
+  - id: "AI-GRD.2"
+    parent_control: "AI-GRD"
+    name: "Content Safety Filter"
+    check_type: "attestation"
+    description: "Output content safety classification is applied to filter harmful or inappropriate content"
+    attestation_prompt: "Confirm content safety filters are configured and output classification is active."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-10"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 15(3)"
+
+  - id: "AI-GRD.3"
+    parent_control: "AI-GRD"
+    name: "PII Redaction"
+    check_type: "attestation"
+    description: "PII detection and redaction is applied to AI inference inputs and outputs"
+    attestation_prompt: "Confirm PII redaction is configured for all AI inference pipelines handling personal data."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 10(2)(f)"
+
+  # --- Fairness (FAIR) ---
+
+  - id: "AI-FAIR.1"
+    parent_control: "AI-FAIR"
+    name: "Bias Disparity Measurement"
+    check_type: "attestation"
+    description: "Bias disparity ratios are measured across demographic groups"
+    attestation_prompt: "Confirm bias disparity measurement is performed with documented methodology and thresholds."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "MAP 2.3"
+    eu_ai_act_ref: "Art. 10(2)(f)"
+
+  - id: "AI-FAIR.2"
+    parent_control: "AI-FAIR"
+    name: "Fairness Calibration"
+    check_type: "attestation"
+    description: "Fairness calibration scores are tracked to ensure equitable model behavior"
+    attestation_prompt: "Confirm fairness calibration scoring is implemented and reviewed periodically."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 9(4)(a)"
+
+  - id: "AI-FAIR.3"
+    parent_control: "AI-FAIR"
+    name: "Bias Audit Witnessing"
+    check_type: "attestation"
+    description: "Bias audit results are witnessed with demographic group counts and disparity measurements"
+    attestation_prompt: "Confirm bias audits are conducted with documented methodology, group definitions, and disparity thresholds."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "MAP 2.3"
+    eu_ai_act_ref: "Art. 10(2)(f)"
+
+  # --- Data Governance (DATA) ---
+
+  - id: "AI-DATA.1"
+    parent_control: "AI-DATA"
+    name: "Training Data Provenance"
+    check_type: "attestation"
+    description: "Training data sources are documented with provenance and lineage information"
+    attestation_prompt: "Confirm training data provenance is documented including sources, collection methods, and consent basis."
+    review_interval_days: 365
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 10(2)(a)"
+
+  - id: "AI-DATA.2"
+    parent_control: "AI-DATA"
+    name: "Training Data License Compliance"
+    check_type: "attestation"
+    description: "Training data licenses are verified for compliance before use in model training"
+    attestation_prompt: "Confirm all training data licenses are reviewed and compliant with usage terms."
+    review_interval_days: 365
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 10(2)(a)"
+
+  - id: "AI-DATA.3"
+    parent_control: "AI-DATA"
+    name: "Training Data Statistics"
+    check_type: "attestation"
+    description: "Training dataset statistical properties are documented including size, features, and class balance"
+    attestation_prompt: "Confirm training data statistics (sample count, features, class balance) are documented and reviewed."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 10(3)"
+
+  - id: "AI-DATA.4"
+    parent_control: "AI-DATA"
+    name: "Training Data PII Lifecycle"
+    check_type: "attestation"
+    description: "PII in training data is managed through a defined lifecycle including pseudonymization, deletion, and access control"
+    attestation_prompt: "Confirm PII lifecycle management is implemented for all training data with documented procedures."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 10(5)"
+
+  # --- Human-in-the-Loop (HITL) ---
+
+  - id: "AI-HITL.1"
+    parent_control: "AI-HITL"
+    name: "Human Review Completion"
+    check_type: "attestation"
+    description: "Human review processes exist and are completed for high-impact AI decisions"
+    attestation_prompt: "Confirm human review processes are defined for high-risk decisions and completion is tracked."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 14(1)"
+
+  - id: "AI-HITL.2"
+    parent_control: "AI-HITL"
+    name: "Human Override Event Tracking"
+    check_type: "attestation"
+    description: "Human override events are logged when AI decisions are corrected or overridden"
+    attestation_prompt: "Confirm human override events are logged with identity, reason, and outcome."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 14(4)(d)"
+
+  # --- Explainability (EXPL) ---
+
+  - id: "AI-EXPL.1"
+    parent_control: "AI-EXPL"
+    name: "Explanation Generation"
+    check_type: "attestation"
+    description: "Explanations are generated for AI decisions to support transparency and accountability"
+    attestation_prompt: "Confirm explainability methods are implemented and explanation outputs are recorded."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 13(1)"
+
+  - id: "AI-EXPL.2"
+    parent_control: "AI-EXPL"
+    name: "Confidence Scoring"
+    check_type: "attestation"
+    description: "Model confidence scores are recorded to support calibrated uncertainty communication"
+    attestation_prompt: "Confirm confidence scoring is active and output uncertainty is communicated to users."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 13(3)(b)(ii)"
+
+  # --- Security (SEC) ---
+
+  - id: "AI-SEC.1"
+    parent_control: "AI-SEC"
+    name: "Adversarial Threat Detection"
+    check_type: "attestation"
+    description: "Security scanning detects adversarial inputs, prompt injection, and other AI-specific threats"
+    attestation_prompt: "Confirm adversarial threat detection is active and scan results are reviewed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 15(4)"
+
+  - id: "AI-SEC.2"
+    parent_control: "AI-SEC"
+    name: "Input Validation"
+    check_type: "attestation"
+    description: "AI inference inputs are validated and sanitized before processing"
+    attestation_prompt: "Confirm input validation and sanitization is applied to all AI inference inputs."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-10"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 15(3)"
+
+  # --- RAG (RAG) ---
+
+  - id: "AI-RAG.1"
+    parent_control: "AI-RAG"
+    name: "Context Retrieval Provenance"
+    check_type: "attestation"
+    description: "RAG context retrieval sources are witnessed for provenance tracking"
+    attestation_prompt: "Confirm RAG retrieval provenance is recorded including source documents and chunk identifiers."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MAP 4.1"
+    eu_ai_act_ref: "Art. 13"
+
+  - id: "AI-RAG.2"
+    parent_control: "AI-RAG"
+    name: "Context Relevance Scoring"
+    check_type: "attestation"
+    description: "RAG context relevance is scored to ensure retrieval quality"
+    attestation_prompt: "Confirm RAG relevance scoring is configured with quality thresholds."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 13"
+
+  # --- Agent Identity & Tools (ID, TOOL, ACC) ---
+
+  - id: "AI-ID.1"
+    parent_control: "AI-ID"
+    name: "Agent Identity Assertion"
+    check_type: "attestation"
+    description: "Agent identity is asserted and bound to all inference anchors"
+    attestation_prompt: "Confirm agent_id is configured and bound to all inference witnesses."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "IA-2"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 12(1)"
+
+  - id: "AI-TOOL.1"
+    parent_control: "AI-TOOL"
+    name: "Tool Call Witnessing"
+    check_type: "attestation"
+    description: "Tool and function call invocations by AI agents are witnessed for accountability"
+    attestation_prompt: "Confirm tool call witnessing is active for all agent tool invocations."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 12(1)"
+
+  - id: "AI-ACC.1"
+    parent_control: "AI-ACC"
+    name: "Access Control Witnessing"
+    check_type: "attestation"
+    description: "AI agent access control decisions are witnessed for authorization tracking"
+    attestation_prompt: "Confirm access control witnessing is configured for all AI agent data and resource access."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 9(4)(c)"
+
+  # --- Revocation (REV) ---
+
+  - id: "AI-REV.1"
+    parent_control: "AI-REV"
+    name: "Anchor Revocation"
+    check_type: "attestation"
+    description: "SWT3 Witness Anchors can be revoked with a documented reason code for error correction or recall"
+    attestation_prompt: "Confirm anchor revocation capability is deployed and reason codes are defined."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+    eu_ai_act_ref: "Art. 14(4)(d)"
+
+  # --- Skills (SKILL) ---
+
+  - id: "AI-SKILL.1"
+    parent_control: "AI-SKILL"
+    name: "Skill Manifest Attestation"
+    check_type: "attestation"
+    description: "Agent skill manifest is attested listing declared capabilities and constraints"
+    attestation_prompt: "Confirm agent skill manifests are registered and reviewed before deployment."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-SKILL.2"
+    parent_control: "AI-SKILL"
+    name: "Memory Context Binding"
+    check_type: "attestation"
+    description: "Agent memory and conversation context is bound to witnesses for session continuity tracking"
+    attestation_prompt: "Confirm agent memory context binding is configured and session state is witnessed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+
+  - id: "AI-SKILL.3"
+    parent_control: "AI-SKILL"
+    name: "Reward Model Binding"
+    check_type: "attestation"
+    description: "Reward model or alignment training signals are witnessed for accountability"
+    attestation_prompt: "Confirm reward model bindings are documented and alignment training is tracked."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+
+  # --- Environment (ENV) ---
+
+  - id: "AI-ENV.1"
+    parent_control: "AI-ENV"
+    name: "Runtime Environment Attestation"
+    check_type: "attestation"
+    description: "Runtime environment configuration is attested including container isolation and runtime type"
+    attestation_prompt: "Confirm runtime environment attestation is active with environment hash verification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "GOVERN 1.2"
+    eu_ai_act_ref: "Art. 11"
+
+  - id: "AI-ENV.2"
+    parent_control: "AI-ENV"
+    name: "Dependency Manifest Attestation"
+    check_type: "attestation"
+    description: "Runtime dependency manifest is attested including version pinning and vulnerability status"
+    attestation_prompt: "Confirm dependency manifests are generated and checked for known vulnerabilities."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "MANAGE 1.3"
+    eu_ai_act_ref: "Art. 11"
+
+  # --- Content & Identity (MARK, BASE, LIC) ---
+
+  - id: "AI-MARK.1"
+    parent_control: "AI-MARK"
+    name: "Content Provenance Marking"
+    check_type: "attestation"
+    description: "AI-generated content is marked with provenance metadata for transparency"
+    attestation_prompt: "Confirm content provenance marking is applied to AI-generated outputs per Art. 50 requirements."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 50(2)"
+
+  - id: "AI-BASE.1"
+    parent_control: "AI-BASE"
+    name: "Agent Behavioral Baseline"
+    check_type: "attestation"
+    description: "Agent behavioral baseline is established and monitored for anomaly detection"
+    attestation_prompt: "Confirm agent behavioral baselines are defined with deviation thresholds and monitoring cadence."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 9(2)(b)"
+
+  - id: "AI-LIC.1"
+    parent_control: "AI-LIC"
+    name: "License Provenance"
+    check_type: "attestation"
+    description: "Model and component license provenance is verified for compliance"
+    attestation_prompt: "Confirm license provenance verification is performed for all model and data components."
+    review_interval_days: 365
+    uct_category: "AI"
+    nist_800_53_ref: "SA-4"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 53(1)(d)"
+
+  # --- Advanced Capabilities (SBOM, REDTEAM, CONSENT, MULTI) ---
+
+  - id: "AI-SBOM.1"
+    parent_control: "AI-SBOM"
+    name: "AI Bill of Materials"
+    check_type: "attestation"
+    description: "AI system bill of materials documents all model components, data sources, and dependencies"
+    attestation_prompt: "Confirm AI SBOM is generated and maintained for all deployed AI systems."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CM-8"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+    eu_ai_act_ref: "Art. 11"
+
+  - id: "AI-REDTEAM.1"
+    parent_control: "AI-REDTEAM"
+    name: "Adversarial Test Campaign"
+    check_type: "attestation"
+    description: "Red team testing campaigns are conducted and results witnessed for continuous improvement"
+    attestation_prompt: "Confirm adversarial test campaigns are scheduled, executed, and results are documented."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CA-8"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 9(7)"
+
+  - id: "AI-CONSENT.1"
+    parent_control: "AI-CONSENT"
+    name: "Data Subject Consent"
+    check_type: "attestation"
+    description: "Data subject consent or legal basis is verified and witnessed before AI processing"
+    attestation_prompt: "Confirm consent management is implemented with legal basis tracking and withdrawal mechanisms."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SI-12"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 10"
+
+  - id: "AI-MULTI.1"
+    parent_control: "AI-MULTI"
+    name: "Multi-Agent Delegation"
+    check_type: "attestation"
+    description: "Multi-agent delegation events are witnessed with permission envelope tracking"
+    attestation_prompt: "Confirm multi-agent delegation witnessing is active with permission tracking."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-CHAIN.2"
+    parent_control: "AI-CHAIN"
+    name: "Chain Trust Degradation"
+    check_type: "attestation"
+    description: "Trust degradation across multi-agent chain handoffs is measured and witnessed"
+    attestation_prompt: "Confirm chain trust degradation measurement is active with defined trust thresholds."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.3"
+    eu_ai_act_ref: "Art. 9"
+
+  # --- Continuous Monitoring (DRIFT, AUDIT, INCIDENT, PMM) ---
+
+  - id: "AI-DRIFT.1"
+    parent_control: "AI-DRIFT"
+    name: "Model Drift Detection"
+    check_type: "attestation"
+    description: "Model drift is detected and witnessed for continuous risk estimation during operation"
+    attestation_prompt: "Confirm drift detection is configured with thresholds, alert rules, and review cadence."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 9(2)(b)"
+
+  - id: "AI-AUDIT.1"
+    parent_control: "AI-AUDIT"
+    name: "Audit Log Integrity"
+    check_type: "attestation"
+    description: "AI audit log integrity is verified to ensure tamper-proof traceability"
+    attestation_prompt: "Confirm audit log integrity verification is active with tamper detection."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-9"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 12"
+
+  - id: "AI-INCIDENT.1"
+    parent_control: "AI-INCIDENT"
+    name: "Incident Reporting"
+    check_type: "attestation"
+    description: "AI incidents are reported with severity, type classification, and authority notification status"
+    attestation_prompt: "Confirm incident reporting procedures cover AI-specific scenarios with defined severity thresholds."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "IR-6"
+    nist_ai_rmf_ref: "MANAGE 3.2"
+    eu_ai_act_ref: "Art. 62"
+
+  - id: "AI-PMM.1"
+    parent_control: "AI-PMM"
+    name: "Post-Market Monitoring"
+    check_type: "attestation"
+    description: "Post-market monitoring system tracks deployed AI system performance, fairness, and safety"
+    attestation_prompt: "Confirm post-market monitoring plan is documented and active for all deployed AI systems."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CA-7"
+    nist_ai_rmf_ref: "MANAGE 4.1"
+    eu_ai_act_ref: "Art. 72"
+
+  # --- EU AI Act Specific (PERF, ROBUST, CYBER, TRANS, WATERMARK) ---
+
+  - id: "AI-PERF.1"
+    parent_control: "AI-PERF"
+    name: "Performance Metrics"
+    check_type: "attestation"
+    description: "AI model performance metrics are evaluated and witnessed against declared accuracy levels"
+    attestation_prompt: "Confirm performance benchmarks are defined and evaluation results are documented."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-4"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 15(1)"
+
+  - id: "AI-ROBUST.1"
+    parent_control: "AI-ROBUST"
+    name: "Robustness Testing"
+    check_type: "attestation"
+    description: "AI system robustness is tested against perturbations, edge cases, and adversarial inputs"
+    attestation_prompt: "Confirm robustness testing is performed with documented perturbation types and survival criteria."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CA-8"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 15(3)"
+
+  - id: "AI-CYBER.1"
+    parent_control: "AI-CYBER"
+    name: "Cybersecurity Attestation"
+    check_type: "attestation"
+    description: "AI system cybersecurity posture is assessed against recognized frameworks"
+    attestation_prompt: "Confirm cybersecurity assessment is performed against NIST CSF, ISO 27001, or equivalent framework."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CA-2"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 15(4)"
+
+  - id: "AI-TRANS.1"
+    parent_control: "AI-TRANS"
+    name: "Transparency Disclosure"
+    check_type: "attestation"
+    description: "AI system usage and automated processing disclosures are provided to affected parties"
+    attestation_prompt: "Confirm transparency disclosures are delivered to deployers, users, and data subjects as required."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 13"
+
+  - id: "AI-WATERMARK.1"
+    parent_control: "AI-WATERMARK"
+    name: "Watermark Verification"
+    check_type: "attestation"
+    description: "AI content watermarks are verified to confirm provenance marking survived processing"
+    attestation_prompt: "Confirm watermark verification is performed on AI-generated content with detection method documented."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 50(2)"
+
+  # --- GDPR Specific (DPIA, AUTO) ---
+
+  - id: "AI-DPIA.1"
+    parent_control: "AI-DPIA"
+    name: "Data Protection Impact Assessment"
+    check_type: "attestation"
+    description: "DPIA is conducted for AI processing involving high-risk personal data"
+    attestation_prompt: "Confirm DPIA is completed for high-risk AI processing with risk mitigation documented."
+    review_interval_days: 365
+    uct_category: "AI"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "MAP 5.2"
+    eu_ai_act_ref: "Art. 27"
+
+  - id: "AI-AUTO.1"
+    parent_control: "AI-AUTO"
+    name: "Automated Decision Notification"
+    check_type: "attestation"
+    description: "Automated decisions with legal or significant effects are notified to data subjects"
+    attestation_prompt: "Confirm automated decision notification is implemented for decisions with legal effects."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "AU-3"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 14"
+
+  # --- EO 14110 + Supply Chain (DUALUSE, SUPPLY) ---
+
+  - id: "AI-DUALUSE.1"
+    parent_control: "AI-DUALUSE"
+    name: "Dual-Use Model Classification"
+    check_type: "attestation"
+    description: "Dual-use or high-impact foundation models are classified and reporting obligations tracked"
+    attestation_prompt: "Confirm dual-use model classification is performed with reporting status documented."
+    review_interval_days: 365
+    uct_category: "AI"
+    nist_800_53_ref: "RA-3"
+    nist_ai_rmf_ref: "GOVERN 1.1"
+
+  - id: "AI-SUPPLY.1"
+    parent_control: "AI-SUPPLY"
+    name: "Supply Chain Risk"
+    check_type: "attestation"
+    description: "AI supply chain risk is assessed including third-party model and data supplier compliance"
+    attestation_prompt: "Confirm supply chain risk assessment covers all AI model and data suppliers."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SA-12"
+    nist_ai_rmf_ref: "MEASURE 3.1"

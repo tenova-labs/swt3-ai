@@ -1,0 +1,72 @@
+# SWT3 Profile: Telecom Compliance (FCC + EU AI Act + NIST AI RMF)
+# Comprehensive AI governance for telecommunications providers operating
+# fraud detection, network optimization, customer scoring, call routing,
+# and predictive maintenance models.
+#
+# Covers FCC AI transparency requirements, EU AI Act Art. 9-15 (high-risk),
+# GDPR Art. 22 (automated decisions), and NIST AI RMF GOVERN/MAP/MEASURE/MANAGE.
+#
+# Telecom AI models process regulated customer data across jurisdictions,
+# requiring strict clearing levels, fairness monitoring, and human oversight
+# for decisions with legal or financial effects.
+#
+# Usage:
+#   profile: telecom-compliance
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: fraud-scoring-v3
+
+clearing_level: 2   # Sensitive (telecom customer data is regulated)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 2
+  require_jurisdiction: true   # Multi-country operations require jurisdiction tracking
+  required_procedures:
+    # Inference provenance (all models)
+    - AI-INF.1     # Prompt/response hash capture
+    - AI-INF.2     # Latency monitoring (SLA compliance)
+    # Model lifecycle
+    - AI-MDL.1     # Model weight integrity verification
+    - AI-MDL.3     # Model drift scoring
+    # Fairness (fraud scoring, credit, customer classification)
+    - AI-FAIR.1    # Bias disparity measurement
+    - AI-FAIR.3    # Bias audit witnessing
+    # Explainability (regulatory requirement for customer-facing decisions)
+    - AI-EXPL.1    # Explanation generation
+    - AI-EXPL.2    # Confidence scoring
+    # Human oversight (flagged transactions, escalations)
+    - AI-HITL.1    # Human review completion
+    - AI-HITL.2    # Human override event tracking
+    # Automated decisions (fraud flags, service denial, credit scoring)
+    - AI-AUTO.1    # Automated decision notification (GDPR Art. 22)
+    - AI-CONSENT.1 # Data subject consent (GDPR)
+    - AI-TRANS.1   # Transparency disclosure (FCC + Art. 13)
+    # Continuous monitoring
+    - AI-DRIFT.1   # Model drift detection
+    - AI-PERF.1    # Performance metrics (accuracy, precision, recall)
+    - AI-ROBUST.1  # Robustness testing (adversarial inputs)
+    - AI-AUDIT.1   # Audit log integrity
+    # Safety and environment
+    - AI-SAFE.1    # Safe state transition (network AI failover)
+    - AI-ENV.1     # Runtime environment attestation
+
+trust_mesh:
+  mode: strict             # Inter-system handoffs in telecom require strict trust
+  min_trust_level: 3
+  require_signature: true
+  freshness_window: 3600   # 1 hour (shift-aligned)
+
+density_policy:
+  min_anchors_per_1000_tokens: 3
+  max_chain_gap_seconds: 120   # Tight gap for real-time fraud detection
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true    # Fail closed for regulated decisions
+  max_velocity: "20/60s"    # Higher throughput for batch fraud scoring
+  max_chain_depth: 8
+  fail_secure: true

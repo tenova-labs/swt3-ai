@@ -25,7 +25,7 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError
 from .exporters.chain_monitor import ChainMonitorExporter
@@ -36,12 +36,21 @@ from .types import (
     GpuInfo, HardwareSnapshot, PcrRegister, TPMSnapshot, EnvironmentSnapshot,
     ChainRule, ChainPolicyViolation,
 )
-from .signing import sign_payload
+from .signing import (
+    sign_payload, generate_mldsa_keypair, verify_mldsa,
+    SIGNING_ALGORITHM_HMAC, SIGNING_ALGORITHM_MLDSA, VALID_SIGNING_ALGORITHMS,
+)
 from .config import load_config, load_full_config, compute_config_hash
 from .types import (
     TrustMeshConfig, HardwareConfig, RuntimeProfileConfig, SkillCardConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, LoadedConfig,
 )
-from .witness import CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES
+from .witness import (CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES,
+    SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES,
+    DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES,
+    BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES,
+    DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES,
+    PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES,
+    REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES)
 from .schema import validate_schema, ValidationResult, ValidationError as SchemaValidationError
 from .wal import WriteAheadLog
 from .merkle import (
@@ -75,6 +84,11 @@ __all__ = [
     "HardwareSnapshot",
     "EnvironmentSnapshot",
     "sign_payload",
+    "generate_mldsa_keypair",
+    "verify_mldsa",
+    "SIGNING_ALGORITHM_HMAC",
+    "SIGNING_ALGORITHM_MLDSA",
+    "VALID_SIGNING_ALGORITHMS",
     "load_config",
     "load_full_config",
     "compute_config_hash",
@@ -113,5 +127,25 @@ __all__ = [
     "CONTENT_TYPE_CODES",
     "MARKING_METHODS",
     "BASELINE_MODE_CODES",
+    "LICENSE_TYPE_CODES",
+    "SBOM_FORMAT_CODES",
+    "REDTEAM_CATEGORY_CODES",
+    "CONSENT_BASIS_CODES",
+    "DRIFT_TYPE_CODES",
+    "LOG_FORMAT_CODES",
+    "INCIDENT_SEVERITY_CODES",
+    "INCIDENT_TYPE_CODES",
+    "BENCHMARK_TYPE_CODES",
+    "PERTURBATION_TYPE_CODES",
+    "CYBER_FRAMEWORK_CODES",
+    "DISCLOSURE_TYPE_CODES",
+    "RECIPIENT_TYPE_CODES",
+    "DETECTION_METHOD_CODES",
+    "PROCESSING_TYPE_CODES",
+    "DECISION_TYPE_CODES",
+    "CLASSIFICATION_CODES",
+    "REPORTING_STATUS_CODES",
+    "SUPPLY_RISK_CODES",
+    "PMM_TYPE_CODES",
     "__version__",
 ]

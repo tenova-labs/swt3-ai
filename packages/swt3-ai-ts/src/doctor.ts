@@ -67,13 +67,13 @@ function checkEnvVars(path: string): DoctorCheck {
     }
 
     if (missing.length === 0 && !raw.api_key_env && !raw.api_key) {
-      return { name: "Environment", status: "warn", message: "no api_key or api_key_env configured" };
+      return { name: "Environment", status: "pass", message: "local mode (no api_key configured)" };
     }
     if (missing.length > 0) {
       return {
         name: "Environment",
         status: "warn",
-        message: `${missing.join(", ")} not set (local mode only)`,
+        message: `${missing.join(", ")} not set`,
         tip: `export ${missing[0]}=axm_... (get a free key at https://sovereign.tenova.io/signup)`,
       };
     }
@@ -153,9 +153,22 @@ function checkExtends(path: string): DoctorCheck {
   }
 }
 
-function checkTpm(): DoctorCheck {
+function checkTpm(configPath?: string): DoctorCheck {
+  // Only warn about missing TPM if hardware.require_attestation is true
+  let requireAttestation = false;
+  if (configPath) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const yaml = require("yaml");
+      const raw = yaml.parse(readFileSync(configPath, "utf-8"));
+      requireAttestation = raw?.hardware?.require_attestation === true;
+    } catch { /* ignore */ }
+  }
+
   if (process.platform !== "linux") {
-    return { name: "Hardware", status: "warn", message: `${process.platform} (TPM check skipped)` };
+    return requireAttestation
+      ? { name: "Hardware", status: "warn", message: `${process.platform} (TPM required but not Linux)` }
+      : { name: "Hardware", status: "pass", message: `${process.platform} (TPM not required)` };
   }
   const hasDev = existsSync("/dev/tpm0");
   let hasTools = false;
@@ -167,14 +180,14 @@ function checkTpm(): DoctorCheck {
   if (hasDev && hasTools) {
     return { name: "Hardware", status: "pass", message: "/dev/tpm0 + tpm2-tools detected" };
   }
+  if (!requireAttestation) {
+    return { name: "Hardware", status: "pass", message: "not required" };
+  }
   if (hasDev) {
     return { name: "Hardware", status: "warn", message: "/dev/tpm0 detected, tpm2-tools missing",
       tip: "Install: apt install tpm2-tools" };
   }
-  if (hasTools) {
-    return { name: "Hardware", status: "warn", message: "tpm2-tools installed, /dev/tpm0 not detected" };
-  }
-  return { name: "Hardware", status: "warn", message: "/dev/tpm0 not detected" };
+  return { name: "Hardware", status: "warn", message: "TPM required but /dev/tpm0 not detected" };
 }
 
 function checkRuntimeProfile(configPath: string): DoctorCheck {
@@ -201,9 +214,8 @@ function checkMcpConfig(): DoctorCheck {
   }
   return {
     name: "MCP",
-    status: "warn",
-    message: "SWT3_CONFIG_FILE not set",
-    tip: "export SWT3_CONFIG_FILE=./swt3.yaml",
+    status: "pass",
+    message: "not configured (optional)",
   };
 }
 
@@ -234,20 +246,36 @@ export function runDoctorChecks(configPath?: string): DoctorCheck[] {
   checks.push(checkProfile(path));
   checks.push(checkSections(path));
   checks.push(checkExtends(path));
-  checks.push(checkTpm());
+  checks.push(checkTpm(path));
   checks.push(checkRuntimeProfile(path));
   checks.push(checkMcpConfig());
 
   return checks;
 }
 
-export function printDoctorResults(checks: DoctorCheck[], json: boolean = false): void {
+export function printDoctorResults(checks: DoctorCheck[], json: boolean = false, ciMode: boolean = false): void {
   if (json) {
     console.log(JSON.stringify(checks, null, 2));
     return;
   }
 
   const VERSION = "0.5.2";
+
+  const pass = checks.filter((c) => c.status === "pass").length;
+  const warn = checks.filter((c) => c.status === "warn").length;
+  const fail = checks.filter((c) => c.status === "fail").length;
+
+  if (ciMode) {
+    for (const check of checks) {
+      const tag = check.status.toUpperCase();
+      const line = `[${tag}] ${check.name}: ${check.message}`;
+      console.log(line);
+      if (check.tip) console.log(`  Tip: ${check.tip}`);
+    }
+    console.log(`swt3-doctor: ${checks.length} checks, ${pass} pass, ${warn} warn, ${fail} fail`);
+    return;
+  }
+
   console.log(`\n  SWT3 Doctor v${VERSION}\n`);
 
   const icons = { pass: "\x1b[32m[PASS]\x1b[0m", warn: "\x1b[33m[WARN]\x1b[0m", fail: "\x1b[31m[FAIL]\x1b[0m" };
@@ -260,9 +288,6 @@ export function printDoctorResults(checks: DoctorCheck[], json: boolean = false)
     }
   }
 
-  const pass = checks.filter((c) => c.status === "pass").length;
-  const warn = checks.filter((c) => c.status === "warn").length;
-  const fail = checks.filter((c) => c.status === "fail").length;
   console.log(`\n  ${pass} passed, ${warn} warnings, ${fail} failures\n`);
 
   console.log("  \x1b[33mNew in v0.5.2:\x1b[0m Trust Mesh -- agents verify each other before exchanging data.");

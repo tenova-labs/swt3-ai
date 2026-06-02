@@ -21,9 +21,10 @@ class WitnessConfig:
     factor_handoff: Optional[str] = None  # "file" to enable local file export
     factor_handoff_path: Optional[str] = None  # directory for factor handoff files
     agent_id: Optional[str] = None  # SDK instance identity (survives all clearing levels)
-    signing_key: Optional[str] = None  # HMAC-SHA256 shared secret for payload signing
+    signing_key: Optional[str] = None  # HMAC-SHA256 shared secret (or ML-DSA-65 hex private key)
     signing_key_id: Optional[str] = None  # Key identifier for O(1) server-side validation
     signing_key_version: Optional[int] = None  # Monotonic version counter for key rotation
+    signing_algorithm: Optional[str] = None  # "hmac-sha256" (default) or "ml-dsa-65"
     cycle_id: Optional[str] = None  # Multi-agent chain link (survives all clearing levels)
     policy_version: Optional[str] = None  # Policy config identifier for version binding
     jurisdiction: Optional[str] = None  # ISO 3166-1 jurisdiction code (e.g., "DE", "US-VA")
@@ -73,9 +74,10 @@ class WitnessPayload:
     ai_context: Optional[Dict[str, Any]] = None
     agent_id: Optional[str] = None  # operational metadata, survives all clearing levels
     cycle_id: Optional[str] = None  # multi-agent chain link, survives all clearing levels
-    payload_signature: Optional[str] = None  # HMAC-SHA256 hex string
-    signing_key_id: Optional[str] = None  # Key identifier (routing metadata, not part of HMAC)
-    signing_key_version: Optional[int] = None  # Key version (routing metadata, not part of HMAC)
+    payload_signature: Optional[str] = None  # Hex-encoded signature (HMAC-SHA256 or ML-DSA-65)
+    signing_algorithm: Optional[str] = None  # "hmac-sha256" or "ml-dsa-65" (tells verifiers which to use)
+    signing_key_id: Optional[str] = None  # Key identifier (routing metadata, not part of signature)
+    signing_key_version: Optional[int] = None  # Key version (routing metadata, not part of signature)
     policy_version_hash: Optional[str] = None  # SHA-256[:12] of policy_version (survives all clearing levels)
     jurisdiction: Optional[str] = None  # ISO 3166-1 code (survives all clearing levels)
     legal_basis: Optional[str] = None  # GDPR legal basis (survives all clearing levels)
@@ -119,6 +121,8 @@ class WitnessPayload:
             d["cycle_id"] = self.cycle_id
         if self.payload_signature is not None:
             d["payload_signature"] = self.payload_signature
+        if self.signing_algorithm is not None:
+            d["signing_algorithm"] = self.signing_algorithm
         if self.signing_key_id is not None:
             d["signing_key_id"] = self.signing_key_id
         if self.signing_key_version is not None:

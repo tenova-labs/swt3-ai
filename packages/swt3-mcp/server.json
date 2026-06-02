@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.tenova/swt3-witness",
   "title": "SWT3 AI Witness",
-  "description": "18 tools. Cryptographic AI witnessing: EU AI Act, NIST, CMMC, SR 11-7. Trust mesh.",
+  "description": "Prove AI compliance. 18 tools witness inference, tool calls, agent handoffs. EU AI Act, NIST, CMMC.",
   "websiteUrl": "https://tenova.io",
   "repository": {
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "0.5.3",
+  "version": "0.5.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "transport": {
         "type": "stdio"
       },
@@ -65,7 +65,12 @@
   ],
   "_meta": {
     "io.modelcontextprotocol.registry/publisher-provided": {
-      "categories": ["audit", "governance", "compliance", "observability"],
+      "categories": [
+        "audit",
+        "governance",
+        "compliance",
+        "observability"
+      ],
       "keywords": [
         "eu-ai-act",
         "nist-ai-rmf",

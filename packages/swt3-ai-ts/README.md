@@ -13,16 +13,19 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compati
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.3
+## What's New in v0.5.4
 
+- **ML-DSA-65 (FIPS 204) post-quantum signing** -- Optional alongside HMAC-SHA256. Configure via `signingAlgorithm: "ml-dsa-65"` in constructor or `signing_algorithm: "ml-dsa-65"` in .swt3.yaml. Cross-language parity (same seed produces same keys in Python, TypeScript). `npm install @noble/post-quantum`
+- **Self-hosted deployment** -- [SWT3 Gateway](#self-hosted-deployment) (Go reverse proxy, zero-latency, Helm chart) and full platform container (UBI 9, Iron Bank compatible, air-gap export). Deploy everything inside your VPC.
 - **Chain Enforcer** -- 5-layer policy witnessing: tool blocklist/allowlist, velocity limiting, chain depth, token budgets. Every policy violation minted as an anchor. [Details](#agent-cost-governance)
 - **Agent Cost Governance** -- per-session token budgets with `max_tokens_per_session`. Halt and record on exceeded. `cost-conscious` profile ships built-in. [Details](#agent-cost-governance)
 - **Sentinel Client** -- IPC integration with the independent evidence custody daemon. Protected WAL, cross-process budgets, key isolation. Evidence the agent cannot tamper with.
 - **AI-MARK.1** -- Content provenance witnessing (text, image, audio with C2PA/watermark/metadata tagging)
 - **AI-BASE.1** -- Agent behavioral baseline (deviation scoring against established patterns)
-- **7 Built-in Profiles** -- `cost-conscious`, `owasp-agentic-top10`, `mythos-defense`, `granite-sovereign`, `eu-ai-act-high-risk`, `nist-ai-rmf`, `minimal`
+- **AI-LIC.1** -- License provenance witnessing (model, adapter, and data license composition with SPDX)
+- **14 Built-in Profiles** -- 7 framework profiles + 7 industry verticals (fintech, healthcare, insurance, telecom, defense/govcon, content platform, autonomous systems)
 - **NSA MCP Security Mapping** -- [7 of 9 NSA AISC recommendations](https://sovereign.tenova.io/guides/nsa-mcp-security-mapping.html) addressed at the SDK layer (CSI U/OO/6030316-26, May 2026)
-- **47 procedures**, 23 namespaces, 40 cross-language test vectors, 928 tests passing
+- **65 procedures**, 41 namespaces, 207 cross-language test vectors
 
 ## MCP Server -- Official Registry
 
@@ -498,7 +501,7 @@ Supports single files or chains (`extends: [base.yaml, team.yaml]`). Merge order
 
 ### Built-in Profiles
 
-Seven profiles ship with the SDK:
+14 profiles ship with the SDK -- 7 framework profiles and 7 industry verticals:
 
 | Profile | Use Case |
 |---------|----------|
@@ -509,6 +512,13 @@ Seven profiles ship with the SDK:
 | `mythos-defense` | Exploit chain containment: clearing 3, strict trust, depth 5 |
 | `granite-sovereign` | IBM Granite on-prem: air-gap ready, hardware attestation |
 | `minimal` | Development: clearing 0, no policy enforcement |
+| `fintech-model-risk` | SR 11-7 model risk: drift monitoring, clearing 2, signing required |
+| `healthcare-clinical` | HIPAA clinical AI: consent witnessing, clearing 3, PII protection |
+| `insurance-underwriting` | Underwriting AI: fairness, explainability, DPIA, clearing 2 |
+| `telecom-compliance` | Telecom fraud/network AI: performance monitoring, incident response |
+| `defense-govcon` | CMMC/RMF: clearing 3, strict chain enforcement, SBOM required |
+| `content-platform` | Content moderation: watermark verification, transparency, consent |
+| `autonomous-systems` | Autonomous/robotics: safety, robustness, dual-use, human oversight |
 
 ### Diagnostics
 
@@ -678,7 +688,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-All 47 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
+All 65 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -695,7 +705,7 @@ All 47 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 47 are available in production with real inference data. 40 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 65 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -744,6 +754,58 @@ echo -n "WITNESS:DEMO_TENANT:AI-INF.1:1:1:0:1774800000000" | sha256sum | cut -c1
 ```
 
 No SDK needed. Works on any machine, any language.
+
+## Self-Hosted Deployment
+
+Run the full stack inside your own infrastructure. No data leaves your network boundary.
+
+### SWT3 Gateway (LLM Proxy)
+
+A zero-latency Go reverse proxy that witnesses every inference transparently. Deploy inside your VPC, point your app at the gateway instead of the LLM provider. One line change:
+
+```bash
+docker run -d \
+  -e SWT3_API_KEY=axm_live_your_key \
+  -e SWT3_TENANT_ID=YOUR_ENCLAVE \
+  -e SWT3_UPSTREAM=https://api.openai.com \
+  -p 8443:8443 \
+  tenova/swt3-gateway:latest
+```
+
+```typescript
+// One line change. Everything else stays the same.
+const client = new OpenAI({ baseURL: "http://gateway:8443/v1" });
+```
+
+Multi-provider routing, model allowlist (advisory or strict), streaming support, HMAC payload signing. Helm chart included for Kubernetes.
+
+[Gateway Documentation](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-gateway)
+
+### Axiom Sovereign Engine (Full Platform)
+
+The complete compliance platform as a container: dashboard, adjudicator, evidence chain, Merkle rollups.
+
+```bash
+# Three-service deployment (dashboard + adjudicator + postgres)
+docker compose up -d
+
+# Air-gap export for disconnected environments
+docker save axiom-sovereign-engine:latest | gzip > axiom-sovereign.tar.gz
+```
+
+- UBI 9 Minimal base (Iron Bank compatible, DoD IL2-IL5)
+- Non-root runtime, FIPS-validated OpenSSL 3.x
+- Works air-gapped: `docker load` on the target, no internet required
+- Helm chart for Kubernetes orchestration
+
+### Deployment Options
+
+| Mode | What You Run | Data Residency |
+|------|-------------|----------------|
+| **SDK only** | `npm install @tenova/swt3-ai` | Hashes leave, data stays |
+| **Gateway** | Docker container in your VPC | Raw traffic never leaves your network |
+| **Self-hosted platform** | Docker Compose or Helm | Everything on your infrastructure |
+| **Air-gapped** | `docker load` from tarball | Zero internet connectivity required |
 
 ## Sovereign Cloud Support
 
@@ -854,7 +916,8 @@ const witness = new Witness({
 | `maxRetries` | 3 | Retries before dead-letter |
 | `guardrailNames` | [] | Active guardrail names |
 | `agentId` | - | Agent identity (survives all clearing levels) |
-| `signingKey` | - | HMAC-SHA256 key for payload signing (register server-side for validation) |
+| `signingKey` | - | Signing key for payload non-repudiation (HMAC-SHA256 secret or ML-DSA-65 hex seed) |
+| `signingAlgorithm` | - | `"hmac-sha256"` (default) or `"ml-dsa-65"` (FIPS 204 post-quantum) |
 | `cycleId` | - | Multi-agent chain link (survives all clearing levels) |
 | `policyVersion` | - | Policy config identifier (hashed in payloads) |
 | `strict` | false | Gatekeeper mode: block inference if guardrails insufficient |
@@ -966,7 +1029,6 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
 - [UCT Registry](https://sovereign.tenova.io/registry) -- full procedure catalog with factor definitions
 - [Anchor Verifier](https://sovereign.tenova.io/verify) -- verify any anchor, zero server calls
-- [EU AI Act Regulatory Architecture](https://sovereign.tenova.io/guides/futurium-submission.html) -- VI+CJT+ALF+LAVR framework mapping for conformity assessment bodies
 - [Five Eyes Agentic AI Overlay](https://sovereign.tenova.io/guides/five-eyes-overlay.html) -- CISA/NSA guidance mapped to SWT3 procedures
 - [CMMC Compliance Overlay](https://sovereign.tenova.io/guides/cmmc-overlay.html) -- clearing levels mapped to CMMC and NIST 800-171
 - [SR 11-7 Model Risk Overlay](https://sovereign.tenova.io/guides/sr-11-7-overlay.html) -- clearing levels mapped to SR 11-7 requirements

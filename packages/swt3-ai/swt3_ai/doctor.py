@@ -64,11 +64,11 @@ def _check_env_vars(path: str) -> DoctorCheck:
                 missing.append(var_name)
 
         if not missing and not raw.get("api_key_env") and not raw.get("api_key"):
-            return DoctorCheck("Environment", "warn", "no api_key or api_key_env configured")
+            return DoctorCheck("Environment", "pass", "local mode (no api_key configured)")
         if missing:
             return DoctorCheck(
                 "Environment", "warn",
-                f"{', '.join(missing)} not set (local mode only)",
+                f"{', '.join(missing)} not set",
                 tip=f"export {missing[0]}=axm_... (get a free key at https://sovereign.tenova.io/signup)",
             )
         return DoctorCheck("Environment", "pass", "all env vars resolved")
@@ -135,22 +135,34 @@ def _check_extends(path: str) -> DoctorCheck:
         return DoctorCheck("Extends", "warn", "could not check")
 
 
-def _check_tpm() -> DoctorCheck:
+def _check_tpm(config_path: Optional[str] = None) -> DoctorCheck:
     import shutil
 
+    require_attestation = False
+    if config_path:
+        try:
+            import yaml as _yaml
+            raw = _yaml.safe_load(Path(config_path).read_text())
+            hw = raw.get("hardware") if isinstance(raw, dict) else None
+            require_attestation = isinstance(hw, dict) and hw.get("require_attestation") is True
+        except Exception:
+            pass
+
     if sys.platform != "linux":
-        return DoctorCheck("Hardware", "warn", f"{sys.platform} (TPM check skipped)")
+        if require_attestation:
+            return DoctorCheck("Hardware", "warn", f"{sys.platform} (TPM required but not Linux)")
+        return DoctorCheck("Hardware", "pass", f"{sys.platform} (TPM not required)")
 
     has_dev = Path("/dev/tpm0").exists()
     has_tools = shutil.which("tpm2_pcrread") is not None
 
     if has_dev and has_tools:
         return DoctorCheck("Hardware", "pass", "/dev/tpm0 + tpm2-tools detected")
+    if not require_attestation:
+        return DoctorCheck("Hardware", "pass", "not required")
     if has_dev:
         return DoctorCheck("Hardware", "warn", "/dev/tpm0 detected, tpm2-tools missing")
-    if has_tools:
-        return DoctorCheck("Hardware", "warn", "tpm2-tools installed, /dev/tpm0 not detected")
-    return DoctorCheck("Hardware", "warn", "/dev/tpm0 not detected")
+    return DoctorCheck("Hardware", "warn", "TPM required but /dev/tpm0 not detected")
 
 
 def _check_runtime_profile(config_path: str) -> DoctorCheck:
@@ -172,7 +184,7 @@ def _check_mcp_config() -> DoctorCheck:
     val = os.environ.get("SWT3_CONFIG_FILE")
     if val:
         return DoctorCheck("MCP", "pass", f"SWT3_CONFIG_FILE={val}")
-    return DoctorCheck("MCP", "warn", "SWT3_CONFIG_FILE not set", tip="export SWT3_CONFIG_FILE=./swt3.yaml")
+    return DoctorCheck("MCP", "pass", "not configured (optional)")
 
 
 def run_doctor_checks(config_path: Optional[str] = None) -> List[DoctorCheck]:
@@ -198,17 +210,30 @@ def run_doctor_checks(config_path: Optional[str] = None) -> List[DoctorCheck]:
     checks.append(_check_profile(path))
     checks.append(_check_sections(path))
     checks.append(_check_extends(path))
-    checks.append(_check_tpm())
+    checks.append(_check_tpm(path))
     checks.append(_check_runtime_profile(path))
     checks.append(_check_mcp_config())
 
     return checks
 
 
-def print_doctor_results(checks: List[DoctorCheck], use_json: bool = False) -> None:
+def print_doctor_results(checks: List[DoctorCheck], use_json: bool = False, ci_mode: bool = False) -> None:
     if use_json:
         import json as json_mod
         print(json_mod.dumps([{"name": c.name, "status": c.status, "message": c.message, "tip": c.tip} for c in checks], indent=2))
+        return
+
+    p = sum(1 for c in checks if c.status == "pass")
+    w = sum(1 for c in checks if c.status == "warn")
+    fl = sum(1 for c in checks if c.status == "fail")
+
+    if ci_mode:
+        for check in checks:
+            tag = check.status.upper()
+            print(f"[{tag}] {check.name}: {check.message}")
+            if check.tip:
+                print(f"  Tip: {check.tip}")
+        print(f"swt3-doctor: {len(checks)} checks, {p} pass, {w} warn, {fl} fail")
         return
 
     print(f"\n  SWT3 Doctor v{VERSION}\n")
@@ -221,10 +246,7 @@ def print_doctor_results(checks: List[DoctorCheck], use_json: bool = False) -> N
         if check.tip:
             print(f"         Tip: {check.tip}")
 
-    p = sum(1 for c in checks if c.status == "pass")
-    w = sum(1 for c in checks if c.status == "warn")
-    f = sum(1 for c in checks if c.status == "fail")
-    print(f"\n  {p} passed, {w} warnings, {f} failures\n")
+    print(f"\n  {p} passed, {w} warnings, {fl} failures\n")
 
     print("  \033[33mNew in v0.5.2:\033[0m Trust Mesh -- agents verify each other before exchanging data.")
     print("  Configure: \033[36mswt3 init --profile eu-ai-act-high-risk\033[0m")

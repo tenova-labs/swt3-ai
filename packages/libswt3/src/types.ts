@@ -7,7 +7,7 @@
 export type Tier = "E" | "S" | "H";
 
 /** Infrastructure provider identifier. */
-export type Provider = "VULTR" | "AWS" | "AZURE" | "GCP" | "HYBRID" | "ON-PREM";
+export type Provider = "AWS" | "AZURE" | "GCP" | "VULTR" | "HYBRID" | "ON-PREM";
 
 /** Universal Control Taxonomy — Core codes (required). */
 export type UCTCore = "ACC" | "AUD" | "CFG" | "CRY" | "IDN" | "INT" | "NET" | "BCP" | "GOV" | "IRP" | "PHY";

@@ -1,0 +1,125 @@
+              SA-15: AI-ASSISTED DEVELOPMENT DISCLOSURE
+
+Control:             SA-15 - Development Process, Standards, and Tools
+Effective Date:      2026-03-16
+Classification:      CUI / FOUO
+
+________________________________________________________________________________
+
+1. AI ENGINEERING ASSISTANT USAGE
+
+TeNova utilizes AI language models as engineering assistants during the Axiom
+Sovereign Engine development lifecycle. All architecture, design decisions, and
+technical direction are led by TeNova engineering. AI assistance is applied to:
+
+   - Probe Development: Drafting YAML control definitions and shell commands
+     for evidence collection
+
+   - Code Drafting: Generating TypeScript and Python modules for the dashboard
+     and CLI
+
+   - Documentation: Drafting compliance narratives, policy templates, and
+     technical documentation
+
+________________________________________________________________________________
+
+2. VERIFICATION CONTROLS
+
+All AI-generated artifacts undergo a three-layer validation pipeline before
+deployment:
+
+   2.1 Shell Lint (Automated)
+
+   Every probe command is validated through shellcheck static analysis to
+   detect syntax errors, ghost flags, and non-standard constructs. Zero errors
+   required for acceptance.
+
+   2.2 XCCDF Cross-Check (Automated)
+
+   Probe commands are compared against official DISA STIG check content parsed
+   from XCCDF benchmark files. File path targets, threshold values, and
+   configuration directives are cross-referenced. Discrepancies are flagged as
+   drift findings requiring human review.
+
+   2.3 Provenance Tracing (Automated + Human)
+
+   Each probe carries traceability metadata linking it to the originating DISA
+   Rule ID, CCI reference, and XCCDF check content SHA-256 hash. The
+   provenance manifest provides a machine-verifiable chain from DISA Cyber
+   Exchange source to deployed probe.
+
+________________________________________________________________________________
+
+3. ARCHITECTURAL SAFEGUARDS
+
+The Axiom architecture inherently mitigates AI hallucination risk in the
+following ways:
+
+   Deterministic Adjudication
+      The verdict engine uses deterministic rule expressions. The same inputs
+      always produce the same verdict regardless of who authored the probe.
+      Probe authorship does not affect verdict integrity.
+
+   Read-Only Evidence Collection
+      Probe commands only read system state (file contents, service status,
+      kernel parameters). They do not modify the target system. A hallucinated
+      command can produce an incorrect reading, but cannot alter the system.
+
+   Prescriptive Remediation
+      Axiom prints remediation commands for the operator to review and execute
+      manually. It does not auto-remediate. The human-in-the-loop is enforced
+      at the remediation boundary.
+
+   Regression Baseline
+      Scan output is deterministic. Any probe change that alters a verdict is
+      detectable through baseline comparison.
+
+________________________________________________________________________________
+
+4. VERSION CONTROL
+
+The complete development history is preserved in the Git repository and
+available for audit review. All commits are attributed to TeNova engineering.
+
+________________________________________________________________________________
+
+5. VALIDATION
+
+The probe validation pipeline produces machine-readable reports covering shell
+lint results, XCCDF cross-check findings, and provenance coverage. Reports can
+be included in assessment evidence packages.
+
+________________________________________________________________________________
+
+6. AI SYSTEM BOUNDARIES
+
+The AI engineering assistant:
+
+   - Does NOT have access to production systems or customer environments
+   - Does NOT have access to the adjudication pipeline or verdict engine at
+     runtime
+   - Does NOT have access to customer data, API keys, or credentials
+   - Does NOT execute remediation commands on target systems
+   - Is NOT involved in the real-time scan, adjudicate, witness pipeline
+
+________________________________________________________________________________
+
+7. APPLICABLE STANDARDS
+
+   NIST SP 800-218 (SSDF) - PW.1.1
+      Provenance of software components
+
+   NIST SP 800-218 (SSDF) - PW.7.2
+      Verify software meets requirements
+
+   NIST SP 800-53 Rev 5 - SA-15
+      Development Process, Standards, and Tools
+
+   CMMC 2.0 - 3.4 family
+      Configuration Management (development tooling)
+
+________________________________________________________________________________
+
+Approved By:  ________________________________________
+Title:        Authorizing Official
+Date:         ________________________________________

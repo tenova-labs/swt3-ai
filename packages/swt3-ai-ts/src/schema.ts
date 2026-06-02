@@ -21,7 +21,7 @@ const KNOWN_TOP_LEVEL = new Set([
   "api_key", "api_key_env", "tenant_id", "clearing_level", "endpoint",
   "buffer_size", "flush_interval", "max_retries", "latency_threshold_ms",
   "guardrails_required", "guardrail_names", "factor_handoff", "factor_handoff_path",
-  "agent_id", "signing_key", "signing_key_env", "signing_key_id", "signing_key_version",
+  "agent_id", "signing_key", "signing_key_env", "signing_key_id", "signing_key_version", "signing_algorithm",
   "cycle_id", "policy_version", "jurisdiction", "legal_basis", "purpose_class",
   "on_flush", "gateway_mode", "wal_path", "replay_window",
   "token_budget", "procedures", "strict",
@@ -144,6 +144,16 @@ export function validateSchema(raw: Record<string, unknown>): ValidationResult {
     const cl = raw.clearing_level;
     if (typeof cl !== "number" || ![0, 1, 2, 3].includes(cl)) {
       errors.push({ path: "clearing_level", message: "must be 0, 1, 2, or 3", severity: "error" });
+    }
+  }
+
+  // signing_algorithm: hmac-sha256 or ml-dsa-65
+  if ("signing_algorithm" in raw) {
+    const sa = raw.signing_algorithm;
+    if (typeof sa !== "string") {
+      errors.push({ path: "signing_algorithm", message: "expected string", severity: "error" });
+    } else if (sa !== "hmac-sha256" && sa !== "ml-dsa-65") {
+      errors.push({ path: "signing_algorithm", message: 'must be "hmac-sha256" or "ml-dsa-65"', severity: "error" });
     }
   }
 

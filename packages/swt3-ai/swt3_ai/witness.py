@@ -200,6 +200,26 @@ PII_EVENT_TYPES = {"unspecified": 0, "pseudonymization": 1, "anonymization": 2, 
 CONTENT_TYPE_CODES: Dict[str, int] = {"text": 0, "image": 1, "audio": 2, "video": 3, "multimodal": 4, "code": 5, "structured_data": 6}
 MARKING_METHODS = ("c2pa", "watermark", "metadata_tag", "steganographic", "manifest")
 BASELINE_MODE_CODES: Dict[str, int] = {"establishing": 0, "monitoring": 1, "drift_detected": 2, "baseline_reset": 3}
+LICENSE_TYPE_CODES: Dict[str, int] = {"permissive": 0, "copyleft": 1, "proprietary": 2, "dual": 3, "openmdw": 4, "unknown": 5}
+SBOM_FORMAT_CODES: Dict[str, int] = {"cyclonedx": 0, "spdx": 1, "custom": 2, "unknown": 3}
+REDTEAM_CATEGORY_CODES: Dict[str, int] = {"prompt_injection": 0, "jailbreak": 1, "data_poisoning": 2, "model_extraction": 3, "membership_inference": 4, "adversarial_examples": 5, "supply_chain": 6, "denial_of_service": 7, "output_manipulation": 8, "privilege_escalation": 9, "comprehensive": 10}
+CONSENT_BASIS_CODES: Dict[str, int] = {"consent": 0, "contract": 1, "legal_obligation": 2, "vital_interest": 3, "public_task": 4, "legitimate_interest": 5}
+DRIFT_TYPE_CODES: Dict[str, int] = {"data": 0, "concept": 1, "prediction": 2, "feature": 3, "label": 4, "prior_probability": 5}
+LOG_FORMAT_CODES: Dict[str, int] = {"jsonl": 0, "syslog": 1, "otel": 2, "custom": 3}
+INCIDENT_SEVERITY_CODES: Dict[str, int] = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+INCIDENT_TYPE_CODES: Dict[str, int] = {"safety": 0, "rights": 1, "security": 2, "performance": 3, "bias": 4, "other": 5}
+BENCHMARK_TYPE_CODES: Dict[str, int] = {"accuracy": 0, "precision": 1, "recall": 2, "f1": 3, "auc": 4, "custom": 5}
+PERTURBATION_TYPE_CODES: Dict[str, int] = {"noise": 0, "corruption": 1, "missing_data": 2, "out_of_distribution": 3, "edge_case": 4, "adversarial_input": 5}
+CYBER_FRAMEWORK_CODES: Dict[str, int] = {"nist_csf": 0, "iso27001": 1, "owasp": 2, "cis": 3, "custom": 4}
+DISCLOSURE_TYPE_CODES: Dict[str, int] = {"ai_usage": 0, "data_processing": 1, "automated_decision": 2, "profiling": 3, "capability_limitation": 4}
+RECIPIENT_TYPE_CODES: Dict[str, int] = {"deployer": 0, "end_user": 1, "data_subject": 2, "authority": 3}
+DETECTION_METHOD_CODES: Dict[str, int] = {"c2pa_verify": 0, "synthid_check": 1, "metadata_scan": 2, "spectral_analysis": 3, "classifier": 4}
+PROCESSING_TYPE_CODES: Dict[str, int] = {"profiling": 0, "automated_decision": 1, "large_scale_monitoring": 2, "sensitive_data": 3, "combined": 4}
+DECISION_TYPE_CODES: Dict[str, int] = {"credit": 0, "employment": 1, "insurance": 2, "benefits": 3, "legal": 4, "other": 5}
+CLASSIFICATION_CODES: Dict[str, int] = {"standard": 0, "dual_use": 1, "high_impact": 2}
+REPORTING_STATUS_CODES: Dict[str, int] = {"not_required": 0, "pending": 1, "notified": 2, "acknowledged": 3}
+SUPPLY_RISK_CODES: Dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+PMM_TYPE_CODES: Dict[str, int] = {"performance": 0, "fairness": 1, "safety": 2, "security": 3, "comprehensive": 4}
 
 
 class GatekeeperError(Exception):
@@ -281,6 +301,7 @@ class Witness:
         signing_key: Optional[str] = None,
         signing_key_id: Optional[str] = None,
         signing_key_version: Optional[int] = None,
+        signing_algorithm: Optional[str] = None,
         cycle_id: Optional[str] = None,
         strict: bool = False,
         policy_version: Optional[str] = None,
@@ -316,6 +337,7 @@ class Witness:
                 signing_key=signing_key,
                 signing_key_id=signing_key_id,
                 signing_key_version=signing_key_version,
+                signing_algorithm=signing_algorithm,
                 cycle_id=cycle_id,
                 policy_version=policy_version,
                 jurisdiction=jurisdiction,
@@ -359,6 +381,7 @@ class Witness:
             signing_key=signing_key,
             signing_key_id=signing_key_id,
             signing_key_version=signing_key_version,
+            signing_algorithm=signing_algorithm,
             cycle_id=cycle_id,
             policy_version=policy_version,
             jurisdiction=jurisdiction,
@@ -610,6 +633,7 @@ class Witness:
             payload, agent_id=self._config.agent_id, cycle_id=self._config.cycle_id,
             signing_key=self._config.signing_key, signing_key_id=self._config.signing_key_id,
             signing_key_version=self._config.signing_key_version,
+            signing_algorithm=self._config.signing_algorithm,
             policy_version_hash=policy_hash,
             jurisdiction=self._config.jurisdiction, legal_basis=self._config.legal_basis,
             purpose_class=self._config.purpose_class,
@@ -690,6 +714,7 @@ class Witness:
             clearing_level=self._config.clearing_level,
             agent_id=self._config.agent_id,
             signing_key=self._config.signing_key,
+            signing_algorithm=self._config.signing_algorithm,
             cycle_id=self._config.cycle_id,
             policy_version_hash=policy_hash,
             jurisdiction=self._config.jurisdiction,
@@ -1752,6 +1777,529 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    # ── License Provenance (AI-LIC.1) ──────────────────────────────────
+
+    def witness_license_provenance(
+        self,
+        components_checked: int,
+        all_compliant: bool,
+        license_type: str,
+        *,
+        base_model_license: Optional[str] = None,
+        adapter_licenses: Optional[List[str]] = None,
+        spdx_ids: Optional[List[str]] = None,
+        license_hash: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness license provenance of a model stack (AI-LIC.1).
+
+        Records the license composition of base models, adapters, and
+        training data. Detects license drift when components from
+        different license families are combined.
+
+        Args:
+            components_checked: Number of license components verified.
+            all_compliant: True if all components are license-compatible.
+            license_type: Primary license type (permissive, copyleft, proprietary, dual, openmdw, unknown).
+            base_model_license: SPDX identifier of the base model license.
+            adapter_licenses: List of adapter/LoRA license identifiers.
+            spdx_ids: SPDX identifiers for all components.
+            license_hash: SHA-256 of the full license manifest.
+
+        Returns:
+            WitnessPayload for the AI-LIC.1 anchor.
+        """
+        fa = float(components_checked)
+        fb = 1.0 if all_compliant else 0.0
+        fc = float(LICENSE_TYPE_CODES.get(license_type, 5))
+
+        payload = self._mint_and_sign("AI-LIC.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"license-{license_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "license-provenance",
+                "license_type": license_type,
+            }
+            if base_model_license:
+                ctx["base_model_license"] = base_model_license
+            if adapter_licenses:
+                ctx["adapter_licenses"] = adapter_licenses
+            if spdx_ids:
+                ctx["spdx_ids"] = spdx_ids
+            if license_hash:
+                ctx["license_hash"] = license_hash
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── AI Bill of Materials (AI-SBOM.1) ────────────────────────────────
+
+    def witness_sbom(
+        self,
+        total_components: int,
+        clusters_documented: int,
+        format: str,
+        bom_hash: str,
+        *,
+        version: Optional[str] = None,
+        model_count: Optional[int] = None,
+        dataset_count: Optional[int] = None,
+        infrastructure_components: Optional[int] = None,
+    ) -> WitnessPayload:
+        """Witness an AI bill of materials snapshot (AI-SBOM.1).
+
+        Records the component inventory of an AI system at build or deploy
+        time, covering models, datasets, infrastructure, and security
+        posture per G7/CISA "SBOM for AI Minimum Elements" (May 2026).
+
+        Args:
+            total_components: Number of components in the BOM.
+            clusters_documented: G7 clusters documented (0-7).
+            format: BOM format (cyclonedx, spdx, custom, unknown).
+            bom_hash: SHA-256 of the full BOM document.
+            version: BOM version string.
+            model_count: Number of AI models in BOM.
+            dataset_count: Number of datasets in BOM.
+            infrastructure_components: Number of infra components.
+
+        Returns:
+            WitnessPayload for the AI-SBOM.1 anchor.
+        """
+        fa = float(total_components)
+        fb = float(clusters_documented)
+        fc = float(SBOM_FORMAT_CODES.get(format, 3))
+
+        payload = self._mint_and_sign("AI-SBOM.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"sbom-{format}"
+            ctx: Dict[str, Any] = {
+                "provider": "ai-sbom",
+                "bom_hash": bom_hash,
+                "format": format,
+            }
+            if version:
+                ctx["version"] = version
+            if model_count is not None:
+                ctx["model_count"] = model_count
+            if dataset_count is not None:
+                ctx["dataset_count"] = dataset_count
+            if infrastructure_components is not None:
+                ctx["infrastructure_components"] = infrastructure_components
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Adversarial Test Campaign (AI-REDTEAM.1) ──────────────────────
+
+    def witness_red_team(
+        self,
+        tests_executed: int,
+        tests_passed: int,
+        coverage_category: str,
+        *,
+        framework: Optional[str] = None,
+        campaign_id: Optional[str] = None,
+        model_under_test: Optional[str] = None,
+        attack_taxonomy: Optional[str] = None,
+        pass_rate: Optional[float] = None,
+        duration_seconds: Optional[int] = None,
+    ) -> WitnessPayload:
+        """Witness an adversarial test campaign (AI-REDTEAM.1).
+
+        Records red team or adversarial testing results, transforming
+        point-in-time reports into continuous verifiable evidence per
+        EO 14110, EU AI Act Art. 9(7), and NIST AI 100-2.
+
+        Args:
+            tests_executed: Number of attack scenarios run.
+            tests_passed: Number of attacks successfully mitigated.
+            coverage_category: Category key (prompt_injection, jailbreak, etc.).
+            framework: Testing framework (e.g. "OWASP-LLM-Top10").
+            campaign_id: Unique identifier for this test campaign.
+            model_under_test: Model identifier being tested.
+            attack_taxonomy: Attack taxonomy version or reference.
+            pass_rate: Computed pass rate (0-1).
+            duration_seconds: Campaign duration in seconds.
+
+        Returns:
+            WitnessPayload for the AI-REDTEAM.1 anchor.
+        """
+        fa = float(tests_executed)
+        fb = float(tests_passed)
+        fc = float(REDTEAM_CATEGORY_CODES.get(coverage_category, 10))
+
+        payload = self._mint_and_sign("AI-REDTEAM.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"redteam-{coverage_category}"
+            ctx: Dict[str, Any] = {
+                "provider": "red-team",
+                "coverage_category": coverage_category,
+            }
+            if framework:
+                ctx["framework"] = framework
+            if campaign_id:
+                ctx["campaign_id"] = campaign_id
+            if model_under_test:
+                ctx["model_under_test"] = model_under_test
+            if attack_taxonomy:
+                ctx["attack_taxonomy"] = attack_taxonomy
+            if pass_rate is not None:
+                ctx["pass_rate"] = pass_rate
+            if duration_seconds is not None:
+                ctx["duration_seconds"] = duration_seconds
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Data Subject Consent (AI-CONSENT.1) ───────────────────────────
+
+    def witness_consent(
+        self,
+        subjects_covered: int,
+        legal_basis_type: str,
+        withdrawal_available: bool,
+        *,
+        purpose: Optional[str] = None,
+        retention_days: Optional[int] = None,
+        consent_mechanism: Optional[str] = None,
+        consent_hash: Optional[str] = None,
+        data_categories: Optional[List[str]] = None,
+    ) -> WitnessPayload:
+        """Witness data subject consent documentation (AI-CONSENT.1).
+
+        Records that consent or lawful basis was documented before
+        processing. Complements CJT fields (which declare legal basis)
+        by proving consent was actually obtained per GDPR Art. 6/7
+        and EU AI Act Art. 10.
+
+        Args:
+            subjects_covered: Number of data subjects in scope.
+            legal_basis_type: GDPR lawful basis (consent, contract, etc.).
+            withdrawal_available: True if withdrawal mechanism exists.
+            purpose: Processing purpose description.
+            retention_days: Data retention period in days.
+            consent_mechanism: Mechanism used (e.g. "opt-in-form").
+            consent_hash: SHA-256 of the consent record.
+            data_categories: Categories of personal data processed.
+
+        Returns:
+            WitnessPayload for the AI-CONSENT.1 anchor.
+        """
+        fa = float(subjects_covered)
+        fb = float(CONSENT_BASIS_CODES.get(legal_basis_type, 0))
+        fc = 1.0 if withdrawal_available else 0.0
+
+        payload = self._mint_and_sign("AI-CONSENT.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"consent-{legal_basis_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "consent-management",
+                "legal_basis_type": legal_basis_type,
+            }
+            if purpose:
+                ctx["purpose"] = purpose
+            if retention_days is not None:
+                ctx["retention_days"] = retention_days
+            if consent_mechanism:
+                ctx["consent_mechanism"] = consent_mechanism
+            if consent_hash:
+                ctx["consent_hash"] = consent_hash
+            if data_categories:
+                ctx["data_categories"] = data_categories
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Multi-Agent Delegation (AI-MULTI.1) ───────────────────────────
+
+    def witness_multi_agent_delegation(
+        self,
+        delegation_depth: int,
+        permissions_granted: int,
+        time_bound_minutes: int,
+        parent_agent_id: str,
+        child_agent_id: str,
+        *,
+        delegated_tools: Optional[List[str]] = None,
+        scope_hash: Optional[str] = None,
+        authorization_chain: Optional[List[str]] = None,
+    ) -> WitnessPayload:
+        """Witness inter-agent permission delegation (AI-MULTI.1).
+
+        Records the permission envelope when one agent delegates tasks
+        to another. Complements AI-CHAIN.1/2 (which witness handoffs and
+        trust degradation) by witnessing WHAT was delegated per
+        EU AI Act Art. 9 and NIST AI RMF GOVERN 1.3.
+
+        Args:
+            delegation_depth: Hops from original human authorization.
+            permissions_granted: Count of distinct permissions delegated.
+            time_bound_minutes: Minutes until expiry (0 = unbounded).
+            parent_agent_id: Delegating agent identifier (hashed in context).
+            child_agent_id: Receiving agent identifier (hashed in context).
+            delegated_tools: List of tool names being delegated.
+            scope_hash: SHA-256 of the permission manifest.
+            authorization_chain: Ordered agent IDs from human to child.
+
+        Returns:
+            WitnessPayload for the AI-MULTI.1 anchor.
+        """
+        fa = float(delegation_depth)
+        fb = float(permissions_granted)
+        fc = float(time_bound_minutes)
+
+        payload = self._mint_and_sign("AI-MULTI.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"delegation-depth-{delegation_depth}"
+            ctx: Dict[str, Any] = {
+                "provider": "multi-agent",
+                "parent_agent_hash": sha256_truncated(parent_agent_id),
+                "child_agent_hash": sha256_truncated(child_agent_id),
+            }
+            if delegated_tools:
+                ctx["delegated_tools"] = delegated_tools
+            if scope_hash:
+                ctx["scope_hash"] = scope_hash
+            if authorization_chain:
+                ctx["authorization_chain"] = [
+                    sha256_truncated(aid) for aid in authorization_chain
+                ]
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Model Drift Detection (AI-DRIFT.1) ──────────────────────────────
+
+    def witness_drift(self, metrics_evaluated: int, drifted_count: int, drift_type: str, *, baseline_hash: Optional[str] = None, drift_score: Optional[float] = None, detection_method: Optional[str] = None, window_size: Optional[int] = None, threshold: Optional[float] = None) -> WitnessPayload:
+        """Witness model drift detection (AI-DRIFT.1). Art. 9(2)(b), NIST MEASURE 2.6."""
+        fa, fb, fc = float(metrics_evaluated), float(drifted_count), float(DRIFT_TYPE_CODES.get(drift_type, 0))
+        payload = self._mint_and_sign("AI-DRIFT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"drift-{drift_type}"
+            ctx: Dict[str, Any] = {"provider": "drift-detection", "drift_type": drift_type}
+            if baseline_hash: ctx["baseline_hash"] = baseline_hash
+            if drift_score is not None: ctx["drift_score"] = drift_score
+            if detection_method: ctx["detection_method"] = detection_method
+            if window_size is not None: ctx["window_size"] = window_size
+            if threshold is not None: ctx["threshold"] = threshold
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Audit Log Integrity (AI-AUDIT.1) ──────────────────────────────
+
+    def witness_audit_integrity(self, entries_checked: int, integrity_verified: bool, log_format: str, *, log_hash: Optional[str] = None, period_start: Optional[str] = None, period_end: Optional[str] = None, gaps_detected: Optional[int] = None) -> WitnessPayload:
+        """Witness audit log integrity (AI-AUDIT.1). Art. 12, GDPR Art. 30."""
+        fa, fb, fc = float(entries_checked), 1.0 if integrity_verified else 0.0, float(LOG_FORMAT_CODES.get(log_format, 3))
+        payload = self._mint_and_sign("AI-AUDIT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"audit-{log_format}"
+            ctx: Dict[str, Any] = {"provider": "audit-integrity", "log_format": log_format}
+            if log_hash: ctx["log_hash"] = log_hash
+            if period_start: ctx["period_start"] = period_start
+            if period_end: ctx["period_end"] = period_end
+            if gaps_detected is not None: ctx["gaps_detected"] = gaps_detected
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Incident Reporting (AI-INCIDENT.1) ────────────────────────────
+
+    def witness_incident(self, severity_code: int, authority_notified: bool, incident_type: str, *, incident_id: Optional[str] = None, authority: Optional[str] = None, affected_subjects: Optional[int] = None, remediation_status: Optional[str] = None) -> WitnessPayload:
+        """Witness incident reporting (AI-INCIDENT.1). Art. 62, NIST MANAGE 3.2."""
+        fa, fb, fc = float(severity_code), 1.0 if authority_notified else 0.0, float(INCIDENT_TYPE_CODES.get(incident_type, 5))
+        payload = self._mint_and_sign("AI-INCIDENT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"incident-{incident_type}"
+            ctx: Dict[str, Any] = {"provider": "incident-reporting", "incident_type": incident_type}
+            if incident_id: ctx["incident_id"] = incident_id
+            if authority: ctx["authority"] = authority
+            if affected_subjects is not None: ctx["affected_subjects"] = affected_subjects
+            if remediation_status: ctx["remediation_status"] = remediation_status
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Performance Metrics (AI-PERF.1) ───────────────────────────────
+
+    def witness_performance(self, metrics_evaluated: int, metrics_passing: int, benchmark_type: str, *, benchmark_id: Optional[str] = None, dataset_hash: Optional[str] = None, threshold: Optional[float] = None, score: Optional[float] = None, model_under_test: Optional[str] = None) -> WitnessPayload:
+        """Witness performance metrics (AI-PERF.1). Art. 15(1), NIST MEASURE 2.5."""
+        fa, fb, fc = float(metrics_evaluated), float(metrics_passing), float(BENCHMARK_TYPE_CODES.get(benchmark_type, 5))
+        payload = self._mint_and_sign("AI-PERF.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"perf-{model_under_test or benchmark_type}"
+            ctx: Dict[str, Any] = {"provider": "performance-metrics", "benchmark_type": benchmark_type}
+            if benchmark_id: ctx["benchmark_id"] = benchmark_id
+            if dataset_hash: ctx["dataset_hash"] = dataset_hash
+            if threshold is not None: ctx["threshold"] = threshold
+            if score is not None: ctx["score"] = score
+            if model_under_test: ctx["model_under_test"] = model_under_test
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Robustness Testing (AI-ROBUST.1) ──────────────────────────────
+
+    def witness_robustness(self, perturbations_tested: int, perturbations_survived: int, perturbation_type: str, *, test_suite_id: Optional[str] = None, degradation_pct: Optional[float] = None, baseline_score: Optional[float] = None, perturbed_score: Optional[float] = None) -> WitnessPayload:
+        """Witness robustness testing (AI-ROBUST.1). Art. 15(3), NIST MEASURE 2.6."""
+        fa, fb, fc = float(perturbations_tested), float(perturbations_survived), float(PERTURBATION_TYPE_CODES.get(perturbation_type, 5))
+        payload = self._mint_and_sign("AI-ROBUST.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"robust-{perturbation_type}"
+            ctx: Dict[str, Any] = {"provider": "robustness-testing", "perturbation_type": perturbation_type}
+            if test_suite_id: ctx["test_suite_id"] = test_suite_id
+            if degradation_pct is not None: ctx["degradation_pct"] = degradation_pct
+            if baseline_score is not None: ctx["baseline_score"] = baseline_score
+            if perturbed_score is not None: ctx["perturbed_score"] = perturbed_score
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Cybersecurity Attestation (AI-CYBER.1) ────────────────────────
+
+    def witness_cybersecurity(self, controls_assessed: int, controls_compliant: int, framework: str, *, assessment_id: Optional[str] = None, framework_version: Optional[str] = None, findings_count: Optional[int] = None, critical_findings: Optional[int] = None) -> WitnessPayload:
+        """Witness cybersecurity attestation (AI-CYBER.1). Art. 15(4), NIST CSF."""
+        fa, fb, fc = float(controls_assessed), float(controls_compliant), float(CYBER_FRAMEWORK_CODES.get(framework, 4))
+        payload = self._mint_and_sign("AI-CYBER.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"cyber-{framework}"
+            ctx: Dict[str, Any] = {"provider": "cybersecurity-assessment", "framework": framework}
+            if assessment_id: ctx["assessment_id"] = assessment_id
+            if framework_version: ctx["framework_version"] = framework_version
+            if findings_count is not None: ctx["findings_count"] = findings_count
+            if critical_findings is not None: ctx["critical_findings"] = critical_findings
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Transparency Disclosure (AI-TRANS.1) ──────────────────────────
+
+    def witness_transparency(self, disclosures_made: int, disclosure_type: str, recipient_type: str, *, disclosure_id: Optional[str] = None, content_hash: Optional[str] = None, channel: Optional[str] = None) -> WitnessPayload:
+        """Witness transparency disclosure (AI-TRANS.1). Art. 13, GDPR Art. 13/14."""
+        fa, fb, fc = float(disclosures_made), float(DISCLOSURE_TYPE_CODES.get(disclosure_type, 0)), float(RECIPIENT_TYPE_CODES.get(recipient_type, 0))
+        payload = self._mint_and_sign("AI-TRANS.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"trans-{disclosure_type}"
+            ctx: Dict[str, Any] = {"provider": "transparency-disclosure", "disclosure_type": disclosure_type, "recipient_type": recipient_type}
+            if disclosure_id: ctx["disclosure_id"] = disclosure_id
+            if content_hash: ctx["content_hash"] = content_hash
+            if channel: ctx["channel"] = channel
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Watermark Verification (AI-WATERMARK.1) ──────────────────────
+
+    def witness_watermark_verification(self, items_checked: int, watermarks_detected: int, detection_method: str, *, content_hash: Optional[str] = None, watermark_provider: Optional[str] = None, confidence_score: Optional[float] = None, stripped_count: Optional[int] = None) -> WitnessPayload:
+        """Witness watermark verification (AI-WATERMARK.1). Art. 50(2), GPAI CoP."""
+        fa, fb, fc = float(items_checked), float(watermarks_detected), float(DETECTION_METHOD_CODES.get(detection_method, 4))
+        payload = self._mint_and_sign("AI-WATERMARK.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"watermark-{detection_method}"
+            ctx: Dict[str, Any] = {"provider": "watermark-verification", "detection_method": detection_method}
+            if content_hash: ctx["content_hash"] = content_hash
+            if watermark_provider: ctx["watermark_provider"] = watermark_provider
+            if confidence_score is not None: ctx["confidence_score"] = confidence_score
+            if stripped_count is not None: ctx["stripped_count"] = stripped_count
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Data Protection Impact Assessment (AI-DPIA.1) ────────────────
+
+    def witness_dpia(self, risks_identified: int, risks_mitigated: int, processing_type: str, *, dpia_id: Optional[str] = None, assessment_date: Optional[str] = None, dpo_consulted: Optional[bool] = None, residual_risk_level: Optional[str] = None, supervisory_authority_consulted: Optional[bool] = None) -> WitnessPayload:
+        """Witness DPIA completion (AI-DPIA.1). GDPR Art. 35, Art. 27."""
+        fa, fb, fc = float(risks_identified), float(risks_mitigated), float(PROCESSING_TYPE_CODES.get(processing_type, 4))
+        payload = self._mint_and_sign("AI-DPIA.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"dpia-{processing_type}"
+            ctx: Dict[str, Any] = {"provider": "impact-assessment", "processing_type": processing_type}
+            if dpia_id: ctx["dpia_id"] = dpia_id
+            if assessment_date: ctx["assessment_date"] = assessment_date
+            if dpo_consulted is not None: ctx["dpo_consulted"] = dpo_consulted
+            if residual_risk_level: ctx["residual_risk_level"] = residual_risk_level
+            if supervisory_authority_consulted is not None: ctx["supervisory_authority_consulted"] = supervisory_authority_consulted
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Automated Decision Notification (AI-AUTO.1) ──────────────────
+
+    def witness_automated_decision(self, decisions_made: int, human_reviewed: int, decision_type: str, *, decision_id: Optional[str] = None, subject_notified: Optional[bool] = None, opt_out_available: Optional[bool] = None, human_review_requested: Optional[bool] = None) -> WitnessPayload:
+        """Witness automated decision notification (AI-AUTO.1). GDPR Art. 22, Art. 14."""
+        fa, fb, fc = float(decisions_made), float(human_reviewed), float(DECISION_TYPE_CODES.get(decision_type, 5))
+        payload = self._mint_and_sign("AI-AUTO.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"auto-{decision_type}"
+            ctx: Dict[str, Any] = {"provider": "automated-decision", "decision_type": decision_type}
+            if decision_id: ctx["decision_id"] = decision_id
+            if subject_notified is not None: ctx["subject_notified"] = subject_notified
+            if opt_out_available is not None: ctx["opt_out_available"] = opt_out_available
+            if human_review_requested is not None: ctx["human_review_requested"] = human_review_requested
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Dual-Use Model Classification (AI-DUALUSE.1) ─────────────────
+
+    def witness_dual_use(self, classification_code: int, reporting_status: str, days_since_classification: int, *, model_id: Optional[str] = None, classification_basis: Optional[str] = None, compute_threshold: Optional[str] = None, authority_notified: Optional[str] = None) -> WitnessPayload:
+        """Witness dual-use model classification (AI-DUALUSE.1). EO 14110 Sec 4(a)."""
+        fa, fb, fc = float(classification_code), float(REPORTING_STATUS_CODES.get(reporting_status, 0)), float(days_since_classification)
+        payload = self._mint_and_sign("AI-DUALUSE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or f"dualuse-class-{classification_code}"
+            ctx: Dict[str, Any] = {"provider": "dual-use-classification", "reporting_status": reporting_status}
+            if model_id: ctx["model_id"] = model_id
+            if classification_basis: ctx["classification_basis"] = classification_basis
+            if compute_threshold: ctx["compute_threshold"] = compute_threshold
+            if authority_notified: ctx["authority_notified"] = authority_notified
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Supply Chain Risk (AI-SUPPLY.1) ───────────────────────────────
+
+    def witness_supply_chain_risk(self, suppliers_assessed: int, suppliers_compliant: int, risk_level: str, *, supplier_id_hash: Optional[str] = None, vulnerability_count: Optional[int] = None, last_audit_date: Optional[str] = None, update_cadence_days: Optional[int] = None) -> WitnessPayload:
+        """Witness supply chain risk (AI-SUPPLY.1). NIST MEASURE 3.1, G7/CISA."""
+        fa, fb, fc = float(suppliers_assessed), float(suppliers_compliant), float(SUPPLY_RISK_CODES.get(risk_level, 0))
+        payload = self._mint_and_sign("AI-SUPPLY.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"supply-risk-{risk_level}"
+            ctx: Dict[str, Any] = {"provider": "supply-chain-risk", "risk_level": risk_level}
+            if supplier_id_hash: ctx["supplier_id_hash"] = supplier_id_hash
+            if vulnerability_count is not None: ctx["vulnerability_count"] = vulnerability_count
+            if last_audit_date: ctx["last_audit_date"] = last_audit_date
+            if update_cadence_days is not None: ctx["update_cadence_days"] = update_cadence_days
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Post-Market Monitoring (AI-PMM.1) ─────────────────────────────
+
+    def witness_post_market_monitoring(self, monitoring_checks_run: int, anomalies_detected: int, monitoring_type: str, *, monitoring_plan_hash: Optional[str] = None, period_start: Optional[str] = None, period_end: Optional[str] = None, report_generated: Optional[bool] = None) -> WitnessPayload:
+        """Witness post-market monitoring (AI-PMM.1). Art. 72, NIST MANAGE 4.1."""
+        fa, fb, fc = float(monitoring_checks_run), float(anomalies_detected), float(PMM_TYPE_CODES.get(monitoring_type, 4))
+        payload = self._mint_and_sign("AI-PMM.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"pmm-{monitoring_type}"
+            ctx: Dict[str, Any] = {"provider": "post-market-monitoring", "monitoring_type": monitoring_type}
+            if monitoring_plan_hash: ctx["monitoring_plan_hash"] = monitoring_plan_hash
+            if period_start: ctx["period_start"] = period_start
+            if period_end: ctx["period_end"] = period_end
+            if report_generated is not None: ctx["report_generated"] = report_generated
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
     # ── Chain, Violation, Charter, Registry, Reviewer, Safe State ───────
 
     def witness_chain_handoff(
@@ -1850,6 +2398,7 @@ class Witness:
                 signing_key=self._config.signing_key,
                 signing_key_id=getattr(self._config, "signing_key_id", None),
                 signing_key_version=getattr(self._config, "signing_key_version", None),
+                signing_algorithm=self._config.signing_algorithm,
                 cycle_id=cid,
             )
             if self._config.clearing_level <= 1:
@@ -2309,6 +2858,7 @@ class Witness:
             clearing_level=self._config.clearing_level,
             agent_id=self._config.agent_id,
             signing_key=self._config.signing_key,
+            signing_algorithm=self._config.signing_algorithm,
             cycle_id=self._config.cycle_id,
             policy_version_hash=policy_hash,
             jurisdiction=self._config.jurisdiction,
@@ -2442,6 +2992,7 @@ class Witness:
             signing_key=self._config.signing_key,
             signing_key_id=self._config.signing_key_id,
             signing_key_version=self._config.signing_key_version,
+            signing_algorithm=self._config.signing_algorithm,
             cycle_id=self._config.cycle_id,
             policy_version_hash=policy_hash,
             jurisdiction=self._config.jurisdiction,
