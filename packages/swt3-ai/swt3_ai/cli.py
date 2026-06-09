@@ -29,6 +29,7 @@ PROFILES = {
     "autonomous-systems": "Autonomous AI governance (EU Machinery Reg + EO 14110 + ISO 26262)",
     "insurance-underwriting": "Insurance AI governance (NAIC guidelines + state regs + GDPR)",
     "content-platform": "Content platform AI governance (DSA + Art. 50 + GPAI Code)",
+    "microsoft-foundry": "Microsoft Foundry agent governance (AGT + OWASP Agentic + SOC 2)",
     "minimal": "Development / evaluation (no enforcement)",
 }
 
@@ -47,6 +48,7 @@ def _print_help() -> None:
         "  swt3 demo                         Run the zero-friction demo",
         "  swt3 doctor                       Diagnose config health",
         "  swt3 doctor --ci                   Strict mode (exit 1 on warnings)",
+        "  swt3 verify                       Offline anchor verification",
         "  swt3 audit                        Forensic chain timeline (html or json)",
         "  swt3 help                         Show this message\n",
         "Profiles:",
@@ -234,6 +236,44 @@ def main() -> None:
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(html_out)
             print(f"Audit report saved: {out_path}")
+    elif cmd == "verify":
+        sub = args[1:]
+        anchor = _get_flag(sub, "--anchor")
+        tenant = _get_flag(sub, "--tenant")
+        procedure = _get_flag(sub, "--procedure")
+        fa = _get_flag(sub, "--fa")
+        fb = _get_flag(sub, "--fb")
+        fc = _get_flag(sub, "--fc")
+        ts = _get_flag(sub, "--ts")
+
+        if not all([anchor, tenant, procedure, fa, fb, fc, ts]):
+            print(
+                "\nUsage:\n"
+                "  swt3 verify --anchor <token> --tenant <id> --procedure <id> "
+                "--fa <n> --fb <n> --fc <n> --ts <ms>\n\n"
+                "Example:\n"
+                "  swt3 verify --anchor SWT3-E-AWS-AI-AIINF1-PASS-1773316622-a1b2c3d4e5f6 \\\n"
+                "    --tenant MY_TENANT --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000\n\n"
+                "Zero network calls. Recomputes the SHA-256 fingerprint locally."
+            )
+        else:
+            from .fingerprint import mint_fingerprint
+
+            recomputed = mint_fingerprint(
+                tenant, procedure,
+                float(fa), float(fb), float(fc),
+                int(ts),
+            )
+            claimed = anchor.rsplit("-", 1)[-1] if anchor else ""
+            match = recomputed == claimed
+
+            if match:
+                print(f"\033[32mCERTIFIED TRUTH\033[0m")
+                print(f"  Fingerprint: {recomputed}")
+            else:
+                print(f"\033[31mTAMPERED\033[0m")
+                print(f"  Claimed:    {claimed}")
+                print(f"  Recomputed: {recomputed}")
     elif cmd in ("help", "--help", "-h", None):
         _print_help()
     else:

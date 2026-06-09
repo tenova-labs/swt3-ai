@@ -87,3 +87,44 @@ public static class RevocationReasons
     public const int RegulatoryOrder = 5;
     public const int ErrorCorrection = 6;
 }
+
+/// <summary>
+/// Trust levels for agent-to-agent Trust Mesh verification (AI-TRUST.1).
+/// </summary>
+public static class TrustLevels
+{
+    public const int Denied = 0;
+    public const int Basic = 1;
+    public const int Verified = 2;
+    public const int Attested = 3;
+    public const int Sovereign = 4;
+}
+
+/// <summary>
+/// Denial reason codes for Trust Mesh verification.
+/// </summary>
+public static class DenialReasons
+{
+    public const string AnchorNotFound = "anchor_not_found";
+    public const string AnchorExpired = "anchor_expired";
+    public const string AnchorRevoked = "anchor_revoked";
+    public const string SignatureMissing = "signature_missing";
+    public const string TenantNotTrusted = "tenant_not_trusted";
+    public const string DenyListed = "deny_listed";
+    public const string InsufficientProcedures = "insufficient_procedures";
+    public const string SignatureInvalid = "signature_invalid";
+    public const string SignatureUnverifiable = "signature_unverifiable";
+    public const string InsufficientTrustLevel = "insufficient_trust_level";
+    public const string TimestampFuture = "timestamp_future";
+    public const string RateLimited = "rate_limited";
+}
+
+/// <summary>
+/// Key purpose for key attestation (AI-TRUST.3).
+/// </summary>
+public static class KeyPurposes
+{
+    public const string Signing = "signing";
+    public const string Encryption = "encryption";
+    public const string Delegation = "delegation";
+}

@@ -13,7 +13,20 @@
 
 import { mintFingerprint, sha256Truncated, timestampMs } from "./fingerprint.js";
 import { signPayload } from "./signing.js";
-import type { InferenceRecord, WitnessPayload } from "./types.js";
+import type { AnchorReference, InferenceRecord, WitnessPayload } from "./types.js";
+
+/**
+ * Normalize references input to structured AnchorReference array.
+ * Accepts strings, AnchorReference objects, or a mix.
+ */
+export function normalizeReferences(
+  input: (string | AnchorReference)[] | undefined,
+): AnchorReference[] | undefined {
+  if (!input || input.length === 0) return undefined;
+  return input.map((ref) =>
+    typeof ref === "string" ? { fingerprint: ref } : ref,
+  );
+}
 
 /**
  * Extract witness payloads from an inference record.
@@ -38,6 +51,7 @@ export function extractPayloads(
   purposeClass?: string,
   authorizationId?: string,
   signingAlgorithm?: string,
+  references?: AnchorReference[],
 ): WitnessPayload[] {
   const [ts, epoch] = timestampMs();
   const payloads: WitnessPayload[] = [];
@@ -88,7 +102,7 @@ export function extractPayloads(
         payload.ai_context = ctx;
       }
 
-      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
+      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm, references);
 
       payloads.push(payload);
     }
@@ -135,7 +149,7 @@ export function extractPayloads(
         payload.ai_context = ctx;
       }
 
-      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
+      applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm, references);
 
       payloads.push(payload);
     }
@@ -238,7 +252,7 @@ export function extractPayloads(
     applyClearingLevel(payload, record, clearingLevel);
 
     // Operational metadata survives all clearing levels
-    applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm);
+    applyOperationalMetadata(payload, fp, agentId, signingKey, signingKeyId, signingKeyVersion, cycleId, policyVersionHash, jurisdiction, legalBasis, purposeClass, authorizationId, signingAlgorithm, references);
 
     payloads.push(payload);
   }
@@ -261,6 +275,7 @@ function applyOperationalMetadata(
   purposeClass?: string,
   authorizationId?: string,
   signingAlgorithm?: string,
+  references?: AnchorReference[],
 ): void {
   if (agentId) payload.agent_id = agentId;
   if (cycleId) payload.cycle_id = cycleId;
@@ -269,6 +284,7 @@ function applyOperationalMetadata(
   if (legalBasis) payload.legal_basis = legalBasis;
   if (purposeClass) payload.purpose_class = purposeClass;
   if (authorizationId) payload.authorization_id = authorizationId;
+  if (references && references.length > 0) payload.references = references;
   if (signingKey) {
     const algo = (signingAlgorithm ?? "hmac-sha256") as import("./signing.js").SigningAlgorithm;
     payload.payload_signature = signPayload(signingKey, fingerprint, agentId, algo);

@@ -39,6 +39,8 @@ _VALID_POLICY_KEYS = frozenset({
 
 _VALID_TRUST_MESH_KEYS = frozenset({
     "mode", "min_trust_level", "require_signature", "freshness_window",
+    "require_intra_tenant_signing", "verify_boolean_claims",
+    "rate_limit_max_failures", "rate_limit_window_seconds", "per_level_freshness",
     "trusted_tenants", "trusted_agents", "deny_agents", "deny_tenants",
     "required_procedures", "signing_keys",
 })
@@ -73,6 +75,7 @@ _VALID_PROFILES = frozenset({
     "autonomous-systems",
     "insurance-underwriting",
     "content-platform",
+    "microsoft-foundry",
     "minimal",
 })
 
@@ -271,6 +274,11 @@ def _extract_trust_mesh(config: Dict[str, Any]) -> Optional[TrustMeshConfig]:
         min_trust_level=section.get("min_trust_level", 1),
         require_signature=section.get("require_signature", False),
         freshness_window=section.get("freshness_window", 86400),
+        require_intra_tenant_signing=section.get("require_intra_tenant_signing", False),
+        verify_boolean_claims=section.get("verify_boolean_claims", False),
+        rate_limit_max_failures=section.get("rate_limit_max_failures", 0),
+        rate_limit_window_seconds=section.get("rate_limit_window_seconds", 60),
+        per_level_freshness=section.get("per_level_freshness", None),
         trusted_tenants=section.get("trusted_tenants", []),
         trusted_agents=trusted_agents,
         deny_agents=section.get("deny_agents", []),

@@ -2249,6 +2249,41 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    # ── Autonomous Generation Depth (AI-AUTO.2) ──────────────────────
+
+    def witness_generation_depth(self, max_depth: int, observed_depth: int, human_gate_present: bool, *, generation_context: Optional[str] = None, source_agent_id: Optional[str] = None, merge_target: Optional[str] = None) -> WitnessPayload:
+        """Witness autonomous generation depth (AI-AUTO.2). EU AI Act Art. 14, EO 14110 Sec. 3."""
+        fa, fb, fc = float(max_depth), float(observed_depth), 1.0 if human_gate_present else 0.0
+        payload = self._mint_and_sign("AI-AUTO.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = source_agent_id or "autonomous-generator"
+            ctx: Dict[str, Any] = {"provider": "generation-depth", "max_depth": max_depth, "observed_depth": observed_depth}
+            if generation_context: ctx["generation_context"] = generation_context
+            if source_agent_id: ctx["source_agent_id"] = source_agent_id
+            if merge_target: ctx["merge_target"] = merge_target
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── External Timestamp Attestation (AI-AUDIT.2) ──────────────────
+
+    TSA_PROVIDER_CODES: Dict[str, int] = {"none": 0, "freetsa": 1, "digicert": 2, "sectigo": 3, "custom": 4}
+
+    def witness_timestamp_attestation(self, anchor_count: int, tsa_verified: bool, tsa_provider: str, *, merkle_root: Optional[str] = None, tsa_url: Optional[str] = None, tsa_serial: Optional[str] = None) -> WitnessPayload:
+        """Witness external timestamp attestation (AI-AUDIT.2). NIST 800-53 AU-10."""
+        fa, fb = float(anchor_count), 1.0 if tsa_verified else 0.0
+        fc = float(self.TSA_PROVIDER_CODES.get(tsa_provider, 4))
+        payload = self._mint_and_sign("AI-AUDIT.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "merkle-rollup"
+            ctx: Dict[str, Any] = {"provider": "timestamp-attestation", "tsa_provider": tsa_provider}
+            if merkle_root: ctx["merkle_root"] = merkle_root
+            if tsa_url: ctx["tsa_url"] = tsa_url
+            if tsa_serial: ctx["tsa_serial"] = tsa_serial
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
     # ── Dual-Use Model Classification (AI-DUALUSE.1) ─────────────────
 
     def witness_dual_use(self, classification_code: int, reporting_status: str, days_since_classification: int, *, model_id: Optional[str] = None, classification_basis: Optional[str] = None, compute_threshold: Optional[str] = None, authority_notified: Optional[str] = None) -> WitnessPayload:

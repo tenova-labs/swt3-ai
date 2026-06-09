@@ -2,7 +2,7 @@
  * SWT3 MCP Server: Anchor-Chain Verifier.
  *
  * Validates an agent's anchor chain before tool execution. Queries
- * Redis reader (fast path) first, falls back to Supabase ledger (cold path).
+ * Redis reader (fast path) first, falls back to the persistent ledger (cold path).
  * Integrates with the density policy engine for enforcement.
  *
  * Flow:

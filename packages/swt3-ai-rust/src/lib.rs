@@ -115,7 +115,7 @@ fn num_str(v: f64) -> String {
 mod tests {
     use super::*;
 
-    // Fingerprint vectors (tenant ID sanitized to ENCLAVE_ALPHA)
+    // Fingerprint vectors (tenant name sanitized for test vectors)
     #[test]
     fn fingerprint_vector_1() {
         assert_eq!(

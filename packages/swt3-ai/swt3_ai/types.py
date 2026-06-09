@@ -53,6 +53,72 @@ class WitnessConfig:
 
 
 @dataclass
+class AnchorReference:
+    """A reference to an upstream anchor in a provenance chain."""
+
+    fingerprint: str
+    relationship: Optional[str] = None
+    provenance_token: Optional[str] = None
+
+
+@dataclass
+class ProcedureAttestation:
+    """A single procedure attestation within a Model Trust Profile."""
+
+    procedure: str
+    fingerprint: str
+    timestamp: int  # ms since epoch
+    status: str = "pass"  # "pass", "fail", or "missing"
+
+
+@dataclass
+class ModelTrustProfile:
+    """Portable, signed summary of a model's compliance posture."""
+
+    model_id: str
+    model_hash: str
+    coverage: List["ProcedureAttestation"] = field(default_factory=list)
+    coverage_score: float = 0.0
+    upstream_references: List["AnchorReference"] = field(default_factory=list)
+    generated_at: int = 0  # ms since epoch
+    valid_until: int = 0  # ms since epoch
+    signature: Optional[str] = None
+    signing_key_id: Optional[str] = None
+
+
+@dataclass
+class CoverageResult:
+    """Result of a coverage score calculation against a target procedure set."""
+
+    score: float = 0.0
+    covered: List[str] = field(default_factory=list)
+    missing: List[str] = field(default_factory=list)
+    extra: List[str] = field(default_factory=list)
+    target: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ChainLink:
+    """A single link in a provenance chain traversal."""
+
+    fingerprint: str = ""
+    references: List["AnchorReference"] = field(default_factory=list)
+    depth: int = 0
+
+
+@dataclass
+class ChainSummary:
+    """Summary of a provenance chain walk."""
+
+    root: str = ""
+    links: List["ChainLink"] = field(default_factory=list)
+    depth: int = 0
+    gaps: List[str] = field(default_factory=list)
+    complete: bool = True
+    truncated: bool = False
+
+
+@dataclass
 class WitnessPayload:
     """A single witness anchor payload ready for the ingestion endpoint."""
 
@@ -83,6 +149,7 @@ class WitnessPayload:
     legal_basis: Optional[str] = None  # GDPR legal basis (survives all clearing levels)
     purpose_class: Optional[str] = None  # CJT purpose classification (survives all clearing levels)
     authorization_id: Optional[str] = None  # CJT pre-inference authorization receipt (survives all clearing levels)
+    references: Optional[List[Dict[str, str]]] = None  # upstream anchor references for provenance chains (survives all clearing levels)
     revocation_target: Optional[str] = None  # fingerprint of anchor being revoked (survives all clearing levels)
     revocation_reason: Optional[str] = None  # reason for revocation (survives all clearing levels)
 
@@ -137,6 +204,8 @@ class WitnessPayload:
             d["purpose_class"] = self.purpose_class
         if self.authorization_id is not None:
             d["authorization_id"] = self.authorization_id
+        if self.references:
+            d["references"] = self.references
         if self.revocation_target is not None:
             d["revocation_target"] = self.revocation_target
         if self.revocation_reason is not None:
@@ -301,6 +370,11 @@ class TrustMeshConfig:
     min_trust_level: int = 1
     require_signature: bool = False
     freshness_window: int = 86400  # seconds (24h default)
+    require_intra_tenant_signing: bool = False
+    verify_boolean_claims: bool = False
+    rate_limit_max_failures: int = 0  # 0 = disabled
+    rate_limit_window_seconds: int = 60
+    per_level_freshness: Optional[Dict[str, int]] = None
     trusted_tenants: List[str] = field(default_factory=list)
     trusted_agents: List[Dict[str, str]] = field(default_factory=list)
     deny_agents: List[str] = field(default_factory=list)

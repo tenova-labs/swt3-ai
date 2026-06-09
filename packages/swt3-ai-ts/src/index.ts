@@ -32,6 +32,12 @@ export type {
   AdapterInfo,
   SkillInfo,
   MemorySource,
+  AnchorReference,
+  ProcedureAttestation,
+  ModelTrustProfile,
+  CoverageResult,
+  ChainLink,
+  ChainSummary,
 } from "./types.js";
 export { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES } from "./types.js";
 export { mintFingerprint, sha256Truncated, sha256Hex, timestampMs } from "./fingerprint.js";
@@ -46,6 +52,10 @@ export { WriteAheadLog } from "./wal.js";
 export type { WalOptions } from "./wal.js";
 export { wrapOllama, isOllamaClient } from "./adapters/ollama.js";
 export { wrapVllm } from "./adapters/vllm.js";
+export { wrapGoogleADK } from "./adapters/google-adk.js";
+export { wrapCrewAI } from "./adapters/crewai.js";
+export { wrapA2A } from "./adapters/a2a.js";
+export { wrapFoundry } from "./adapters/foundry.js";
 export { queryHardware, detectTopology, topologyCode, TOPOLOGY_CODES, queryTPM, parseTPMPcrOutput, ZERO_PCR_HASH } from "./hardware.js";
 export type { GpuInfo, HardwareSnapshot, TPMSnapshot, PcrRegister } from "./hardware.js";
 export {
@@ -64,3 +74,6 @@ export {
 export type { TrustCredential, TrustResult } from "./trust.js";
 export { SentinelClient } from "./sentinel-client.js";
 export type { SentinelClientOptions, SentinelCheckResult, SentinelStatusResult } from "./sentinel-client.js";
+export { generateProfile, signProfile, verifyProfileSignature, isProfileValid, coverageScore, buildProfileMessage, RECOMMENDED_PROCEDURES } from "./profile.js";
+export type { GenerateProfileOptions } from "./profile.js";
+export { buildLookup, walkChain, verifyChainIntegrity } from "./chain.js";

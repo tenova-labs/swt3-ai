@@ -113,3 +113,42 @@ impl RevocationReason {
         *self as u8
     }
 }
+
+/// Trust levels for agent-to-agent Trust Mesh verification (AI-TRUST.1).
+pub const TRUST_DENIED: u8 = 0;
+pub const TRUST_BASIC: u8 = 1;
+pub const TRUST_VERIFIED: u8 = 2;
+pub const TRUST_ATTESTED: u8 = 3;
+pub const TRUST_SOVEREIGN: u8 = 4;
+
+/// Denial reason codes for Trust Mesh verification.
+pub const DENIAL_ANCHOR_NOT_FOUND: &str = "anchor_not_found";
+pub const DENIAL_ANCHOR_EXPIRED: &str = "anchor_expired";
+pub const DENIAL_ANCHOR_REVOKED: &str = "anchor_revoked";
+pub const DENIAL_SIGNATURE_MISSING: &str = "signature_missing";
+pub const DENIAL_TENANT_NOT_TRUSTED: &str = "tenant_not_trusted";
+pub const DENIAL_DENY_LISTED: &str = "deny_listed";
+pub const DENIAL_INSUFFICIENT_PROCEDURES: &str = "insufficient_procedures";
+pub const DENIAL_SIGNATURE_INVALID: &str = "signature_invalid";
+pub const DENIAL_SIGNATURE_UNVERIFIABLE: &str = "signature_unverifiable";
+pub const DENIAL_INSUFFICIENT_TRUST_LEVEL: &str = "insufficient_trust_level";
+pub const DENIAL_TIMESTAMP_FUTURE: &str = "timestamp_future";
+pub const DENIAL_RATE_LIMITED: &str = "rate_limited";
+
+/// Key purpose for key attestation (AI-TRUST.3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyPurpose {
+    Signing,
+    Encryption,
+    Delegation,
+}
+
+impl KeyPurpose {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Signing => "signing",
+            Self::Encryption => "encryption",
+            Self::Delegation => "delegation",
+        }
+    }
+}

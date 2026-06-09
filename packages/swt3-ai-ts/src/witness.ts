@@ -2538,6 +2538,87 @@ export class Witness {
     return payload;
   }
 
+  // ── Autonomous Generation Depth (AI-AUTO.2) ──────────────────
+
+  /**
+   * Witness autonomous generation depth (AI-AUTO.2).
+   *
+   * Records the depth of AI-to-AI generation cycles and whether
+   * a human approval gate was present. EU AI Act Art. 14, EO 14110 Sec. 3.
+   */
+  witnessGenerationDepth(options: {
+    maxDepth: number;
+    observedDepth: number;
+    humanGatePresent: boolean;
+    generationContext?: string;
+    sourceAgentId?: string;
+    mergeTarget?: string;
+  }): WitnessPayload {
+    const fa = options.maxDepth;
+    const fb = options.observedDepth;
+    const fc = options.humanGatePresent ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-AUTO.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-AUTO.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.sourceAgentId || "autonomous-generator";
+      const ctx: Record<string, unknown> = { provider: "generation-depth", max_depth: fa, observed_depth: fb };
+      if (options.generationContext) ctx.generation_context = options.generationContext;
+      if (options.sourceAgentId) ctx.source_agent_id = options.sourceAgentId;
+      if (options.mergeTarget) ctx.merge_target = options.mergeTarget;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  // ── External Timestamp Attestation (AI-AUDIT.2) ──────────────
+
+  /**
+   * Witness external timestamp attestation (AI-AUDIT.2).
+   *
+   * Records that a batch of anchors was anchored to an independent
+   * RFC 3161 Timestamp Authority. NIST 800-53 AU-10 (Non-repudiation).
+   */
+  witnessTimestampAttestation(options: {
+    anchorCount: number;
+    tsaVerified: boolean;
+    tsaProvider: string;
+    merkleRoot?: string;
+    tsaUrl?: string;
+    tsaSerial?: string;
+  }): WitnessPayload {
+    const fa = options.anchorCount;
+    const fb = options.tsaVerified ? 1 : 0;
+    const TSA_CODES: Record<string, number> = { none: 0, freetsa: 1, digicert: 2, sectigo: 3, custom: 4 };
+    const fc = TSA_CODES[options.tsaProvider] ?? 4;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-AUDIT.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-AUDIT.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "merkle-rollup";
+      const ctx: Record<string, unknown> = { provider: "timestamp-attestation", tsa_provider: options.tsaProvider };
+      if (options.merkleRoot) ctx.merkle_root = options.merkleRoot;
+      if (options.tsaUrl) ctx.tsa_url = options.tsaUrl;
+      if (options.tsaSerial) ctx.tsa_serial = options.tsaSerial;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
   // ── Dual-Use Model Classification (AI-DUALUSE.1) ─────────────
 
   /**

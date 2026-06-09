@@ -11,19 +11,17 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.4
+## What's New in v0.5.5
 
-- **ML-DSA-65 (FIPS 204) post-quantum signing** -- Optional alongside HMAC-SHA256. Configure via `signing_algorithm: "ml-dsa-65"` in .swt3.yaml or constructor. Cross-language parity (same seed produces same keys in Python, TypeScript). `pip install swt3-ai[pqc]`
-- **Self-hosted deployment** -- [SWT3 Gateway](#self-hosted-deployment) (Go reverse proxy, zero-latency, Helm chart) and full platform container (UBI 9, Iron Bank compatible, air-gap export). Deploy everything inside your VPC.
-- **Chain Enforcer** -- 5-layer policy witnessing: tool blocklist/allowlist, velocity limiting, chain depth, token budgets. Every policy violation minted as an anchor. [Details](#agent-cost-governance)
-- **Agent Cost Governance** -- per-session token budgets with `max_tokens_per_session`. Halt and record on exceeded. `cost-conscious` profile ships built-in. [Details](#agent-cost-governance)
-- **Sentinel Client** -- IPC integration with the independent evidence custody daemon. Protected WAL, cross-process budgets, key isolation. Evidence the agent cannot tamper with.
-- **AI-MARK.1** -- Content provenance witnessing (text, image, audio with C2PA/watermark/metadata tagging)
-- **AI-BASE.1** -- Agent behavioral baseline (deviation scoring against established patterns)
-- **AI-LIC.1** -- License provenance witnessing (model, adapter, and data license composition with SPDX)
-- **14 Built-in Profiles** -- 7 framework profiles + 7 industry verticals (fintech, healthcare, insurance, telecom, defense/govcon, content platform, autonomous systems)
-- **NSA MCP Security Mapping** -- [7 of 9 NSA AISC recommendations](https://sovereign.tenova.io/guides/nsa-mcp-security-mapping.html) addressed at the SDK layer (CSI U/OO/6030316-26, May 2026)
-- **65 procedures**, 41 namespaces, 207 cross-language test vectors
+- **Trust Mesh Hardened** -- 7 security layers: intra-tenant zero-trust, per-agent rate limiting, per-level freshness windows (SOVEREIGN requires 5-min anchors), verifiable boolean claims, deny list propagation with sentinel hooks. All opt-in, frictionless defaults unchanged.
+- **Key Attestation (AI-TRUST.3)** -- Bind signing keys to witness anchors. `generate_key_attestation()` / `verify_key_attestation()`. Keys valid only while bound anchor is fresh. No certificate authority required.
+- **Challenge-Response Liveness** -- Prove live key possession via nonce-based challenges. `generate_challenge()` / `respond_to_challenge()` / `verify_liveness_response()`. Defeats credential replay at ATTESTED/SOVEREIGN levels.
+- **4 New Adapters** -- Google ADK, CrewAI, A2A (Google Agent-to-Agent), Microsoft Foundry. 12 total integrations.
+- **Verify CLI** -- `swt3 verify --anchor <token>` recomputes fingerprint offline. Zero network calls.
+- **Bidirectional Framework Crosswalks** -- 222 mappings across 16 frameworks in machine-readable JSON.
+- **RFC 3161 Timestamps** -- Merkle rollups include RFC 3161 timestamp authority proof for legal non-repudiation.
+- **Microsoft Foundry Profile** -- Industry profile for Azure AI Foundry + AGT deployments.
+- **15 profiles**, 65 procedures, 41 namespaces, 12 integrations, 1,379 cross-language tests
 
 ## MCP Server -- Official Registry
 
@@ -89,6 +87,25 @@ trust_mesh:
 ```
 
 All verification is local. Zero cloud overhead. No data exchanged until both agents clear the trust gate. Unsigned agents are capped at TRUST_BASIC (level 1). Add signing keys for verified trust. Add hardware attestation for sovereign trust.
+
+## Offline Verification
+
+Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 6 SDK languages -- recompute it anywhere in microseconds.
+
+```python
+from swt3_ai import verify_anchor
+
+result = verify_anchor(
+    anchor,
+    tenant_id="MY_TENANT",
+    procedure_id="AI-INF.1",
+    factor_a=1, factor_b=1, factor_c=0,
+    timestamp_ms=1773316622000,
+)
+# result.status: "CERTIFIED TRUTH" | "TAMPERED"
+```
+
+Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Rust, C#, and Ruby with identical output for identical inputs.
 
 ## See It Work (No Account Needed)
 
@@ -832,6 +849,7 @@ docker save axiom-sovereign-engine:latest | gzip > axiom-sovereign.tar.gz
 | AWS Bedrock | `boto3` (`bedrock-runtime`) | Supported |
 | LiteLLM | `litellm` module | Supported (100+ providers) |
 | NVIDIA Dynamo | `@witness_endpoint()` decorator | Supported (infrastructure-layer) |
+| Microsoft Foundry | `wrap_foundry(agent)` | Supported (duck-typed) |
 
 
 ### LiteLLM (100+ Providers)
@@ -873,7 +891,7 @@ async def generate(request):
     # Every response is witnessed automatically. Zero application changes.
 ```
 
-The `dsn` connection string follows the Sentry/Supabase pattern: `https://<api_key>@<host>/<tenant_id>`. You can also use individual env vars (`SWT3_ENDPOINT`, `SWT3_API_KEY`, `SWT3_TENANT_ID`).
+The `dsn` connection string follows a standard DSN pattern: `https://<api_key>@<host>/<tenant_id>`. You can also use individual env vars (`SWT3_ENDPOINT`, `SWT3_API_KEY`, `SWT3_TENANT_ID`).
 
 Install: `pip install swt3-ai[dynamo]`
 
@@ -1053,9 +1071,12 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
 - [UCT Registry](https://sovereign.tenova.io/registry) -- full procedure catalog with factor definitions
 - [Anchor Verifier](https://sovereign.tenova.io/verify) -- verify any anchor, zero server calls
-- [Five Eyes Agentic AI Overlay](https://sovereign.tenova.io/guides/five-eyes-overlay.html) -- CISA/NSA guidance mapped to SWT3 procedures
-- [CMMC Compliance Overlay](https://sovereign.tenova.io/guides/cmmc-overlay.html) -- clearing levels mapped to CMMC and NIST 800-171
-- [SR 11-7 Model Risk Overlay](https://sovereign.tenova.io/guides/sr-11-7-overlay.html) -- clearing levels mapped to SR 11-7 requirements
+- [Before & After](https://sovereign.tenova.io/guides/developer-before-after.html) -- manual audit evidence vs. cryptographic witness anchors
+- [Integration Patterns](https://sovereign.tenova.io/guides/developer-integration-patterns.html) -- 8 instrumentation patterns mapped to regulatory requirements
+- [What Your Auditor Sees](https://sovereign.tenova.io/guides/developer-auditor-bridge.html) -- both sides of a witness anchor, developer to auditor
+- [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
+- [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
+- [All 65 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

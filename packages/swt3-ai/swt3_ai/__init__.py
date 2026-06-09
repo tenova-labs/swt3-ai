@@ -25,7 +25,7 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.5.4"
+__version__ = "0.5.5"
 
 from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError
 from .exporters.chain_monitor import ChainMonitorExporter
@@ -35,6 +35,8 @@ from .types import (
     ModelWeightInfo, AdapterInfo, SkillInfo, MemorySource,
     GpuInfo, HardwareSnapshot, PcrRegister, TPMSnapshot, EnvironmentSnapshot,
     ChainRule, ChainPolicyViolation,
+    AnchorReference, ProcedureAttestation, ModelTrustProfile, CoverageResult,
+    ChainLink, ChainSummary,
 )
 from .signing import (
     sign_payload, generate_mldsa_keypair, verify_mldsa,
@@ -62,6 +64,11 @@ from .trust import (
     TRUST_DENIED, TRUST_BASIC, TRUST_VERIFIED, TRUST_ATTESTED, TRUST_SOVEREIGN,
 )
 from .sentinel_client import SentinelClient, SentinelCheckResult, SentinelViolation
+from .profile import (
+    generate_profile, sign_profile, verify_profile_signature, is_profile_valid,
+    coverage_score, build_profile_message, RECOMMENDED_PROCEDURES,
+)
+from .chain import build_lookup, walk_chain, verify_chain_integrity
 
 __all__ = [
     "Witness",
@@ -124,6 +131,22 @@ __all__ = [
     "SentinelClient",
     "SentinelCheckResult",
     "SentinelViolation",
+    "AnchorReference",
+    "ProcedureAttestation",
+    "ModelTrustProfile",
+    "CoverageResult",
+    "ChainLink",
+    "ChainSummary",
+    "generate_profile",
+    "sign_profile",
+    "verify_profile_signature",
+    "is_profile_valid",
+    "coverage_score",
+    "build_profile_message",
+    "RECOMMENDED_PROCEDURES",
+    "build_lookup",
+    "walk_chain",
+    "verify_chain_integrity",
     "CONTENT_TYPE_CODES",
     "MARKING_METHODS",
     "BASELINE_MODE_CODES",

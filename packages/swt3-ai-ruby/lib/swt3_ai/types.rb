@@ -43,4 +43,37 @@ module Swt3Ai
     "regulatory_order" => 5,
     "error_correction" => 6,
   }.freeze
-end
+
+  # Trust levels for agent-to-agent Trust Mesh verification (AI-TRUST.1).
+  TRUST_DENIED = 0
+  TRUST_BASIC = 1
+  TRUST_VERIFIED = 2
+  TRUST_ATTESTED = 3
+  TRUST_SOVEREIGN = 4
+
+  TRUST_LEVEL_NAMES = {
+    0 => "denied",
+    1 => "basic",
+    2 => "verified",
+    3 => "attested",
+    4 => "sovereign",
+  }.freeze
+
+  # Denial reason codes for Trust Mesh verification.
+  DENIAL_REASONS = {
+    anchor_not_found: "anchor_not_found",
+    anchor_expired: "anchor_expired",
+    anchor_revoked: "anchor_revoked",
+    signature_missing: "signature_missing",
+    tenant_not_trusted: "tenant_not_trusted",
+    deny_listed: "deny_listed",
+    insufficient_procedures: "insufficient_procedures",
+    signature_invalid: "signature_invalid",
+    signature_unverifiable: "signature_unverifiable",
+    insufficient_trust_level: "insufficient_trust_level",
+    timestamp_future: "timestamp_future",
+    rate_limited: "rate_limited",
+  }.freeze
+
+  # Key purpose for key attestation (AI-TRUST.3).
+  KEY_PURPOSES = %w[signing encryption delegation].freezeend

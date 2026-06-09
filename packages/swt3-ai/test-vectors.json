@@ -442,6 +442,21 @@
       "description": "System prompt hash for instruction drift detection"
     }
   ],
+  "profile_signing_vectors": [
+    {
+      "id": 1,
+      "description": "Profile signing canonical message and HMAC-SHA256",
+      "model_id": "gpt-4o",
+      "model_hash": "abc123",
+      "procedures": ["AI-INF.1", "AI-GRD.1", "AI-MDL.1"],
+      "coverage_score_raw": 0.6666666666666666,
+      "generated_at": 1700000000000,
+      "valid_until": 1700086400000,
+      "expected_message": "PROFILE:gpt-4o:abc123:1700000000000:1700086400000:AI-GRD.1,AI-INF.1,AI-MDL.1:0.667",
+      "signing_key": "test-key-123",
+      "expected_signature": "bdce7111c3a6e9968a5de1973f3a977aadb42c2d7327f38de79729019c7baa42"
+    }
+  ],
   "mldsa_vectors": [
     {
       "id": 1,

@@ -31,6 +31,7 @@ const PROFILES: Record<string, string> = {
   "autonomous-systems": "Autonomous AI governance (EU Machinery Reg + EO 14110 + ISO 26262)",
   "insurance-underwriting": "Insurance AI governance (NAIC guidelines + state regs + GDPR)",
   "content-platform": "Content platform AI governance (DSA + Art. 50 + GPAI Code)",
+  "microsoft-foundry": "Microsoft Foundry agent governance (AGT + OWASP Agentic + SOC 2)",
   "minimal": "Development / evaluation (no enforcement)",
 };
 
@@ -49,6 +50,7 @@ Usage:
   swt3 demo                         Run the zero-friction demo
   swt3 doctor                       Diagnose config health
   swt3 doctor --ci                   Strict mode (exit 1 on warnings)
+  swt3 verify                       Offline anchor verification
   swt3 audit                        Forensic chain timeline (html or json)
   swt3 help                         Show this message
 
@@ -258,6 +260,51 @@ async function main(): Promise<void> {
         const outPath = "swt3-audit-report.html";
         writeFileSync(outPath, html, "utf-8");
         console.log(`Audit report saved: ${outPath}`);
+      }
+      break;
+    }
+    case "verify": {
+      const flagVal = (flag: string): string | undefined => {
+        const idx = rest.indexOf(flag);
+        return idx !== -1 && rest[idx + 1] ? rest[idx + 1] : undefined;
+      };
+      const anchor = flagVal("--anchor");
+      const tenant = flagVal("--tenant");
+      const procedure = flagVal("--procedure");
+      const fa = flagVal("--fa");
+      const fb = flagVal("--fb");
+      const fc = flagVal("--fc");
+      const ts = flagVal("--ts");
+
+      if (!anchor || !tenant || !procedure || !fa || !fb || !fc || !ts) {
+        console.log(`
+Usage:
+  swt3 verify --anchor <token> --tenant <id> --procedure <id> --fa <n> --fb <n> --fc <n> --ts <ms>
+
+Example:
+  swt3 verify --anchor SWT3-E-AWS-AI-AIINF1-PASS-1773316622-a1b2c3d4e5f6 \\
+    --tenant MY_TENANT --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000
+
+Zero network calls. Recomputes the SHA-256 fingerprint locally.`);
+        break;
+      }
+
+      const { mintFingerprint } = await import("./fingerprint.js");
+      const recomputed = mintFingerprint(
+        tenant, procedure,
+        parseFloat(fa), parseFloat(fb), parseFloat(fc),
+        parseInt(ts, 10),
+      );
+      const claimed = anchor.split("-").pop() ?? "";
+      const match = recomputed === claimed;
+
+      if (match) {
+        console.log(`\x1b[32mCERTIFIED TRUTH\x1b[0m`);
+        console.log(`  Fingerprint: ${recomputed}`);
+      } else {
+        console.log(`\x1b[31mTAMPERED\x1b[0m`);
+        console.log(`  Claimed:    ${claimed}`);
+        console.log(`  Recomputed: ${recomputed}`);
       }
       break;
     }

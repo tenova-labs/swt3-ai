@@ -77,6 +77,8 @@ const VALID_POLICY_KEYS = new Set([
 
 const VALID_TRUST_MESH_KEYS = new Set([
   "mode", "min_trust_level", "require_signature", "freshness_window",
+  "require_intra_tenant_signing", "verify_boolean_claims",
+  "rate_limit_max_failures", "rate_limit_window_seconds", "per_level_freshness",
   "trusted_tenants", "trusted_agents", "deny_agents", "deny_tenants",
   "required_procedures", "signing_keys",
 ]);
@@ -115,6 +117,7 @@ const VALID_PROFILES = new Set([
   "autonomous-systems",
   "insurance-underwriting",
   "content-platform",
+  "microsoft-foundry",
   "minimal",
 ]);
 
@@ -295,6 +298,11 @@ function extractTrustMesh(raw: Record<string, unknown>): TrustMeshConfig | null 
     minTrustLevel: (section.min_trust_level as number) ?? 1,
     requireSignature: (section.require_signature as boolean) ?? false,
     freshnessWindow: (section.freshness_window as number) ?? 86400,
+    requireIntraTenantSigning: (section.require_intra_tenant_signing as boolean) ?? false,
+    verifyBooleanClaims: (section.verify_boolean_claims as boolean) ?? false,
+    rateLimitMaxFailures: (section.rate_limit_max_failures as number) ?? 0,
+    rateLimitWindowSeconds: (section.rate_limit_window_seconds as number) ?? 60,
+    perLevelFreshness: (section.per_level_freshness as Record<string, number>) ?? null,
     trustedTenants: (section.trusted_tenants as string[]) ?? [],
     trustedAgents,
     denyAgents: (section.deny_agents as string[]) ?? [],

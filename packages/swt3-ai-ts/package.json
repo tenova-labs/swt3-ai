@@ -1,6 +1,6 @@
 {
   "name": "@tenova/swt3-ai",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 65 procedures, 41 namespaces, 5 languages, 14 profiles. EU AI Act, NIST AI RMF, CMMC, SR 11-7.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

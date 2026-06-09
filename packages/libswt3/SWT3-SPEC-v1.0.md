@@ -79,7 +79,7 @@ SWT3-{TIER}-{PROVIDER}-{UCT}-{PROCEDURE}-{VERDICT}-{EPOCH}-{FINGERPRINT}
 |-------|-------|--------|-------------|
 | Protocol | 4 | `SWT3` | Fixed protocol identifier |
 | Tier | 1 | `E`, `S`, `H` | Deployment tier: Enclave, SaaS, Hybrid |
-| Provider | 2-6 | `AWS`, `AZURE`, `GCP`, `VULTR`, `HYBRID`, `ON-PREM` | Infrastructure provider |
+| Provider | 2-6 | `VULTR`, `AWS`, `AZURE`, `GCP`, `HYBRID`, `ON-PREM` | Infrastructure provider |
 | UCT | 2-3 | See Section 3.2 | Universal Control Taxonomy category (UCT Registry v1.0) |
 | Procedure | 2-6 | e.g. `SC76`, `AC21` | Procedure identifier (alphanumeric, no hyphens) |
 | Verdict | 4-9 | `PASS`, `FAIL`, `INHERITED`, `LAPSED`, `UNKNOWN` | Compliance determination |
@@ -203,12 +203,12 @@ UCT codes map consistently across major compliance frameworks:
 ### 3.3 Examples
 
 ```
-SWT3-E-AWS-NET-SC76-PASS-1773316622-a1b2c3d4e5f6
+SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245
 SWT3-S-AWS-ACC-AC21-FAIL-1773400000-a3f7c2e91b04
 SWT3-H-AZURE-CFG-CM61-INHERITED-1773500000-d2620f999950
 SWT3-E-ON-PREM-CRY-SC28-PASS-1773600000-b1a9c3d4e5f6
 SWT3-S-AWS-IRP-IR41-PASS-1773700000-7f8e9d0c1b2a
-SWT3-E-AWS-VUL-SI21-FAIL-1773800000-4d5e6f7a8b9c
+SWT3-E-VULTR-VUL-SI21-FAIL-1773800000-4d5e6f7a8b9c
 ```
 
 ### 3.4 Parsing Rules
@@ -227,7 +227,7 @@ swt3-anchor   = protocol "-" tier "-" provider "-" uct "-" procedure "-"
 
 protocol      = %s"SWT3"                         ; case-sensitive
 tier          = %x45 / %x53 / %x48               ; "E" / "S" / "H"
-provider      = 2*6ALPHA                          ; e.g., AWS, GCP, VULTR
+provider      = 2*6ALPHA                          ; e.g., VULTR, AWS, GCP
 uct           = 2*3ALPHA                          ; UCT Registry code
 procedure     = 1*(ALPHA / DIGIT)                 ; normalized ID, no hyphens
 verdict       = %s"PASS" / %s"FAIL"               ; normative verdicts
@@ -534,7 +534,7 @@ The canonical transport format for SWT3 evidence is a JSON object:
 ```json
 {
   "swt3_version": "1.0",
-  "anchor": "SWT3-E-AWS-NET-SC76-PASS-1773316622-a1b2c3d4e5f6",
+  "anchor": "SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245",
   "factors": {
     "procedure_id": "SC-7.6",
     "tenant_id": "DEMO_ENCLAVE",
