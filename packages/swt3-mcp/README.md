@@ -273,3 +273,5 @@ Raw prompt and response text never leaves your machine at any clearing level.
 Apache 2.0. Patent pending.
 
 Built by [TeNova](https://tenova.io). Questions: engineering@tenovaai.com
+
+SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. MCP (Model Context Protocol) is a trademark of Anthropic PBC. All other third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

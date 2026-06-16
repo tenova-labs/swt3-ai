@@ -3,8 +3,9 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-05-29T00:00:00Z",
-  "description": "Universal Control Taxonomy (UCT) Registry. Defines the factor semantics, evaluation rules, and framework cross-references for every SWT3-anchored compliance procedure. Covers NIST 800-53, CMMC, 800-171, FedRAMP, DoD RMF, NIST AI RMF, EU AI Act, SR 11-7, OSHA 1926, and HIPAA.",
+  "generated_at": "2026-06-06T00:00:00Z",
+  "description": "Universal Control Taxonomy (UCT) Registry. Defines the factor semantics, evaluation rules, and framework cross-references for every SWT3-anchored compliance procedure. Covers NIST 800-53, NIST AI RMF, CMMC, 800-171, FedRAMP, DoD RMF, EU AI Act, ISO 42001, GDPR, Five-Eyes Agentic AI, OWASP Agentic Top 10, SR 11-7, Colorado SB 26-189, Illinois SB 315, GPAI Code of Practice, EO 14110, EO 14028, OSHA 1926, and HIPAA.",
+  "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "fingerprint_formula": "SHA256('WITNESS:' + tenant_id + ':' + procedure_id + ':' + factor_a + ':' + factor_b + ':' + factor_c + ':' + timestamp_ms)[0:12]",
   "procedures": {
     "AC-1.1": {
@@ -553,7 +554,11 @@
         "description": "Verifies that the required safety guardrails were active when the inference executed. A FAIL indicates the model ran without mandatory safety controls."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.9(2)(a)"
+        "EU-AI-ACT": "Art.9(2)(a)",
+        "FIVE-EYES-AGENTIC": "FE-7",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "OWASP-AGENTIC": "MCP-03"
       },
       "namespace": "AI"
     },
@@ -586,7 +591,10 @@
         "description": "Confirms the model output did not trigger content safety filters (refusal, toxicity, or policy violation). A FAIL creates an immediate alert for human review."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.15(3)"
+        "EU-AI-ACT": "Art.15(3)",
+        "FIVE-EYES-AGENTIC": "FE-7",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "OWASP-AGENTIC": "MCP-03"
       },
       "namespace": "AI"
     },
@@ -619,7 +627,11 @@
         "description": "Confirms that every AI inference was cryptographically fingerprinted at the point of execution. The prompt and response hashes prove the interaction occurred without retaining the raw content."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.12(1)"
+        "CO-SB-26-189": "6-1-1706",
+        "EU-AI-ACT": "Art.12(1)",
+        "FIVE-EYES-AGENTIC": "FE-2,FE-4",
+        "NIST-AI-RMF": "MAP 2.3",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -652,7 +664,10 @@
         "description": "Verifies that the AI model responded within the operational time boundary. Latency spikes may indicate model poisoning, resource contention, or unauthorized model substitution."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.12(2)"
+        "EU-AI-ACT": "Art.12(2)",
+        "FIVE-EYES-AGENTIC": "FE-2",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -685,7 +700,12 @@
         "description": "Confirms the AI provider served the exact model version that was requested. Detects unauthorized model swaps, shadow deployments, or provider-side version changes."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.9(4)(a)"
+        "EU-AI-ACT": "Art.9(4)(a)",
+        "FIVE-EYES-AGENTIC": "FE-11",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "MANAGE 1.3",
+        "OWASP-AGENTIC": "MCP-04",
+        "SR-11-7": "III.B"
       },
       "namespace": "AI"
     },
@@ -718,7 +738,10 @@
         "description": "Ensures model version lineage is maintained across all inferences. Required for EU AI Act Article 12 traceability and NIST AI RMF GOVERN function."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.12(2)(b)"
+        "EU-AI-ACT": "Art.12(2)(b)",
+        "FIVE-EYES-AGENTIC": "FE-4",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "MAP 2.3"
       },
       "namespace": "AI"
     },
@@ -4136,7 +4159,10 @@
         "description": "Confirms that every high-risk AI decision has a named human reviewer on record. Required by EU AI Act Article 12(2)(d) for traceability of human oversight."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.12(2)(d)"
+        "EU-AI-ACT": "Art.12(2)(d)",
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "GOVERN 4.1"
       },
       "namespace": "AI"
     },
@@ -4169,7 +4195,10 @@
         "description": "Verifies that AI inference logs are retained for at least 6 months (180 days) as required by EU AI Act Article 12(3). A FAIL indicates logs are being purged too early."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.12(3)"
+        "EU-AI-ACT": "Art.12(3)",
+        "ISO-42001": "9.2",
+        "NIST-800-53": "AU-11",
+        "NIST-AI-RMF": "GOVERN 1.4"
       },
       "namespace": "AI"
     },
@@ -4202,7 +4231,10 @@
         "description": "Confirms that continuously learning AI systems have controls preventing biased outputs from poisoning future training data. Required by EU AI Act Article 15(4) for systems that continue to learn after deployment."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.15(4)"
+        "EU-AI-ACT": "Art.15(4)",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "MAP 1.1",
+        "SR-11-7": "III.B"
       },
       "namespace": "AI"
     },
@@ -4568,8 +4600,11 @@
         "description": "Confirms the AI diagnostic confidence meets or exceeds the clinical threshold. Ground truth match is recorded for retrospective accuracy auditing."
       },
       "frameworks": {
-        "HIPAA-CFR": "45CFR.164.312",
-        "EU-AI-ACT": "Annex-III.1"
+        "EU-AI-ACT": "Annex III.1(a)",
+        "FDA-21CFR11": "11.10(a)",
+        "FDA-21CFR820": "820.30(g)",
+        "FDA-SaMD": "510(k) Clinical Validation",
+        "HIPAA": "164.312(b)"
       },
       "namespace": "HCF"
     },
@@ -4602,8 +4637,11 @@
         "description": "Confirms all drug interaction checks passed and no unresolved contraindications exist."
       },
       "frameworks": {
-        "HIPAA-CFR": "45CFR.164.312",
-        "EU-AI-ACT": "Annex-III.1"
+        "EU-AI-ACT": "Annex III.1(a)",
+        "FDA-21CFR11": "11.10(a)",
+        "FDA-21CFR820": "820.30(f)",
+        "FDA-SaMD": "CDS Safety Assessment",
+        "HIPAA": "164.312(c)(1)"
       },
       "namespace": "HCF"
     },
@@ -4636,8 +4674,10 @@
         "description": "Confirms patient consent is on file (or waived for emergency) and the requestor is authorized. Maps to HIPAA Privacy Rule access controls."
       },
       "frameworks": {
-        "HIPAA-CFR": "45CFR.164.508",
-        "EU-AI-ACT": "Art.10"
+        "EU-AI-ACT": "Art.10",
+        "FDA-21CFR11": "11.10(e)",
+        "FDA-21CFR820": "820.180",
+        "HIPAA": "164.508"
       },
       "namespace": "HCF"
     },
@@ -4671,7 +4711,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.12(1)",
-        "AI-RMF": "GOVERN 2.1"
+        "ISO-42001": "9.1",
+        "NIST-800-53": "AU-5",
+        "NIST-AI-RMF": "GOVERN 2.1"
       },
       "namespace": "AI"
     },
@@ -4705,7 +4747,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.72(1)",
-        "AI-RMF": "MEASURE 2.6"
+        "ISO-42001": "A.6.2.5",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -4739,7 +4783,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.10(2)(f)",
-        "AI-RMF": "GOVERN 1.7"
+        "FIVE-EYES-AGENTIC": "FE-7",
+        "NIST-800-53": "AC-4",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "OWASP-AGENTIC": "MCP-02,MCP-05"
       },
       "namespace": "AI"
     },
@@ -4772,8 +4819,12 @@
         "description": "Confirms bias disparity is within acceptable threshold across all protected groups."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1705",
         "EU-AI-ACT": "Art.10(2)(f)",
-        "AI-RMF": "MEASURE 2.5"
+        "FIVE-EYES-AGENTIC": "FE-15",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "SR-11-7": "III.A"
       },
       "namespace": "AI"
     },
@@ -4807,7 +4858,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9(4)(a)",
-        "AI-RMF": "MAP 2.3"
+        "FIVE-EYES-AGENTIC": "FE-15",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MAP 2.3",
+        "SR-11-7": "III.A"
       },
       "namespace": "AI"
     },
@@ -4841,7 +4895,11 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.10(2)(a)",
-        "AI-RMF": "MAP 3.5"
+        "FIVE-EYES-AGENTIC": "FE-14",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MAP 3.5",
+        "OWASP-AGENTIC": "MCP-10",
+        "SR-11-7": "III.B"
       },
       "namespace": "AI"
     },
@@ -4875,7 +4933,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.10(2)(a)",
-        "AI-RMF": "GOVERN 1.7"
+        "FIVE-EYES-AGENTIC": "FE-14",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
     },
@@ -4909,7 +4969,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.10(3)",
-        "AI-RMF": "MAP 4.1"
+        "FIVE-EYES-AGENTIC": "FE-14",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MAP 4.1"
       },
       "namespace": "AI"
     },
@@ -4942,8 +5004,12 @@
         "description": "Confirms the PII lifecycle event completed successfully."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1704",
         "EU-AI-ACT": "Art.10(5)",
-        "GDPR": "Art.25"
+        "FIVE-EYES-AGENTIC": "FE-14",
+        "GDPR": "Art.25",
+        "ISO-42001": "A.8.2",
+        "NIST-AI-RMF": "MAP 3.5"
       },
       "namespace": "AI"
     },
@@ -4976,8 +5042,12 @@
         "description": "Confirms human oversight was exercised for high-risk AI decisions."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.14(1)",
-        "AI-RMF": "GOVERN 1.1"
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "SR-11-7": "IV.B"
       },
       "namespace": "AI"
     },
@@ -5010,8 +5080,11 @@
         "description": "Confirms human override events are logged for accountability."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.14(4)(d)",
-        "AI-RMF": "MANAGE 4.1"
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "MANAGE 4.1"
       },
       "namespace": "AI"
     },
@@ -5044,8 +5117,12 @@
         "description": "Confirms the AI system provided an interpretable explanation with its output."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.13(1)",
-        "AI-RMF": "MEASURE 2.5"
+        "FIVE-EYES-AGENTIC": "FE-9",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "SR-11-7": "IV.B"
       },
       "namespace": "AI"
     },
@@ -5078,8 +5155,12 @@
         "description": "Confirms model confidence meets the minimum threshold for actionable output."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.13(3)(b)(ii)",
-        "AI-RMF": "MAP 2.3"
+        "FIVE-EYES-AGENTIC": "FE-9",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "MAP 2.3",
+        "SR-11-7": "IV.B"
       },
       "namespace": "AI"
     },
@@ -5114,8 +5195,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "AI-RMF": "GOVERN 1.1",
-        "NIST-800-53": "PL-4"
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "5.2",
+        "NIST-800-53": "PL-4",
+        "NIST-AI-RMF": "GOVERN 1.1"
       },
       "namespace": "AI"
     },
@@ -5150,8 +5233,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.4",
-        "AI-RMF": "GOVERN 2.1",
-        "NIST-800-53": "AT-2"
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "7.2",
+        "NIST-800-53": "AT-2",
+        "NIST-AI-RMF": "GOVERN 2.1"
       },
       "namespace": "AI"
     },
@@ -5186,8 +5271,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.49",
-        "AI-RMF": "MAP 1.1",
-        "NIST-800-53": "CM-8"
+        "FIVE-EYES-AGENTIC": "FE-11",
+        "ISO-42001": "A.6.2.4",
+        "NIST-800-53": "CM-8",
+        "NIST-AI-RMF": "MAP 1.1"
       },
       "namespace": "AI"
     },
@@ -5222,8 +5309,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.26",
-        "AI-RMF": "GOVERN 1.5",
-        "NIST-800-53": "IR-4"
+        "ISO-42001": "A.6.2.5",
+        "NIST-800-53": "IR-4",
+        "NIST-AI-RMF": "GOVERN 1.5"
       },
       "namespace": "AI"
     },
@@ -5258,8 +5346,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.25",
-        "AI-RMF": "GOVERN 6.1",
-        "NIST-800-53": "SA-4"
+        "ISO-42001": "A.6.2.7",
+        "NIST-800-53": "SA-4",
+        "NIST-AI-RMF": "GOVERN 6.1",
+        "SR-11-7": "V.A"
       },
       "namespace": "AI"
     },
@@ -5293,7 +5383,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.12(1)",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "FIVE-EYES-AGENTIC": "FE-12",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "OWASP-AGENTIC": "MCP-02,MCP-05"
       },
       "namespace": "AI"
     },
@@ -5326,7 +5419,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.12(1)",
-        "NIST-AI-RMF": "MAP 1.1"
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "MAP 1.1",
+        "OWASP-AGENTIC": "MCP-01,MCP-07"
       },
       "namespace": "AI"
     },
@@ -5360,7 +5456,11 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9(4)(c)",
-        "NIST-AI-RMF": "MANAGE 2.4"
+        "FIVE-EYES-AGENTIC": "FE-1",
+        "ISO-42001": "A.6.2.6",
+        "NIST-800-53": "AC-4",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "OWASP-AGENTIC": "MCP-02,MCP-07"
       },
       "namespace": "AI"
     },
@@ -5393,7 +5493,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.14(4)(d)",
-        "GDPR": "Art.17"
+        "FIVE-EYES-AGENTIC": "FE-6",
+        "GDPR": "Art.17",
+        "NIST-800-53": "SI-7",
+        "NIST-AI-RMF": "MANAGE 2.4"
       },
       "namespace": "AI"
     },
@@ -5427,7 +5530,11 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.15(4)",
-        "NIST-AI-RMF": "MANAGE 2.3"
+        "FIVE-EYES-AGENTIC": "FE-10",
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "OWASP-AGENTIC": "MCP-03"
       },
       "namespace": "AI"
     },
@@ -5461,6 +5568,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.15(3)",
+        "FIVE-EYES-AGENTIC": "FE-10",
+        "ISO-42001": "A.6.2.6",
+        "NIST-800-53": "SI-10",
         "NIST-AI-RMF": "MANAGE 2.3"
       },
       "namespace": "AI"
@@ -5496,8 +5606,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.17",
-        "AI-RMF": "GOVERN 1.3",
-        "NIST-800-53": "PM-9"
+        "ISO-42001": "6.1",
+        "NIST-800-53": "PM-9",
+        "NIST-AI-RMF": "GOVERN 1.3"
       },
       "namespace": "AI"
     },
@@ -5531,8 +5642,298 @@
         "description": "Confirms resources are allocated for AI governance."
       },
       "frameworks": {
-        "AI-RMF": "GOVERN 2.2",
-        "NIST-800-53": "PM-3"
+        "EU-AI-ACT": "Art.17",
+        "ISO-42001": "7.1",
+        "NIST-800-53": "PM-3",
+        "NIST-AI-RMF": "GOVERN 2.2"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.1": {
+      "procedure_id": "AI-METAGOV.1",
+      "parent_control": "AI-METAGOV",
+      "title": "Governance Infrastructure Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 CA-2"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether governance infrastructure configuration is cryptographically attested before operational events are processed (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.1"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms governance infrastructure configuration is self-attested using the same protocol it enforces."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-800-53": "CA-2",
+        "NIST-AI-RMF": "GOVERN 1.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.2": {
+      "procedure_id": "AI-METAGOV.2",
+      "parent_control": "AI-METAGOV",
+      "title": "Governance Layer Registration",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 CA-7"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether all AI governance layers are registered with the cryptographic witness layer (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.3"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms governance layers are registered with the non-AI witness layer to terminate recursion."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-800-53": "CA-7",
+        "NIST-AI-RMF": "GOVERN 1.3"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.3": {
+      "procedure_id": "AI-METAGOV.3",
+      "parent_control": "AI-METAGOV",
+      "title": "Policy Downgrade Detection",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 CM-3"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether policy version monotonicity is enforced and downgrade attempts are detected (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.4"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms monotonic policy version progression is enforced with downgrade detection."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.17",
+        "NIST-800-53": "CM-3",
+        "NIST-AI-RMF": "GOVERN 1.4"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.4": {
+      "procedure_id": "AI-METAGOV.4",
+      "parent_control": "AI-METAGOV",
+      "title": "Circular Dependency Check",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 CM-4"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether governance rule graphs are validated for circular dependencies at configuration load time (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.5"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms governance rule configurations are validated for circular dependencies using topological sort."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-800-53": "CM-4",
+        "NIST-AI-RMF": "GOVERN 1.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.5": {
+      "procedure_id": "AI-METAGOV.5",
+      "parent_control": "AI-METAGOV",
+      "title": "Governance Authorization",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 AC-6"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether governance changes require signed authorization with scope-appropriate credentials (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 2.1"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms governance configuration changes require cryptographically signed authorization."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.17",
+        "NIST-800-53": "AC-6",
+        "NIST-AI-RMF": "GOVERN 2.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.6": {
+      "procedure_id": "AI-METAGOV.6",
+      "parent_control": "AI-METAGOV",
+      "title": "Emergency Override Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 AC-6(1)"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether emergency governance overrides are witnessed and subject to mandatory post-hoc review (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.5"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms emergency governance changes are automatically witnessed and trigger mandatory review."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-800-53": "AC-6(1)",
+        "NIST-AI-RMF": "GOVERN 1.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.7": {
+      "procedure_id": "AI-METAGOV.7",
+      "parent_control": "AI-METAGOV",
+      "title": "Governance Sync Verification",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 SA-9"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether governance policy equivalence is verified during federated trust exchanges (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.7"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms governance policy equivalence is verified during federated trust credential exchange."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.25",
+        "NIST-800-53": "SA-9",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      },
+      "namespace": "AI"
+    },
+    "AI-METAGOV.8": {
+      "procedure_id": "AI-METAGOV.8",
+      "parent_control": "AI-METAGOV",
+      "title": "Attestation Purity Verification",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "attestation",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "Attestation is required (always 1).",
+          "default": 1,
+          "regulatory_ref": "NIST 800-53 SA-11"
+        },
+        "factor_b": {
+          "label": "attested",
+          "description": "Whether attestation engine purity is verified via source hash manifest with no ML components (1 = yes, 0 = no).",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.5"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "default": 0
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Confirms attestation engine contains no ML inference, proving the witness layer is a non-AI recursion terminator."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.17",
+        "NIST-800-53": "SA-11",
+        "NIST-AI-RMF": "MEASURE 2.5"
       },
       "namespace": "AI"
     },
@@ -5567,8 +5968,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "AI-RMF": "MAP 2.1",
-        "NIST-800-53": "RA-2"
+        "ISO-42001": "6.1",
+        "NIST-800-53": "RA-2",
+        "NIST-AI-RMF": "MAP 2.1",
+        "SR-11-7": "II.A"
       },
       "namespace": "AI"
     },
@@ -5602,8 +6005,10 @@
         "description": "Confirms AI incident response capability is documented."
       },
       "frameworks": {
-        "AI-RMF": "MANAGE 3.1",
-        "NIST-800-53": "IR-8"
+        "EU-AI-ACT": "Art.62",
+        "ISO-42001": "A.6.2.5",
+        "NIST-800-53": "IR-8",
+        "NIST-AI-RMF": "MANAGE 3.1"
       },
       "namespace": "AI"
     },
@@ -5637,8 +6042,10 @@
         "description": "Confirms societal impact assessment is complete."
       },
       "frameworks": {
-        "AI-RMF": "MAP 5.2",
-        "NIST-800-53": "RA-3"
+        "EU-AI-ACT": "Art.9",
+        "ISO-42001": "6.1.2",
+        "NIST-800-53": "RA-3",
+        "NIST-AI-RMF": "MAP 5.2"
       },
       "namespace": "AI"
     },
@@ -5672,7 +6079,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.13",
-        "NIST-AI-RMF": "MAP 2.3"
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MAP 2.3",
+        "OWASP-AGENTIC": "MCP-10"
       },
       "namespace": "AI"
     },
@@ -5706,7 +6115,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.13",
-        "NIST-AI-RMF": "MEASURE 2.5"
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -5740,7 +6151,11 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.11",
-        "NIST-AI-RMF": "GOVERN 1.2"
+        "FIVE-EYES-AGENTIC": "FE-11",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "OWASP-AGENTIC": "MCP-04",
+        "SR-11-7": "III.B"
       },
       "namespace": "AI"
     },
@@ -5774,6 +6189,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.11",
+        "FIVE-EYES-AGENTIC": "FE-11",
+        "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "GOVERN 1.2"
       },
       "namespace": "AI"
@@ -5807,6 +6224,8 @@
         "description": "Verifies quantization was witnessed with precision recorded."
       },
       "frameworks": {
+        "EU-AI-ACT": "Art.15(3)",
+        "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "MEASURE 2.6"
       },
       "namespace": "AI"
@@ -5841,7 +6260,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "FIVE-EYES-AGENTIC": "FE-13",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "OWASP-AGENTIC": "MCP-04"
       },
       "namespace": "AI"
     },
@@ -5874,6 +6296,9 @@
         "description": "Verifies that memory context binding was witnessed."
       },
       "frameworks": {
+        "EU-AI-ACT": "Art.12(2)(a)",
+        "FIVE-EYES-AGENTIC": "FE-13",
+        "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MEASURE 2.5"
       },
       "namespace": "AI"
@@ -5907,6 +6332,9 @@
         "description": "Reward model score must meet the configured threshold."
       },
       "frameworks": {
+        "EU-AI-ACT": "Art.9(4)(a)",
+        "FIVE-EYES-AGENTIC": "FE-13",
+        "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MEASURE 2.6"
       },
       "namespace": "AI"
@@ -5941,6 +6369,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.11",
+        "FIVE-EYES-AGENTIC": "FE-8",
+        "ISO-42001": "A.6.2.6",
+        "NIST-800-53": "SI-7",
         "NIST-AI-RMF": "GOVERN 1.2"
       },
       "namespace": "AI"
@@ -5974,6 +6405,9 @@
         "description": "TPM quote signature must verify."
       },
       "frameworks": {
+        "EU-AI-ACT": "Art.15",
+        "FIVE-EYES-AGENTIC": "FE-8",
+        "NIST-800-53": "SI-7",
         "NIST-AI-RMF": "GOVERN 1.2"
       },
       "namespace": "AI"
@@ -6008,7 +6442,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "NIST-AI-RMF": "GOVERN 1.5"
+        "FIVE-EYES-AGENTIC": "FE-3,FE-10",
+        "NIST-800-53": "AC-4",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09"
       },
       "namespace": "AI"
     },
@@ -6042,7 +6479,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "NIST-AI-RMF": "GOVERN 1.5"
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "OWASP-AGENTIC": "MCP-07"
       },
       "namespace": "AI"
     },
@@ -6076,7 +6516,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "NIST-AI-RMF": "GOVERN 1.3"
+        "FIVE-EYES-AGENTIC": "FE-6",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "OWASP-AGENTIC": "MCP-06,MCP-09"
       },
       "namespace": "AI"
     },
@@ -6110,6 +6553,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
+        "FIVE-EYES-AGENTIC": "FE-6",
+        "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.3"
       },
       "namespace": "AI"
@@ -6143,7 +6588,10 @@
         "description": "Records safe state transitions. Informational -- always PASS."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.9(4)(b)"
+        "EU-AI-ACT": "Art.9(4)(b)",
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.5",
+        "NIST-AI-RMF": "MANAGE 2.3"
       },
       "namespace": "AI"
     },
@@ -6177,6 +6625,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.13",
+        "FIVE-EYES-AGENTIC": "FE-5,FE-9",
+        "ISO-42001": "A.6.2.2",
         "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
@@ -6211,6 +6661,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
+        "FIVE-EYES-AGENTIC": "FE-2",
+        "IL-SB-315": "Sec.30",
+        "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MANAGE 4.1"
       },
       "namespace": "AI"
@@ -6244,8 +6697,12 @@
         "description": "Verifies that a bias audit was conducted with at least one group tested."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1705",
         "EU-AI-ACT": "Art.10(2)(f)",
-        "NIST-AI-RMF": "MAP 2.3"
+        "FIVE-EYES-AGENTIC": "FE-15",
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MAP 2.3",
+        "SR-11-7": "III.A"
       },
       "namespace": "AI"
     },
@@ -6279,6 +6736,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.11",
+        "FIVE-EYES-AGENTIC": "FE-8",
+        "ISO-42001": "A.6.2.6",
+        "NIST-800-53": "CM-6",
         "NIST-AI-RMF": "GOVERN 1.2"
       },
       "namespace": "AI"
@@ -6312,8 +6772,11 @@
         "description": "All dependencies must be version-pinned."
       },
       "frameworks": {
+        "EO-14028": "Sec.4",
         "EU-AI-ACT": "Art.11",
-        "EO-14028": "Sec.4"
+        "FIVE-EYES-AGENTIC": "FE-8",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "GOVERN 1.2"
       },
       "namespace": "AI"
     },
@@ -6347,7 +6810,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.50(2)",
-        "GPAI-CoP": "Transparency"
+        "GPAI-CoP": "Transparency",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
     },
@@ -6381,6 +6846,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9(2)(b)",
+        "ISO-42001": "A.6.2.4",
+        "NIST-800-53": "CM-2",
         "NIST-AI-RMF": "MEASURE 2.6"
       },
       "namespace": "AI"
@@ -6415,6 +6882,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.53(1)(d)",
+        "ISO-42001": "A.6.2.7",
+        "NIST-800-53": "SA-4",
         "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
@@ -6448,9 +6917,12 @@
         "description": "BOM must have at least one component and document at least 3 G7 clusters."
       },
       "frameworks": {
+        "EO-14028": "Sec.4",
         "EU-AI-ACT": "Art.11",
         "G7-CISA": "SBOM-AI",
-        "EO-14028": "Sec.4"
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.4",
+        "NIST-AI-RMF": "MAP 1.1"
       },
       "namespace": "AI"
     },
@@ -6483,9 +6955,12 @@
         "description": "At least one test must be executed with at least 80% pass rate."
       },
       "frameworks": {
-        "EU-AI-ACT": "Art.9(7)",
         "EO-14110": "Sec.4.2",
-        "NIST-AI-100-2": "Red Teaming"
+        "EU-AI-ACT": "Art.9(7)",
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.5",
+        "NIST-AI-100-2": "Red Teaming",
+        "NIST-AI-RMF": "MEASURE 3.1"
       },
       "namespace": "AI"
     },
@@ -6518,8 +6993,11 @@
         "description": "At least one data subject must be covered with documented legal basis."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1704",
+        "EU-AI-ACT": "Art.10",
         "GDPR": "Art.6/7",
-        "EU-AI-ACT": "Art.10"
+        "ISO-42001": "A.8.2",
+        "NIST-AI-RMF": "GOVERN 1.5"
       },
       "namespace": "AI"
     },
@@ -6553,7 +7031,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9",
-        "NIST-AI-RMF": "GOVERN 1.3"
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "ISO-42001": "A.8.5",
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "OWASP-AGENTIC": "MCP-06"
       },
       "namespace": "AI"
     },
@@ -6587,7 +7068,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.9(2)(b)",
-        "NIST-AI-RMF": "MEASURE 2.6"
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.5",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -6620,8 +7104,12 @@
         "description": "Audit log integrity must be verified."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1706",
         "EU-AI-ACT": "Art.12",
-        "GDPR": "Art.30"
+        "GDPR": "Art.30",
+        "IL-SB-315": "Sec.30",
+        "ISO-42001": "9.2",
+        "NIST-AI-RMF": "GOVERN 1.4"
       },
       "namespace": "AI"
     },
@@ -6655,6 +7143,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.62",
+        "IL-SB-315": "Sec.30",
+        "ISO-42001": "A.6.2.5",
+        "NIST-800-53": "IR-4",
         "NIST-AI-RMF": "MANAGE 3.2"
       },
       "namespace": "AI"
@@ -6689,7 +7180,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.15(1)",
-        "NIST-AI-RMF": "MEASURE 2.5"
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.5",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -6723,7 +7217,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.15(3)",
-        "NIST-AI-RMF": "MEASURE 2.6"
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "SR-11-7": "IV.A"
       },
       "namespace": "AI"
     },
@@ -6757,6 +7254,10 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.15(4)",
+        "IL-SB-315": "Sec.25",
+        "ISO-42001": "A.6.2.6",
+        "NIST-800-53": "CA-2",
+        "NIST-AI-RMF": "MANAGE 2.2",
         "NIST-CSF": "Core"
       },
       "namespace": "AI"
@@ -6790,8 +7291,11 @@
         "description": "At least one disclosure must be made."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.13",
-        "GDPR": "Art.13/14"
+        "GDPR": "Art.13/14",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
     },
@@ -6825,7 +7329,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.50(2)",
-        "GPAI-CoP": "Transparency"
+        "GPAI-CoP": "Transparency",
+        "ISO-42001": "A.8.3",
+        "NIST-AI-RMF": "GOVERN 1.7"
       },
       "namespace": "AI"
     },
@@ -6858,8 +7364,11 @@
         "description": "At least 80% of identified risks should have mitigation measures."
       },
       "frameworks": {
+        "EU-AI-ACT": "Art.27",
         "GDPR": "Art.35",
-        "EU-AI-ACT": "Art.27"
+        "ISO-42001": "6.1.2",
+        "NIST-800-53": "RA-3",
+        "NIST-AI-RMF": "MAP 5.2"
       },
       "namespace": "AI"
     },
@@ -6892,8 +7401,11 @@
         "description": "Records automated decisions. Informational -- always PASS."
       },
       "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
+        "EU-AI-ACT": "Art.14",
         "GDPR": "Art.22",
-        "EU-AI-ACT": "Art.14"
+        "ISO-42001": "A.8.4",
+        "NIST-AI-RMF": "MANAGE 3.2"
       },
       "namespace": "AI"
     },
@@ -6927,6 +7439,8 @@
       },
       "frameworks": {
         "EO-14110": "Sec.4(a)",
+        "EU-AI-ACT": "Art.6",
+        "ISO-42001": "A.6.2.3",
         "NIST-AI-RMF": "GOVERN 1.1"
       },
       "namespace": "AI"
@@ -6960,9 +7474,12 @@
         "description": "All assessed suppliers should be compliant."
       },
       "frameworks": {
-        "NIST-AI-RMF": "MEASURE 3.1",
+        "EO-14028": "Sec.4",
+        "EU-AI-ACT": "Art.25",
         "G7-CISA": "SBOM-AI",
-        "EO-14028": "Sec.4"
+        "ISO-42001": "A.6.2.7",
+        "NIST-800-53": "SA-4",
+        "NIST-AI-RMF": "MEASURE 3.1"
       },
       "namespace": "AI"
     },
@@ -6996,7 +7513,314 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art.72",
+        "GPAI-CoP": "Art.55",
+        "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MANAGE 4.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-AUTO.2": {
+      "procedure_id": "AI-AUTO.2",
+      "parent_control": "AI-AUTO",
+      "title": "Autonomous Generation Depth",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_AUTO_GEN_DEPTH",
+      "factors": {
+        "factor_a": {
+          "label": "max_autonomous_depth",
+          "description": "Maximum allowed AI-to-AI generation cycles before human gate required.",
+          "regulatory_ref": "EU AI Act Art. 14; EO 14110 Sec. 3",
+          "default": 1
+        },
+        "factor_b": {
+          "label": "observed_depth",
+          "description": "Actual generation depth at time of witnessing.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.5"
+        },
+        "factor_c": {
+          "label": "human_gate_present",
+          "description": "Whether human approval was verified: 1 = present, 0 = autonomous.",
+          "regulatory_ref": "EU AI Act Art. 14(4)(d)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b <= factor_a AND factor_c == 1",
+        "description": "PASS if generation depth is within policy AND human gate was present."
+      },
+      "frameworks": {
+        "CO-SB-26-189": "6-1-1703",
+        "EO-14110": "Sec.3",
+        "EU-AI-ACT": "Art.14",
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "A.8.5",
+        "NIST-800-53": "CM-3",
+        "NIST-AI-RMF": "GOVERN 1.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-AUDIT.2": {
+      "procedure_id": "AI-AUDIT.2",
+      "parent_control": "AI-AUDIT",
+      "title": "External Timestamp Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_AUDIT_TIMESTAMP",
+      "factors": {
+        "factor_a": {
+          "label": "anchor_count",
+          "description": "Number of anchors in the timestamped batch.",
+          "regulatory_ref": "NIST 800-53 AU-10"
+        },
+        "factor_b": {
+          "label": "tsa_verified",
+          "description": "Whether TSA response was received and validated: 1 = verified, 0 = not.",
+          "regulatory_ref": "EU AI Act Art. 12(1)"
+        },
+        "factor_c": {
+          "label": "tsa_provider_code",
+          "description": "TSA provider: 0=none, 1=freetsa, 2=digicert, 3=sectigo, 4=custom.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= 1",
+        "description": "PASS if TSA response was received and validated."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.12(1)",
+        "FIVE-EYES-AGENTIC": "FE-4",
+        "ISO-42001": "9.2",
+        "NIST-800-53": "AU-10",
+        "NIST-AI-RMF": "GOVERN 1.4"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.1": {
+      "procedure_id": "AI-ENG.1",
+      "parent_control": "AI-ENG",
+      "title": "Design Generation Provenance",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DESIGN_PROVENANCE",
+      "factors": {
+        "factor_a": {
+          "label": "constraints_applied",
+          "description": "Number of design constraints applied to the generation.",
+          "regulatory_ref": "DO-178C 5.1; ASME V&V 10 3.1"
+        },
+        "factor_b": {
+          "label": "parameters_generated",
+          "description": "Number of design parameters generated by the AI.",
+          "regulatory_ref": "ISO 26262-6; FDA 21 CFR 11.10(a)"
+        },
+        "factor_c": {
+          "label": "design_domain_code",
+          "description": "Design domain: 0=mechanical, 1=chemical, 2=electrical, 3=structural, 4=thermal, 5=pharmaceutical, 6=semiconductor, 7=custom.",
+          "regulatory_ref": "EU AI Act Art. 10(2)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1",
+        "description": "At least one design constraint must be applied."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 3.1",
+        "DO-178C": "5.1",
+        "EU-AI-ACT": "Art.10(2)",
+        "FDA-21CFR11": "11.10(a)",
+        "ISO-26262": "Part 6",
+        "NIST-AI-RMF": "MAP 1.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.2": {
+      "procedure_id": "AI-ENG.2",
+      "parent_control": "AI-ENG",
+      "title": "Simulation Validation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_SIMULATION_VALIDATION",
+      "factors": {
+        "factor_a": {
+          "label": "simulations_run",
+          "description": "Number of simulations executed against the AI-generated design.",
+          "regulatory_ref": "DO-178C 6.3; ASME V&V 10 4.1"
+        },
+        "factor_b": {
+          "label": "simulations_passed",
+          "description": "Number of simulations that met acceptance criteria.",
+          "regulatory_ref": "ISO 26262-4; FDA 21 CFR 11.10(a)"
+        },
+        "factor_c": {
+          "label": "simulation_type_code",
+          "description": "Simulation type: 0=fea, 1=cfd, 2=molecular, 3=thermal, 4=electromagnetic, 5=multiphysics, 6=custom.",
+          "regulatory_ref": "ASME V&V 10 4.1"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All simulations must pass acceptance criteria."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 4.1",
+        "DO-178C": "6.3",
+        "EU-AI-ACT": "Art.15(1)",
+        "FDA-21CFR11": "11.10(a)",
+        "ISO-26262": "Part 4",
+        "NIST-AI-RMF": "MEASURE 2.6"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.3": {
+      "procedure_id": "AI-ENG.3",
+      "parent_control": "AI-ENG",
+      "title": "Safety-Critical Review Gate",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_SAFETY_REVIEW_GATE",
+      "factors": {
+        "factor_a": {
+          "label": "reviewers_required",
+          "description": "Number of reviewers required for approval.",
+          "regulatory_ref": "DO-178C 7.2; ISO 26262-2"
+        },
+        "factor_b": {
+          "label": "reviewers_approved",
+          "description": "Number of reviewers who approved the design.",
+          "regulatory_ref": "FDA 21 CFR 11.10(g)"
+        },
+        "factor_c": {
+          "label": "approval_type_code",
+          "description": "Approval type: 0=peer, 1=pe_stamp, 2=safety_board, 3=regulatory, 4=independent_assessor.",
+          "regulatory_ref": "DO-178C 7.2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All required reviewers must approve."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 2.3",
+        "DO-178C": "7.2",
+        "EU-AI-ACT": "Art.14(1)",
+        "FDA-21CFR11": "11.10(g)",
+        "ISO-26262": "Part 2",
+        "NIST-AI-RMF": "GOVERN 1.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.4": {
+      "procedure_id": "AI-ENG.4",
+      "parent_control": "AI-ENG",
+      "title": "Material Specification Compliance",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MATERIAL_COMPLIANCE",
+      "factors": {
+        "factor_a": {
+          "label": "specifications_checked",
+          "description": "Number of material/safety specifications checked.",
+          "regulatory_ref": "ASME V&V 10 3.3; ISO 26262-8"
+        },
+        "factor_b": {
+          "label": "specifications_met",
+          "description": "Number of specifications the design meets.",
+          "regulatory_ref": "DO-254 5.3; FDA 21 CFR 11.10(b)"
+        },
+        "factor_c": {
+          "label": "standard_code",
+          "description": "Standard body: 0=asme, 1=iso, 2=astm, 3=mil_spec, 4=fda_usp, 5=iec, 6=custom.",
+          "regulatory_ref": "ASME V&V 10 3.3"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All checked specifications must be met."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 3.3",
+        "DO-178C": "5.3",
+        "EU-AI-ACT": "Art.15(3)",
+        "FDA-21CFR11": "11.10(b)",
+        "ISO-26262": "Part 8",
+        "NIST-AI-RMF": "MANAGE 2.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.5": {
+      "procedure_id": "AI-ENG.5",
+      "parent_control": "AI-ENG",
+      "title": "Design Revision Chain",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DESIGN_REVISION_CHAIN",
+      "factors": {
+        "factor_a": {
+          "label": "total_revisions",
+          "description": "Total number of design revisions in the chain.",
+          "regulatory_ref": "DO-178C 7.3; ASME V&V 10 2.4"
+        },
+        "factor_b": {
+          "label": "ai_generated_revisions",
+          "description": "Number of revisions generated by AI (vs human-modified).",
+          "regulatory_ref": "FDA 21 CFR 11.10(e)"
+        },
+        "factor_c": {
+          "label": "chain_status_code",
+          "description": "Chain status: 0=in_progress, 1=approved, 2=rejected, 3=superseded, 4=archived.",
+          "regulatory_ref": "ISO 26262-8 Ch.8"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1",
+        "description": "At least one revision must exist in the chain."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 2.4",
+        "DO-178C": "7.3",
+        "EU-AI-ACT": "Art.12(1)",
+        "FDA-21CFR11": "11.10(e)",
+        "ISO-26262": "Part 8 Ch.8",
+        "NIST-AI-RMF": "MAP 2.3"
+      },
+      "namespace": "AI"
+    },
+    "AI-ENG.6": {
+      "procedure_id": "AI-ENG.6",
+      "parent_control": "AI-ENG",
+      "title": "Fabrication Release Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_FABRICATION_RELEASE",
+      "factors": {
+        "factor_a": {
+          "label": "design_hash_verified",
+          "description": "1 if final design hash matches approved design, 0 if mismatch.",
+          "regulatory_ref": "DO-178C 5.5; FDA 21 CFR 11.10(f)"
+        },
+        "factor_b": {
+          "label": "authorization_count",
+          "description": "Number of fabrication authorizations received.",
+          "regulatory_ref": "ISO 26262-4 7.4.4"
+        },
+        "factor_c": {
+          "label": "release_type_code",
+          "description": "Release type: 0=prototype, 1=limited_run, 2=mass_production, 3=field_modification, 4=emergency.",
+          "regulatory_ref": "ASME V&V 10 5.1"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a == 1 and factor_b >= 1",
+        "description": "Design hash must match and at least one authorization required."
+      },
+      "frameworks": {
+        "ASME-VV10": "V&V 10 5.1",
+        "DO-178C": "5.5",
+        "EU-AI-ACT": "Art.16(a)",
+        "FDA-21CFR11": "11.10(f)",
+        "ISO-26262": "Part 4 7.4.4",
+        "NIST-AI-RMF": "MANAGE 2.2"
       },
       "namespace": "AI"
     }

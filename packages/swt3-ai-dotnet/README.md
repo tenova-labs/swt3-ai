@@ -89,3 +89,5 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
 SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+
+This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

@@ -13,17 +13,18 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compati
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.5
+## What's New in v0.5.6
 
-- **Trust Mesh Hardened** -- 7 security layers: intra-tenant zero-trust, per-agent rate limiting, per-level freshness windows (SOVEREIGN requires 5-min anchors), verifiable boolean claims, deny list propagation with sentinel hooks. All opt-in, frictionless defaults unchanged.
-- **Key Attestation (AI-TRUST.3)** -- Bind signing keys to witness anchors. `generateKeyAttestation()` / `verifyKeyAttestation()`. Keys valid only while bound anchor is fresh. No certificate authority required.
-- **Challenge-Response Liveness** -- Prove live key possession via nonce-based challenges. `generateChallenge()` / `respondToChallenge()` / `verifyLivenessResponse()`. Defeats credential replay at ATTESTED/SOVEREIGN levels.
-- **4 New Adapters** -- Google ADK, CrewAI, A2A (Google Agent-to-Agent), Microsoft Foundry. 12 total integrations.
-- **Verify CLI** -- `swt3 verify --anchor <token>` recomputes fingerprint offline. Zero network calls.
-- **Bidirectional Framework Crosswalks** -- 222 mappings across 16 frameworks in machine-readable JSON.
-- **RFC 3161 Timestamps** -- Merkle rollups include RFC 3161 timestamp authority proof for legal non-repudiation.
-- **Microsoft Foundry Profile** -- Industry profile for Azure AI Foundry + AGT deployments.
-- **15 profiles**, 65 procedures, 41 namespaces, 12 integrations, 1,379 cross-language tests
+- **METAGOV Namespace** -- 8 procedures for recursive governance: governance config attestation, layer registration, policy downgrade detection, circular dependency detection (Kahn's algorithm), governance authorization, emergency override, federation sync, attestation purity verification.
+- **Japan AI Promotion Act** -- 17th regulatory framework. 10 procedure mappings to Japan's AI Promotion Act and AI Utilization Guidelines.
+- **Model Trust Profiles** -- `verifyTrust()` / `presentCredential()` for AI-TRUST.1 and AI-TRUST.2 anchors. Chain verification across multi-agent handoffs.
+- **Anchor References** -- Link related anchors with `anchor_refs` for causal chains and dependency tracking.
+- **Coverage Scoring** -- `getCoverageScore()` computes namespace and framework coverage from minted anchors.
+- **CLI: `swt3 procedures`** -- List and filter UCT procedures by namespace or JSON output. `swt3 quickstart` generates a working example script.
+- **MCP Framework Filter** -- `list_procedures` tool now accepts `--framework` parameter for regulatory-scoped queries.
+- **Lifecycle Stage** -- `LIFECYCLE_STAGE_CODES` for AI-MDL.5 model weight witnessing across all 5 languages.
+- **Bidirectional Crosswalks** -- 420+ mappings across 17 frameworks in machine-readable JSON.
+- **15 profiles**, 88 procedures, 47 namespaces, 12 integrations
 
 ## MCP Server -- Official Registry
 
@@ -704,7 +705,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-All 65 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
+All 76 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -721,7 +722,7 @@ All 65 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 65 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 76 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -1057,3 +1058,5 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
 SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+
+This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners: OpenAI and GPT (OpenAI, Inc.); Claude and Anthropic (Anthropic PBC); Google, Gemini, Vertex AI, and ADK (Google LLC); Azure, Foundry, and Microsoft (Microsoft Corporation); AWS and Bedrock (Amazon Web Services, Inc.); NVIDIA and Dynamo (NVIDIA Corporation); Meta and Llama (Meta Platforms, Inc.); Ollama (Ollama, Inc.); CrewAI (CrewAI, Inc.); Vercel and Next.js (Vercel, Inc.); MCP (Anthropic PBC); vLLM (vLLM Project). Use of these names is for identification and interoperability purposes only.
