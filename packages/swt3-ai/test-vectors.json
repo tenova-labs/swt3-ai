@@ -567,6 +567,66 @@
       "fingerprint_timestamp_ms": 1774800047000,
       "clearing_level": 1,
       "expected_fingerprint": "4ff83090bfc4"
+    },
+    {
+      "id": 48,
+      "description": "AI-COST.1 Resource Consumption - 1500 tokens, 3 calls",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-COST.1",
+      "factor_a": 1500,
+      "factor_b": 3,
+      "factor_c": 0.0042,
+      "fingerprint_timestamp_ms": 1700000000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "a51c7c48b877"
+    },
+    {
+      "id": 49,
+      "description": "AI-DEL.1 Delegation Tree - depth 2, TTL 3600s",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DEL.1",
+      "factor_a": 3898716906,
+      "factor_b": 2,
+      "factor_c": 3600,
+      "fingerprint_timestamp_ms": 1700000000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "4f9e36ba7d2c"
+    },
+    {
+      "id": 50,
+      "description": "AI-CAP.1 Capability Attestation - 5 capabilities, autonomy 2",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-CAP.1",
+      "factor_a": 1159302839,
+      "factor_b": 5,
+      "factor_c": 2,
+      "fingerprint_timestamp_ms": 1700000000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "ab71ac6cf90e"
+    },
+    {
+      "id": 51,
+      "description": "AI-AUTO.3 Autonomy Transition - promotion, risk trigger",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-AUTO.3",
+      "factor_a": 1,
+      "factor_b": 2,
+      "factor_c": 11374,
+      "fingerprint_timestamp_ms": 1700000000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "02044480fce5"
+    },
+    {
+      "id": 52,
+      "description": "AI-AUTO.3 Autonomy Transition - demotion, policy trigger",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-AUTO.3",
+      "factor_a": 3,
+      "factor_b": 1,
+      "factor_c": 33332,
+      "fingerprint_timestamp_ms": 1700000000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "6d80f07d6698"
     }
   ],
   "signing_vectors": [

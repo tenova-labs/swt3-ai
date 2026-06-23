@@ -315,6 +315,32 @@ class GpuInfo:
 
 
 @dataclass
+class AcceleratorInfo:
+    """Vendor-neutral accelerator metadata for AI-HW.1 witnessing. IDs are pre-hashed."""
+
+    name: str  # e.g., "NVIDIA H100 80GB HBM3", "TPU v5p", "AMD Instinct MI300X"
+    memory_mb: int
+    bus_id_hash: str  # SHA-256 truncated, never cleartext
+    uuid_hash: str  # SHA-256 truncated, never cleartext
+    vendor: str = "unknown"  # nvidia, google, amd, aws, intel, unknown
+    family: str = ""  # H100, TPU-v5p, MI300X, Trainium2, Gaudi3
+    discovery_method: str = ""  # pynvml, nvidia-smi, jax, rocm-smi, neuron-ls, hl-smi, pci
+
+
+SILICON_VENDORS = frozenset({"nvidia", "google", "amd", "aws", "intel"})
+
+VENDOR_CODES = {
+    "nvidia": 0,
+    "google": 1,
+    "amd": 2,
+    "aws": 3,
+    "intel": 4,
+    "mixed": 5,
+    "unknown": 6,
+}
+
+
+@dataclass
 class HardwareSnapshot:
     """Accelerator inventory snapshot for AI-HW.1 witnessing."""
 
@@ -325,6 +351,9 @@ class HardwareSnapshot:
     interconnect: str = "unknown"  # nvswitch, nvlink, pcie, unknown
     total_memory_mb: int = 0
     hostname_hash: str = ""  # SHA-256 truncated, never cleartext
+    silicon_vendor: str = ""  # nvidia, google, amd, aws, intel, mixed, ""
+    accelerators: List[AcceleratorInfo] = field(default_factory=list)
+    discovery_method: str = ""  # which discovery path succeeded
 
 
 @dataclass
@@ -391,6 +420,7 @@ class RuntimeProfileConfig:
     min_gpu_count: Optional[int] = None
     min_memory_mb: Optional[int] = None
     expected_accelerator: Optional[str] = None  # substring match against GPU names
+    expected_silicon_vendor: Optional[str] = None  # nvidia, google, amd, aws, intel
     max_temperature_celsius: Optional[int] = None
     max_power_watts: Optional[int] = None
 

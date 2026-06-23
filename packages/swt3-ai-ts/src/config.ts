@@ -119,6 +119,7 @@ const VALID_PROFILES = new Set([
   "content-platform",
   "microsoft-foundry",
   "minimal",
+  "multi-silicon",
 ]);
 
 // ── YAML Parsing ──────────────────────────────────────────────────────
@@ -334,6 +335,7 @@ function extractHardware(raw: Record<string, unknown>): HardwareConfig | null {
       minGpuCount: rp.min_gpu_count as number | undefined,
       minMemoryMb: rp.min_memory_mb as number | undefined,
       expectedAccelerator: rp.expected_accelerator as string | undefined,
+      expectedSiliconVendor: rp.expected_silicon_vendor as string | undefined,
       maxTemperatureCelsius: rp.max_temperature_celsius as number | undefined,
       maxPowerWatts: rp.max_power_watts as number | undefined,
     };

@@ -13,18 +13,44 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compati
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.6
+## What's New in v0.5.7
 
-- **METAGOV Namespace** -- 8 procedures for recursive governance: governance config attestation, layer registration, policy downgrade detection, circular dependency detection (Kahn's algorithm), governance authorization, emergency override, federation sync, attestation purity verification.
-- **Japan AI Promotion Act** -- 17th regulatory framework. 10 procedure mappings to Japan's AI Promotion Act and AI Utilization Guidelines.
-- **Model Trust Profiles** -- `verifyTrust()` / `presentCredential()` for AI-TRUST.1 and AI-TRUST.2 anchors. Chain verification across multi-agent handoffs.
-- **Anchor References** -- Link related anchors with `anchor_refs` for causal chains and dependency tracking.
-- **Coverage Scoring** -- `getCoverageScore()` computes namespace and framework coverage from minted anchors.
-- **CLI: `swt3 procedures`** -- List and filter UCT procedures by namespace or JSON output. `swt3 quickstart` generates a working example script.
-- **MCP Framework Filter** -- `list_procedures` tool now accepts `--framework` parameter for regulatory-scoped queries.
-- **Lifecycle Stage** -- `LIFECYCLE_STAGE_CODES` for AI-MDL.5 model weight witnessing across all 5 languages.
-- **Bidirectional Crosswalks** -- 420+ mappings across 17 frameworks in machine-readable JSON.
-- **15 profiles**, 88 procedures, 47 namespaces, 12 integrations
+**Autonomous Agent Attestation** -- Autonomous agents make decisions, delegate tasks, consume resources, and cross jurisdictions without human intervention at every step. SWT3 witnesses each transition as immutable evidence. When an examiner asks "what did this agent do and who authorized it?", these procedures provide the cryptographic answer. Every delegation, capability change, autonomy transition, resource draw, and lifecycle event is attested independently of the agent's own logs.
+
+- **Delegation Tree Attestation (AI-DEL.1)** -- `witnessDelegation()` attests authority delegation between agents: scope hash, depth from human authorization, TTL, cascade revocation, and sub-delegation control. Evidence for EU AI Act Art. 14 human oversight.
+- **Capability Attestation (AI-CAP.1)** -- `witnessCapabilityAttestation()` attests declared vs observed agent capabilities with manifest hashing and drift detection. Autonomy level binding for Art. 15 robustness.
+- **Autonomy Level Transition (AI-AUTO.3)** -- `witnessAutonomyTransition()` attests agent promotion and demotion between autonomy levels 0-3. Risk-triggered downgrades, HITL checkpoints, and transition justification.
+- **Resource Consumption Attestation (AI-COST.1)** -- `witnessResourceConsumption()` attests token usage, API call counts, and estimated cost as compliance evidence. Budget threshold awareness without billing enforcement.
+- **Lifecycle Event Attestation (AI-LCM.1)** -- `witnessLifecycle()` attests spawn, checkpoint, migrate, terminate, and crash events with context size and state hash.
+
+```typescript
+// Autonomous agent lifecycle: spawn -> delegate -> attest capabilities -> transition -> terminate
+witness.witnessLifecycle("spawn", { contextTokens: 0 });
+witness.witnessDelegation({ scope: "fraud-review", delegator: "orchestrator", depth: 1, ttlSeconds: 3600 });
+witness.witnessCapabilityAttestation({ manifest: ["tool:search", "tool:flag"], autonomyLevel: 2 });
+witness.witnessAutonomyTransition({ fromLevel: 2, toLevel: 1, trigger: "risk_threshold" });
+witness.witnessLifecycle("terminate", { contextTokens: 8400 });
+```
+
+**Cross-Silicon Hardware Attestation** -- auto-detect and attest accelerator inventory across competing silicon vendors. 6 discovery paths: NVIDIA GPU (`nvidia-smi`), Google TPU (JAX), AMD MI (`rocm-smi`), AWS Trainium (`neuron-ls`), Intel Gaudi (`hl-smi`), and PCI fallback. New `multi-silicon` profile for workloads that migrate between vendors. When your model moves from NVIDIA to TPU, the attestation follows.
+
+```typescript
+witness.witnessHardware(); // auto-detects silicon vendor, GPU count, VRAM, driver version
+```
+
+**Endpoint Attestation** -- witness the infrastructure decisions that shape how agents operate across boundaries.
+
+- **Agent Transaction Witnessing (AI-FIN.1)** -- `witnessTransaction()` for autonomous agent financial operations. Authorization type, amount, and settlement status anchored before execution.
+- **Tool Permission Attestation (AI-TOOL.2)** -- `witnessToolPermissions()` attests runtime tool sets against agent charter. Detects permission drift and escalation.
+- **Cross-Border Inference Routing (AI-JUR.1)** -- `witnessRouting()` witnesses routing decisions with ISO 3166 region codes and compliance status.
+
+**Adapters**
+
+- **Cohere Adapter** -- `wrapCohere()` for Cohere V2 API. Chat and streaming witnessed transparently.
+- **Qdrant RAG Witness** -- `wrapQdrant()` for database-level RAG pipeline compliance. Every vector search mints AI-RAG.1.
+- **Ollama 0.30+ Refresh** -- explicit `wrapOllama()` export, GGUF model name normalization.
+
+103 procedures, 54 namespaces, 28 frameworks, 15 profiles, 16 integrations, 7 languages
 
 ## MCP Server -- Official Registry
 
@@ -94,7 +120,7 @@ All verification is local. Zero cloud overhead. No data exchanged until both age
 
 ## Offline Verification
 
-Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 6 SDK languages -- recompute it anywhere in microseconds.
+Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 7 SDK languages -- recompute it anywhere in microseconds.
 
 ```typescript
 import { verifyAnchor } from "@tenova/swt3-ai";
@@ -108,7 +134,7 @@ const result = verifyAnchor(anchor, {
 // result.status: "CERTIFIED TRUTH" | "TAMPERED"
 ```
 
-Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Rust, C#, and Ruby with identical output for identical inputs.
+Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Swift, Rust, C#, and Ruby with identical output for identical inputs.
 
 ## See It Work (No Account Needed)
 
@@ -722,7 +748,7 @@ All 76 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 76 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 76 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 

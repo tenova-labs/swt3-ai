@@ -442,6 +442,7 @@ export interface RuntimeProfileConfig {
   minGpuCount?: number;
   minMemoryMb?: number;
   expectedAccelerator?: string;  // substring match against GPU names
+  expectedSiliconVendor?: string; // nvidia, google, amd, aws, intel
   maxTemperatureCelsius?: number;
   maxPowerWatts?: number;
 }

@@ -1433,32 +1433,37 @@ class Witness:
             snapshot = query_hardware()
 
         self._last_hw_snapshot = snapshot
-        gpu_count = len(snapshot.gpus)
-        all_healthy = gpu_count > 0
+        accel_count = len(snapshot.accelerators) if snapshot.accelerators else len(snapshot.gpus)
+        all_healthy = accel_count > 0
         if expected_topology and snapshot.topology != expected_topology:
             all_healthy = False
 
-        fa = float(gpu_count)
+        fa = float(accel_count)
         fb = 1.0 if all_healthy else 0.0
         fc = float(topology_code(snapshot.topology))
 
         payload = self._mint_and_sign("AI-HW.1", fa, fb, fc)
 
         if self._config.clearing_level <= 1:
+            vendor = snapshot.silicon_vendor or ("nvidia" if snapshot.gpus else "unknown")
             payload.ai_model_id = f"hw-{snapshot.topology}"
             ctx: Dict[str, Any] = {
-                "provider": "nvidia-hw",
+                "provider": f"{vendor}-hw",
+                "silicon_vendor": vendor,
                 "topology": snapshot.topology,
                 "interconnect": snapshot.interconnect,
                 "total_memory_mb": snapshot.total_memory_mb,
-                "gpu_count": gpu_count,
+                "accelerator_count": accel_count,
                 "hostname_hash": snapshot.hostname_hash,
             }
+            if snapshot.discovery_method:
+                ctx["discovery_method"] = snapshot.discovery_method
             if snapshot.driver_version:
                 ctx["driver_version"] = snapshot.driver_version
             if snapshot.cuda_version:
                 ctx["cuda_version"] = snapshot.cuda_version
             if snapshot.gpus:
+                ctx["gpu_count"] = len(snapshot.gpus)
                 ctx["gpus"] = [
                     {
                         "name": g.name,
@@ -1467,6 +1472,18 @@ class Witness:
                         "uuid_hash": g.uuid_hash,
                     }
                     for g in snapshot.gpus
+                ]
+            if snapshot.accelerators:
+                ctx["accelerators"] = [
+                    {
+                        "name": a.name,
+                        "memory_mb": a.memory_mb,
+                        "vendor": a.vendor,
+                        "family": a.family,
+                        "bus_id_hash": a.bus_id_hash,
+                        "uuid_hash": a.uuid_hash,
+                    }
+                    for a in snapshot.accelerators
                 ]
             if expected_topology:
                 ctx["expected_topology"] = expected_topology
@@ -1649,14 +1666,24 @@ class Witness:
         log = logging.getLogger("swt3")
         if profile.expected_topology and snapshot.topology != profile.expected_topology:
             log.warning("runtime profile: expected topology %r, got %r", profile.expected_topology, snapshot.topology)
-        if profile.min_gpu_count is not None and len(snapshot.gpus) < profile.min_gpu_count:
-            log.warning("runtime profile: expected min_gpu_count=%d, got %d", profile.min_gpu_count, len(snapshot.gpus))
+        if profile.min_gpu_count is not None:
+            accel_total = len(snapshot.accelerators) if hasattr(snapshot, "accelerators") and snapshot.accelerators else len(snapshot.gpus)
+            if accel_total < profile.min_gpu_count:
+                log.warning("runtime profile: expected min_gpu_count=%d, got %d", profile.min_gpu_count, accel_total)
         if profile.min_memory_mb is not None and snapshot.total_memory_mb < profile.min_memory_mb:
             log.warning("runtime profile: expected min_memory_mb=%d, got %d", profile.min_memory_mb, snapshot.total_memory_mb)
         if profile.expected_accelerator:
-            match = any(profile.expected_accelerator.upper() in g.name.upper() for g in snapshot.gpus)
+            # Check both gpus (legacy) and accelerators (multi-silicon)
+            names = [g.name for g in snapshot.gpus]
+            if hasattr(snapshot, "accelerators") and snapshot.accelerators:
+                names.extend(a.name for a in snapshot.accelerators)
+            match = any(profile.expected_accelerator.upper() in n.upper() for n in names)
             if not match:
                 log.warning("runtime profile: expected accelerator containing %r, none found", profile.expected_accelerator)
+        if getattr(profile, "expected_silicon_vendor", None):
+            actual = getattr(snapshot, "silicon_vendor", "")
+            if actual and actual != profile.expected_silicon_vendor:
+                log.warning("runtime profile: expected silicon vendor %r, got %r", profile.expected_silicon_vendor, actual)
 
     # ── Content Provenance (AI-MARK.1) ────────────────────────────────
 
@@ -2908,6 +2935,318 @@ class Witness:
         )
 
         return payload.anchor_fingerprint
+
+    # ── Resource Consumption Witnessing (AI-COST.1) ────────────────────
+
+    def witness_resource_consumption(
+        self,
+        token_count: int,
+        api_calls: int,
+        estimated_cost: str,
+        *,
+        budget_threshold: Optional[str] = None,
+        cost_anomaly: bool = False,
+        resource_attribution_id: Optional[str] = None,
+        consumption_window_seconds: Optional[int] = None,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness resource consumption for an AI operation (AI-COST.1).
+
+        Records token usage, API call counts, and estimated cost as
+        compliance evidence. This is an evidence layer, not a billing
+        system -- values are self-reported by the caller.
+
+        Args:
+            token_count: Total tokens consumed (input + output).
+            api_calls: Number of API calls made.
+            estimated_cost: Estimated cost as string (e.g. "0.0042").
+                String type prevents cross-language float precision issues.
+            budget_threshold: Budget limit as string (stripped at CL1+).
+            cost_anomaly: Whether this consumption is anomalous.
+            resource_attribution_id: Identifier for cost attribution.
+            consumption_window_seconds: Time window for this consumption.
+            model_id: Model identifier for context.
+
+        Returns:
+            WitnessPayload for the AI-COST.1 anchor.
+        """
+        fa = float(token_count)
+        fb = float(api_calls)
+        fc = float(estimated_cost)
+
+        payload = self._mint_and_sign("AI-COST.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "cost-witness"
+            ctx: Dict[str, Any] = {
+                "provider": "resource-consumption",
+                "token_count": token_count,
+                "api_calls": api_calls,
+                "estimated_cost": estimated_cost,
+                "cost_anomaly": cost_anomaly,
+            }
+            if budget_threshold:
+                ctx["budget_threshold"] = budget_threshold
+            if resource_attribution_id:
+                ctx["resource_attribution_id"] = resource_attribution_id
+            if consumption_window_seconds is not None:
+                ctx["consumption_window_seconds"] = consumption_window_seconds
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Delegation Trees (AI-DEL.1) ──────────────────────────────────
+
+    def witness_delegation(
+        self,
+        scope_hash: str,
+        delegation_depth: int,
+        ttl_seconds: int,
+        parent_agent_id: str,
+        child_agent_id: str,
+        *,
+        delegated_capabilities: Optional[List[str]] = None,
+        cascade_revocation: bool = False,
+        sub_delegation_allowed: bool = False,
+        delegation_chain_merkle: Optional[str] = None,
+        authorization_chain: Optional[List[str]] = None,
+    ) -> WitnessPayload:
+        """Witness a delegation tree node (AI-DEL.1).
+
+        Records the structure of authority delegation between agents:
+        who delegated what scope, to whom, for how long, and whether
+        sub-delegation and cascade revocation are permitted.
+
+        Args:
+            scope_hash: SHA-256 of the permission/scope manifest.
+            delegation_depth: Hops from original human authorization.
+            ttl_seconds: Seconds until delegation expires (0 = unbounded).
+            parent_agent_id: Delegating agent identifier.
+            child_agent_id: Receiving agent identifier.
+            delegated_capabilities: List of delegated capability names.
+            cascade_revocation: Whether revoking parent revokes children.
+            sub_delegation_allowed: Whether child can further delegate.
+            delegation_chain_merkle: Merkle root of the delegation chain.
+            authorization_chain: Ordered agent IDs from human to child.
+
+        Returns:
+            WitnessPayload for the AI-DEL.1 anchor.
+        """
+        fa = float(int(sha256_truncated(scope_hash, 8), 16) % 2**32) if scope_hash else 0.0
+        fb = float(delegation_depth)
+        fc = float(ttl_seconds)
+
+        payload = self._mint_and_sign("AI-DEL.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"delegation-depth-{delegation_depth}"
+            ctx: Dict[str, Any] = {
+                "provider": "delegation-tree",
+                "scope_hash": scope_hash,
+                "delegation_depth": delegation_depth,
+                "ttl_seconds": ttl_seconds,
+                "parent_agent_id": parent_agent_id,
+                "child_agent_id": child_agent_id,
+                "cascade_revocation": cascade_revocation,
+                "sub_delegation_allowed": sub_delegation_allowed,
+            }
+            if delegated_capabilities:
+                ctx["delegated_capabilities"] = delegated_capabilities
+            if delegation_chain_merkle:
+                ctx["delegation_chain_merkle"] = delegation_chain_merkle
+            if authorization_chain:
+                ctx["authorization_chain"] = authorization_chain
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Capability Attestation (AI-CAP.1) ────────────────────────────
+
+    def witness_capability_attestation(
+        self,
+        manifest_hash: str,
+        capability_count: int,
+        autonomy_level: int,
+        *,
+        declared_capabilities: Optional[List[str]] = None,
+        observed_capabilities: Optional[List[str]] = None,
+        drift_detected: bool = False,
+        hitl_required: bool = False,
+        capability_version: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness an agent's capability manifest (AI-CAP.1).
+
+        Records declared vs observed capabilities with drift detection.
+        The manifest_hash in factor_a allows auditors to independently
+        verify the capability list against observations.
+
+        Args:
+            manifest_hash: SHA-256 of the capability manifest.
+            capability_count: Number of declared capabilities.
+            autonomy_level: Agent autonomy level (0-3).
+            declared_capabilities: Capabilities the agent claims.
+            observed_capabilities: Capabilities actually exercised.
+            drift_detected: Whether declared/observed diverge.
+            hitl_required: Whether human-in-the-loop is required.
+            capability_version: Version of the capability manifest.
+            model_id: Model identifier for context.
+
+        Returns:
+            WitnessPayload for the AI-CAP.1 anchor.
+        """
+        fa = float(int(sha256_truncated(manifest_hash, 8), 16) % 2**32) if manifest_hash else 0.0
+        fb = float(capability_count)
+        fc = float(autonomy_level)
+
+        payload = self._mint_and_sign("AI-CAP.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or f"capability-level-{autonomy_level}"
+            ctx: Dict[str, Any] = {
+                "provider": "capability-attestation",
+                "manifest_hash": manifest_hash,
+                "capability_count": capability_count,
+                "autonomy_level": autonomy_level,
+                "drift_detected": drift_detected,
+                "hitl_required": hitl_required,
+            }
+            if declared_capabilities:
+                ctx["declared_capabilities"] = declared_capabilities
+            if observed_capabilities:
+                ctx["observed_capabilities"] = observed_capabilities
+            if capability_version:
+                ctx["capability_version"] = capability_version
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Autonomy Transitions (AI-AUTO.3) ─────────────────────────────
+
+    def witness_autonomy_transition(
+        self,
+        from_level: int,
+        to_level: int,
+        trigger_type: str,
+        *,
+        justification: Optional[str] = None,
+        risk_score: Optional[float] = None,
+        hitl_checkpoint: bool = False,
+        transition_authorized_by: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness an agent autonomy level transition (AI-AUTO.3).
+
+        Records when an agent's autonomy level changes (promotion or
+        demotion). Levels 0-3 parallel clearing levels. Trigger types
+        are lowercase strings; unknown values are accepted for forward
+        compatibility.
+
+        Args:
+            from_level: Previous autonomy level (0-3).
+            to_level: New autonomy level (0-3).
+            trigger_type: What caused the transition (e.g. "risk",
+                "policy", "manual", "scheduled"). Lowercase. Unknown
+                values accepted.
+            justification: Human-readable reason for the transition.
+            risk_score: Risk score that triggered the transition.
+            hitl_checkpoint: Whether a HITL checkpoint was required.
+            transition_authorized_by: ID of authorizing entity.
+            model_id: Model identifier for context.
+
+        Returns:
+            WitnessPayload for the AI-AUTO.3 anchor.
+        """
+        fa = float(from_level)
+        fb = float(to_level)
+        fc = float(int(sha256_truncated(trigger_type.lower(), 4), 16) % 2**16) if trigger_type else 0.0
+
+        payload = self._mint_and_sign("AI-AUTO.3", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            direction = "promotion" if to_level > from_level else "demotion" if to_level < from_level else "lateral"
+            payload.ai_model_id = model_id or f"autonomy-{direction}"
+            ctx: Dict[str, Any] = {
+                "provider": "autonomy-transition",
+                "from_level": from_level,
+                "to_level": to_level,
+                "trigger_type": trigger_type.lower(),
+                "direction": direction,
+                "hitl_checkpoint": hitl_checkpoint,
+            }
+            if justification:
+                ctx["justification"] = justification
+            if risk_score is not None:
+                ctx["risk_score"] = risk_score
+            if transition_authorized_by:
+                ctx["transition_authorized_by"] = transition_authorized_by
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Clearing Fidelity Attestation (AI-CLR.2) ─────────────────────
+
+    def witness_clearing_fidelity(
+        self,
+        clearing_level_applied: int,
+        input_field_count: int,
+        output_field_count: int,
+        *,
+        clearing_engine_version: Optional[str] = None,
+        fidelity_hash: Optional[str] = None,
+        stripped_fields: Optional[List[str]] = None,
+        anomaly_detected: bool = False,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness clearing engine fidelity for a payload (AI-CLR.2).
+
+        Proves the clearing engine operated correctly: the right fields
+        were stripped for the applied clearing level, no data leakage
+        (extra fields retained), and no over-redaction (required fields
+        incorrectly stripped).
+
+        Args:
+            clearing_level_applied: The clearing level (0-3) that was applied.
+            input_field_count: Number of fields before clearing.
+            output_field_count: Number of fields after clearing.
+            clearing_engine_version: Version hash of the clearing engine.
+            fidelity_hash: SHA-256 of the clearing fidelity record.
+            stripped_fields: Categories of fields that were stripped.
+            anomaly_detected: Whether a clearing anomaly was found.
+            model_id: Model identifier for context.
+
+        Returns:
+            WitnessPayload for the AI-CLR.2 anchor.
+        """
+        fa = float(clearing_level_applied)
+        fb = float(input_field_count)
+        fc = float(output_field_count)
+
+        payload = self._mint_and_sign("AI-CLR.2", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "clearing-fidelity"
+            ctx: Dict[str, Any] = {
+                "provider": "clearing-fidelity",
+                "clearing_level_applied": clearing_level_applied,
+                "input_field_count": input_field_count,
+                "output_field_count": output_field_count,
+                "anomaly_detected": anomaly_detected,
+            }
+            if clearing_engine_version:
+                ctx["clearing_engine_version"] = clearing_engine_version
+            if fidelity_hash:
+                ctx["fidelity_hash"] = fidelity_hash
+            if stripped_fields:
+                ctx["stripped_fields"] = stripped_fields
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
 
     def manifest(
         self,
