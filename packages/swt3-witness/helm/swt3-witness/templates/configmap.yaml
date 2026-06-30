@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "swt3-witness.fullname" . }}
+  labels:
+    {{- include "swt3-witness.labels" . | nindent 4 }}
+data:
+  SWT3_MODE: {{ .Values.config.mode | quote }}
+  SWT3_INTERVAL: {{ .Values.config.interval | quote }}
+  SWT3_CLEARING_LEVEL: {{ .Values.config.clearingLevel | quote }}
+  SWT3_HEALTH_PORT: {{ .Values.config.healthPort | quote }}
+  {{- if .Values.config.agentId }}
+  SWT3_AGENT_ID: {{ .Values.config.agentId | quote }}
+  {{- end }}

@@ -1,0 +1,27 @@
+SWT3 Witness deployed successfully.
+
+Mode:     {{ .Values.config.mode }}
+Interval: {{ .Values.config.interval }}s
+
+1. View hardware attestation output:
+   kubectl logs -l app.kubernetes.io/name={{ include "swt3-witness.name" . }} -f
+
+2. Check node coverage:
+   kubectl get pods -l app.kubernetes.io/name={{ include "swt3-witness.name" . }} -o wide
+
+3. Health check:
+   kubectl port-forward ds/{{ include "swt3-witness.fullname" . }} 9090:{{ .Values.config.healthPort }}
+   curl http://localhost:9090/health
+{{- if eq .Values.config.mode "local" }}
+
+Running in LOCAL mode. Anchors emit to stdout as structured JSON.
+Filter in your log pipeline: jq 'select(.swt3_witness == true)'
+
+To upgrade to cloud mode:
+  helm upgrade {{ .Release.Name }} tenova/swt3-witness \
+    --set config.mode=cloud \
+    --set cloud.apiKey=axm_YOUR_KEY \
+    --set cloud.tenantId=YOUR_TENANT
+{{- end }}
+
+Documentation: https://sovereign.tenova.io/guides/cross-silicon-k8s-attestation.html

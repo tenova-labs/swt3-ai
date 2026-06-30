@@ -6,8 +6,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Witness } from "../src/witness.js";
-import { detectTopology, topologyCode } from "../src/hardware.js";
-import type { GpuInfo, HardwareSnapshot } from "../src/hardware.js";
+import { detectTopology, topologyCode, queryHardware, queryGoogleTPU, queryAmdRocm, queryAwsNeuron, queryIntelGaudi, queryPciFallback } from "../src/hardware.js";
+import type { GpuInfo, HardwareSnapshot, AcceleratorInfo } from "../src/hardware.js";
 
 beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -32,6 +32,14 @@ function mkGpu(name: string, memoryMb = 81920): GpuInfo {
 
 function mkSnapshot(gpuCount: number, name = "NVIDIA H100 80GB HBM3"): HardwareSnapshot {
   const gpus = Array.from({ length: gpuCount }, () => mkGpu(name));
+  const accelerators = gpus.map((g) => ({
+    vendor: "nvidia" as const,
+    name: g.name,
+    memoryMb: g.memoryMb,
+    idHash: g.uuidHash,
+    busIdHash: g.busIdHash,
+    discoveryMethod: "nvidia-smi",
+  }));
   return {
     gpus,
     driverVersion: "550.54.15",
@@ -40,6 +48,9 @@ function mkSnapshot(gpuCount: number, name = "NVIDIA H100 80GB HBM3"): HardwareS
     interconnect: "nvswitch",
     totalMemoryMb: gpuCount * 81920,
     hostnameHash: "hosthash",
+    accelerators,
+    siliconVendor: gpuCount > 0 ? "nvidia" : "none",
+    discoveryMethod: gpuCount > 0 ? "nvidia-smi" : "",
   };
 }
 
@@ -140,6 +151,7 @@ describe("witnessHardware", () => {
       gpus: [], driverVersion: "", cudaVersion: "",
       topology: "unknown", interconnect: "unknown",
       totalMemoryMb: 0, hostnameHash: "h",
+      accelerators: [], siliconVendor: "none", discoveryMethod: "",
     };
     const p = w.witnessHardware({ snapshot: snap });
     expect(p.factor_a).toBe(0);
@@ -168,7 +180,7 @@ describe("witnessHardware", () => {
     expect(p.ai_context).toBeDefined();
     expect(p.ai_context!.topology).toBe("DGX-H100");
     expect(p.ai_context!.gpu_count).toBe(8);
-    expect(p.ai_context!.provider).toBe("nvidia-hw");
+    expect(p.ai_context!.provider).toBe("nvidia");
     expect((p.ai_context!.gpus as any[]).length).toBe(8);
   });
 
@@ -228,5 +240,222 @@ describe("witnessHardware", () => {
     const snap = mkSnapshot(8);
     const p = w.witnessHardware({ snapshot: snap, expectedTopology: "DGX-H100" });
     expect(p.ai_context!.expected_topology).toBe("DGX-H100");
+  });
+});
+
+// ── Cross-Silicon Discovery ─────────────────────────────────────────
+
+describe("queryGoogleTPU", () => {
+
+  const origEnv = { ...process.env };
+  afterEach(() => { process.env = { ...origEnv }; });
+
+  it("returns empty when no TPU_NAME", () => {
+    delete process.env.TPU_NAME;
+    expect(queryGoogleTPU()).toEqual([]);
+  });
+
+  it("detects single TPU from TPU_NAME", () => {
+    process.env.TPU_NAME = "v5e-256";
+    delete process.env.TPU_WORKER_HOSTNAMES;
+    const accels = queryGoogleTPU();
+    expect(accels).toHaveLength(1);
+    expect(accels[0].vendor).toBe("google-tpu");
+    expect(accels[0].name).toBe("v5e-256");
+    expect(accels[0].discoveryMethod).toBe("tpu-env");
+    expect(accels[0].memoryMb).toBe(16384);
+  });
+
+  it("counts workers from TPU_WORKER_HOSTNAMES", () => {
+    process.env.TPU_NAME = "v5p-128";
+    process.env.TPU_WORKER_HOSTNAMES = "w0,w1,w2,w3";
+    const accels = queryGoogleTPU();
+    expect(accels).toHaveLength(4);
+    expect(accels[0].memoryMb).toBe(95000);
+  });
+
+  it("infers memory for v4 TPU", () => {
+    process.env.TPU_NAME = "v4-8";
+    delete process.env.TPU_WORKER_HOSTNAMES;
+    const accels = queryGoogleTPU();
+    expect(accels[0].memoryMb).toBe(32768);
+  });
+
+  it("hashes device IDs", () => {
+    process.env.TPU_NAME = "v5e-4";
+    delete process.env.TPU_WORKER_HOSTNAMES;
+    const accels = queryGoogleTPU();
+    expect(accels[0].idHash).not.toContain("v5e");
+    expect(accels[0].idHash.length).toBe(16);
+  });
+});
+
+describe("queryAmdRocm", () => {
+
+
+  it("returns empty when rocm-smi not installed", () => {
+    const [accels, driver] = queryAmdRocm();
+    expect(accels).toEqual([]);
+    expect(driver).toBe("");
+  });
+});
+
+describe("queryAwsNeuron", () => {
+
+
+  it("returns empty when neuron-ls not installed", () => {
+    expect(queryAwsNeuron()).toEqual([]);
+  });
+});
+
+describe("queryIntelGaudi", () => {
+
+
+  it("returns empty when hl-smi not installed", () => {
+    const [accels, driver] = queryIntelGaudi();
+    expect(accels).toEqual([]);
+    expect(driver).toBe("");
+  });
+});
+
+describe("queryPciFallback", () => {
+
+
+  it("returns empty on non-Linux or no accelerators", () => {
+    const accels = queryPciFallback(new Set());
+    // On this test server, may find 0 or some PCI devices -- either way, no crash
+    expect(Array.isArray(accels)).toBe(true);
+  });
+
+  it("deduplicates already-seen bus IDs", () => {
+    const fakeBusId = "already-seen-hash";
+    const accels = queryPciFallback(new Set([fakeBusId]));
+    expect(accels.every((a: any) => a.busIdHash !== fakeBusId)).toBe(true);
+  });
+});
+
+describe("detectTopology cross-silicon", () => {
+  it("TPU single chip", () => {
+    const topo = detectTopology([], [{ vendor: "google-tpu", name: "v5e", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "tpu-env" }]);
+    expect(topo).toBe("tpu-single");
+  });
+
+  it("TPU pod (multiple chips)", () => {
+    const chips = Array.from({ length: 4 }, () => ({ vendor: "google-tpu" as const, name: "v5p", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "tpu-env" }));
+    expect(detectTopology([], chips)).toBe("tpu-pod");
+  });
+
+  it("AMD single GPU", () => {
+    expect(detectTopology([], [{ vendor: "amd", name: "MI300X", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "rocm-smi" }])).toBe("mi-single");
+  });
+
+  it("AMD cluster", () => {
+    const gpus = Array.from({ length: 8 }, () => ({ vendor: "amd" as const, name: "MI300X", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "rocm-smi" }));
+    expect(detectTopology([], gpus)).toBe("mi-cluster");
+  });
+
+  it("AWS Trainium cluster", () => {
+    const devs = Array.from({ length: 16 }, () => ({ vendor: "aws-trainium" as const, name: "trn1", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "neuron-ls" }));
+    expect(detectTopology([], devs)).toBe("trn-cluster");
+  });
+
+  it("AWS Inferentia single", () => {
+    expect(detectTopology([], [{ vendor: "aws-trainium", name: "inf2", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "neuron-ls" }])).toBe("inf-single");
+  });
+
+  it("Intel Gaudi cluster", () => {
+    const devs = Array.from({ length: 8 }, () => ({ vendor: "intel-gaudi" as const, name: "Gaudi3", memoryMb: 0, idHash: "", busIdHash: "", discoveryMethod: "hl-smi" }));
+    expect(detectTopology([], devs)).toBe("gaudi-cluster");
+  });
+
+  it("empty accelerators returns unknown", () => {
+    expect(detectTopology([], [])).toBe("unknown");
+  });
+
+  it("NVIDIA GPUs still use GPU path (backward compat)", () => {
+    const gpus = Array.from({ length: 8 }, () => mkGpu("NVIDIA H100 80GB HBM3"));
+    expect(detectTopology(gpus, [])).toBe("DGX-H100");
+  });
+});
+
+describe("queryHardware aggregation", () => {
+  it("populates siliconVendor and discoveryMethod", () => {
+    // On this server: no GPUs, no TPU, no AMD, no AWS, no Intel
+    const snap = queryHardware();
+    expect(snap.siliconVendor).toBeDefined();
+    expect(snap.discoveryMethod).toBeDefined();
+    expect(snap.accelerators).toBeDefined();
+    expect(Array.isArray(snap.accelerators)).toBe(true);
+    // Backward compat: gpus still present
+    expect(Array.isArray(snap.gpus)).toBe(true);
+  });
+
+  it("empty server has siliconVendor none", () => {
+    const snap = queryHardware();
+    // Unless this test server has GPUs/TPUs, expect none
+    if (snap.gpus.length === 0 && snap.accelerators.length === 0) {
+      expect(snap.siliconVendor).toBe("none");
+      expect(snap.discoveryMethod).toBe("");
+    }
+  });
+});
+
+describe("witnessHardware cross-silicon context", () => {
+  it("includes silicon_vendor in context", () => {
+    const w = mkWitness({ clearingLevel: 0 });
+    const snap = mkSnapshot(8);
+    const p = w.witnessHardware({ snapshot: snap });
+    expect(p.ai_context!.silicon_vendor).toBe("nvidia");
+    expect(p.ai_context!.discovery_method).toBe("nvidia-smi");
+    expect(p.ai_context!.accelerator_count).toBe(8);
+  });
+
+  it("includes accelerators array in context", () => {
+    const w = mkWitness({ clearingLevel: 0 });
+    const snap = mkSnapshot(2, "RTX 4090");
+    const p = w.witnessHardware({ snapshot: snap });
+    const accels = p.ai_context!.accelerators as any[];
+    expect(accels).toHaveLength(2);
+    expect(accels[0].vendor).toBe("nvidia");
+    expect(accels[0].discovery_method).toBe("nvidia-smi");
+  });
+
+  it("TPU snapshot has google-tpu provider", () => {
+    const w = mkWitness({ clearingLevel: 0 });
+    const snap: HardwareSnapshot = {
+      gpus: [], driverVersion: "", cudaVersion: "",
+      topology: "tpu-pod", interconnect: "unknown",
+      totalMemoryMb: 65536, hostnameHash: "h",
+      accelerators: [
+        { vendor: "google-tpu", name: "v5e-256", memoryMb: 16384, idHash: "a", busIdHash: "b", discoveryMethod: "tpu-env" },
+        { vendor: "google-tpu", name: "v5e-256", memoryMb: 16384, idHash: "c", busIdHash: "d", discoveryMethod: "tpu-env" },
+      ],
+      siliconVendor: "google-tpu",
+      discoveryMethod: "tpu-env",
+    };
+    const p = w.witnessHardware({ snapshot: snap });
+    expect(p.factor_a).toBe(2);
+    expect(p.ai_context!.provider).toBe("google-tpu");
+    expect(p.ai_context!.silicon_vendor).toBe("google-tpu");
+  });
+
+  it("mixed silicon shows mixed provider", () => {
+    const w = mkWitness({ clearingLevel: 0 });
+    const snap: HardwareSnapshot = {
+      gpus: [mkGpu("NVIDIA H100 80GB HBM3")],
+      driverVersion: "550.54", cudaVersion: "",
+      topology: "single", interconnect: "pcie",
+      totalMemoryMb: 98304, hostnameHash: "h",
+      accelerators: [
+        { vendor: "nvidia", name: "H100", memoryMb: 81920, idHash: "a", busIdHash: "b", discoveryMethod: "nvidia-smi" },
+        { vendor: "google-tpu", name: "v5e", memoryMb: 16384, idHash: "c", busIdHash: "d", discoveryMethod: "tpu-env" },
+      ],
+      siliconVendor: "mixed",
+      discoveryMethod: "nvidia-smi,tpu-env",
+    };
+    const p = w.witnessHardware({ snapshot: snap });
+    expect(p.factor_a).toBe(2);
+    expect(p.ai_context!.provider).toBe("mixed");
+    expect(p.ai_context!.silicon_vendor).toBe("mixed");
   });
 });

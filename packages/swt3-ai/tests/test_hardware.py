@@ -295,7 +295,8 @@ class TestWitnessHardware:
         snap = self._make_snapshot()
         p = w.witness_hardware(snap)
         assert p.ai_context is not None
-        assert p.ai_context["provider"] == "nvidia-hw"
+        assert p.ai_context["provider"] == "nvidia"
+        assert p.ai_context["silicon_vendor"] == "nvidia"
 
     def test_clearing_level_2_strips_context(self):
         w = mk_witness(clearing_level=2)

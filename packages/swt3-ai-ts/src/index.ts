@@ -39,7 +39,7 @@ export type {
   ChainLink,
   ChainSummary,
 } from "./types.js";
-export { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES } from "./types.js";
+export { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES } from "./types.js";
 export { mintFingerprint, sha256Truncated, sha256Hex, timestampMs } from "./fingerprint.js";
 export { extractPayloads, extractGatekeeperPayload, extractRevocationPayload, extractChainTrustDegradationPayload, REVOCATION_REASONS } from "./clearing.js";
 export { signPayload, generateMldsaKeypair, verifyMldsa, SIGNING_ALGORITHM_HMAC, SIGNING_ALGORITHM_MLDSA, VALID_SIGNING_ALGORITHMS, DEFAULT_SIGNING_ALGORITHM } from "./signing.js";
@@ -56,8 +56,10 @@ export { wrapGoogleADK } from "./adapters/google-adk.js";
 export { wrapCrewAI } from "./adapters/crewai.js";
 export { wrapA2A } from "./adapters/a2a.js";
 export { wrapFoundry } from "./adapters/foundry.js";
-export { queryHardware, queryAccelerators, detectTopology, topologyCode, TOPOLOGY_CODES, SILICON_VENDORS, VENDOR_CODES, queryTPM, parseTPMPcrOutput, ZERO_PCR_HASH } from "./hardware.js";
-export type { GpuInfo, AcceleratorInfo, HardwareSnapshot, TPMSnapshot, PcrRegister } from "./hardware.js";
+export { wrapAGT } from "./adapters/agt.js";
+export { wrapLangGraph } from "./adapters/langgraph.js";
+export { queryHardware, detectTopology, topologyCode, TOPOLOGY_CODES, queryTPM, parseTPMPcrOutput, ZERO_PCR_HASH, queryGoogleTPU, queryAmdRocm, queryAwsNeuron, queryIntelGaudi, queryPciFallback } from "./hardware.js";
+export type { GpuInfo, HardwareSnapshot, TPMSnapshot, PcrRegister, AcceleratorInfo, SiliconVendor } from "./hardware.js";
 export {
   hashLeaf, hashNode, getMerkleRoot, getMerkleProof, verifyMerkleProof,
   MerkleAccumulator,

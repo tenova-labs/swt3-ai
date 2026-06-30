@@ -558,7 +558,8 @@
         "FIVE-EYES-AGENTIC": "FE-7",
         "ISO-42001": "A.8.3",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-03"
+        "OWASP-AGENTIC": "MCP-03",
+        "SG-IMDA-AGENTIC": "MGF-3.1"
       },
       "namespace": "AI"
     },
@@ -705,7 +706,8 @@
         "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "MANAGE 1.3",
         "OWASP-AGENTIC": "MCP-04",
-        "SR-11-7": "III.B"
+        "SR-11-7": "III.B",
+        "NIS-2": "Art.21(2)(e)"
       },
       "namespace": "AI"
     },
@@ -741,7 +743,9 @@
         "EU-AI-ACT": "Art.12(2)(b)",
         "FIVE-EYES-AGENTIC": "FE-4",
         "ISO-42001": "A.6.2.4",
-        "NIST-AI-RMF": "MAP 2.3"
+        "NIST-AI-RMF": "MAP 2.3",
+        "NIS-2": "Art.21(2)(e)",
+        "CA-SB-942": "Sec.22757.5(c)"
       },
       "namespace": "AI"
     },
@@ -4198,7 +4202,9 @@
         "EU-AI-ACT": "Art.12(3)",
         "ISO-42001": "9.2",
         "NIST-800-53": "AU-11",
-        "NIST-AI-RMF": "GOVERN 1.4"
+        "NIST-AI-RMF": "GOVERN 1.4",
+        "NIS-2": "Art.21(2)(f)",
+        "SG-IMDA-AGENTIC": "MGF-4.2"
       },
       "namespace": "AI"
     },
@@ -4824,7 +4830,10 @@
         "FIVE-EYES-AGENTIC": "FE-15",
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "III.A"
+        "SR-11-7": "III.A",
+        "KR-AI-BASIC": "Art.25",
+        "TX-TRAIGA": "Sec.224.105",
+        "NYC-LL144": "Sec.20-871(a)"
       },
       "namespace": "AI"
     },
@@ -4861,7 +4870,8 @@
         "FIVE-EYES-AGENTIC": "FE-15",
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "III.A"
+        "SR-11-7": "III.A",
+        "NYC-LL144": "Sec.20-871(a)"
       },
       "namespace": "AI"
     },
@@ -4899,7 +4909,11 @@
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MAP 3.5",
         "OWASP-AGENTIC": "MCP-10",
-        "SR-11-7": "III.B"
+        "SR-11-7": "III.B",
+        "CA-SB-942": "Sec.22757.5(c)",
+        "KR-AI-BASIC": "Art.28",
+        "TX-TRAIGA": "Sec.224.107",
+        "NYC-LL144": "Sec.20-871(d)"
       },
       "namespace": "AI"
     },
@@ -5047,7 +5061,11 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.1",
-        "SR-11-7": "IV.B"
+        "SR-11-7": "IV.B",
+        "NIS-2": "Art.21(2)(g)",
+        "KR-AI-BASIC": "Art.24",
+        "SG-IMDA-AGENTIC": "MGF-3.3",
+        "TX-TRAIGA": "Sec.224.106"
       },
       "namespace": "AI"
     },
@@ -5122,7 +5140,11 @@
         "FIVE-EYES-AGENTIC": "FE-9",
         "ISO-42001": "A.8.3",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "IV.B"
+        "SR-11-7": "IV.B",
+        "CA-SB-942": "Sec.22757.5(b)",
+        "KR-AI-BASIC": "Art.22",
+        "TX-TRAIGA": "Sec.224.104",
+        "NYC-LL144": "Sec.20-871(b)"
       },
       "namespace": "AI"
     },
@@ -5198,7 +5220,9 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "5.2",
         "NIST-800-53": "PL-4",
-        "NIST-AI-RMF": "GOVERN 1.1"
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "NIS-2": "Art.21(2)(a)",
+        "TX-TRAIGA": "Sec.224.102"
       },
       "namespace": "AI"
     },
@@ -5386,7 +5410,8 @@
         "FIVE-EYES-AGENTIC": "FE-12",
         "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.7",
-        "OWASP-AGENTIC": "MCP-02,MCP-05"
+        "OWASP-AGENTIC": "MCP-02,MCP-05",
+        "SG-IMDA-AGENTIC": "MGF-3.2"
       },
       "namespace": "AI"
     },
@@ -5422,7 +5447,10 @@
         "FIVE-EYES-AGENTIC": "FE-3",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MAP 1.1",
-        "OWASP-AGENTIC": "MCP-01,MCP-07"
+        "OWASP-AGENTIC": "MCP-01,MCP-07",
+        "NIS-2": "Art.21(2)(i)",
+        "CA-SB-942": "Sec.22757.5(d)",
+        "SG-IMDA-AGENTIC": "MGF-2.1"
       },
       "namespace": "AI"
     },
@@ -5460,7 +5488,10 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "AC-4",
         "NIST-AI-RMF": "MANAGE 2.4",
-        "OWASP-AGENTIC": "MCP-02,MCP-07"
+        "OWASP-AGENTIC": "MCP-02,MCP-07",
+        "NIS-2": "Art.21(2)(i)",
+        "CA-SB-942": "Sec.22757.5(e)",
+        "SG-IMDA-AGENTIC": "MGF-2.2"
       },
       "namespace": "AI"
     },
@@ -5971,7 +6002,10 @@
         "ISO-42001": "6.1",
         "NIST-800-53": "RA-2",
         "NIST-AI-RMF": "MAP 2.1",
-        "SR-11-7": "II.A"
+        "SR-11-7": "II.A",
+        "NIS-2": "Art.21(2)(a)",
+        "KR-AI-BASIC": "Art.27",
+        "TX-TRAIGA": "Sec.224.103"
       },
       "namespace": "AI"
     },
@@ -6008,7 +6042,8 @@
         "EU-AI-ACT": "Art.62",
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-8",
-        "NIST-AI-RMF": "MANAGE 3.1"
+        "NIST-AI-RMF": "MANAGE 3.1",
+        "NIS-2": "Art.21(2)(b)"
       },
       "namespace": "AI"
     },
@@ -6045,7 +6080,9 @@
         "EU-AI-ACT": "Art.9",
         "ISO-42001": "6.1.2",
         "NIST-800-53": "RA-3",
-        "NIST-AI-RMF": "MAP 5.2"
+        "NIST-AI-RMF": "MAP 5.2",
+        "KR-AI-BASIC": "Art.27",
+        "TX-TRAIGA": "Sec.224.103"
       },
       "namespace": "AI"
     },
@@ -6372,7 +6409,8 @@
         "FIVE-EYES-AGENTIC": "FE-8",
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-7",
-        "NIST-AI-RMF": "GOVERN 1.2"
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "NIS-2": "Art.21(2)(d)"
       },
       "namespace": "AI"
     },
@@ -6445,7 +6483,9 @@
         "FIVE-EYES-AGENTIC": "FE-3,FE-10",
         "NIST-800-53": "AC-4",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09"
+        "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09",
+        "NIS-2": "Art.21(2)(d),Art.21(2)(j)",
+        "SG-IMDA-AGENTIC": "MGF-5.1"
       },
       "namespace": "AI"
     },
@@ -6482,7 +6522,9 @@
         "FIVE-EYES-AGENTIC": "FE-3",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-07"
+        "OWASP-AGENTIC": "MCP-07",
+        "NIS-2": "Art.21(2)(j)",
+        "SG-IMDA-AGENTIC": "MGF-5.2"
       },
       "namespace": "AI"
     },
@@ -6519,7 +6561,9 @@
         "FIVE-EYES-AGENTIC": "FE-6",
         "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.3",
-        "OWASP-AGENTIC": "MCP-06,MCP-09"
+        "OWASP-AGENTIC": "MCP-06,MCP-09",
+        "NIS-2": "Art.21(2)(d)",
+        "SG-IMDA-AGENTIC": "MGF-4.1"
       },
       "namespace": "AI"
     },
@@ -6591,7 +6635,9 @@
         "EU-AI-ACT": "Art.9(4)(b)",
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
-        "NIST-AI-RMF": "MANAGE 2.3"
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "NIS-2": "Art.21(2)(c)",
+        "KR-AI-BASIC": "Art.26"
       },
       "namespace": "AI"
     },
@@ -6627,7 +6673,9 @@
         "EU-AI-ACT": "Art.13",
         "FIVE-EYES-AGENTIC": "FE-5,FE-9",
         "ISO-42001": "A.6.2.2",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "CA-SB-942": "Sec.22757.5(b)",
+        "KR-AI-BASIC": "Art.23"
       },
       "namespace": "AI"
     },
@@ -6922,7 +6970,8 @@
         "G7-CISA": "SBOM-AI",
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.4",
-        "NIST-AI-RMF": "MAP 1.1"
+        "NIST-AI-RMF": "MAP 1.1",
+        "NIS-2": "Art.21(2)(e)"
       },
       "namespace": "AI"
     },
@@ -6955,12 +7004,13 @@
         "description": "At least one test must be executed with at least 80% pass rate."
       },
       "frameworks": {
-        "EO-14110": "Sec.4.2",
         "EU-AI-ACT": "Art.9(7)",
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-100-2": "Red Teaming",
-        "NIST-AI-RMF": "MEASURE 3.1"
+        "NIST-AI-RMF": "MEASURE 3.1",
+        "NIS-2": "Art.21(2)(f)",
+        "CA-SB-942": "Sec.22757.5(f)"
       },
       "namespace": "AI"
     },
@@ -7071,7 +7121,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NIS-2": "Art.21(2)(f)"
       },
       "namespace": "AI"
     },
@@ -7109,7 +7160,10 @@
         "GDPR": "Art.30",
         "IL-SB-315": "Sec.30",
         "ISO-42001": "9.2",
-        "NIST-AI-RMF": "GOVERN 1.4"
+        "NIST-AI-RMF": "GOVERN 1.4",
+        "NIS-2": "Art.21(2)(a)",
+        "CA-SB-942": "Sec.22757.5(a)",
+        "NYC-LL144": "Sec.20-871(c)"
       },
       "namespace": "AI"
     },
@@ -7146,7 +7200,8 @@
         "IL-SB-315": "Sec.30",
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-4",
-        "NIST-AI-RMF": "MANAGE 3.2"
+        "NIST-AI-RMF": "MANAGE 3.2",
+        "NIS-2": "Art.21(2)(b)"
       },
       "namespace": "AI"
     },
@@ -7183,7 +7238,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NIS-2": "Art.21(2)(f)"
       },
       "namespace": "AI"
     },
@@ -7295,7 +7351,11 @@
         "EU-AI-ACT": "Art.13",
         "GDPR": "Art.13/14",
         "ISO-42001": "A.8.3",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "CA-SB-942": "Sec.22757.5(a)",
+        "KR-AI-BASIC": "Art.22",
+        "TX-TRAIGA": "Sec.224.104",
+        "NYC-LL144": "Sec.20-871(b)"
       },
       "namespace": "AI"
     },
@@ -7368,7 +7428,8 @@
         "GDPR": "Art.35",
         "ISO-42001": "6.1.2",
         "NIST-800-53": "RA-3",
-        "NIST-AI-RMF": "MAP 5.2"
+        "NIST-AI-RMF": "MAP 5.2",
+        "KR-AI-BASIC": "Art.27"
       },
       "namespace": "AI"
     },
@@ -7438,7 +7499,6 @@
         "description": "Standard models pass. Dual-use must be notified or acknowledged."
       },
       "frameworks": {
-        "EO-14110": "Sec.4(a)",
         "EU-AI-ACT": "Art.6",
         "ISO-42001": "A.6.2.3",
         "NIST-AI-RMF": "GOVERN 1.1"
@@ -7550,7 +7610,6 @@
       },
       "frameworks": {
         "CO-SB-26-189": "6-1-1703",
-        "EO-14110": "Sec.3",
         "EU-AI-ACT": "Art.14",
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
@@ -7823,10 +7882,325 @@
         "NIST-AI-RMF": "MANAGE 2.2"
       },
       "namespace": "AI"
+    },
+    "AI-FIN.1": {
+      "procedure_id": "AI-FIN.1",
+      "parent_control": "AI-FIN",
+      "title": "Agent Transaction Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_TRANSACTION_WITNESS",
+      "factors": {
+        "factor_a": {
+          "label": "authorization_type",
+          "description": "Authorization type: 0=none, 1=pre-approved, 2=human, 3=policy, 4=budget_limit.",
+          "regulatory_ref": "EU AI Act Art. 14; NIST AI RMF MANAGE 2.2"
+        },
+        "factor_b": {
+          "label": "amount_cents",
+          "description": "Transaction amount in cents (integer).",
+          "regulatory_ref": "SR 11-7 III.B"
+        },
+        "factor_c": {
+          "label": "status",
+          "description": "Transaction status: 0=pending, 1=authorized, 2=denied, 3=escalated.",
+          "regulatory_ref": "EU AI Act Art. 14(4)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1",
+        "description": "Transaction must have some form of authorization (not 'none')."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 14",
+        "NIST-AI-RMF": "MANAGE 2.2",
+        "SR-11-7": "III.B",
+        "GPAI-COP": "Rule 17"
+      },
+      "namespace": "AI"
+    },
+    "AI-TOOL.2": {
+      "procedure_id": "AI-TOOL.2",
+      "parent_control": "AI-TOOL",
+      "title": "Tool Permission Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_TOOL_PERMISSION",
+      "factors": {
+        "factor_a": {
+          "label": "granted_tool_count",
+          "description": "Number of tools granted to the agent at runtime.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.5"
+        },
+        "factor_b": {
+          "label": "charter_match",
+          "description": "1 if runtime tools match agent charter, 0 if drift detected.",
+          "regulatory_ref": "EU AI Act Art. 9"
+        },
+        "factor_c": {
+          "label": "permission_change_type",
+          "description": "Permission change: 0=none, 1=added, 2=removed, 3=escalated.",
+          "regulatory_ref": "OWASP-AGENTIC-10 A01"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "Runtime tools must match the agent charter (no drift)."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 9",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "OWASP-AGENTIC-10": "A01",
+        "FIVE-EYES-AGENTIC": "Principle 3"
+      },
+      "namespace": "AI"
+    },
+    "AI-LCM.1": {
+      "procedure_id": "AI-LCM.1",
+      "parent_control": "AI-LCM",
+      "title": "Agent Lifecycle Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_LIFECYCLE_EVENT",
+      "factors": {
+        "factor_a": {
+          "label": "event_type",
+          "description": "Lifecycle event: 0=spawn, 1=checkpoint, 2=migrate, 3=terminate, 4=crash.",
+          "regulatory_ref": "EU AI Act Art. 12; NIST AI RMF MAP 1.3"
+        },
+        "factor_b": {
+          "label": "context_tokens",
+          "description": "Number of context tokens at event time (integer).",
+          "regulatory_ref": "EU AI Act Art. 12(2)"
+        },
+        "factor_c": {
+          "label": "state_hash_present",
+          "description": "1 if state hash was recorded, 0 if no state hash.",
+          "regulatory_ref": "NIST AI RMF MAP 1.3"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 0",
+        "description": "All lifecycle events are recorded (always PASS for witnessing)."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 12",
+        "NIST-AI-RMF": "MAP 1.3",
+        "ISO-42001": "6.1.2",
+        "FIVE-EYES-AGENTIC": "Principle 5"
+      },
+      "namespace": "AI"
+    },
+    "AI-JUR.1": {
+      "procedure_id": "AI-JUR.1",
+      "parent_control": "AI-JUR",
+      "title": "Cross-Border Inference Routing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_ROUTING_ATTESTATION",
+      "factors": {
+        "factor_a": {
+          "label": "serving_region_code",
+          "description": "ISO 3166 numeric code for serving region.",
+          "regulatory_ref": "GDPR Art. 44-49"
+        },
+        "factor_b": {
+          "label": "user_region_code",
+          "description": "ISO 3166 numeric code for user region.",
+          "regulatory_ref": "EU AI Act Art. 10(5)"
+        },
+        "factor_c": {
+          "label": "compliance_status",
+          "description": "Routing compliance: 0=unchecked, 1=compliant, 2=blocked, 3=override.",
+          "regulatory_ref": "GDPR Art. 46"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 1 or factor_c == 2",
+        "description": "Routing must be compliant or blocked (not unchecked or override without justification)."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 10(5)",
+        "GDPR": "Art. 44-49",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "GPAI-COP": "Rule 5"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.1": {
+      "procedure_id": "AI-MOB.1",
+      "parent_control": "AI-MOB",
+      "title": "SIM-Bound Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_SIM_BOUND_ATTESTATION",
+      "factors": {
+        "factor_a": {
+          "label": "sim_identity_hash",
+          "description": "Hash of SIM identity binding (ICCID/IMSI). 0 if unavailable.",
+          "regulatory_ref": "EU AI Act Art. 15(4)"
+        },
+        "factor_b": {
+          "label": "offline_integrity",
+          "description": "1 if offline attestation chain is intact, 0 if broken.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(c)"
+        },
+        "factor_c": {
+          "label": "binding_method",
+          "description": "SIM binding: 0=none, 1=iccid, 2=imsi_hash, 3=esim_eid, 4=dual_sim.",
+          "regulatory_ref": "NIST AI RMF MANAGE 2.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "Offline attestation chain must be intact."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 15(4)",
+        "NIST-AI-RMF": "MANAGE 2.4"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.2": {
+      "procedure_id": "AI-MOB.2",
+      "parent_control": "AI-MOB",
+      "title": "Roaming Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_ROAMING_ATTESTATION",
+      "factors": {
+        "factor_a": {
+          "label": "home_network_hash",
+          "description": "Hash of home network identifier.",
+          "regulatory_ref": "EU AI Act Art. 9(7)"
+        },
+        "factor_b": {
+          "label": "visited_network_hash",
+          "description": "Hash of visited network identifier. Equals factor_a if not roaming.",
+          "regulatory_ref": "EU AI Act Art. 9(7)"
+        },
+        "factor_c": {
+          "label": "roaming_policy",
+          "description": "Policy disposition: 0=allow, 1=restrict, 2=deny, 3=escalate.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.1"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c <= 1",
+        "description": "Roaming policy must be allow or restrict (not deny/escalate) for PASS."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 9(7)",
+        "NIST-AI-RMF": "GOVERN 1.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.3": {
+      "procedure_id": "AI-MOB.3",
+      "parent_control": "AI-MOB",
+      "title": "Dual-SIM Policy Enforcement",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DUAL_SIM_POLICY",
+      "factors": {
+        "factor_a": {
+          "label": "active_sims",
+          "description": "Number of active SIM profiles on device.",
+          "regulatory_ref": "EU AI Act Art. 15(4)"
+        },
+        "factor_b": {
+          "label": "policy_compliant",
+          "description": "1 if dual-SIM routing complies with data residency policy, 0 otherwise.",
+          "regulatory_ref": "GDPR Art. 44-49"
+        },
+        "factor_c": {
+          "label": "routing_mode",
+          "description": "Data routing: 0=primary_only, 1=failover, 2=load_balance, 3=geo_fenced.",
+          "regulatory_ref": "NIS-2 Art. 21"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "Dual-SIM routing must comply with data residency policy."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 15(4)",
+        "GDPR": "Art. 44-49",
+        "NIS-2": "Art. 21"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.4": {
+      "procedure_id": "AI-MOB.4",
+      "parent_control": "AI-MOB",
+      "title": "Peer-to-Peer Trust Mesh",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_P2P_TRUST_MESH",
+      "factors": {
+        "factor_a": {
+          "label": "peer_count",
+          "description": "Number of peers in local mesh.",
+          "regulatory_ref": "NIST AI RMF MANAGE 2.2"
+        },
+        "factor_b": {
+          "label": "verified_peers",
+          "description": "Number of peers with verified trust credentials.",
+          "regulatory_ref": "EU AI Act Art. 15(1)"
+        },
+        "factor_c": {
+          "label": "mesh_mode",
+          "description": "Mesh topology: 0=isolated, 1=relay, 2=direct, 3=broadcast.",
+          "regulatory_ref": "NIST AI RMF MANAGE 2.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= 1",
+        "description": "At least one peer must have verified trust credentials."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 15(1)",
+        "NIST-AI-RMF": "MANAGE 2.2"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.5": {
+      "procedure_id": "AI-MOB.5",
+      "parent_control": "AI-MOB",
+      "title": "Bilateral Flush Correlation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_BILATERAL_FLUSH",
+      "factors": {
+        "factor_a": {
+          "label": "local_anchor_count",
+          "description": "Anchors buffered locally before flush.",
+          "regulatory_ref": "EU AI Act Art. 12"
+        },
+        "factor_b": {
+          "label": "correlated_count",
+          "description": "Anchors successfully correlated with clearing house after flush.",
+          "regulatory_ref": "EU AI Act Art. 12"
+        },
+        "factor_c": {
+          "label": "flush_mode",
+          "description": "Flush type: 0=manual, 1=connectivity_restored, 2=scheduled, 3=peer_relay.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.5"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == factor_a",
+        "description": "All locally buffered anchors must be correlated after flush."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 12",
+        "NIST-AI-RMF": "MEASURE 2.5"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (78 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (82 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",

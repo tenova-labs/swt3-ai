@@ -16,7 +16,7 @@ GPAI transparency obligations are enforceable now. EU AI Act high-risk enforceme
 - **`Swt3Ai::Fingerprint.sha256_truncated`** -- truncated SHA-256 hashing for prompts, responses, and model weights
 - **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig` structs and `REVOCATION_REASONS` constants
 
-All output is byte-identical to the Python, TypeScript, Rust, and C# SDKs. Verified by shared test vectors.
+All output is byte-identical to the Python, TypeScript, Swift, Rust, C#, and MCP SDKs. 7 languages, one audit trail. Verified by shared test vectors.
 
 ## Quick Start
 
@@ -57,12 +57,14 @@ All SWT3 SDKs produce identical fingerprints from the same inputs. A unified aud
 |----------|---------|----------|
 | Python | [swt3-ai](https://pypi.org/project/swt3-ai/) | PyPI |
 | TypeScript | [@tenova/swt3-ai](https://www.npmjs.com/package/@tenova/swt3-ai) | npm |
+| Swift | [swt3-ai](https://github.com/tenova-labs/swt3-ai-swift) | Swift Package Index |
 | Rust | [swt3-ai](https://crates.io/crates/swt3-ai) | crates.io |
 | C# / .NET | [swt3-ai](https://www.nuget.org/packages/swt3-ai) | NuGet |
 | Ruby | swt3-ai (this package) | RubyGems |
 | MCP Server | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | npm + MCP Registry |
+| K8s Witness Agent | [swt3-witness](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-witness) | GHCR + Helm |
 
-The Python and TypeScript SDKs include the full witness pipeline: transparent client wrapping, buffer management, clearing engine, adapter support (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LangChain), trust mesh, policy-as-code, and Merkle accumulator. Use them for production AI witnessing. Use this Ruby gem for embedding fingerprint verification into Rails apps, Sidekiq workers, or Ruby-based tooling.
+The Python and TypeScript SDKs include the full witness pipeline: transparent client wrapping, buffer management, clearing engine, adapter support (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LangChain, LangGraph, Microsoft AGT, Google ADK, CrewAI), trust mesh, policy-as-code, and Merkle accumulator. Use them for production AI witnessing. Use this Ruby gem for embedding fingerprint verification into Rails apps, Sidekiq workers, or Ruby-based tooling.
 
 ## Regulatory Coverage
 

@@ -30,6 +30,7 @@ PROFILES = {
     "insurance-underwriting": "Insurance AI governance (NAIC guidelines + state regs + GDPR)",
     "content-platform": "Content platform AI governance (DSA + Art. 50 + GPAI Code)",
     "microsoft-foundry": "Microsoft Foundry agent governance (AGT + OWASP Agentic + SOC 2)",
+    "microsoft-agt": "Microsoft AGT policy engine governance (independent witness for AGT decisions)",
     "minimal": "Development / evaluation (no enforcement)",
 }
 

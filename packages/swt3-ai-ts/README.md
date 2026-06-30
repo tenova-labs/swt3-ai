@@ -13,44 +13,68 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compati
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.7
+## What's New in v0.5.8
 
-**Autonomous Agent Attestation** -- Autonomous agents make decisions, delegate tasks, consume resources, and cross jurisdictions without human intervention at every step. SWT3 witnesses each transition as immutable evidence. When an examiner asks "what did this agent do and who authorized it?", these procedures provide the cryptographic answer. Every delegation, capability change, autonomy transition, resource draw, and lifecycle event is attested independently of the agent's own logs.
+- **K8s DaemonSet (swt3-witness)** -- Hardware attestation for every node in your cluster. One `helm install`, zero code changes. See below.
+- **Cross-Silicon Hardware Attestation** -- `queryHardware()` discovers 6 silicon families: NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi, and PCI fallback. `witnessHardware()` context includes `siliconVendor`, `discoveryMethod`, and per-accelerator detail. Full parity with Python.
+- **Microsoft AGT Adapter** -- `wrapAGT()` for Microsoft Agent Governance Toolkit. Independent witness layer for AGT policy decisions.
+- **LangGraph Adapter** -- `wrapLangGraph()` for LangGraph state graphs. Witnesses invoke, stream, and async execution.
+- 15 adapters total (also: Google ADK, CrewAI, A2A, Foundry, Cerebras, Ollama, Cohere, and more)
+- **103 procedures**, 52 namespaces, 28 frameworks, 18 profiles, 15 integrations
 
-- **Delegation Tree Attestation (AI-DEL.1)** -- `witnessDelegation()` attests authority delegation between agents: scope hash, depth from human authorization, TTL, cascade revocation, and sub-delegation control. Evidence for EU AI Act Art. 14 human oversight.
-- **Capability Attestation (AI-CAP.1)** -- `witnessCapabilityAttestation()` attests declared vs observed agent capabilities with manifest hashing and drift detection. Autonomy level binding for Art. 15 robustness.
-- **Autonomy Level Transition (AI-AUTO.3)** -- `witnessAutonomyTransition()` attests agent promotion and demotion between autonomy levels 0-3. Risk-triggered downgrades, HITL checkpoints, and transition justification.
-- **Resource Consumption Attestation (AI-COST.1)** -- `witnessResourceConsumption()` attests token usage, API call counts, and estimated cost as compliance evidence. Budget threshold awareness without billing enforcement.
-- **Lifecycle Event Attestation (AI-LCM.1)** -- `witnessLifecycle()` attests spawn, checkpoint, migrate, terminate, and crash events with context size and state hash.
+### K8s Hardware Attestation -- One Command
 
-```typescript
-// Autonomous agent lifecycle: spawn -> delegate -> attest capabilities -> transition -> terminate
-witness.witnessLifecycle("spawn", { contextTokens: 0 });
-witness.witnessDelegation({ scope: "fraud-review", delegator: "orchestrator", depth: 1, ttlSeconds: 3600 });
-witness.witnessCapabilityAttestation({ manifest: ["tool:search", "tool:flag"], autonomyLevel: 2 });
-witness.witnessAutonomyTransition({ fromLevel: 2, toLevel: 1, trigger: "risk_threshold" });
-witness.witnessLifecycle("terminate", { contextTokens: 8400 });
+Every node in your cluster runs AI workloads on hardware you have never attested. If a GPU fails silently, a model gets rescheduled to CPU, or your cloud provider live-migrates you to different silicon, your compliance posture changed and nobody recorded it. Your cluster has NVIDIA nodes for training and Trainium nodes for inference -- the DaemonSet attests both, and the anchor chain shows when workloads move between them.
+
+```bash
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8
 ```
 
-**Cross-Silicon Hardware Attestation** -- auto-detect and attest accelerator inventory across competing silicon vendors. 6 discovery paths: NVIDIA GPU (`nvidia-smi`), Google TPU (JAX), AMD MI (`rocm-smi`), AWS Trainium (`neuron-ls`), Intel Gaudi (`hl-smi`), and PCI fallback. New `multi-silicon` profile for workloads that migrate between vendors. When your model moves from NVIDIA to TPU, the attestation follows.
+That is the entire setup. One command. Every node gets a witness pod. Every accelerator gets discovered. Every hour, an AI-HW.1 anchor is minted with the hardware fingerprint.
 
-```typescript
-witness.witnessHardware(); // auto-detects silicon vendor, GPU count, VRAM, driver version
+```json
+{
+  "swt3_witness": true,
+  "procedure": "AI-HW.1",
+  "anchor_fingerprint": "d8491581c715",
+  "silicon_vendor": "nvidia",
+  "topology": "multi",
+  "accelerator_count": 4,
+  "gpu_count": 4,
+  "total_memory_mb": 327680,
+  "clearing_level": 1,
+  "agent_id": "witness-node-gpu-pool-3a"
+}
 ```
 
-**Endpoint Attestation** -- witness the infrastructure decisions that shape how agents operate across boundaries.
+That JSON goes to stdout. Scrape it with Fluentd, Promtail, or any log pipeline. Filter: `jq 'select(.swt3_witness == true)'`.
 
-- **Agent Transaction Witnessing (AI-FIN.1)** -- `witnessTransaction()` for autonomous agent financial operations. Authorization type, amount, and settlement status anchored before execution.
-- **Tool Permission Attestation (AI-TOOL.2)** -- `witnessToolPermissions()` attests runtime tool sets against agent charter. Detects permission drift and escalation.
-- **Cross-Border Inference Routing (AI-JUR.1)** -- `witnessRouting()` witnesses routing decisions with ISO 3166 region codes and compliance status.
+When a node's hardware changes, consecutive anchors tell the story:
 
-**Adapters**
+```json
+// 09:00 -- 4x NVIDIA H100, training workload
+{"anchor_fingerprint":"d8491581c715","silicon_vendor":"nvidia","accelerator_count":4,"total_memory_mb":327680}
 
-- **Cohere Adapter** -- `wrapCohere()` for Cohere V2 API. Chat and streaming witnessed transparently.
-- **Qdrant RAG Witness** -- `wrapQdrant()` for database-level RAG pipeline compliance. Every vector search mints AI-RAG.1.
-- **Ollama 0.30+ Refresh** -- explicit `wrapOllama()` export, GGUF model name normalization.
+// 10:00 -- cloud provider live-migrated to Trainium, same node
+{"anchor_fingerprint":"a3f7c2910eb4","silicon_vendor":"aws","accelerator_count":2,"total_memory_mb":65536}
+```
 
-103 procedures, 54 namespaces, 28 frameworks, 15 profiles, 16 integrations, 7 languages
+The fingerprints are different because the hardware changed. An auditor or drift alert can compare consecutive anchors and see exactly when the silicon shifted, on which node, and whether the compliance posture held.
+
+When you are ready to persist anchors to the clearing house, upgrade to cloud mode:
+
+```bash
+helm upgrade swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8 \
+  --set config.mode=cloud \
+  --set cloud.apiKey=axm_YOUR_KEY \
+  --set cloud.tenantId=YOUR_TENANT
+```
+
+Both modes produce the same cryptographic anchors. The only difference is where they land.
+
+**Security posture:** Non-root (UID 10001). Read-only root filesystem. All capabilities dropped. No privilege escalation. `/sys` mounted read-only for PCI discovery. Health endpoint on `:9090`. 46 MB image.
+
+Open source (Apache-2.0). Source, Dockerfile, and Helm chart: [github.com/tenova-labs/swt3-ai](https://github.com/tenova-labs/swt3-ai).
 
 ## MCP Server -- Official Registry
 
@@ -134,7 +158,7 @@ const result = verifyAnchor(anchor, {
 // result.status: "CERTIFIED TRUTH" | "TAMPERED"
 ```
 
-Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Swift, Rust, C#, and Ruby with identical output for identical inputs.
+Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Swift, Rust, C#, Ruby, and MCP with identical output for identical inputs.
 
 ## See It Work (No Account Needed)
 
@@ -731,7 +755,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-All 76 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (103 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -748,7 +772,7 @@ All 76 SWT3 AI witnessing procedures map to specific EU AI Act obligations:
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 76 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, and Ruby. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 103 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -1032,13 +1056,18 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 ## Cross-Language Parity
 
-This SDK produces identical fingerprints to the Python SDK (`swt3-ai`). A unified audit trail across your entire stack, verified by shared test vectors at build time.
+This SDK produces identical fingerprints to the Python, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 207 cross-language test vectors verified at build time.
 
 | Layer | Language | Package |
 |-------|----------|---------|
 | Backend services | Python | swt3-ai |
 | API routes / Edge | TypeScript | @tenova/swt3-ai |
 | Frontend (Next.js) | TypeScript | @tenova/swt3-ai + Vercel AI SDK |
+| Apple platforms | Swift | swt3-ai (Swift Package) |
+| Systems / embedded | Rust | swt3-ai (crates.io) |
+| Enterprise / .NET | C# | swt3-ai (NuGet) |
+| Scripting / Rails | Ruby | swt3-ai (RubyGems) |
+| Agent hosts | MCP | @tenova/swt3-mcp |
 
 ## Privacy
 
@@ -1046,21 +1075,17 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 ---
 
-## Upgrading to v0.5.2
+## Upgrading to v0.5.8
 
-**Policy-as-Code (new):** `swt3 init`, `swt3 doctor`, `extends:` composition, profile templates, YAML schema validator. No breaking changes.
+**Cross-silicon hardware (new):** `queryHardware()` discovers 6 accelerator types. `witnessHardware()` context includes `siliconVendor`, `discoveryMethod`, and `accelerators[]`. Existing `gpus[]` callers see zero change.
 
-**Merkle Accumulator (new):** `MerkleAccumulator` class for session-level integrity proofs. `merkle:` config section. No breaking changes.
+**New adapters (v0.5.7-v0.5.8):** Google ADK, CrewAI, A2A, Cerebras, Qdrant, Cohere, Microsoft AGT, LangGraph. No breaking changes.
 
-**Trust Mesh (v0.5.0):** `presentCredential()` and `verifyTrust()`. No breaking changes for existing code.
+**Agent transactions (v0.5.7):** `witnessTransaction()` for AI-FIN.1. No breaking changes.
 
-**Credential signing (behavioral change):** If your Witness has a `signingKey`, credentials are now HMAC-signed automatically. Counterpart agents must register your key via `trustRegistry.registerSigningKey()` to verify the signature. Without key registration, signed credentials are denied with `signature_unverifiable`.
+**Policy-as-Code (v0.5.2):** `swt3 init`, `swt3 doctor`, `extends:` composition, 14 built-in profiles. No breaking changes.
 
-**TPM attestation (v0.5.2):** `witnessTPMAttestation()` for AI-HW.3. Reads PCR registers via tpm2-tools. Graceful degradation without TPM. No breaking changes.
-
-**Environmental attestation (v0.5.0):** `witnessEnvironment()` and `witnessEnergyDraw()` for AI-ENV.1/AI-ENV.2. No breaking changes.
-
-**MCP server:** 16 procedure keyword suggestions (was 8). MCP policy section in swt3.yaml. No breaking changes.
+**Trust Mesh (v0.5.0):** `presentCredential()` and `verifyTrust()`. No breaking changes.
 
 ---
 
@@ -1077,7 +1102,8 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [What Your Auditor Sees](https://sovereign.tenova.io/guides/developer-auditor-bridge.html) -- both sides of a witness anchor, developer to auditor
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
-- [All 65 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
+- [All 97 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 
@@ -1085,4 +1111,4 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
 
-This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners: OpenAI and GPT (OpenAI, Inc.); Claude and Anthropic (Anthropic PBC); Google, Gemini, Vertex AI, and ADK (Google LLC); Azure, Foundry, and Microsoft (Microsoft Corporation); AWS and Bedrock (Amazon Web Services, Inc.); NVIDIA and Dynamo (NVIDIA Corporation); Meta and Llama (Meta Platforms, Inc.); Ollama (Ollama, Inc.); CrewAI (CrewAI, Inc.); Vercel and Next.js (Vercel, Inc.); MCP (Anthropic PBC); vLLM (vLLM Project). Use of these names is for identification and interoperability purposes only.
+This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners: OpenAI and GPT (OpenAI, Inc.); Claude and Anthropic (Anthropic PBC); Google, Gemini, Vertex AI, and ADK (Google LLC); Azure, Foundry, and Microsoft (Microsoft Corporation); AWS and Bedrock (Amazon Web Services, Inc.); NVIDIA and Dynamo (NVIDIA Corporation); Meta and Llama (Meta Platforms, Inc.); Ollama (Ollama, Inc.); CrewAI (CrewAI, Inc.); Vercel and Next.js (Vercel, Inc.); MCP (Anthropic PBC); vLLM (vLLM Project); LangGraph and LangChain (LangChain, Inc.). Use of these names is for identification and interoperability purposes only.

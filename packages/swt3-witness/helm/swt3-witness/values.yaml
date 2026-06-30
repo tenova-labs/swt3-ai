@@ -1,0 +1,70 @@
+# SWT3 Witness - Default Values
+# Zero-config hardware attestation for Kubernetes AI infrastructure.
+#
+# Local mode (default): anchors emit as structured JSON to stdout.
+#   helm install swt3 tenova/swt3-witness
+#
+# Cloud mode: anchors flush to the SWT3 clearing house.
+#   helm install swt3 tenova/swt3-witness \
+#     --set config.mode=cloud \
+#     --set cloud.apiKey=axm_YOUR_KEY \
+#     --set cloud.tenantId=YOUR_TENANT
+
+image:
+  repository: ghcr.io/tenova-labs/swt3-witness
+  tag: "0.5.8"
+  pullPolicy: IfNotPresent
+
+config:
+  # Mode: "local" (stdout JSON, default) or "cloud" (flush to clearing house).
+  mode: local
+  # Seconds between hardware attestation cycles.
+  interval: 3600
+  # Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified).
+  clearingLevel: 1
+  # Agent identity tag. Auto-generates from pod hostname if empty.
+  agentId: ""
+  # Health endpoint port.
+  healthPort: 9090
+
+# Cloud mode settings. Required when config.mode=cloud.
+cloud:
+  # API key for SWT3 clearing house (starts with axm_).
+  apiKey: ""
+  # Tenant identifier.
+  tenantId: ""
+  # HMAC-SHA256 signing key for payload non-repudiation (optional).
+  signingKey: ""
+  # Clearing house endpoint.
+  endpoint: "https://sovereign.tenova.io"
+
+# Mount /sys read-only for PCI fallback hardware discovery.
+sysMount:
+  enabled: true
+
+# Optional runtime class. Set to "nvidia" on NVIDIA GPU clusters
+# for full nvidia-smi discovery. Leave empty for PCI fallback.
+runtimeClassName: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+serviceAccount:
+  create: true
+  name: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Extension points for developers building on top.
+extraEnv: []
+extraVolumeMounts: []
+extraVolumes: []
+podAnnotations: {}
+podLabels: {}

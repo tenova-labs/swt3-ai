@@ -5,26 +5,37 @@
  * hardware and TPM state were present when the service started.
  * Does NOT sit in the inference path.
  *
- * Accelerator data sources (AI-HW.1), tried in order:
- *   1. nvidia-smi subprocess (NVIDIA GPU)
- *   2. TPU_NAME environment variable (Google TPU on GCE)
- *   3. rocm-smi subprocess (AMD MI series)
- *   4. neuron-ls subprocess (AWS Trainium/Inferentia)
- *   5. hl-smi subprocess (Intel Gaudi)
- *   6. PCI device class fallback (generic)
- *
- * TPM data source (AI-HW.3):
- *   - tpm2-tools subprocess (tpm2_pcrread, tpm2_getcap)
+ * Discovery paths (priority order):
+ *   1. NVIDIA GPU -- nvidia-smi subprocess
+ *   2. Google TPU -- TPU_NAME / TPU_WORKER_HOSTNAMES env vars
+ *   3. AMD GPU -- rocm-smi subprocess
+ *   4. AWS Trainium/Inferentia -- neuron-ls subprocess
+ *   5. Intel Gaudi -- hl-smi subprocess
+ *   6. PCI fallback -- /sys/bus/pci/devices sysfs (Linux only)
+ *   7. TPM 2.0 -- tpm2-tools subprocess (AI-HW.3, separate procedure)
  *
  * Security: All hardware identifiers (GPU UUIDs, bus IDs, hostnames,
- * PCR digests, endorsement keys) are SHA-256 hashed at discovery time.
- * Raw values never leave this module.
+ * PCR digests, endorsement keys, serial numbers) are SHA-256 hashed
+ * at discovery time. Raw values never leave this module.
  */
 
 import { execSync } from "node:child_process";
+import { hostname, platform } from "node:os";
 import { readdirSync, readFileSync } from "node:fs";
-import { hostname } from "node:os";
 import { sha256Truncated } from "./fingerprint.js";
+
+// ── Types ───────────────────────────────────────────────────────────
+
+export type SiliconVendor = "nvidia" | "google-tpu" | "amd" | "aws-trainium" | "intel-gaudi" | "pci-generic" | "mixed" | "none";
+
+export interface AcceleratorInfo {
+  vendor: SiliconVendor;
+  name: string;
+  memoryMb: number;
+  idHash: string;          // SHA-256 truncated device identifier
+  busIdHash: string;       // SHA-256 truncated bus/slot ID
+  discoveryMethod: string; // nvidia-smi, tpu-env, rocm-smi, neuron-ls, hl-smi, pci-sysfs
+}
 
 export interface GpuInfo {
   name: string;
@@ -33,39 +44,17 @@ export interface GpuInfo {
   uuidHash: string;    // SHA-256 truncated, never cleartext
 }
 
-export interface AcceleratorInfo {
-  name: string;        // e.g., "NVIDIA H100 80GB HBM3", "TPU v5p", "AMD Instinct MI300X"
-  memoryMb: number;
-  busIdHash: string;   // SHA-256 truncated, never cleartext
-  uuidHash: string;    // SHA-256 truncated, never cleartext
-  vendor: string;      // nvidia, google, amd, aws, intel, unknown
-  family: string;      // H100, TPU-v5p, MI300X, Trainium2, Gaudi3
-  discoveryMethod: string; // pynvml, nvidia-smi, jax, rocm-smi, neuron-ls, hl-smi, pci
-}
-
-export const SILICON_VENDORS = new Set(["nvidia", "google", "amd", "aws", "intel"]);
-
-export const VENDOR_CODES: Record<string, number> = {
-  nvidia: 0,
-  google: 1,
-  amd: 2,
-  aws: 3,
-  intel: 4,
-  mixed: 5,
-  unknown: 6,
-};
-
 export interface HardwareSnapshot {
   gpus: GpuInfo[];
   driverVersion: string;
   cudaVersion: string;
-  topology: string;    // NVL72, DGX-H100, DGX-A100, HGX, multi-gpu, single, unknown
-  interconnect: string; // nvswitch, nvlink, pcie, unknown
+  topology: string;
+  interconnect: string;
   totalMemoryMb: number;
-  hostnameHash: string; // SHA-256 truncated, never cleartext
-  siliconVendor?: string;      // nvidia, google, amd, aws, intel, mixed, ""
-  accelerators?: AcceleratorInfo[];
-  discoveryMethod?: string;    // which discovery path succeeded
+  hostnameHash: string;
+  accelerators: AcceleratorInfo[];
+  siliconVendor: SiliconVendor;
+  discoveryMethod: string; // comma-separated methods that returned results
 }
 
 /** Topology codes for factor_c. */
@@ -80,39 +69,280 @@ export const TOPOLOGY_CODES: Record<string, number> = {
   NVL36: 2,
   NVL72: 2,
   "multi-node": 2,
+  "tpu-single": 0,
+  "tpu-pod": 2,
+  "mi-single": 0,
+  "mi-cluster": 1,
+  "trn-single": 0,
+  "trn-cluster": 1,
+  "inf-single": 0,
+  "gaudi-single": 0,
+  "gaudi-cluster": 1,
   unknown: 3,
 };
 
+/** PCI vendor ID to SiliconVendor mapping. */
+const PCI_VENDOR_MAP: Record<string, SiliconVendor> = {
+  "0x10de": "nvidia",
+  "0x1002": "amd",
+  "0x8086": "intel-gaudi",
+  "0x1d0f": "aws-trainium",  // Annapurna Labs
+  "0x1ae0": "google-tpu",
+};
+
+// ── Cross-Silicon Discovery ──────────────────────────────────────────
+
+/** Google TPU: reads TPU_NAME and TPU_WORKER_HOSTNAMES env vars. */
+export function queryGoogleTPU(): AcceleratorInfo[] {
+  const tpuName = process.env.TPU_NAME;
+  if (!tpuName) return [];
+
+  const workers = process.env.TPU_WORKER_HOSTNAMES;
+  const chipCount = workers ? workers.split(",").length : 1;
+
+  // Infer memory from TPU generation
+  const upper = tpuName.toUpperCase();
+  let memMb = 0;
+  if (upper.includes("V6E") || upper.includes("TRILLIUM")) memMb = 32_768;
+  else if (upper.includes("V5P")) memMb = 95_000;
+  else if (upper.includes("V5E") || upper.includes("V5LITEPOD")) memMb = 16_384;
+  else if (upper.includes("V4")) memMb = 32_768;
+
+  const accels: AcceleratorInfo[] = [];
+  for (let i = 0; i < chipCount; i++) {
+    accels.push({
+      vendor: "google-tpu",
+      name: tpuName,
+      memoryMb: memMb,
+      idHash: sha256Truncated(`${tpuName}-chip-${i}`),
+      busIdHash: sha256Truncated(`tpu-${tpuName}-${i}`),
+      discoveryMethod: "tpu-env",
+    });
+  }
+  return accels;
+}
+
+/** AMD GPU: queries rocm-smi for MI-series accelerators. */
+export function queryAmdRocm(): [AcceleratorInfo[], string] {
+  try {
+    const output = execSync(
+      "rocm-smi --showproductname --showmeminfo vram --showbus --csv",
+      { timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
+    );
+    const accels: AcceleratorInfo[] = [];
+    let driver = "";
+    for (const line of output.trim().split("\n").slice(1)) {
+      if (!line.trim()) continue;
+      const parts = line.split(",").map((p) => p.trim());
+      if (parts.length < 4) continue;
+      const [devId, name, memStr, busId] = parts;
+      accels.push({
+        vendor: "amd",
+        name: name || `AMD-${devId}`,
+        memoryMb: Math.round(parseFloat(memStr) / 1_048_576) || 0, // bytes to MB
+        idHash: sha256Truncated(devId),
+        busIdHash: sha256Truncated(busId),
+        discoveryMethod: "rocm-smi",
+      });
+    }
+    try {
+      driver = execSync("rocm-smi --showdriverversion --csv", {
+        timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
+      }).trim().split("\n").pop()?.trim() ?? "";
+    } catch { /* optional */ }
+    return [accels, driver];
+  } catch {
+    return [[], ""];
+  }
+}
+
+/** AWS Trainium/Inferentia: queries neuron-ls for Neuron devices. */
+export function queryAwsNeuron(): AcceleratorInfo[] {
+  try {
+    const output = execSync("neuron-ls --json-output", {
+      timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
+    });
+    const devices = JSON.parse(output);
+    if (!Array.isArray(devices)) return [];
+    return devices.map((d: Record<string, unknown>, i: number) => ({
+      vendor: "aws-trainium" as SiliconVendor,
+      name: String(d.model_name ?? d.model ?? `neuron-${i}`),
+      memoryMb: Number(d.memory_size ?? 0),
+      idHash: sha256Truncated(String(d.neuron_device ?? d.device_id ?? i)),
+      busIdHash: sha256Truncated(String(d.pci_bdf ?? d.connected_to ?? `neuron-bus-${i}`)),
+      discoveryMethod: "neuron-ls",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Intel Gaudi: queries hl-smi for Habana accelerators. */
+export function queryIntelGaudi(): [AcceleratorInfo[], string] {
+  try {
+    const output = execSync(
+      "hl-smi -Q name,memory.total,bus_id,serial -f csv,noheader,nounits",
+      { timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
+    );
+    const accels: AcceleratorInfo[] = [];
+    for (const line of output.trim().split("\n")) {
+      if (!line.trim()) continue;
+      const parts = line.split(",").map((p) => p.trim());
+      if (parts.length < 4) continue;
+      const [name, memStr, busId, serial] = parts;
+      accels.push({
+        vendor: "intel-gaudi",
+        name,
+        memoryMb: Math.round(parseFloat(memStr)) || 0,
+        idHash: sha256Truncated(serial),
+        busIdHash: sha256Truncated(busId),
+        discoveryMethod: "hl-smi",
+      });
+    }
+    let driver = "";
+    try {
+      driver = execSync("hl-smi -Q driver_version -f csv,noheader", {
+        timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
+      }).trim();
+    } catch { /* optional */ }
+    return [accels, driver];
+  } catch {
+    return [[], ""];
+  }
+}
+
+/** PCI fallback: scans /sys/bus/pci/devices for accelerator class codes. Linux only. */
+export function queryPciFallback(seenBusIds: Set<string> = new Set()): AcceleratorInfo[] {
+  if (platform() !== "linux") return [];
+  const accels: AcceleratorInfo[] = [];
+  try {
+    const devDir = "/sys/bus/pci/devices";
+    const entries = readdirSync(devDir);
+    for (const entry of entries) {
+      try {
+        const classCode = readFileSync(`${devDir}/${entry}/class`, "utf-8").trim();
+        // 0x0302xx = 3D controller, 0x1200xx = processing accelerator
+        if (!classCode.startsWith("0x0302") && !classCode.startsWith("0x1200")) continue;
+        const busHash = sha256Truncated(entry);
+        if (seenBusIds.has(busHash)) continue;
+        const vendorId = readFileSync(`${devDir}/${entry}/vendor`, "utf-8").trim();
+        const deviceId = readFileSync(`${devDir}/${entry}/device`, "utf-8").trim();
+        const vendor = PCI_VENDOR_MAP[vendorId] ?? "pci-generic";
+        accels.push({
+          vendor,
+          name: `PCI-${vendorId}-${deviceId}`,
+          memoryMb: 0,
+          idHash: sha256Truncated(`${vendorId}:${deviceId}:${entry}`),
+          busIdHash: busHash,
+          discoveryMethod: "pci-sysfs",
+        });
+      } catch { /* individual device read failure, skip */ }
+    }
+  } catch { /* /sys not accessible */ }
+  return accels;
+}
+
+// ── Main Discovery ──────────────────────────────────────────────────
+
 /**
- * Query accelerator hardware and return a pre-hashed snapshot.
- * Tries all silicon vendors: NVIDIA, Google TPU, AMD, AWS, Intel, PCI fallback.
- * Returns empty snapshot if no accelerators are detectable.
+ * Query all accelerator hardware and return a pre-hashed snapshot.
+ * Tries all 6 discovery paths. Returns empty snapshot if nothing found.
  */
 export function queryHardware(): HardwareSnapshot {
-  return queryAccelerators();
+  // 1. NVIDIA (existing path)
+  const [gpus, driverVersion] = queryNvidiaSmi();
+  const nvidiaAccels: AcceleratorInfo[] = gpus.map((g) => ({
+    vendor: "nvidia" as SiliconVendor,
+    name: g.name,
+    memoryMb: g.memoryMb,
+    idHash: g.uuidHash,
+    busIdHash: g.busIdHash,
+    discoveryMethod: "nvidia-smi",
+  }));
+
+  // 2-5. Non-NVIDIA discovery
+  const tpuAccels = queryGoogleTPU();
+  const [amdAccels] = queryAmdRocm();
+  const neuronAccels = queryAwsNeuron();
+  const [gaudiAccels] = queryIntelGaudi();
+
+  // 6. PCI fallback (skip already-discovered bus IDs)
+  const seenBusIds = new Set<string>();
+  for (const a of [...nvidiaAccels, ...tpuAccels, ...amdAccels, ...neuronAccels, ...gaudiAccels]) {
+    seenBusIds.add(a.busIdHash);
+  }
+  const pciAccels = queryPciFallback(seenBusIds);
+
+  // Aggregate
+  const accelerators = [...nvidiaAccels, ...tpuAccels, ...amdAccels, ...neuronAccels, ...gaudiAccels, ...pciAccels];
+
+  // Determine silicon vendor
+  const vendors = new Set(accelerators.map((a) => a.vendor));
+  let siliconVendor: SiliconVendor = "none";
+  if (vendors.size === 1) siliconVendor = [...vendors][0];
+  else if (vendors.size > 1) siliconVendor = "mixed";
+
+  // Build discovery method string
+  const methods = new Set(accelerators.map((a) => a.discoveryMethod));
+  const discoveryMethod = [...methods].join(",");
+
+  // Topology + interconnect
+  const topology = detectTopology(gpus, accelerators);
+  const interconnect = gpus.length > 0 ? detectInterconnect() : "unknown";
+  const totalMemoryMb = accelerators.reduce((sum, a) => sum + a.memoryMb, 0);
+  const hostnameHash = sha256Truncated(hostname());
+
+  return {
+    gpus,
+    driverVersion,
+    cudaVersion: "",
+    topology,
+    interconnect,
+    totalMemoryMb,
+    hostnameHash,
+    accelerators,
+    siliconVendor,
+    discoveryMethod,
+  };
 }
 
 /**
- * Infer cluster topology from GPU count and model names.
+ * Infer cluster topology from GPU count, model names, and accelerators.
  */
-export function detectTopology(gpus: GpuInfo[]): string {
-  const count = gpus.length;
-  if (count === 0) return "unknown";
-  if (count === 1) return "single";
-
-  const nameStr = gpus.map((g) => g.name.toUpperCase()).join(" ");
-
-  if (count === 72) return "NVL72";
-  if (count === 36) return "NVL36";
-  if (count === 8) {
-    if (nameStr.includes("B200") || nameStr.includes("BLACKWELL")) return "DGX-B200";
-    if (nameStr.includes("H200")) return "DGX-H200";
-    if (nameStr.includes("H100")) return "DGX-H100";
-    if (nameStr.includes("A100")) return "DGX-A100";
-    return "HGX";
+export function detectTopology(gpus: GpuInfo[], accelerators?: AcceleratorInfo[]): string {
+  // NVIDIA path (existing logic, unchanged)
+  if (gpus.length > 0) {
+    const count = gpus.length;
+    if (count === 1) return "single";
+    const nameStr = gpus.map((g) => g.name.toUpperCase()).join(" ");
+    if (count === 72) return "NVL72";
+    if (count === 36) return "NVL36";
+    if (count === 8) {
+      if (nameStr.includes("B200") || nameStr.includes("BLACKWELL")) return "DGX-B200";
+      if (nameStr.includes("H200")) return "DGX-H200";
+      if (nameStr.includes("H100")) return "DGX-H100";
+      if (nameStr.includes("A100")) return "DGX-A100";
+      return "HGX";
+    }
+    if ([2, 3, 4, 6].includes(count)) return "multi-gpu";
+    return "multi-node";
   }
-  if ([2, 3, 4, 6].includes(count)) return "multi-gpu";
-  return "multi-node";
+
+  // Non-NVIDIA path: infer from accelerators
+  if (!accelerators || accelerators.length === 0) return "unknown";
+  const count = accelerators.length;
+  const vendor = accelerators[0].vendor;
+
+  if (vendor === "google-tpu") return count > 1 ? "tpu-pod" : "tpu-single";
+  if (vendor === "amd") return count > 1 ? "mi-cluster" : "mi-single";
+  if (vendor === "aws-trainium") {
+    const name = accelerators[0].name.toLowerCase();
+    if (name.includes("inf")) return count > 1 ? "inf-single" : "inf-single"; // Inferentia doesn't cluster the same way
+    return count > 1 ? "trn-cluster" : "trn-single";
+  }
+  if (vendor === "intel-gaudi") return count > 1 ? "gaudi-cluster" : "gaudi-single";
+
+  return count > 1 ? "multi-gpu" : "single";
 }
 
 /**
@@ -187,283 +417,6 @@ export function queryNvidiaSmi(): [GpuInfo[], string] {
   } catch {
     return [[], ""];
   }
-}
-
-// ── Vendor Family Parsing ───────────────────────────────────────────────
-
-const NVIDIA_FAMILIES = new Set([
-  "A100", "A800", "H100", "H200", "H800", "B100", "B200",
-  "L4", "L40", "L40S", "A10", "A10G", "A30", "A40",
-  "T4", "V100", "P100", "RTX",
-]);
-
-function parseNvidiaFamily(name: string): string {
-  for (const token of name.toUpperCase().split(/\s+/)) {
-    if (NVIDIA_FAMILIES.has(token)) return token;
-  }
-  return "GPU";
-}
-
-// ── Google TPU Discovery (Node.js) ──────────────────────────────────────
-
-/**
- * Detect Google TPU via environment variables set by GCE TPU VMs.
- * JAX is Python-only; in Node.js we detect TPU presence via standard
- * Google Cloud TPU environment variables (TPU_NAME, TPU_WORKER_HOSTNAMES).
- */
-function queryTpuEnv(): [AcceleratorInfo[], string] {
-  const tpuName = process.env.TPU_NAME;
-  if (!tpuName) return [[], ""];
-
-  const workers = (process.env.TPU_WORKER_HOSTNAMES ?? "").split(",").filter(Boolean);
-  const chipCount = Math.max(workers.length, 1);
-  const accels: AcceleratorInfo[] = [];
-
-  for (let i = 0; i < chipCount; i++) {
-    const workerId = workers[i] ?? `tpu-${i}`;
-    accels.push({
-      name: tpuName,
-      memoryMb: 0,
-      busIdHash: sha256Truncated(`tpu-${workerId}`),
-      uuidHash: sha256Truncated(`tpu-${workerId}-${i}`),
-      vendor: "google",
-      family: tpuName.replace(/\s+/g, "-"),
-      discoveryMethod: "tpu-env",
-    });
-  }
-  return [accels, "tpu-env"];
-}
-
-// ── PCI Vendor IDs ──────────────────────────────────────────────────────
-
-const PCI_VENDORS: Record<string, string> = {
-  "10de": "nvidia",
-  "1002": "amd",
-  "8086": "intel",
-};
-
-// ── AMD ROCm Discovery ─────────────────────────────────────────────────
-
-function queryRocmSmi(): [AcceleratorInfo[], string] {
-  try {
-    const output = execSync(
-      "rocm-smi --showproductname --showmeminfo vram --showbus --showuniqueid --csv",
-      { timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
-    );
-    const lines = output.trim().split("\n");
-    if (lines.length < 2) return [[], ""];
-
-    const accels: AcceleratorInfo[] = [];
-    for (const line of lines.slice(1)) {
-      if (!line.trim()) continue;
-      const parts = line.split(",").map((p) => p.trim());
-      if (parts.length < 4) continue;
-      const name = parts[0] || "AMD GPU";
-      const memoryMb = Math.round(parseFloat(parts[1] || "0")) || 0;
-      const busId = parts[2] || `amd-${accels.length}`;
-      const uniqueId = parts[3] || `amd-uid-${accels.length}`;
-      const upper = name.toUpperCase();
-      const family = upper.includes("MI300X") ? "MI300X"
-        : upper.includes("MI325X") ? "MI325X"
-        : upper.includes("MI300") ? "MI300"
-        : upper.includes("MI250") ? "MI250" : "MI";
-
-      accels.push({
-        name, memoryMb,
-        busIdHash: sha256Truncated(busId),
-        uuidHash: sha256Truncated(uniqueId),
-        vendor: "amd", family, discoveryMethod: "rocm-smi",
-      });
-    }
-    return [accels, "rocm-smi"];
-  } catch {
-    return [[], ""];
-  }
-}
-
-// ── AWS Trainium/Inferentia Discovery ───────────────────────────────────
-
-function queryNeuronLs(): [AcceleratorInfo[], string] {
-  try {
-    const output = execSync("neuron-ls --json-output", {
-      timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"],
-    });
-    const data = JSON.parse(output);
-    const devices: Array<Record<string, unknown>> = Array.isArray(data)
-      ? data
-      : (data.neuron_devices ?? []);
-    if (devices.length === 0) return [[], ""];
-
-    const accels: AcceleratorInfo[] = [];
-    for (const dev of devices) {
-      const devId = (dev.neuron_device ?? accels.length) as number;
-      const ncCount = (dev.nc_count ?? 1) as number;
-      const mem = (dev.memory_size ?? 0) as number;
-      const devType = String(dev.device_type ?? "").toLowerCase();
-      let family: string;
-      if (devType.includes("trainium2") || devType.includes("trn2")) family = "Trainium2";
-      else if (devType.includes("trainium") || devType.includes("trn1")) family = "Trainium";
-      else if (devType.includes("inferentia") || devType.includes("inf")) family = "Inferentia";
-      else family = ncCount >= 16 ? "Trainium" : "Neuron";
-
-      accels.push({
-        name: `AWS ${family}`, memoryMb: mem,
-        busIdHash: sha256Truncated(`neuron-${devId}`),
-        uuidHash: sha256Truncated(`neuron-${devId}-${ncCount}`),
-        vendor: "aws", family, discoveryMethod: "neuron-ls",
-      });
-    }
-    return [accels, "neuron-ls"];
-  } catch {
-    return [[], ""];
-  }
-}
-
-// ── Intel Gaudi Discovery ───────────────────────────────────────────────
-
-function queryHlSmi(): [AcceleratorInfo[], string] {
-  try {
-    const output = execSync(
-      "hl-smi -Q name,memory.total,bus_id,serial -f csv,noheader",
-      { timeout: 5_000, encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
-    );
-    const accels: AcceleratorInfo[] = [];
-    for (const line of output.trim().split("\n")) {
-      if (!line.trim()) continue;
-      const parts = line.split(",").map((p) => p.trim());
-      if (parts.length < 3) continue;
-      const name = parts[0] || "Intel Gaudi";
-      const memoryMb = Math.round(parseFloat(parts[1] || "0")) || 0;
-      const busId = parts[2] || `gaudi-${accels.length}`;
-      const serial = parts[3] || `gaudi-sn-${accels.length}`;
-      const upper = name.toUpperCase();
-      const family = upper.includes("GAUDI3") ? "Gaudi3"
-        : upper.includes("GAUDI2") ? "Gaudi2" : "Gaudi";
-
-      accels.push({
-        name, memoryMb,
-        busIdHash: sha256Truncated(busId),
-        uuidHash: sha256Truncated(serial),
-        vendor: "intel", family, discoveryMethod: "hl-smi",
-      });
-    }
-    return [accels, "hl-smi"];
-  } catch {
-    return [[], ""];
-  }
-}
-
-// ── PCI Device Class Fallback ───────────────────────────────────────────
-
-function queryPciFallback(): [AcceleratorInfo[], string] {
-  const pciBase = "/sys/bus/pci/devices";
-  try {
-    const entries = readdirSync(pciBase);
-    const accels: AcceleratorInfo[] = [];
-
-    for (const entry of entries.sort()) {
-      const classPath = `${pciBase}/${entry}/class`;
-      const vendorPath = `${pciBase}/${entry}/vendor`;
-      let pciClass: string;
-      let pciVendor: string;
-      try {
-        pciClass = readFileSync(classPath, "utf-8").trim().toLowerCase();
-        pciVendor = readFileSync(vendorPath, "utf-8").trim().toLowerCase().replace("0x", "");
-      } catch {
-        continue;
-      }
-
-      // 0x030200 = 3D controller, 0x120000 = processing accelerator
-      if (!pciClass.startsWith("0x0302") && !pciClass.startsWith("0x1200")) continue;
-
-      const vendor = PCI_VENDORS[pciVendor.slice(0, 4)] ?? "unknown";
-      accels.push({
-        name: `PCI ${vendor} accelerator`,
-        memoryMb: 0,
-        busIdHash: sha256Truncated(entry),
-        uuidHash: sha256Truncated(`pci-${entry}`),
-        vendor, family: "unknown", discoveryMethod: "pci",
-      });
-    }
-    return [accels, accels.length > 0 ? "pci" : ""];
-  } catch {
-    return [[], ""];
-  }
-}
-
-// ── Unified Accelerator Discovery ───────────────────────────────────────
-
-/**
- * Query all accelerator types across silicon vendors.
- * Tries each discovery path in priority order. Returns a unified
- * HardwareSnapshot with siliconVendor populated.
- */
-export function queryAccelerators(): HardwareSnapshot {
-  const hn = sha256Truncated(hostname());
-
-  // 1. NVIDIA (existing path)
-  const [gpus, driverVersion] = queryNvidiaSmi();
-  if (gpus.length > 0) {
-    const topology = detectTopology(gpus);
-    const interconnect = gpus.length > 0 ? detectInterconnect() : "unknown";
-    const totalMemoryMb = gpus.reduce((s, g) => s + g.memoryMb, 0);
-    const accelerators: AcceleratorInfo[] = gpus.map((g) => ({
-      name: g.name, memoryMb: g.memoryMb,
-      busIdHash: g.busIdHash, uuidHash: g.uuidHash,
-      vendor: "nvidia", family: parseNvidiaFamily(g.name),
-      discoveryMethod: "nvidia-smi",
-    }));
-    return {
-      gpus, driverVersion, cudaVersion: "",
-      topology, interconnect, totalMemoryMb, hostnameHash: hn,
-      siliconVendor: "nvidia", accelerators, discoveryMethod: "nvidia-smi",
-    };
-  }
-
-  // 2. Google TPU (env var detection -- JAX is Python-only)
-  const [tpuAccels, tpuMethod] = queryTpuEnv();
-  if (tpuAccels.length > 0) {
-    const count = tpuAccels.length;
-    const totalMemoryMb = tpuAccels.reduce((s, a) => s + a.memoryMb, 0);
-    const topology = count === 1 ? "single" : count <= 8 ? "multi-gpu" : "multi-node";
-    return {
-      gpus: [], driverVersion: "", cudaVersion: "",
-      topology, interconnect: "unknown", totalMemoryMb, hostnameHash: hn,
-      siliconVendor: "google", accelerators: tpuAccels, discoveryMethod: tpuMethod,
-    };
-  }
-
-  // 3-6: Non-NVIDIA, non-TPU discovery paths
-  const paths: Array<[() => [AcceleratorInfo[], string], string]> = [
-    [queryRocmSmi, "amd"],
-    [queryNeuronLs, "aws"],
-    [queryHlSmi, "intel"],
-    [queryPciFallback, "pci"],
-  ];
-
-  for (const [queryFn] of paths) {
-    const [accels, method] = queryFn();
-    if (accels.length > 0) {
-      const vendors = new Set(accels.map((a) => a.vendor));
-      const vendor = vendors.size === 1 ? [...vendors][0] : vendors.size > 1 ? "mixed" : "unknown";
-      const totalMemoryMb = accels.reduce((s, a) => s + a.memoryMb, 0);
-      const count = accels.length;
-      const topology = count === 1 ? "single" : count <= 8 ? "multi-gpu" : "multi-node";
-      return {
-        gpus: [], driverVersion: "", cudaVersion: "",
-        topology, interconnect: "unknown", totalMemoryMb, hostnameHash: hn,
-        siliconVendor: vendor, accelerators: accels, discoveryMethod: method,
-      };
-    }
-  }
-
-  // Nothing found
-  return {
-    gpus: [], driverVersion: "", cudaVersion: "",
-    topology: "unknown", interconnect: "unknown",
-    totalMemoryMb: 0, hostnameHash: hn,
-    siliconVendor: "", accelerators: [], discoveryMethod: "",
-  };
 }
 
 // ── TPM 2.0 Attestation (AI-HW.3) ──────────────────────────────────────

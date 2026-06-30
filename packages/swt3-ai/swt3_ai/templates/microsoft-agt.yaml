@@ -1,0 +1,60 @@
+# SWT3 Profile: Microsoft AGT (Agent Governance Toolkit)
+#
+# Independent cryptographic witness layer for Microsoft AGT policy evaluations.
+# AGT enforces governance policy; SWT3 proves what AGT decided,
+# out-of-band, tamper-evident, verifiable without Microsoft infrastructure.
+#
+# Covers OWASP Agentic Top 10 via independent attestation.
+# Compatible with EU AI Act, NIST AI RMF, CMMC, SOC 2.
+#
+# Usage:
+#   profile: microsoft-agt
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: your-agt-managed-agent
+#   signing_key_env: SWT3_SIGNING_KEY
+
+clearing_level: 2
+
+policy:
+  require_signing: true
+  require_agent_id: true
+  min_clearing_level: 2
+  required_procedures:
+    - AI-INF.1     # Inference provenance (prompt/response hashing)
+    - AI-GRD.1     # Guardrail presence attestation (AGT policy decisions)
+    - AI-TOOL.1    # Tool call witnessing
+    - AI-CHAIN.1   # Chain monitoring (multi-agent sessions)
+    - AI-ID.1      # Agent identity
+    - AI-ACC.1     # Access control witnessing
+    - AI-AUDIT.1   # Independent audit trail (Merkle-rooted)
+
+trust_mesh:
+  mode: strict
+  min_trust_level: 2
+  require_signature: true
+  freshness_window: 1800
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  exempt_tools: []
+  require_trust_level: 2
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "20/60s"
+  max_chain_depth: 12
+  max_tokens_per_session: 200000
+  fail_secure: true
+
+density_policy:
+  min_anchors_per_1000_tokens: 1
+  max_chain_gap_seconds: 300
+  require_signing_key: true
+  min_trust_level: 2
+
+hardware:
+  require_attestation: false
+
+merkle:
+  enabled: true
+  accumulator_interval: 60

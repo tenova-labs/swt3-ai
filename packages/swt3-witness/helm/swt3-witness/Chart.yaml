@@ -1,0 +1,28 @@
+apiVersion: v2
+name: swt3-witness
+description: SWT3 Witness - Cross-silicon hardware attestation DaemonSet for AI compliance
+type: application
+version: 0.5.8
+appVersion: "0.5.8"
+keywords:
+  - ai
+  - compliance
+  - witness
+  - kubernetes
+  - gpu
+  - tpu
+  - attestation
+  - multi-silicon
+  - hardware
+  - swt3
+home: https://tenova.io
+sources:
+  - https://github.com/tenova-labs/swt3-ai
+maintainers:
+  - name: TeNova
+    email: engineering@tenovaai.com
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial release with cross-silicon hardware attestation

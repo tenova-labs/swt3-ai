@@ -17,7 +17,7 @@ GPAI transparency obligations are enforceable now. EU AI Act high-risk enforceme
 - **`timestamp_ms`** -- millisecond-precision timestamps matching the protocol clock
 - **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `RevocationReason` structs ready for serialization
 
-All output is byte-identical to the Python, TypeScript, C#, and Ruby SDKs. Verified by 207 shared test vectors at build time.
+All output is byte-identical to the Python, TypeScript, Swift, C#, Ruby, and MCP SDKs. 7 languages, one audit trail. Verified by shared test vectors at build time.
 
 ## Quick Start
 
@@ -25,7 +25,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-swt3-ai = "0.5.6"
+swt3-ai = "0.3.6"
 ```
 
 Mint a fingerprint:
@@ -61,12 +61,14 @@ All SWT3 SDKs produce identical fingerprints from the same inputs. A unified aud
 |----------|---------|----------|
 | Python | [swt3-ai](https://pypi.org/project/swt3-ai/) | PyPI |
 | TypeScript | [@tenova/swt3-ai](https://www.npmjs.com/package/@tenova/swt3-ai) | npm |
+| Swift | [swt3-ai](https://github.com/tenova-labs/swt3-ai-swift) | Swift Package Index |
 | Rust | swt3-ai (this package) | crates.io |
 | C# / .NET | [swt3-ai](https://www.nuget.org/packages/swt3-ai) | NuGet |
 | Ruby | [swt3-ai](https://rubygems.org/gems/swt3-ai) | RubyGems |
 | MCP Server | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | npm + MCP Registry |
+| K8s Witness Agent | [swt3-witness](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-witness) | GHCR + Helm |
 
-The Python and TypeScript SDKs include the full witness pipeline: transparent client wrapping, buffer management, clearing engine, adapter support (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LangChain), trust mesh, policy-as-code, and Merkle accumulator. Use them for production AI witnessing. Use this Rust crate for embedding fingerprint verification into systems-level code, CLI tools, or performance-critical paths.
+The Python and TypeScript SDKs include the full witness pipeline: transparent client wrapping, buffer management, clearing engine, adapter support (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LangChain, LangGraph, Microsoft AGT, Google ADK, CrewAI), trust mesh, policy-as-code, and Merkle accumulator. Use them for production AI witnessing. Use this Rust crate for embedding fingerprint verification into systems-level code, CLI tools, or performance-critical paths.
 
 ## Regulatory Coverage
 

@@ -1,0 +1,28 @@
+{
+  "name": "@tenova/swt3-witness",
+  "version": "0.5.8",
+  "description": "SWT3 Witness - Cross-silicon hardware attestation for Kubernetes AI infrastructure",
+  "type": "module",
+  "main": "dist/entrypoint.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/entrypoint.js"
+  },
+  "dependencies": {
+    "@tenova/swt3-ai": "file:../swt3-ai-ts"
+  },
+  "author": "Tenable Nova LLC",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tenova-labs/swt3-ai"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
+  }
+}

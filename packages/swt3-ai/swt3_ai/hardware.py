@@ -4,34 +4,29 @@ Out-of-band hardware inventory snapshots. Records what accelerator
 hardware and TPM state were present when the service started.
 Does NOT sit in the inference path.
 
-Accelerator data sources (AI-HW.1), tried in order:
-  1. pynvml (NVIDIA, structured NVML query, optional dependency)
-  2. nvidia-smi subprocess (NVIDIA fallback)
-  3. JAX device enumeration (Google TPU, optional dependency)
-  4. rocm-smi subprocess (AMD MI series)
-  5. neuron-ls subprocess (AWS Trainium/Inferentia)
-  6. hl-smi subprocess (Intel Gaudi)
-  7. PCI device class fallback (generic, last resort)
-
-TPM data source (AI-HW.3):
-  - tpm2-tools subprocess (tpm2_pcrread, tpm2_getcap)
-
-If hardware is unavailable, returns an empty snapshot. No crash, no error.
+Discovery paths (priority order):
+  1. NVIDIA GPU -- pynvml (optional) or nvidia-smi subprocess
+  2. Google TPU -- TPU_NAME / TPU_WORKER_HOSTNAMES env vars
+  3. AMD GPU -- rocm-smi subprocess
+  4. AWS Trainium/Inferentia -- neuron-ls subprocess
+  5. Intel Gaudi -- hl-smi subprocess
+  6. PCI fallback -- /sys/bus/pci/devices sysfs (Linux only)
+  7. TPM 2.0 -- tpm2-tools subprocess (AI-HW.3, separate procedure)
 
 Security: All hardware identifiers (GPU UUIDs, bus IDs, hostnames,
-PCR digests, endorsement keys) are SHA-256 hashed at discovery time.
-Raw values never leave this module.
+PCR digests, endorsement keys, serial numbers) are SHA-256 hashed
+at discovery time. Raw values never leave this module.
 """
 
 from __future__ import annotations
 
-import json as _json
+import json
 import logging
 import os
 import platform
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 import re
 
@@ -52,59 +47,319 @@ TOPOLOGY_CODES = {
     "NVL36": 2,
     "NVL72": 2,
     "multi-node": 2,
+    "tpu-single": 0,
+    "tpu-pod": 2,
+    "mi-single": 0,
+    "mi-cluster": 1,
+    "trn-single": 0,
+    "trn-cluster": 1,
+    "inf-single": 0,
+    "gaudi-single": 0,
+    "gaudi-cluster": 1,
     "unknown": 3,
 }
 
-# PCI vendor IDs for accelerator detection (fallback path)
-_PCI_VENDORS = {
-    "10de": "nvidia",   # NVIDIA Corporation
-    "1002": "amd",      # Advanced Micro Devices
-    "8086": "intel",    # Intel Corporation
+# PCI vendor ID to silicon vendor mapping
+PCI_VENDOR_MAP = {
+    "0x10de": "nvidia",
+    "0x1002": "amd",
+    "0x8086": "intel-gaudi",
+    "0x1d0f": "aws-trainium",  # Annapurna Labs
+    "0x1ae0": "google-tpu",
 }
 
 
 def query_hardware() -> HardwareSnapshot:
-    """Query accelerator hardware and return a pre-hashed snapshot.
+    """Query all accelerator hardware and return a pre-hashed snapshot.
 
-    Tries all silicon vendors in priority order: NVIDIA (pynvml/nvidia-smi),
-    Google TPU (JAX), AMD (rocm-smi), AWS (neuron-ls), Intel (hl-smi),
-    PCI fallback. Returns empty snapshot if no accelerators are detectable.
-
-    Subprocess timeouts are capped at 5 seconds each. On systems without
-    any accelerator tools, the function returns quickly via graceful fallback.
+    Tries all 6 discovery paths. Returns empty snapshot if nothing found.
+    Subprocess timeouts are capped at 5 seconds each.
     """
-    return query_accelerators()
+    gpus: List[GpuInfo] = []
+    driver_version = ""
+    cuda_version = ""
+
+    # 1. NVIDIA (existing path)
+    gpus, driver_version, cuda_version = _query_pynvml()
+    if not gpus:
+        gpus, driver_version = _query_nvidia_smi()
+
+    nvidia_accels = [
+        AcceleratorInfo(
+            vendor="nvidia", name=g.name, memory_mb=g.memory_mb,
+            id_hash=g.uuid_hash, bus_id_hash=g.bus_id_hash,
+            discovery_method="nvidia-smi",
+        )
+        for g in gpus
+    ]
+
+    # 2-5. Non-NVIDIA discovery
+    tpu_accels = _query_google_tpu()
+    amd_accels, _ = _query_amd_rocm()
+    neuron_accels = _query_aws_neuron()
+    gaudi_accels, _ = _query_intel_gaudi()
+
+    # 6. PCI fallback (skip already-discovered bus IDs)
+    seen_bus_ids: Set[str] = set()
+    for a in [*nvidia_accels, *tpu_accels, *amd_accels, *neuron_accels, *gaudi_accels]:
+        seen_bus_ids.add(a.bus_id_hash)
+    pci_accels = _query_pci_fallback(seen_bus_ids)
+
+    # Aggregate
+    accelerators = [*nvidia_accels, *tpu_accels, *amd_accels, *neuron_accels, *gaudi_accels, *pci_accels]
+
+    # Determine silicon vendor
+    vendors = set(a.vendor for a in accelerators)
+    if len(vendors) == 1:
+        silicon_vendor = next(iter(vendors))
+    elif len(vendors) > 1:
+        silicon_vendor = "mixed"
+    else:
+        silicon_vendor = "none"
+
+    # Build discovery method string
+    methods = sorted(set(a.discovery_method for a in accelerators))
+    disc_method = ",".join(methods)
+
+    topology = detect_topology(gpus, accelerators)
+    interconnect = detect_interconnect() if gpus else "unknown"
+    total_memory = sum(a.memory_mb for a in accelerators)
+    hostname_hash = sha256_truncated(platform.node())
+
+    return HardwareSnapshot(
+        gpus=gpus,
+        driver_version=driver_version,
+        cuda_version=cuda_version,
+        topology=topology,
+        interconnect=interconnect,
+        total_memory_mb=total_memory,
+        hostname_hash=hostname_hash,
+        accelerators=accelerators,
+        silicon_vendor=silicon_vendor,
+        discovery_method=disc_method,
+    )
 
 
-def detect_topology(gpus: List[GpuInfo]) -> str:
-    """Infer cluster topology from GPU count and model names."""
-    count = len(gpus)
-    if count == 0:
+# ── Cross-Silicon Discovery ──────────────────────────────────────────
+
+def _query_google_tpu() -> List[AcceleratorInfo]:
+    """Google TPU: reads TPU_NAME and TPU_WORKER_HOSTNAMES env vars."""
+    tpu_name = os.environ.get("TPU_NAME")
+    if not tpu_name:
+        return []
+
+    workers = os.environ.get("TPU_WORKER_HOSTNAMES", "")
+    chip_count = len(workers.split(",")) if workers else 1
+
+    upper = tpu_name.upper()
+    mem_mb = 0
+    if "V6E" in upper or "TRILLIUM" in upper:
+        mem_mb = 32_768
+    elif "V5P" in upper:
+        mem_mb = 95_000
+    elif "V5E" in upper or "V5LITEPOD" in upper:
+        mem_mb = 16_384
+    elif "V4" in upper:
+        mem_mb = 32_768
+
+    return [
+        AcceleratorInfo(
+            vendor="google-tpu", name=tpu_name, memory_mb=mem_mb,
+            id_hash=sha256_truncated(f"{tpu_name}-chip-{i}"),
+            bus_id_hash=sha256_truncated(f"tpu-{tpu_name}-{i}"),
+            discovery_method="tpu-env",
+        )
+        for i in range(chip_count)
+    ]
+
+
+def _query_amd_rocm() -> Tuple[List[AcceleratorInfo], str]:
+    """AMD GPU: queries rocm-smi for MI-series accelerators."""
+    try:
+        result = subprocess.run(
+            ["rocm-smi", "--showproductname", "--showmeminfo", "vram", "--showbus", "--csv"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return [], ""
+        accels: List[AcceleratorInfo] = []
+        for line in result.stdout.strip().split("\n")[1:]:
+            if not line.strip():
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 4:
+                continue
+            dev_id, name, mem_str, bus_id = parts[0], parts[1], parts[2], parts[3]
+            accels.append(AcceleratorInfo(
+                vendor="amd", name=name or f"AMD-{dev_id}",
+                memory_mb=int(float(mem_str) / 1_048_576) if mem_str else 0,
+                id_hash=sha256_truncated(dev_id),
+                bus_id_hash=sha256_truncated(bus_id),
+                discovery_method="rocm-smi",
+            ))
+        driver = ""
+        try:
+            dr = subprocess.run(
+                ["rocm-smi", "--showdriverversion", "--csv"],
+                capture_output=True, text=True, timeout=5,
+            )
+            driver = dr.stdout.strip().split("\n")[-1].strip()
+        except Exception:
+            pass
+        return accels, driver
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return [], ""
+
+
+def _query_aws_neuron() -> List[AcceleratorInfo]:
+    """AWS Trainium/Inferentia: queries neuron-ls for Neuron devices."""
+    try:
+        result = subprocess.run(
+            ["neuron-ls", "--json-output"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return []
+        devices = json.loads(result.stdout)
+        if not isinstance(devices, list):
+            return []
+        return [
+            AcceleratorInfo(
+                vendor="aws-trainium",
+                name=str(d.get("model_name", d.get("model", f"neuron-{i}"))),
+                memory_mb=int(d.get("memory_size", 0)),
+                id_hash=sha256_truncated(str(d.get("neuron_device", d.get("device_id", i)))),
+                bus_id_hash=sha256_truncated(str(d.get("pci_bdf", d.get("connected_to", f"neuron-bus-{i}")))),
+                discovery_method="neuron-ls",
+            )
+            for i, d in enumerate(devices)
+        ]
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError, json.JSONDecodeError):
+        return []
+
+
+def _query_intel_gaudi() -> Tuple[List[AcceleratorInfo], str]:
+    """Intel Gaudi: queries hl-smi for Habana accelerators."""
+    try:
+        result = subprocess.run(
+            ["hl-smi", "-Q", "name,memory.total,bus_id,serial", "-f", "csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode != 0:
+            return [], ""
+        accels: List[AcceleratorInfo] = []
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) < 4:
+                continue
+            name, mem_str, bus_id, serial = parts[0], parts[1], parts[2], parts[3]
+            accels.append(AcceleratorInfo(
+                vendor="intel-gaudi", name=name,
+                memory_mb=int(float(mem_str)) if mem_str else 0,
+                id_hash=sha256_truncated(serial),
+                bus_id_hash=sha256_truncated(bus_id),
+                discovery_method="hl-smi",
+            ))
+        driver = ""
+        try:
+            dr = subprocess.run(
+                ["hl-smi", "-Q", "driver_version", "-f", "csv,noheader"],
+                capture_output=True, text=True, timeout=5,
+            )
+            driver = dr.stdout.strip()
+        except Exception:
+            pass
+        return accels, driver
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return [], ""
+
+
+def _query_pci_fallback(seen_bus_ids: Set[str] = frozenset()) -> List[AcceleratorInfo]:
+    """PCI fallback: scans /sys/bus/pci/devices for accelerator class codes. Linux only."""
+    if not platform.system().startswith("Linux"):
+        return []
+    accels: List[AcceleratorInfo] = []
+    dev_dir = Path("/sys/bus/pci/devices")
+    if not dev_dir.exists():
+        return []
+    try:
+        for entry in dev_dir.iterdir():
+            try:
+                class_code = (entry / "class").read_text().strip()
+                # 0x0302xx = 3D controller, 0x1200xx = processing accelerator
+                if not (class_code.startswith("0x0302") or class_code.startswith("0x1200")):
+                    continue
+                bus_hash = sha256_truncated(entry.name)
+                if bus_hash in seen_bus_ids:
+                    continue
+                vendor_id = (entry / "vendor").read_text().strip()
+                device_id = (entry / "device").read_text().strip()
+                vendor = PCI_VENDOR_MAP.get(vendor_id, "pci-generic")
+                accels.append(AcceleratorInfo(
+                    vendor=vendor,
+                    name=f"PCI-{vendor_id}-{device_id}",
+                    memory_mb=0,
+                    id_hash=sha256_truncated(f"{vendor_id}:{device_id}:{entry.name}"),
+                    bus_id_hash=bus_hash,
+                    discovery_method="pci-sysfs",
+                ))
+            except (OSError, IOError):
+                continue
+    except (OSError, IOError):
+        pass
+    return accels
+
+
+def detect_topology(
+    gpus: List[GpuInfo],
+    accelerators: Optional[List[AcceleratorInfo]] = None,
+) -> str:
+    """Infer cluster topology from GPU count, model names, and accelerators."""
+    # NVIDIA path (existing logic, unchanged)
+    if gpus:
+        count = len(gpus)
+        if count == 1:
+            return "single"
+        names = {g.name.upper() for g in gpus}
+        name_str = " ".join(names)
+        if count == 72:
+            return "NVL72"
+        if count == 36:
+            return "NVL36"
+        if count == 8:
+            if "B200" in name_str or "BLACKWELL" in name_str:
+                return "DGX-B200"
+            if "H200" in name_str:
+                return "DGX-H200"
+            if "H100" in name_str:
+                return "DGX-H100"
+            if "A100" in name_str:
+                return "DGX-A100"
+            return "HGX"
+        if count in (2, 3, 4, 6):
+            return "multi-gpu"
+        return "multi-node"
+
+    # Non-NVIDIA path
+    if not accelerators:
         return "unknown"
-    if count == 1:
-        return "single"
+    count = len(accelerators)
+    vendor = accelerators[0].vendor
 
-    # Check GPU names for known platforms
-    names = {g.name.upper() for g in gpus}
-    name_str = " ".join(names)
-
-    if count == 72:
-        return "NVL72"
-    if count == 36:
-        return "NVL36"
-    if count == 8:
-        if "B200" in name_str or "BLACKWELL" in name_str:
-            return "DGX-B200"
-        if "H200" in name_str:
-            return "DGX-H200"
-        if "H100" in name_str:
-            return "DGX-H100"
-        if "A100" in name_str:
-            return "DGX-A100"
-        return "HGX"
-    if count in (2, 3, 4, 6):
-        return "multi-gpu"
-    return "multi-node"
+    if vendor == "google-tpu":
+        return "tpu-pod" if count > 1 else "tpu-single"
+    if vendor == "amd":
+        return "mi-cluster" if count > 1 else "mi-single"
+    if vendor == "aws-trainium":
+        name = accelerators[0].name.lower()
+        if "inf" in name:
+            return "inf-single"
+        return "trn-cluster" if count > 1 else "trn-single"
+    if vendor == "intel-gaudi":
+        return "gaudi-cluster" if count > 1 else "gaudi-single"
+    return "multi-gpu" if count > 1 else "single"
 
 
 def detect_interconnect() -> str:
@@ -264,342 +519,6 @@ def _query_nvidia_smi() -> tuple:
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         logger.debug("nvidia-smi not available")
         return [], ""
-
-
-# ── Vendor Family Parsing ──────────────────────────────────────────
-
-def _parse_nvidia_family(name: str) -> str:
-    """Extract GPU family from NVIDIA product name. 'NVIDIA H100 80GB HBM3' -> 'H100'."""
-    for token in name.upper().split():
-        if token in ("A100", "A800", "H100", "H200", "H800", "B100", "B200",
-                      "L4", "L40", "L40S", "A10", "A10G", "A30", "A40",
-                      "T4", "V100", "P100", "RTX"):
-            return token
-    return "GPU"
-
-
-# ── Google TPU Discovery ───────────────────────────────────────────
-
-def _query_jax_tpu() -> Tuple[List[AcceleratorInfo], str]:
-    """Query TPU devices via JAX (optional dependency). Returns (accelerators, method)."""
-    try:
-        import jax  # type: ignore[import-untyped]
-    except ImportError:
-        return [], ""
-
-    try:
-        devices = jax.devices("tpu")
-        if not devices:
-            return [], ""
-
-        accels: List[AcceleratorInfo] = []
-        for dev in devices:
-            kind = getattr(dev, "device_kind", "TPU")
-            family = kind.replace(" ", "-") if kind else "TPU"
-            dev_id = str(getattr(dev, "id", 0))
-            accels.append(AcceleratorInfo(
-                name=kind,
-                memory_mb=0,  # JAX doesn't expose memory via devices()
-                bus_id_hash=sha256_truncated(f"tpu-{dev_id}"),
-                uuid_hash=sha256_truncated(f"tpu-{dev_id}-{getattr(dev, 'process_index', 0)}"),
-                vendor="google",
-                family=family,
-                discovery_method="jax",
-            ))
-        return accels, "jax"
-    except Exception as e:
-        logger.debug("JAX TPU query failed: %s", e)
-        return [], ""
-
-
-# ── AMD ROCm Discovery ─────────────────────────────────────────────
-
-def _query_rocm_smi() -> Tuple[List[AcceleratorInfo], str]:
-    """Query AMD GPUs via rocm-smi subprocess. Returns (accelerators, method)."""
-    try:
-        result = subprocess.run(
-            ["rocm-smi", "--showproductname", "--showmeminfo", "vram",
-             "--showbus", "--showuniqueid", "--csv"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode != 0:
-            return [], ""
-
-        accels: List[AcceleratorInfo] = []
-        lines = result.stdout.strip().split("\n")
-        if len(lines) < 2:
-            return [], ""
-
-        for line in lines[1:]:  # skip header
-            if not line.strip():
-                continue
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) < 4:
-                continue
-            name = parts[0] if parts[0] else "AMD GPU"
-            try:
-                memory_mb = int(float(parts[1])) if parts[1] else 0
-            except (ValueError, TypeError):
-                memory_mb = 0
-            bus_id = parts[2] if len(parts) > 2 else f"amd-{len(accels)}"
-            unique_id = parts[3] if len(parts) > 3 else f"amd-uid-{len(accels)}"
-
-            family = "MI300X" if "MI300X" in name.upper() else \
-                     "MI325X" if "MI325X" in name.upper() else \
-                     "MI300" if "MI300" in name.upper() else \
-                     "MI250" if "MI250" in name.upper() else "MI"
-
-            accels.append(AcceleratorInfo(
-                name=name,
-                memory_mb=memory_mb,
-                bus_id_hash=sha256_truncated(bus_id),
-                uuid_hash=sha256_truncated(unique_id),
-                vendor="amd",
-                family=family,
-                discovery_method="rocm-smi",
-            ))
-        return accels, "rocm-smi"
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        logger.debug("rocm-smi not available")
-        return [], ""
-
-
-# ── AWS Trainium/Inferentia Discovery ──────────────────────────────
-
-def _query_neuron_ls() -> Tuple[List[AcceleratorInfo], str]:
-    """Query AWS Neuron devices via neuron-ls subprocess. Returns (accelerators, method)."""
-    try:
-        result = subprocess.run(
-            ["neuron-ls", "--json-output"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode != 0:
-            return [], ""
-
-        data = _json.loads(result.stdout)
-        devices = data if isinstance(data, list) else data.get("neuron_devices", [])
-        if not devices:
-            return [], ""
-
-        accels: List[AcceleratorInfo] = []
-        for dev in devices:
-            dev_id = dev.get("neuron_device", len(accels))
-            nc_count = dev.get("nc_count", 1)
-            mem = dev.get("memory_size", 0)
-            dev_type = str(dev.get("device_type", "")).lower()
-            if "trainium2" in dev_type or "trn2" in dev_type:
-                family = "Trainium2"
-            elif "trainium" in dev_type or "trn1" in dev_type:
-                family = "Trainium"
-            elif "inferentia" in dev_type or "inf" in dev_type:
-                family = "Inferentia"
-            else:
-                # Fallback: Trainium devices typically have higher nc_count
-                family = "Trainium" if nc_count >= 16 else "Neuron"
-
-            accels.append(AcceleratorInfo(
-                name=f"AWS {family}",
-                memory_mb=mem,
-                bus_id_hash=sha256_truncated(f"neuron-{dev_id}"),
-                uuid_hash=sha256_truncated(f"neuron-{dev_id}-{nc_count}"),
-                vendor="aws",
-                family=family,
-                discovery_method="neuron-ls",
-            ))
-        return accels, "neuron-ls"
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError, _json.JSONDecodeError):
-        logger.debug("neuron-ls not available")
-        return [], ""
-
-
-# ── Intel Gaudi Discovery ──────────────────────────────────────────
-
-def _query_hl_smi() -> Tuple[List[AcceleratorInfo], str]:
-    """Query Intel Gaudi devices via hl-smi subprocess. Returns (accelerators, method)."""
-    try:
-        result = subprocess.run(
-            ["hl-smi", "-Q", "name,memory.total,bus_id,serial", "-f", "csv,noheader"],
-            capture_output=True, text=True, timeout=5,
-        )
-        if result.returncode != 0:
-            return [], ""
-
-        accels: List[AcceleratorInfo] = []
-        for line in result.stdout.strip().split("\n"):
-            if not line.strip():
-                continue
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) < 3:
-                continue
-            name = parts[0] if parts[0] else "Intel Gaudi"
-            try:
-                memory_mb = int(float(parts[1])) if parts[1] else 0
-            except (ValueError, TypeError):
-                memory_mb = 0
-            bus_id = parts[2] if len(parts) > 2 else f"gaudi-{len(accels)}"
-            serial = parts[3] if len(parts) > 3 else f"gaudi-sn-{len(accels)}"
-
-            family = "Gaudi3" if "GAUDI3" in name.upper() else \
-                     "Gaudi2" if "GAUDI2" in name.upper() else "Gaudi"
-
-            accels.append(AcceleratorInfo(
-                name=name,
-                memory_mb=memory_mb,
-                bus_id_hash=sha256_truncated(bus_id),
-                uuid_hash=sha256_truncated(serial),
-                vendor="intel",
-                family=family,
-                discovery_method="hl-smi",
-            ))
-        return accels, "hl-smi"
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        logger.debug("hl-smi not available")
-        return [], ""
-
-
-# ── PCI Device Class Fallback ──────────────────────────────────────
-
-def _query_pci_fallback() -> Tuple[List[AcceleratorInfo], str]:
-    """Detect accelerators via PCI device class codes (last resort).
-
-    Scans /sys/bus/pci/devices for class 0x0302 (3D controller) or
-    0x1200 (processing accelerator) and maps vendor IDs.
-    """
-    pci_base = Path("/sys/bus/pci/devices")
-    if not pci_base.exists():
-        return [], ""
-
-    accels: List[AcceleratorInfo] = []
-    try:
-        for dev_path in sorted(pci_base.iterdir()):
-            class_file = dev_path / "class"
-            vendor_file = dev_path / "vendor"
-            if not class_file.exists() or not vendor_file.exists():
-                continue
-            try:
-                pci_class = class_file.read_text().strip().lower()
-                pci_vendor = vendor_file.read_text().strip().lower().replace("0x", "")
-            except OSError:
-                continue
-
-            # 0x030200 = 3D controller, 0x120000 = processing accelerator
-            if not (pci_class.startswith("0x0302") or pci_class.startswith("0x1200")):
-                continue
-
-            vendor = _PCI_VENDORS.get(pci_vendor[:4], "unknown")
-            bus_id = dev_path.name
-
-            accels.append(AcceleratorInfo(
-                name=f"PCI {vendor} accelerator",
-                memory_mb=0,
-                bus_id_hash=sha256_truncated(bus_id),
-                uuid_hash=sha256_truncated(f"pci-{bus_id}"),
-                vendor=vendor,
-                family="unknown",
-                discovery_method="pci",
-            ))
-    except OSError:
-        pass
-
-    return accels, "pci" if accels else ""
-
-
-# ── Unified Accelerator Discovery ──────────────────────────────────
-
-def query_accelerators() -> HardwareSnapshot:
-    """Query all accelerator types across silicon vendors.
-
-    Tries each discovery path in priority order. Returns a unified
-    HardwareSnapshot with silicon_vendor populated. Zero dependencies
-    required -- each path fails gracefully.
-    """
-    hostname_hash = sha256_truncated(platform.node())
-
-    # 1. NVIDIA (existing path)
-    gpus: List[GpuInfo] = []
-    driver_version = ""
-    cuda_version = ""
-    gpus, driver_version, cuda_version = _query_pynvml()
-    if not gpus:
-        gpus, driver_version = _query_nvidia_smi()
-
-    if gpus:
-        topology = detect_topology(gpus)
-        interconnect = detect_interconnect()
-        total_memory = sum(g.memory_mb for g in gpus)
-        accelerators = [
-            AcceleratorInfo(
-                name=g.name, memory_mb=g.memory_mb,
-                bus_id_hash=g.bus_id_hash, uuid_hash=g.uuid_hash,
-                vendor="nvidia", family=_parse_nvidia_family(g.name),
-                discovery_method="pynvml" if cuda_version else "nvidia-smi",
-            ) for g in gpus
-        ]
-        return HardwareSnapshot(
-            gpus=gpus, driver_version=driver_version, cuda_version=cuda_version,
-            topology=topology, interconnect=interconnect,
-            total_memory_mb=total_memory, hostname_hash=hostname_hash,
-            silicon_vendor="nvidia", accelerators=accelerators,
-            discovery_method="pynvml" if cuda_version else "nvidia-smi",
-        )
-
-    # 2. Google TPU
-    accels, method = _query_jax_tpu()
-    if accels:
-        count = len(accels)
-        total_mem = sum(a.memory_mb for a in accels)
-        topo = "single" if count == 1 else "multi-gpu" if count <= 8 else "multi-node"
-        return HardwareSnapshot(
-            topology=topo, total_memory_mb=total_mem, hostname_hash=hostname_hash,
-            silicon_vendor="google", accelerators=accels, discovery_method=method,
-        )
-
-    # 3. AMD ROCm
-    accels, method = _query_rocm_smi()
-    if accels:
-        count = len(accels)
-        total_mem = sum(a.memory_mb for a in accels)
-        topo = "single" if count == 1 else "multi-gpu" if count <= 8 else "multi-node"
-        return HardwareSnapshot(
-            topology=topo, total_memory_mb=total_mem, hostname_hash=hostname_hash,
-            silicon_vendor="amd", accelerators=accels, discovery_method=method,
-        )
-
-    # 4. AWS Trainium/Inferentia
-    accels, method = _query_neuron_ls()
-    if accels:
-        count = len(accels)
-        total_mem = sum(a.memory_mb for a in accels)
-        topo = "single" if count == 1 else "multi-gpu" if count <= 8 else "multi-node"
-        return HardwareSnapshot(
-            topology=topo, total_memory_mb=total_mem, hostname_hash=hostname_hash,
-            silicon_vendor="aws", accelerators=accels, discovery_method=method,
-        )
-
-    # 5. Intel Gaudi
-    accels, method = _query_hl_smi()
-    if accels:
-        count = len(accels)
-        total_mem = sum(a.memory_mb for a in accels)
-        topo = "single" if count == 1 else "multi-gpu" if count <= 8 else "multi-node"
-        return HardwareSnapshot(
-            topology=topo, total_memory_mb=total_mem, hostname_hash=hostname_hash,
-            silicon_vendor="intel", accelerators=accels, discovery_method=method,
-        )
-
-    # 6. PCI fallback (last resort)
-    accels, method = _query_pci_fallback()
-    if accels:
-        vendors = {a.vendor for a in accels}
-        vendor = vendors.pop() if len(vendors) == 1 else "mixed" if len(vendors) > 1 else "unknown"
-        total_mem = sum(a.memory_mb for a in accels)
-        return HardwareSnapshot(
-            topology="unknown", total_memory_mb=total_mem, hostname_hash=hostname_hash,
-            silicon_vendor=vendor, accelerators=accels, discovery_method=method,
-        )
-
-    # Nothing found
-    return HardwareSnapshot(hostname_hash=hostname_hash)
 
 
 # ── TPM 2.0 Attestation (AI-HW.3) ──────────────────────────────────
