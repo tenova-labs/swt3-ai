@@ -6,14 +6,20 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 (NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi) and
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
+## What's New in v0.5.9
+
+- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. DaemonSet and Helm chart unchanged.
+- Container image rebuilt with latest Alpine base (CVE fixes).
+- 2,069 tests passing across all 7 SDK languages.
+
 ## Quick Start
 
 ```bash
 # Local mode -- anchors emit as structured JSON to stdout
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9
 
 # Cloud mode -- anchors flush to the SWT3 clearing house
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8 \
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT
@@ -71,7 +77,7 @@ Returns:
 ```json
 {
   "status": "ok",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "mode": "local",
   "silicon_vendor": "nvidia",
   "topology": "single",
@@ -91,7 +97,7 @@ Returns:
 ## Container Image
 
 ```bash
-docker pull ghcr.io/tenova-labs/swt3-witness:0.5.8
+docker pull ghcr.io/tenova-labs/swt3-witness:0.5.9
 ```
 
 ## License

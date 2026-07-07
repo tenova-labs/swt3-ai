@@ -482,6 +482,62 @@ const KEYWORD_MAP: Array<{
     reason: "Runtime dependency or package manifest detected -- witness the dependency inventory",
     priority: 3,
   },
+  {
+    keywords: ["governance", "governance config", "governance layer", "governance policy", "meta-governance", "metagov", "policy stack"],
+    procedure: "AI-METAGOV.1",
+    title: "Governance Infrastructure Attestation",
+    reason: "Governance infrastructure or policy configuration detected -- witness the governance config",
+    priority: 2,
+  },
+  {
+    keywords: ["governance layer", "policy layer", "governance registration", "compliance layer", "governance stack"],
+    procedure: "AI-METAGOV.2",
+    title: "Governance Layer Registration",
+    reason: "Governance layer registration detected -- witness the layer binding",
+    priority: 3,
+  },
+  {
+    keywords: ["policy downgrade", "config downgrade", "weaken policy", "reduce clearing", "lower security"],
+    procedure: "AI-METAGOV.3",
+    title: "Policy Downgrade Detection",
+    reason: "Policy downgrade or weakening detected -- witness the configuration change",
+    priority: 1,
+  },
+  {
+    keywords: ["circular dependency", "governance cycle", "policy loop", "circular governance", "dependency graph"],
+    procedure: "AI-METAGOV.4",
+    title: "Circular Dependency Check",
+    reason: "Governance dependency analysis detected -- witness the cycle detection result",
+    priority: 2,
+  },
+  {
+    keywords: ["governance change", "governance authorization", "policy change approval", "governance approval"],
+    procedure: "AI-METAGOV.5",
+    title: "Governance Authorization",
+    reason: "Governance change authorization detected -- witness the approval decision",
+    priority: 2,
+  },
+  {
+    keywords: ["emergency override", "break glass", "emergency governance", "governance bypass", "emergency policy"],
+    procedure: "AI-METAGOV.6",
+    title: "Emergency Override Attestation",
+    reason: "Emergency governance override detected -- witness the override event and justification",
+    priority: 1,
+  },
+  {
+    keywords: ["governance sync", "federation sync", "policy sync", "governance federation", "cross-tenant governance"],
+    procedure: "AI-METAGOV.7",
+    title: "Governance Sync Verification",
+    reason: "Governance federation or policy sync detected -- witness the sync verification",
+    priority: 3,
+  },
+  {
+    keywords: ["attestation purity", "self-referential", "governance integrity", "attestation verification"],
+    procedure: "AI-METAGOV.8",
+    title: "Attestation Purity Verification",
+    reason: "Attestation purity check detected -- verify governance anchors are not self-referential",
+    priority: 3,
+  },
 ];
 
 export function handleSuggest(args: SuggestArgs): string {

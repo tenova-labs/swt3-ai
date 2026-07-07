@@ -73,6 +73,8 @@ class WitnessBuffer:
         self._consecutive_failures = 0
         self._cta_shown = False
         self._token_accumulator: int = 0  # cumulative tokens since last flush
+        self._witnessed_procedures: set = set()
+        self._flush_summary_count: int = 0
 
         # Start daemon flush thread
         self._thread = threading.Thread(target=self._flush_loop, daemon=True)
@@ -81,11 +83,17 @@ class WitnessBuffer:
         # Register graceful shutdown
         atexit.register(self.stop)
 
+    @property
+    def witnessed_procedures(self) -> frozenset:
+        """Return all procedure IDs witnessed in this session."""
+        return frozenset(self._witnessed_procedures)
+
     def enqueue(self, payload: WitnessPayload) -> None:
         """Add a payload to the buffer. Non-blocking."""
         if self._stopped:
             logger.warning("Buffer is stopped — payload dropped for %s", payload.procedure_id)
             return
+        self._witnessed_procedures.add(payload.procedure_id)
 
         # WAL: replay protection + persist to disk
         if self._wal is not None:
@@ -319,9 +327,24 @@ class WitnessBuffer:
                     self._cta_shown = True
                     print(
                         f"\n  [SWT3] {accepted} anchors delivered to {self._config.endpoint}"
-                        f"\n  [SWT3] Dashboard & audit reports \u2192 https://sovereign.tenova.io/signup?ref=sdk"
-                        f"\n  [SWT3] EU AI Act high-risk deadline: Dec 2, 2027. GPAI obligations enforceable now.\n"
+                        f"\n  [SWT3] Dashboard & audit reports: https://sovereign.tenova.io\n"
                     )
+
+                # Framework coverage summary (first 3 flushes only)
+                if accepted > 0 and self._flush_summary_count < 3:
+                    try:
+                        from .crosswalk import resolve as _resolve
+                        fw_counts: Dict[str, int] = {}
+                        for p in payloads:
+                            for fw in _resolve(p.procedure_id):
+                                fw_counts[fw] = fw_counts.get(fw, 0) + 1
+                        if fw_counts:
+                            self._flush_summary_count += 1
+                            top = sorted(fw_counts.items(), key=lambda x: -x[1])[:5]
+                            summary = ", ".join(f"{fw} ({n})" for fw, n in top)
+                            print(f"  [SWT3] Frameworks covered: {summary}")
+                    except Exception:
+                        pass
 
                 # Invoke on_flush callback (never let callback errors break the pipeline)
                 if self._on_flush and receipts:

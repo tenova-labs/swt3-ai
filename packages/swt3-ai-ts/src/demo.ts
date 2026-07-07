@@ -38,13 +38,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function main() {
+export async function main() {
   console.log();
   console.log(`${B}SWT3 AI Witness SDK — Live Demo${R}`);
   console.log(`${D}No API keys. No account. No network calls.${R}`);
   console.log(`${D}${"─".repeat(56)}${R}`);
-  console.log(`  ${G}New in v0.5.4:${R} AI-LIC.1 License Provenance,`);
-  console.log(`  OpenMDW-1.1 support, MCP governance, 65 procedures.`);
+  console.log(`  ${G}New in v0.5.6:${R} METAGOV namespace, Japan crosswalk,`);
+  console.log(`  Model Trust Profiles, coverage scoring, 94 procedures.`);
   console.log(`  ${D}License guide: sovereign.tenova.io/guides/openmdw-license-provenance.html${R}`);
   console.log(`${D}${"─".repeat(56)}${R}`);
   console.log();

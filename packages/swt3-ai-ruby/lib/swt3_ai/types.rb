@@ -76,4 +76,26 @@ module Swt3Ai
   }.freeze
 
   # Key purpose for key attestation (AI-TRUST.3).
-  KEY_PURPOSES = %w[signing encryption delegation].freezeend
+  KEY_PURPOSES = %w[signing encryption delegation].freeze
+
+  # AI model lifecycle stages (NIST AI RMF MAP 1.3).
+  LIFECYCLE_STAGES = %w[design development testing deployment monitoring decommission].freeze
+
+  # METAGOV governance domain scope codes (AI-METAGOV.5).
+  METAGOV_SCOPES = %w[verdict_rules trust_mesh enforcement clearing full].freeze
+
+  # METAGOV permission level codes (AI-METAGOV.5).
+  METAGOV_PERMISSIONS = %w[read modify approve].freeze
+
+  # METAGOV emergency override reason codes (AI-METAGOV.6).
+  METAGOV_OVERRIDE_REASONS = %w[unspecified incident_response regulatory_deadline system_failure security_breach].freeze
+
+  # METAGOV review status codes (AI-METAGOV.6).
+  METAGOV_REVIEW_STATUSES = %w[unreviewed attested revoked].freeze
+
+  # METAGOV governance divergence codes (AI-METAGOV.7).
+  METAGOV_DIVERGENCE_TYPES = %w[equivalent version_divergent structural_divergent coverage_divergent].freeze
+
+  # METAGOV attestation purity tiers (AI-METAGOV.8).
+  METAGOV_PURITY_TIERS = %w[verified_pure unverified_purity impure].freeze
+end

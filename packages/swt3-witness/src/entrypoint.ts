@@ -169,6 +169,14 @@ console.log(JSON.stringify({
   health_port: HEALTH_PORT,
 }));
 
+if (MODE === "local") {
+  console.log(JSON.stringify({
+    swt3_witness: true,
+    level: "info",
+    message: "Local mode: anchors emit to stdout. To persist anchors, create a free account at https://sovereign.tenova.io/signup?ref=k8s",
+  }));
+}
+
 discover();
 
 const intervalId = setInterval(discover, INTERVAL);

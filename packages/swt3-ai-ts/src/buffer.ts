@@ -26,6 +26,8 @@ export class WitnessBuffer {
   private consecutiveFailures = 0;
   private ctaShown = false;
   private tokenAccumulator = 0;
+  private _witnessedProcedures = new Set<string>();
+  private flushSummaryCount = 0;
   private onFlush?: (payloads: WitnessPayload[], receipts: WitnessReceipt[]) => void;
   private wal: WriteAheadLog | null = null;
   private walSeqMap: Map<WitnessPayload, number> = new Map();
@@ -43,9 +45,15 @@ export class WitnessBuffer {
     return this.tokenAccumulator;
   }
 
+  /** Return all procedure IDs witnessed in this session. */
+  get witnessedProcedures(): Set<string> {
+    return new Set(this._witnessedProcedures);
+  }
+
   /** Add a single payload to the buffer. */
   enqueue(payload: WitnessPayload): void {
     if (this.stopped) return;
+    this._witnessedProcedures.add(payload.procedure_id);
 
     // WAL: replay protection (reject duplicates) + persist to disk
     if (this.wal) {
@@ -195,9 +203,27 @@ export class WitnessBuffer {
           this.ctaShown = true;
           console.info(
             `\n  [SWT3] ${result.accepted} anchors delivered to ${this.config.endpoint}` +
-            `\n  [SWT3] Dashboard & audit reports \u2192 https://sovereign.tenova.io/signup?ref=sdk` +
-            `\n  [SWT3] EU AI Act high-risk deadline: Dec 2, 2027. GPAI obligations enforceable now.\n`
+            `\n  [SWT3] Dashboard & audit reports: https://sovereign.tenova.io\n`
           );
+        }
+
+        // Framework coverage summary (first 3 flushes only)
+        if ((result.accepted ?? 0) > 0 && this.flushSummaryCount < 3) {
+          try {
+            const { resolve: _resolve } = await import("./crosswalk.js");
+            const fwCounts: Record<string, number> = {};
+            for (const p of payloads) {
+              for (const fw of Object.keys(_resolve(p.procedure_id))) {
+                fwCounts[fw] = (fwCounts[fw] ?? 0) + 1;
+              }
+            }
+            const entries = Object.entries(fwCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            if (entries.length > 0) {
+              this.flushSummaryCount++;
+              const summary = entries.map(([fw, n]) => `${fw} (${n})`).join(", ");
+              console.info(`  [SWT3] Frameworks covered: ${summary}`);
+            }
+          } catch { /* Never break flush for summary */ }
         }
 
         // Invoke on_flush callback (never let callback errors break the pipeline)

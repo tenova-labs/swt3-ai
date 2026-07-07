@@ -11,21 +11,25 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.8
+## What's New in v0.5.9
 
-- **K8s DaemonSet (swt3-witness)** -- Hardware attestation for every node in your cluster. One `helm install`, zero code changes. See below.
-- **Cross-Silicon Hardware Attestation** -- `query_hardware()` discovers 6 silicon families: NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi, and PCI fallback. `witness_hardware()` context includes `silicon_vendor`, `discovery_method`, and per-accelerator detail. Full parity with TypeScript.
-- **Microsoft AGT Adapter** -- `wrap_agt()` for Microsoft Agent Governance Toolkit. Independent witness layer for AGT policy decisions.
-- **LangGraph Adapter** -- `wrap_langgraph()` for LangGraph state graphs. Witnesses invoke, stream, and async execution.
-- 21 adapters total (also: Google ADK, CrewAI, A2A, Foundry, Cerebras, Ollama, Cohere, and more)
-- **103 procedures**, 52 namespaces, 28 frameworks, 18 profiles, 21 integrations
+- **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 24 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 24 frameworks and 103 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
+- **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
+
+### v0.5.8
+
+- K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
+- 21 adapters, 103 procedures, 52 namespaces, 28 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
 Every node in your cluster runs AI workloads on hardware you have never attested. If a GPU fails silently, a model gets rescheduled to CPU, or your cloud provider live-migrates you to different silicon, your compliance posture changed and nobody recorded it. Your cluster has NVIDIA nodes for training and Trainium nodes for inference -- the DaemonSet attests both, and the anchor chain shows when workloads move between them.
 
 ```bash
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9
 ```
 
 That is the entire setup. One command. Every node gets a witness pod. Every accelerator gets discovered. Every hour, an AI-HW.1 anchor is minted with the hardware fingerprint.
@@ -62,7 +66,7 @@ The fingerprints are different because the hardware changed. An auditor or drift
 When you are ready to persist anchors to the clearing house, upgrade to cloud mode:
 
 ```bash
-helm upgrade swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8 \
+helm upgrade swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT
@@ -802,23 +806,54 @@ At every level, raw prompts and responses **never leave your infrastructure**. O
 
 ## Local Mode (No Account Needed)
 
-Try the SDK locally before connecting to a live endpoint:
+Witness your first inference with zero configuration:
 
 ```python
-witness = Witness(
-    endpoint="https://your-witness-endpoint.example.com",
-    api_key="test",
-    tenant_id="LOCAL_TEST",
-    factor_handoff="file",  # Writes anchors to ./swt3-handoff/ as JSON
-)
+from swt3_ai import Witness
+from openai import OpenAI
+
+witness = Witness()  # No args. Local mode.
 client = witness.wrap(OpenAI())
 
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "What is the EU AI Act?"}],
 )
-# Check ./swt3-handoff/ for JSON files with full anchor data
+
+# Console output:
+#   [SWT3] Local mode -- anchors saved to ./swt3-local/
+#   [SWT3] 5 procedures witnessed across 7 frameworks (EU-AI-ACT, ISO-42001, ...)
+#   [SWT3] Run witness.coverage("EU-AI-ACT") to see your coverage score
+
+report = witness.coverage("EU-AI-ACT")
+print(f"Score: {report['score']} ({report['covered_count']}/{report['total_controls']})")
 ```
+
+Anchors are saved as JSON in `./swt3-local/`. Add `swt3-local/` to your `.gitignore`. When you are ready to persist evidence to the clearing house, add your endpoint and API key:
+
+```python
+witness = Witness(
+    endpoint="https://sovereign.tenova.io/api/v1",
+    api_key="axm_live_...",
+    tenant_id="YOUR_TENANT",
+)
+```
+
+## Compliance Intelligence
+
+Resolve any procedure to every regulation it satisfies. Offline, zero network calls:
+
+```python
+from swt3_ai import resolve
+
+resolve("AI-FAIR.1")
+# {"EU-AI-ACT": "Art.10(2)(f)", "NIST-AI-RMF": "MEASURE 2.5", "ISO-42001": "A.8.4", ...}
+
+resolve("AI-INF.1")
+# {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
+```
+
+24 frameworks bundled. 103 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1104,17 +1139,25 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 ---
 
-## Upgrading to v0.5.8
+## Upgrading to v0.5.9
 
-**Cross-silicon hardware (new):** `query_hardware()` discovers 6 accelerator types. `witness_hardware()` context includes `silicon_vendor`, `discovery_method`, and `accelerators[]`. Existing `gpus[]` callers see zero change.
+**Local mode (new):** `Witness()` with no args enters local mode. No breaking changes. Existing code with endpoint/api_key/tenant_id works exactly as before.
 
-**New adapters (v0.5.7-v0.5.8):** Google ADK, CrewAI, A2A, Cerebras, Qdrant, SkillSpector, Microsoft AGT, LangGraph. No breaking changes.
+**Compliance intelligence (new):** `resolve()`, `coverage()`, `crosswalk_version()` added. New exports: `resolve`, `resolve_framework`, `crosswalk_frameworks`, `crosswalk_procedures`, `crosswalk_version`. No breaking changes.
 
-**Agent transactions (v0.5.7):** `witness_transaction()` for AI-FIN.1. No breaking changes.
+**coverage() return keys:** When called with a framework argument, the result dict uses `remaining` and `remaining_count` (not `missing`). `total_controls` and `covered_count` are also included.
 
-**Policy-as-Code (v0.5.2):** `swt3 init`, `swt3 doctor`, `extends:` composition, 14 built-in profiles. No breaking changes.
+**Buffer CTA updated:** The console message after first flush no longer shows the signup link or EU AI Act deadline. Connected users see a dashboard link instead.
 
-**Trust Mesh (v0.5.0):** `present_credential()` and `verify_trust()`. No breaking changes.
+### Previous versions
+
+**v0.5.8:** Cross-silicon hardware, AGT + LangGraph adapters, K8s DaemonSet.
+
+**v0.5.7:** Agent transactions, Google ADK, CrewAI, A2A.
+
+**v0.5.2:** Policy-as-Code, `swt3 init`, built-in profiles.
+
+**v0.5.0:** Trust Mesh, `present_credential()`, `verify_trust()`.
 
 ---
 
@@ -1133,7 +1176,8 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [All 97 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 24 frameworks
+- [All 112 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

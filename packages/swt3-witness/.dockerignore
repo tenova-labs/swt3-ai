@@ -1,7 +1,5 @@
-# Start with deny-all, then allow only what the build needs
+# Deny-all, allow only what the multi-stage build needs
 *
 !package.json
-!package-lock.json
 !tsconfig.json
 !src/
-!tenova-swt3-ai-0.5.8.tgz

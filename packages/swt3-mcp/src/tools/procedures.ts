@@ -11,6 +11,7 @@ import type { McpConfig } from "../config.js";
 
 interface ProceduresArgs {
   namespace?: string;
+  framework?: string;
 }
 
 interface RegistryEntry {
@@ -50,16 +51,23 @@ export async function handleProcedures(
   const registry = await getRegistry(client);
   const entries = Object.values(registry);
 
-  const filtered = args.namespace
-    ? entries.filter((e) =>
-        e.procedure_id?.toUpperCase().startsWith(args.namespace!.toUpperCase()),
-      )
-    : entries;
+  let filtered = entries;
+  if (args.namespace) {
+    filtered = filtered.filter((e) =>
+      e.procedure_id?.toUpperCase().startsWith(args.namespace!.toUpperCase()),
+    );
+  }
+  if (args.framework) {
+    const fw = args.framework.toUpperCase();
+    filtered = filtered.filter((e) => {
+      if (!e.frameworks) return false;
+      return Object.keys(e.frameworks).some((k) => k.toUpperCase().includes(fw));
+    });
+  }
 
   if (filtered.length === 0) {
-    return args.namespace
-      ? `No procedures found for namespace '${args.namespace}'.`
-      : "No procedures found in registry.";
+    const filters = [args.namespace && `namespace '${args.namespace}'`, args.framework && `framework '${args.framework}'`].filter(Boolean).join(" and ");
+    return `No procedures found for ${filters || "registry"}.`;
   }
 
   const lines = filtered.map((e) => {
@@ -72,11 +80,18 @@ export async function handleProcedures(
       if (fb?.label) parts.push(`  Factor B: ${fb.label}${fb.description ? ` — ${fb.description}` : ""}`);
       if (fc?.label) parts.push(`  Factor C: ${fc.label}${fc.description ? ` — ${fc.description}` : ""}`);
     }
+    if (args.framework && e.frameworks) {
+      const fwEntries = Object.entries(e.frameworks).filter(([k]) => k.toUpperCase().includes(args.framework!.toUpperCase()));
+      for (const [k, v] of fwEntries) {
+        parts.push(`  ${k}: ${v}`);
+      }
+    }
     return parts.join("\n");
   });
 
-  const header = args.namespace
-    ? `UCT Procedures (${args.namespace.toUpperCase()}): ${filtered.length} found`
+  const filters = [args.namespace && `namespace ${args.namespace.toUpperCase()}`, args.framework && `framework ${args.framework}`].filter(Boolean);
+  const header = filters.length
+    ? `UCT Procedures (${filters.join(", ")}): ${filtered.length} found`
     : `UCT Procedures: ${filtered.length} total`;
 
   return `${header}\n${"─".repeat(50)}\n${lines.join("\n\n")}`;

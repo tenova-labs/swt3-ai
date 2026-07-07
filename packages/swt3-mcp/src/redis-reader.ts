@@ -3,7 +3,7 @@
  *
  * Subscribes to the swt3:anchors Redis stream as a separate consumer group
  * (swt3-mcp-verifiers) and maintains an in-memory index for 0ms lookups.
- * The chain verifier queries this index before falling back to the persistent ledger.
+ * The chain verifier queries this index before falling back to Supabase.
  *
  * Architecture:
  *   - Consumer group: swt3-mcp-verifiers (separate from swt3-processors)

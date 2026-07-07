@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "swt3-ai"
-version = "0.5.8"
+version = "0.5.9"
 description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 103 procedures, 52 namespaces, 7 languages, 18 profiles. EU AI Act, NIST AI RMF, CMMC, SR 11-7."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -71,7 +71,7 @@ Issues = "https://github.com/tenova-labs/swt3-ai/issues"
 [tool.hatch.build]
 # Do not respect parent repo's allowlist .gitignore — it blocks the package source
 ignore-vcs = true
-include = ["swt3_ai/**/*.py", "swt3_ai/templates/*.yaml", "README.md", "LICENSE"]
+include = ["swt3_ai/**/*.py", "swt3_ai/templates/*.yaml", "swt3_ai/data/*.json", "README.md", "LICENSE"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["swt3_ai"]

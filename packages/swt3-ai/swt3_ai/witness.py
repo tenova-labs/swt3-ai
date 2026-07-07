@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import functools
 import logging
+import os
 import time
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
@@ -381,11 +382,26 @@ class Witness:
             self._sentinel = None
             return
 
-        # Validate required args (non-gateway mode)
+        # Local mode: no endpoint, no API key, no account required.
+        # Anchors generated locally via SHA-256, persisted to disk.
+        self._local_mode = not endpoint and not api_key and not gateway_mode
+        if self._local_mode:
+            _local_path = factor_handoff_path or os.path.join(os.getcwd(), "swt3-local")
+            os.makedirs(_local_path, exist_ok=True)
+            factor_handoff = "file"
+            factor_handoff_path = _local_path
+            endpoint = "local"
+            api_key = "axm_local"
+            tenant_id = tenant_id or "LOCAL"
+            buffer_size = 9999
+            flush_interval = 86400.0
+            max_retries = 0
+
+        # Validate required args (non-gateway, non-local mode)
         if not endpoint:
-            raise ValueError("endpoint is required (or set gateway_mode=True)")
+            raise ValueError("endpoint is required (or use Witness() with no args for local mode)")
         if not api_key:
-            raise ValueError("api_key is required (or set gateway_mode=True)")
+            raise ValueError("api_key is required (or use Witness() with no args for local mode)")
 
         # Validate handoff config
         if factor_handoff and factor_handoff != "file":
@@ -3630,11 +3646,14 @@ class Witness:
                 )
                 if not getattr(self, "_handoff_warned", False):
                     self._handoff_warned = True
-                    print(
-                        f"\n  [SWT3] {len(payloads)} anchors saved locally to {self._config.factor_handoff_path}"
-                        f"\n  [SWT3] \u26a0 Local anchors won\u2019t survive a compliance audit."
-                        f"\n  [SWT3] Connect to Axiom Engine \u2192 https://sovereign.tenova.io/signup?ref=sdk (free)\n"
-                    )
+                    if self._local_mode:
+                        print(f"\n  [SWT3] Local mode -- anchors saved to {self._config.factor_handoff_path}/")
+                    else:
+                        print(
+                            f"\n  [SWT3] {len(payloads)} anchors saved locally to {self._config.factor_handoff_path}"
+                            f"\n  [SWT3] Local anchors are not persisted to the ledger."
+                            f"\n  [SWT3] Connect to persist: https://sovereign.tenova.io/signup?ref=sdk (free)\n"
+                        )
             except OSError as e:
                 logger.error(
                     "Factor handoff FAILED for %s — payload NOT transmitted. "
@@ -3648,6 +3667,29 @@ class Witness:
             "Witnessed %s: %d payloads queued (buffer: %d)",
             inference.model_id, len(payloads), self._buffer.pending,
         )
+
+        # Local mode: show framework coverage summary
+        if self._local_mode:
+            _lcc = getattr(self, "_local_cta_count", 0)
+            if _lcc < 3:
+                self._local_cta_count = _lcc + 1
+                try:
+                    from .crosswalk import resolve as _resolve
+                    fw_set: set = set()
+                    proc_ids = [p.procedure_id for p in payloads]
+                    for pid in proc_ids:
+                        fw_set.update(_resolve(pid).keys())
+                    if fw_set:
+                        top_fw = sorted(fw_set)[:5]
+                        more = f", +{len(fw_set) - 5} more" if len(fw_set) > 5 else ""
+                        fw_list = ", ".join(top_fw) + more
+                        print(f"  [SWT3] {len(proc_ids)} procedures witnessed across {len(fw_set)} frameworks ({fw_list})")
+                    if _lcc == 0:
+                        print(f"  [SWT3] Run witness.coverage(\"EU-AI-ACT\") to see your coverage score")
+                        print(f"  [SWT3] Add swt3-local/ to .gitignore")
+                        print(f"  [SWT3] Connect to persist & audit: https://sovereign.tenova.io/signup?ref=sdk_local\n")
+                except Exception:
+                    pass
 
     def export_evidence(self) -> "EvidenceExporter":
         """Return an EvidenceExporter pre-configured with this witness's state.
@@ -3667,6 +3709,37 @@ class Witness:
             signing_key=getattr(self._config, "signing_key", None),
             has_hardware_attestation=bool(hw and hw.require_attestation),
         )
+
+    def coverage(self, framework: Optional[str] = None) -> Dict[str, Any]:
+        """Return framework coverage of procedures witnessed this session.
+
+        If framework is provided, includes coverage score against that
+        framework's requirements with covered/missing procedure lists.
+        """
+        from .crosswalk import resolve as _resolve, resolve_framework
+        witnessed = sorted(self._buffer.witnessed_procedures)
+        fw_covered: Dict[str, list] = {}
+        for pid in witnessed:
+            for fw, ref in _resolve(pid).items():
+                fw_covered.setdefault(fw, []).append(ref)
+        result: Dict[str, Any] = {
+            "witnessed_procedures": witnessed,
+            "procedure_count": len(witnessed),
+            "frameworks_covered": {fw: sorted(set(refs)) for fw, refs in fw_covered.items()},
+        }
+        if framework:
+            fw_map = resolve_framework(framework)
+            all_procs = set(p for procs in fw_map.values() for p in procs)
+            covered = set(witnessed) & all_procs
+            missing = sorted(all_procs - set(witnessed))
+            result["framework"] = framework
+            result["total_controls"] = len(all_procs)
+            result["covered"] = sorted(covered)
+            result["covered_count"] = len(covered)
+            result["remaining"] = missing
+            result["remaining_count"] = len(missing)
+            result["score"] = round(len(covered) / len(all_procs), 3) if all_procs else 0.0
+        return result
 
     def flush(self) -> List[WitnessReceipt]:
         """Force-flush all buffered payloads. Returns receipts."""

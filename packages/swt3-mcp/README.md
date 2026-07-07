@@ -6,6 +6,12 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
+## What's New in v0.5.9
+
+- **Compliance Intelligence** -- two new tools: `resolve_crosswalk` maps any procedure to every framework control it satisfies (24 frameworks, 103 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
+- **20 tools** (up from 18), 31 frameworks, 2 resources.
+- Aligned with core SDK v0.5.9 (`resolve()`, `coverage()`, local witness mode).
+
 ## Why This Exists
 
 In 2026, MCP configuration injection in Flowise led to arbitrary code execution across thousands of AI workflow instances. A compromised third-party AI tool (Context.ai) pivoted into Vercel's internal systems. Microsoft disclosed RCE vulnerabilities in Semantic Kernel. 65% of firms reported AI agent incidents. Only 14.4% of agents go live with full compliance approval.
@@ -203,7 +209,7 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (18)
+## Tools (20)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.
@@ -234,6 +240,10 @@ Every anchor maps to specific regulatory obligations:
 
 **Authorization:**
 `witness_authorization` -- witness pre-inference authorization decisions.
+
+**Compliance Intelligence:**
+`resolve_crosswalk` -- look up regulatory crosswalk mappings. Given a procedure (e.g., AI-FAIR.1), returns all framework controls it satisfies. Given a framework (e.g., EU-AI-ACT), returns all mapped requirements. Offline, no API calls.
+`coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
 `list_procedures` -- browse the UCT procedure registry (103 AI procedures, 52 namespaces).

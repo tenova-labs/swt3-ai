@@ -4,6 +4,10 @@ Ollama exposes an OpenAI-compatible API at http://localhost:11434/v1.
 This adapter wraps an OpenAI client pointed at Ollama with transparent
 witnessing, tagging records with provider="ollama" for accurate lineage.
 
+Compatible with Ollama 0.30+ (GGUF models, structured outputs via
+OpenAI-compatible API). Model names with tags and quantization suffixes
+are preserved as-is (e.g., "llama3.2:latest", "qwen2.5:7b-instruct-q4_0").
+
 Three usage patterns:
 
 1. Auto-detect (preferred):
@@ -76,6 +80,22 @@ def is_ollama_client(client: Any) -> bool:
     if not base_url:
         return False
     return ":11434" in base_url
+
+
+def normalize_ollama_model(model: str) -> str:
+    """Normalize an Ollama model name, preserving GGUF tags and quantization.
+
+    Ollama 0.30+ model names include tags and quantization suffixes that
+    are significant for lineage tracking. This function preserves them:
+
+        "llama3.2:latest"              -> "llama3.2:latest"
+        "qwen2.5:7b-instruct-q4_0"    -> "qwen2.5:7b-instruct-q4_0"
+        "mistral"                      -> "mistral"
+
+    Returns the model string unchanged -- Ollama names are already suitable
+    for use as model_id in witness records.
+    """
+    return model.strip() if model else "unknown"
 
 
 def _get_base_url(client: Any) -> str:

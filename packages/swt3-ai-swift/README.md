@@ -10,6 +10,11 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. Edge inference is not exempt.
 
+## What's New in v0.5.9
+
+- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. Core primitives, Core ML witnessing, Secure Enclave signing, and spatial provenance in this package remain stable and unchanged.
+- 2,069 tests passing across all 7 SDK languages.
+
 ## What You Get
 
 ### Core Primitives
@@ -37,7 +42,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tenova-labs/swt3-ai-swift.git", from: "0.5.8"),
+    .package(url: "https://github.com/tenova-labs/swt3-ai-swift.git", from: "0.5.9"),
 ],
 targets: [
     .target(dependencies: [

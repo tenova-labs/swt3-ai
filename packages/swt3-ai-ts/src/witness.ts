@@ -25,6 +25,7 @@ import { sha256Truncated, mintFingerprint, timestampMs } from "./fingerprint.js"
 import { extractPayloads, extractGatekeeperPayload, extractRevocationPayload, extractChainTrustDegradationPayload, REVOCATION_REASONS } from "./clearing.js";
 import { signPayload } from "./signing.js";
 import { WitnessBuffer } from "./buffer.js";
+import { resolve as crosswalkResolve, resolveFramework as crosswalkResolveFramework } from "./crosswalk.js";
 import { WriteAheadLog } from "./wal.js";
 import { writeHandoffFiles } from "./handoff.js";
 import { wrapOpenAI } from "./adapters/openai.js";
@@ -232,9 +233,9 @@ export class ChainEnforcer {
 }
 
 export interface WitnessOptions {
-  endpoint: string;
-  apiKey: string;
-  tenantId: string;
+  endpoint?: string;
+  apiKey?: string;
+  tenantId?: string;
   clearingLevel?: 0 | 1 | 2 | 3;
   bufferSize?: number;
   flushInterval?: number;
@@ -303,6 +304,8 @@ export class Witness {
   private handoffWarned = false;
   private _strict: boolean;
   private _gatewayMode: boolean;
+  private _localMode: boolean;
+  private _localCtaCount = 0;
   private _chainTrustLevels: number[] = [];
   private _onViolation?: (violation: ChainPolicyViolation) => void;
   private _walPath?: string;
@@ -543,16 +546,37 @@ export class Witness {
     }
   }
 
-  constructor(options: WitnessOptions) {
+  constructor(options: WitnessOptions = {}) {
     this._gatewayMode = options.gatewayMode ?? false;
 
+    // Local mode: no endpoint, no API key, no account required.
+    // Anchors generated locally via SHA-256, persisted to disk.
+    this._localMode = !options.endpoint && !options.apiKey && !this._gatewayMode;
+    if (this._localMode) {
+      const { mkdirSync } = require("node:fs");
+      const { join } = require("node:path");
+      const localPath = options.factorHandoffPath || join(process.cwd(), "swt3-local");
+      try { mkdirSync(localPath, { recursive: true }); } catch { /* exists */ }
+      options = {
+        ...options,
+        endpoint: "local",
+        apiKey: "axm_local",
+        tenantId: options.tenantId || "LOCAL",
+        factorHandoff: "file",
+        factorHandoffPath: localPath,
+        bufferSize: 9999,
+        flushInterval: 86400,
+        maxRetries: 0,
+      };
+    }
+
     // Gateway mode: SDK defers all witnessing to the SWT3 Gateway.
-    if (!this._gatewayMode) {
-      if (!options.endpoint) throw new Error("endpoint is required (or set gatewayMode: true)");
-      if (!options.apiKey) throw new Error("apiKey is required (or set gatewayMode: true)");
+    if (!this._gatewayMode && !this._localMode) {
+      if (!options.endpoint) throw new Error("endpoint is required (or use new Witness() for local mode)");
+      if (!options.apiKey) throw new Error("apiKey is required (or use new Witness() for local mode)");
       if (!options.apiKey.startsWith("axm_")) throw new Error("apiKey must start with 'axm_'");
     }
-    if (!options.tenantId && !this._gatewayMode) throw new Error("tenantId is required");
+    if (!options.tenantId && !this._gatewayMode && !this._localMode) throw new Error("tenantId is required");
     if (options.factorHandoff && options.factorHandoff !== "file") {
       throw new Error("factorHandoff must be 'file'");
     }
@@ -1118,6 +1142,29 @@ export class Witness {
     }
 
     this.buffer.enqueueMany(payloads);
+
+    // Local mode: show framework coverage for witnessed procedures
+    if (this._localMode && this._localCtaCount < 3) {
+      this._localCtaCount++;
+      try {
+        const fwSet = new Set<string>();
+        const procIds = payloads.map((p) => p.procedure_id);
+        for (const pid of procIds) {
+          for (const fw of Object.keys(crosswalkResolve(pid))) fwSet.add(fw);
+        }
+        if (fwSet.size > 0) {
+          const topFw = [...fwSet].sort().slice(0, 5);
+          const more = fwSet.size > 5 ? `, +${fwSet.size - 5} more` : "";
+          console.info(`  [SWT3] ${procIds.length} procedures witnessed across ${fwSet.size} frameworks (${topFw.join(", ")}${more})`);
+        }
+        if (this._localCtaCount === 1) {
+          console.info(`  [SWT3] Run witness.coverage("EU-AI-ACT") to see your coverage score`);
+          console.info(`  [SWT3] Add swt3-local/ to .gitignore`);
+          console.info(`  [SWT3] Connect to persist & audit: https://sovereign.tenova.io/signup?ref=sdk_local\n`);
+        }
+      } catch { /* never break witness for summary */ }
+    }
+
     return payloads;
   }
 
@@ -4124,11 +4171,15 @@ export class Witness {
       writeHandoffFiles(payloads, inference, this.config.tenantId, this.config.factorHandoffPath);
       if (!this.handoffWarned) {
         this.handoffWarned = true;
-        console.info(
-          `\n  [SWT3] ${payloads.length} anchors saved locally to ${this.config.factorHandoffPath}` +
-          `\n  [SWT3] \u26a0 Local anchors won\u2019t survive a compliance audit.` +
-          `\n  [SWT3] Connect to Axiom Engine \u2192 https://sovereign.tenova.io/signup?ref=sdk (free)\n`
-        );
+        if (this._localMode) {
+          console.info(`\n  [SWT3] Local mode -- anchors saved to ${this.config.factorHandoffPath}/`);
+        } else {
+          console.info(
+            `\n  [SWT3] ${payloads.length} anchors saved locally to ${this.config.factorHandoffPath}` +
+            `\n  [SWT3] Local anchors are not persisted to the ledger.` +
+            `\n  [SWT3] Connect to persist: https://sovereign.tenova.io/signup?ref=sdk (free)\n`
+          );
+        }
       }
     }
 
@@ -4168,6 +4219,43 @@ export class Witness {
       hasHardwareAttestation: !!this._hardwareConfig?.requireAttestation,
       merkleRoots: this._merkleAccumulator?.roots,
     });
+  }
+
+  /** Return framework coverage of procedures witnessed this session. */
+  coverage(framework?: string): Record<string, unknown> {
+    const witnessed = [...this.buffer.witnessedProcedures].sort();
+    const fwCovered: Record<string, Set<string>> = {};
+    for (const pid of witnessed) {
+      const mappings = crosswalkResolve(pid);
+      for (const [fw, ref] of Object.entries(mappings)) {
+        if (!fwCovered[fw]) fwCovered[fw] = new Set();
+        fwCovered[fw].add(ref);
+      }
+    }
+    const result: Record<string, unknown> = {
+      witnessed_procedures: witnessed,
+      procedure_count: witnessed.length,
+      frameworks_covered: Object.fromEntries(
+        Object.entries(fwCovered).map(([fw, refs]) => [fw, [...refs].sort()]),
+      ),
+    };
+    if (framework) {
+      const fwMap = crosswalkResolveFramework(framework);
+      const allProcs = new Set<string>();
+      for (const procs of Object.values(fwMap)) {
+        for (const p of procs) allProcs.add(p);
+      }
+      const covered = witnessed.filter((p: string) => allProcs.has(p));
+      const missing = [...allProcs].filter((p) => !this.buffer.witnessedProcedures.has(p)).sort();
+      result.framework = framework;
+      result.total_controls = allProcs.size;
+      result.covered = covered;
+      result.covered_count = covered.length;
+      result.remaining = missing;
+      result.remaining_count = missing.length;
+      result.score = allProcs.size > 0 ? Math.round((covered.length / allProcs.size) * 1000) / 1000 : 0;
+    }
+    return result;
   }
 
   /** Force-flush all buffered payloads. */

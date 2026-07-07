@@ -9,9 +9,12 @@ from swt3_ai import (
     TRUST_DENIED, TRUST_BASIC, TRUST_VERIFIED, TRUST_ATTESTED, TRUST_SOVEREIGN,
 )
 from swt3_ai.trust import (
-    verify_credential, evaluate_trust_level,
+    verify_credential, evaluate_trust_level, sign_credential, DenyEvent,
+    generate_key_attestation, verify_key_attestation, is_key_attestation_fresh,
+    generate_challenge, respond_to_challenge, verify_liveness_response,
     DENIAL_DENY_LISTED, DENIAL_TENANT_NOT_TRUSTED, DENIAL_ANCHOR_EXPIRED,
     DENIAL_SIGNATURE_MISSING, DENIAL_INSUFFICIENT_PROCEDURES,
+    DENIAL_RATE_LIMITED, DENIAL_INSUFFICIENT_TRUST_LEVEL,
 )
 
 
@@ -176,7 +179,6 @@ class TestVerifyCredential:
         assert result.checks_passed == result.checks_performed
 
     def test_signed_verified_gets_verified(self):
-        from swt3_ai.trust import sign_credential
         reg = TrustRegistry()
         reg.trust_tenant("partner")
         reg.register_signing_key("remote-agent-001", "test-secret")
@@ -306,3 +308,302 @@ class TestBilateralHandshake:
         result_b = agent_b.verify_trust(cred_a)
         assert result_b.granted is False
         assert result_b.denial_reason == DENIAL_TENANT_NOT_TRUSTED
+
+
+# ── Task 1: Intra-Tenant Zero-Trust ────────────────────────────────
+
+class TestIntraTenantZeroTrust:
+    def test_same_tenant_auto_trusted_by_default(self):
+        reg = TrustRegistry()
+        cred = mk_credential(tenant_id="my_tenant")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is True
+
+    def test_same_tenant_denied_when_intra_tenant_signing_required(self):
+        reg = TrustRegistry()
+        reg.set_require_intra_tenant_signing(True)
+        cred = mk_credential(tenant_id="my_tenant")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is False
+        assert result.denial_reason == DENIAL_TENANT_NOT_TRUSTED
+
+    def test_same_tenant_passes_when_explicitly_trusted(self):
+        reg = TrustRegistry()
+        reg.set_require_intra_tenant_signing(True)
+        reg.trust_tenant("my_tenant")
+        cred = mk_credential(tenant_id="my_tenant")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is True
+
+
+# ── Task 2: Rate Limiting ──────────────────────────────────────────
+
+class TestRateLimiting:
+    def test_no_rate_limit_by_default(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        cred = mk_credential(tenant_id="partner")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is True
+
+    def test_passes_under_limit(self):
+        reg = TrustRegistry()
+        reg.set_rate_limit(3, 60)
+        # Generate 2 failures
+        verify_credential(mk_credential(agent_id="target", tenant_id="stranger"), reg, "my_tenant")
+        verify_credential(mk_credential(agent_id="target", tenant_id="stranger"), reg, "my_tenant")
+        # 2 failures, limit is 3 -- should still pass
+        reg.trust_tenant("partner")
+        result = verify_credential(mk_credential(agent_id="target", tenant_id="partner"), reg, "my_tenant")
+        assert result.granted is True
+
+    def test_denied_when_rate_limit_exceeded(self):
+        reg = TrustRegistry()
+        reg.set_rate_limit(2, 60)
+        # Generate 2 failures
+        verify_credential(mk_credential(agent_id="attacker", tenant_id="stranger"), reg, "my_tenant")
+        verify_credential(mk_credential(agent_id="attacker", tenant_id="stranger"), reg, "my_tenant")
+        # Now rate limited
+        reg.trust_tenant("partner")
+        result = verify_credential(mk_credential(agent_id="attacker", tenant_id="partner"), reg, "my_tenant")
+        assert result.granted is False
+        assert result.denial_reason == DENIAL_RATE_LIMITED
+
+
+# ── Task 3: Per-Level Freshness ────────────────────────────────────
+
+class TestPerLevelFreshness:
+    def test_basic_level_generous_window(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.set_per_level_freshness({1: 86400, 2: 3600, 3: 900, 4: 300})
+        # 2h old, BASIC level -- 86400s window, passes
+        cred = mk_credential(tenant_id="partner", anchor_timestamp_ms=int(time.time() * 1000) - 7200_000)
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is True
+
+    def test_verified_level_fails_with_old_anchor(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_per_level_freshness({1: 86400, 2: 3600, 3: 900, 4: 300})
+        # 2h old, VERIFIED level -- 3600s window, fails
+        cred = mk_credential(tenant_id="partner", is_signed=True, anchor_timestamp_ms=int(time.time() * 1000) - 7200_000)
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is False
+        assert result.denial_reason == DENIAL_ANCHOR_EXPIRED
+
+    def test_sovereign_requires_very_fresh(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_per_level_freshness({1: 86400, 2: 3600, 3: 900, 4: 300})
+        # 10min old, SOVEREIGN level (300s window) -- fails
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True, clearing_level=2,
+            procedures=["AI-HW.1", "AI-GRD.1"],
+            anchor_timestamp_ms=int(time.time() * 1000) - 600_000,
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is False
+        assert result.denial_reason == DENIAL_ANCHOR_EXPIRED
+
+    def test_sovereign_passes_when_fresh(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_per_level_freshness({1: 86400, 2: 3600, 3: 900, 4: 300})
+        # 2min old, SOVEREIGN level (300s window) -- passes
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True, clearing_level=2,
+            procedures=["AI-HW.1", "AI-GRD.1"],
+            anchor_timestamp_ms=int(time.time() * 1000) - 120_000,
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.granted is True
+        assert result.trust_level == TRUST_SOVEREIGN
+
+
+# ── Task 4: Verifiable Boolean Claims ──────────────────────────────
+
+class TestVerifiableBooleanClaims:
+    def test_disabled_by_default(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True,
+            clearing_level=1, procedures=[],
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.trust_level == TRUST_ATTESTED
+
+    def test_hw_without_procedure_degrades(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_verify_boolean_claims(True)
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True,
+            clearing_level=1, procedures=["AI-GRD.1"],
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.trust_level == TRUST_BASIC
+
+    def test_guardrails_without_procedure_degrades(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_verify_boolean_claims(True)
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True,
+            clearing_level=1, procedures=["AI-HW.1"],
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.trust_level == TRUST_BASIC
+
+    def test_both_claims_backed_keeps_full_level(self):
+        reg = TrustRegistry()
+        reg.trust_tenant("partner")
+        reg.register_signing_key("remote-agent-001", "key")
+        reg.set_verify_boolean_claims(True)
+        cred = mk_credential(
+            tenant_id="partner", is_signed=True,
+            has_hardware_attestation=True, has_guardrails=True,
+            clearing_level=1, procedures=["AI-HW.1", "AI-GRD.1"],
+        )
+        cred.credential_signature = sign_credential(cred, "key")
+        result = verify_credential(cred, reg, "my_tenant")
+        assert result.trust_level == TRUST_ATTESTED
+
+
+# ── Task 5: Deny List Propagation ──────────────────────────────────
+
+class TestDenyListPropagation:
+    def test_on_deny_event_fires_for_agent(self):
+        reg = TrustRegistry()
+        events = []
+        reg.on_deny_event(lambda e: events.append(e))
+        reg.deny_agent("bad-agent")
+        assert len(events) == 1
+        assert events[0].type == "agent"
+        assert events[0].target == "bad-agent"
+
+    def test_on_deny_event_fires_for_tenant(self):
+        reg = TrustRegistry()
+        events = []
+        reg.on_deny_event(lambda e: events.append(e))
+        reg.deny_tenant("bad-tenant")
+        assert len(events) == 1
+        assert events[0].type == "tenant"
+        assert events[0].target == "bad-tenant"
+
+    def test_apply_revocation_event(self):
+        reg = TrustRegistry()
+        events = []
+        reg.on_deny_event(lambda e: events.append(e))
+        reg.apply_revocation_event({"agent_id": "revoked-agent", "tenant_id": "revoked-tenant", "reason": "model_recall"})
+        assert reg.is_agent_denied("revoked-agent") is True
+        assert reg.is_tenant_denied("revoked-tenant") is True
+        assert len(events) == 2
+        assert events[0].reason == "model_recall"
+
+
+# ── Task 6: Key Attestation ───────────────────────────────────────
+
+class TestKeyAttestation:
+    def test_generates_and_verifies(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000), "secret")
+        assert att.agent_id == "agent-1"
+        assert att.public_key == "pubkey123"
+        assert len(att.attestation_proof) == 64
+        assert verify_key_attestation(att, "secret") is True
+
+    def test_fails_with_wrong_key(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000), "secret")
+        assert verify_key_attestation(att, "wrong-secret") is False
+
+    def test_fails_with_tampered_data(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000), "secret")
+        att.public_key = "tampered"
+        assert verify_key_attestation(att, "secret") is False
+
+    def test_freshness_passes_for_recent(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000), "secret")
+        assert is_key_attestation_fresh(att, 86400_000) is True
+
+    def test_freshness_fails_for_old(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000) - 100_000, "secret")
+        assert is_key_attestation_fresh(att, 50_000) is False
+
+    def test_key_purpose(self):
+        att = generate_key_attestation("agent-1", "pubkey123", "abc123def456", int(time.time() * 1000), "secret", "delegation")
+        assert att.key_purpose == "delegation"
+        assert verify_key_attestation(att, "secret") is True
+        att.key_purpose = "signing"
+        assert verify_key_attestation(att, "secret") is False
+
+
+# ── Task 7: Challenge-Response Liveness ────────────────────────────
+
+class TestChallengeResponseLiveness:
+    def test_full_handshake_succeeds(self):
+        challenge = generate_challenge("agent-a")
+        assert len(challenge.nonce) == 64
+        response = respond_to_challenge(challenge, "agent-a", "fingerprint123", "secret")
+        result = verify_liveness_response(response, challenge, "secret", timeout_ms=60_000)
+        assert result.valid is True
+
+    def test_fails_with_wrong_key(self):
+        challenge = generate_challenge("agent-a")
+        response = respond_to_challenge(challenge, "agent-a", "fingerprint123", "secret")
+        result = verify_liveness_response(response, challenge, "wrong-key", timeout_ms=60_000)
+        assert result.valid is False
+        assert result.reason == "signature_invalid"
+
+    def test_fails_with_nonce_mismatch(self):
+        challenge = generate_challenge("agent-a")
+        response = respond_to_challenge(challenge, "agent-a", "fingerprint123", "secret")
+        response.nonce = "tampered_nonce"
+        result = verify_liveness_response(response, challenge, "secret", timeout_ms=60_000)
+        assert result.valid is False
+        assert result.reason == "nonce_mismatch"
+
+    def test_fails_with_agent_mismatch(self):
+        challenge = generate_challenge("agent-a")
+        response = respond_to_challenge(challenge, "agent-b", "fingerprint123", "secret")
+        result = verify_liveness_response(response, challenge, "secret", timeout_ms=60_000)
+        assert result.valid is False
+        assert result.reason == "agent_mismatch"
+
+    def test_fails_with_timeout(self):
+        challenge = generate_challenge("agent-a")
+        challenge.challenge_timestamp_ms = int(time.time() * 1000) - 10_000
+        response = respond_to_challenge(challenge, "agent-a", "fingerprint123", "secret")
+        result = verify_liveness_response(response, challenge, "secret", timeout_ms=5000)
+        assert result.valid is False
+        assert result.reason == "liveness_timeout"
+
+    def test_mutual_challenge_succeeds(self):
+        # A challenges B
+        ch_a_to_b = generate_challenge("agent-b")
+        resp_b = respond_to_challenge(ch_a_to_b, "agent-b", "fp_b", "key_b")
+        result_b = verify_liveness_response(resp_b, ch_a_to_b, "key_b", timeout_ms=60_000)
+        assert result_b.valid is True
+
+        # B challenges A
+        ch_b_to_a = generate_challenge("agent-a")
+        resp_a = respond_to_challenge(ch_b_to_a, "agent-a", "fp_a", "key_a")
+        result_a = verify_liveness_response(resp_a, ch_b_to_a, "key_a", timeout_ms=60_000)
+        assert result_a.valid is True

@@ -25,6 +25,7 @@ import { handleReportViolation } from "./tools/violation.js";
 import { handleWitnessModelIntegrity, handleWitnessAdapterStack } from "./tools/model.js";
 import { handleAttestSkillManifest, handleAttestMemoryContext } from "./tools/skill.js";
 import { handleVerifyAgentTrust, handlePresentCredential } from "./tools/trust.js";
+import { handleResolveCrosswalk, handleCoverageReport } from "./tools/crosswalk.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
 import { REGISTRY_RESOURCE } from "./resources/registry.js";
@@ -261,9 +262,11 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     description:
       "List available UCT (Universal Control Taxonomy) procedures from the SWT3 registry. " +
       "Each procedure maps to a specific compliance control (e.g., AI-INF.1 for inference provenance). " +
-      "Optionally filter by namespace (AI, ACC, AUD, CFG, NET, etc.).",
+      "Optionally filter by namespace (AI, ACC, AUD, CFG, NET, etc.) or by regulatory framework " +
+      "(EU-AI-ACT, NIST-AI-RMF, CMMC, SR-11-7, etc.).",
     inputSchema: {
       namespace: z.string().optional().describe("Filter by UCT namespace prefix (e.g., 'AI' for AI procedures)"),
+      framework: z.string().optional().describe("Filter by regulatory framework (e.g., 'EU-AI-ACT', 'NIST-AI-RMF', 'CMMC')"),
     },
     annotations: { readOnlyHint: true },
   }, async (args) => {
@@ -711,159 +714,47 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     }
   });
 
-  // --- Agent Lifecycle Tools (PPA #23) ---
-
-  server.registerTool("witness_resource_consumption", {
+  server.registerTool("resolve_crosswalk", {
     description:
-      "Witness resource consumption for an AI operation (AI-COST.1). " +
-      "Records token usage, API call counts, and estimated cost as compliance evidence. " +
-      "Evidence layer only -- values are self-reported, not verified.",
+      "Look up regulatory crosswalk mappings. Given a procedure ID (e.g., AI-FAIR.1), " +
+      "returns all framework requirements it satisfies. Given a framework ID (e.g., EU-AI-ACT), " +
+      "returns all requirement-to-procedure mappings. With no arguments, lists all available frameworks. " +
+      "Offline -- uses bundled crosswalk data, no API calls.",
     inputSchema: {
-      token_count: z.number().describe("Total tokens consumed (input + output)"),
-      api_calls: z.number().describe("Number of API calls made"),
-      estimated_cost: z.string().describe("Estimated cost as string (e.g. '0.0042')"),
-      budget_threshold: z.string().optional().describe("Budget limit as string"),
-      cost_anomaly: z.boolean().optional().describe("Whether this consumption is anomalous"),
-      resource_attribution_id: z.string().optional().describe("Cost attribution identifier"),
-      consumption_window_seconds: z.number().optional().describe("Time window for this consumption"),
-      model_id: z.string().optional().describe("Model identifier"),
+      procedure_id: z.string().optional().describe("UCT procedure ID to resolve (e.g., AI-INF.1, AI-FAIR.1)"),
+      framework_id: z.string().optional().describe("Framework ID to resolve (e.g., EU-AI-ACT, NIST-AI-RMF, CMMC)"),
     },
+    annotations: { readOnlyHint: true },
   }, async (args) => {
     try {
-      const fa = args.token_count as number;
-      const fb = args.api_calls as number;
-      const fc = parseFloat(args.estimated_cost as string) || 0;
-      const [ts, epoch] = timestampMs();
-      const fp = mintFingerprint(config.tenantId, "AI-COST.1", fa, fb, fc, ts);
-      const payload: Record<string, unknown> = {
-        procedure_id: "AI-COST.1", factor_a: fa, factor_b: fb, factor_c: fc,
-        clearing_level: config.clearingLevel,
-        anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
-        witness_source: "mcp",
-        ...(config.agentId ? { agent_id: config.agentId } : {}),
-        ...(config.signingKey ? { payload_signature: signPayload(config.signingKey, fp, config.agentId) } : {}),
-      };
-      if (!config.demo) await client.postWitness(payload);
-      const text = `Witnessed resource consumption: ${fa} tokens, ${fb} API calls, $${args.estimated_cost}\nAnchor: ${fp}${config.demo ? " (demo mode -- not persisted)" : ""}`;
+      const text = handleResolveCrosswalk(args as any);
       return { content: [{ type: "text" as const, text }] };
     } catch (err) {
-      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
     }
   });
 
-  server.registerTool("witness_delegation", {
+  server.registerTool("coverage_report", {
     description:
-      "Witness a delegation tree node (AI-DEL.1). " +
-      "Records authority delegation structure between agents: scope, depth, TTL, " +
-      "and whether cascade revocation and sub-delegation are permitted.",
+      "Report framework coverage for the current audit session. Shows which " +
+      "procedures have been witnessed and which remain, with a coverage percentage. " +
+      "Requires an active audit session (use start_audit_session first).",
     inputSchema: {
-      scope_hash: z.string().describe("SHA-256 of the permission/scope manifest"),
-      delegation_depth: z.number().describe("Hops from original human authorization"),
-      ttl_seconds: z.number().describe("Seconds until delegation expires (0 = unbounded)"),
-      parent_agent_id: z.string().describe("Delegating agent identifier"),
-      child_agent_id: z.string().describe("Receiving agent identifier"),
-      delegated_capabilities: z.array(z.string()).optional().describe("Delegated capability names"),
-      cascade_revocation: z.boolean().optional().describe("Whether revoking parent revokes children"),
-      sub_delegation_allowed: z.boolean().optional().describe("Whether child can further delegate"),
+      framework: z.string().describe("Framework ID to check coverage against (e.g., EU-AI-ACT, NIST-AI-RMF, CMMC)"),
     },
+    annotations: { readOnlyHint: true },
   }, async (args) => {
     try {
-      const { sha256Hex } = await import("./fingerprint.js");
-      const fa = args.scope_hash ? (parseInt(sha256Hex(args.scope_hash as string, 8), 16) >>> 0) : 0;
-      const fb = args.delegation_depth as number;
-      const fc = args.ttl_seconds as number;
-      const [ts, epoch] = timestampMs();
-      const fp = mintFingerprint(config.tenantId, "AI-DEL.1", fa, fb, fc, ts);
-      const payload: Record<string, unknown> = {
-        procedure_id: "AI-DEL.1", factor_a: fa, factor_b: fb, factor_c: fc,
-        clearing_level: config.clearingLevel,
-        anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
-        witness_source: "mcp",
-        ...(config.agentId ? { agent_id: config.agentId } : {}),
-        ...(config.signingKey ? { payload_signature: signPayload(config.signingKey, fp, config.agentId) } : {}),
-      };
-      if (!config.demo) await client.postWitness(payload);
-      const text = `Witnessed delegation: ${args.parent_agent_id} -> ${args.child_agent_id}, depth=${fb}, TTL=${fc}s\nAnchor: ${fp}${config.demo ? " (demo mode -- not persisted)" : ""}`;
+      const text = handleCoverageReport(args as any, sessionState);
       return { content: [{ type: "text" as const, text }] };
     } catch (err) {
-      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
-    }
-  });
-
-  server.registerTool("witness_capability_attestation", {
-    description:
-      "Witness an agent's capability manifest (AI-CAP.1). " +
-      "Records declared vs observed capabilities with drift detection " +
-      "and autonomy level binding.",
-    inputSchema: {
-      manifest_hash: z.string().describe("SHA-256 of the capability manifest"),
-      capability_count: z.number().describe("Number of declared capabilities"),
-      autonomy_level: z.number().describe("Agent autonomy level (0-3)"),
-      declared_capabilities: z.array(z.string()).optional().describe("Capabilities the agent claims"),
-      observed_capabilities: z.array(z.string()).optional().describe("Capabilities actually exercised"),
-      drift_detected: z.boolean().optional().describe("Whether declared/observed diverge"),
-      hitl_required: z.boolean().optional().describe("Whether human-in-the-loop is required"),
-    },
-  }, async (args) => {
-    try {
-      const { sha256Hex } = await import("./fingerprint.js");
-      const fa = args.manifest_hash ? (parseInt(sha256Hex(args.manifest_hash as string, 8), 16) >>> 0) : 0;
-      const fb = args.capability_count as number;
-      const fc = args.autonomy_level as number;
-      const [ts, epoch] = timestampMs();
-      const fp = mintFingerprint(config.tenantId, "AI-CAP.1", fa, fb, fc, ts);
-      const payload: Record<string, unknown> = {
-        procedure_id: "AI-CAP.1", factor_a: fa, factor_b: fb, factor_c: fc,
-        clearing_level: config.clearingLevel,
-        anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
-        witness_source: "mcp",
-        ...(config.agentId ? { agent_id: config.agentId } : {}),
-        ...(config.signingKey ? { payload_signature: signPayload(config.signingKey, fp, config.agentId) } : {}),
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
       };
-      if (!config.demo) await client.postWitness(payload);
-      const text = `Witnessed capability attestation: ${fb} capabilities, autonomy level ${fc}${args.drift_detected ? ", DRIFT DETECTED" : ""}\nAnchor: ${fp}${config.demo ? " (demo mode -- not persisted)" : ""}`;
-      return { content: [{ type: "text" as const, text }] };
-    } catch (err) {
-      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
-    }
-  });
-
-  server.registerTool("witness_autonomy_transition", {
-    description:
-      "Witness an agent autonomy level transition (AI-AUTO.3). " +
-      "Records when an agent's autonomy level changes (promotion or demotion). " +
-      "Levels 0-3 parallel clearing levels.",
-    inputSchema: {
-      from_level: z.number().describe("Previous autonomy level (0-3)"),
-      to_level: z.number().describe("New autonomy level (0-3)"),
-      trigger_type: z.string().describe("What caused the transition (e.g. risk, policy, manual, scheduled)"),
-      justification: z.string().optional().describe("Human-readable reason for the transition"),
-      risk_score: z.number().optional().describe("Risk score that triggered the transition"),
-      hitl_checkpoint: z.boolean().optional().describe("Whether a HITL checkpoint was required"),
-    },
-  }, async (args) => {
-    try {
-      const { sha256Hex } = await import("./fingerprint.js");
-      const fa = args.from_level as number;
-      const fb = args.to_level as number;
-      const trigger = (args.trigger_type as string).toLowerCase();
-      const fc = parseInt(sha256Hex(trigger, 4), 16) % 65536;
-      const [ts, epoch] = timestampMs();
-      const fp = mintFingerprint(config.tenantId, "AI-AUTO.3", fa, fb, fc, ts);
-      const payload: Record<string, unknown> = {
-        procedure_id: "AI-AUTO.3", factor_a: fa, factor_b: fb, factor_c: fc,
-        clearing_level: config.clearingLevel,
-        anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
-        witness_source: "mcp",
-        ...(config.agentId ? { agent_id: config.agentId } : {}),
-        ...(config.signingKey ? { payload_signature: signPayload(config.signingKey, fp, config.agentId) } : {}),
-      };
-      if (!config.demo) await client.postWitness(payload);
-      const direction = fb > fa ? "promotion" : fb < fa ? "demotion" : "lateral";
-      const text = `Witnessed autonomy ${direction}: level ${fa} -> ${fb} (trigger: ${trigger})\nAnchor: ${fp}${config.demo ? " (demo mode -- not persisted)" : ""}`;
-      return { content: [{ type: "text" as const, text }] };
-    } catch (err) {
-      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
     }
   });
 

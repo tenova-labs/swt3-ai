@@ -2,7 +2,7 @@
 
 import sys
 
-if len(sys.argv) > 1 and sys.argv[1] in ("init", "doctor", "help", "--help", "-h"):
+if len(sys.argv) > 1 and sys.argv[1] in ("init", "doctor", "procedures", "quickstart", "help", "--help", "-h"):
     from .cli import main
     main()
 else:

@@ -25,7 +25,7 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.5.8"
+__version__ = "0.5.9"
 
 from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph
 from .exporters.chain_monitor import ChainMonitorExporter
@@ -74,12 +74,21 @@ from .profile import (
     coverage_score, build_profile_message, RECOMMENDED_PROCEDURES,
 )
 from .chain import build_lookup, walk_chain, verify_chain_integrity
+from .crosswalk import (
+    resolve, resolve_framework, frameworks as crosswalk_frameworks,
+    procedures as crosswalk_procedures, crosswalk_version,
+)
 
 __all__ = [
     "Witness",
     "GatekeeperError",
     "ChainEnforcer",
     "PolicyViolationError",
+    "resolve",
+    "resolve_framework",
+    "crosswalk_frameworks",
+    "crosswalk_procedures",
+    "crosswalk_version",
     "ChainRule",
     "ChainPolicyViolation",
     "ChainMonitorExporter",

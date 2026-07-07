@@ -128,3 +128,81 @@ public static class KeyPurposes
     public const string Encryption = "encryption";
     public const string Delegation = "delegation";
 }
+
+/// <summary>
+/// AI model lifecycle stages (NIST AI RMF MAP 1.3).
+/// </summary>
+public static class LifecycleStages
+{
+    public const string Design = "design";
+    public const string Development = "development";
+    public const string Testing = "testing";
+    public const string Deployment = "deployment";
+    public const string Monitoring = "monitoring";
+    public const string Decommission = "decommission";
+}
+
+/// <summary>
+/// METAGOV governance domain scope codes (AI-METAGOV.5).
+/// </summary>
+public static class MetagovScopes
+{
+    public const string VerdictRules = "verdict_rules";
+    public const string TrustMesh = "trust_mesh";
+    public const string Enforcement = "enforcement";
+    public const string Clearing = "clearing";
+    public const string Full = "full";
+}
+
+/// <summary>
+/// METAGOV permission level codes (AI-METAGOV.5).
+/// </summary>
+public static class MetagovPermissions
+{
+    public const string Read = "read";
+    public const string Modify = "modify";
+    public const string Approve = "approve";
+}
+
+/// <summary>
+/// METAGOV emergency override reason codes (AI-METAGOV.6).
+/// </summary>
+public static class MetagovOverrideReasons
+{
+    public const string Unspecified = "unspecified";
+    public const string IncidentResponse = "incident_response";
+    public const string RegulatoryDeadline = "regulatory_deadline";
+    public const string SystemFailure = "system_failure";
+    public const string SecurityBreach = "security_breach";
+}
+
+/// <summary>
+/// METAGOV review status codes (AI-METAGOV.6).
+/// </summary>
+public static class MetagovReviewStatuses
+{
+    public const string Unreviewed = "unreviewed";
+    public const string Attested = "attested";
+    public const string Revoked = "revoked";
+}
+
+/// <summary>
+/// METAGOV governance divergence codes (AI-METAGOV.7).
+/// </summary>
+public static class MetagovDivergenceTypes
+{
+    public const string Equivalent = "equivalent";
+    public const string VersionDivergent = "version_divergent";
+    public const string StructuralDivergent = "structural_divergent";
+    public const string CoverageDivergent = "coverage_divergent";
+}
+
+/// <summary>
+/// METAGOV attestation purity tiers (AI-METAGOV.8).
+/// </summary>
+public static class MetagovPurityTiers
+{
+    public const string VerifiedPure = "verified_pure";
+    public const string UnverifiedPurity = "unverified_purity";
+    public const string Impure = "impure";
+}

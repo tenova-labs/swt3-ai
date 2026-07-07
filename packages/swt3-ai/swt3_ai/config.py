@@ -77,7 +77,6 @@ _VALID_PROFILES = frozenset({
     "content-platform",
     "microsoft-foundry",
     "minimal",
-    "multi-silicon",
 })
 
 _VALID_MERKLE_KEYS = frozenset({
@@ -309,7 +308,6 @@ def _extract_hardware(config: Dict[str, Any]) -> Optional[HardwareConfig]:
             min_gpu_count=rp.get("min_gpu_count"),
             min_memory_mb=rp.get("min_memory_mb"),
             expected_accelerator=rp.get("expected_accelerator"),
-            expected_silicon_vendor=rp.get("expected_silicon_vendor"),
             max_temperature_celsius=rp.get("max_temperature_celsius"),
             max_power_watts=rp.get("max_power_watts"),
         )

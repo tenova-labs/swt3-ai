@@ -51,8 +51,15 @@ Usage:
   swt3 demo                         Run the zero-friction demo
   swt3 doctor                       Diagnose config health
   swt3 doctor --ci                   Strict mode (exit 1 on warnings)
+  swt3 procedures                   List all UCT procedures
+  swt3 procedures --namespace MDL   Filter by namespace
+  swt3 procedures --json            Machine-readable output
+  swt3 quickstart                   Generate a working example script
   swt3 verify                       Offline anchor verification
   swt3 audit                        Forensic chain timeline (html or json)
+  swt3 status                       Cloud status (completeness, anchors, findings)
+  swt3 completeness                 Detailed completeness by framework section
+  swt3 findings                     List open auditor findings
   swt3 help                         Show this message
 
 Profiles:
@@ -190,7 +197,7 @@ async function handleInit(args: string[]): Promise<void> {
     rl.close();
   }
 
-  const expand = rest.includes("--expand");
+  const expand = args.includes("--expand");
   const content = expand
     ? generateExpandedYaml(profile, tenantId, agentId)
     : generateInitYaml(profile, tenantId, agentId);
@@ -200,6 +207,120 @@ async function handleInit(args: string[]): Promise<void> {
   console.log(`  Next: set SWT3_API_KEY in your environment, then:`);
   console.log(`    import { Witness } from "@tenova/swt3-ai";`);
   console.log(`    const witness = Witness.fromConfig();  // done.\n`);
+}
+
+// ── Cloud Status Commands ────────────────────────────────────────────
+
+async function handleCloudStatus(cmd: string, args: string[]): Promise<void> {
+  // Resolve API key and endpoint from config or env
+  let apiKey = process.env.SWT3_API_KEY ?? "";
+  let endpoint = process.env.SWT3_ENDPOINT ?? "https://sovereign.tenova.io";
+
+  try {
+    const { loadFullConfig } = await import("./config.js");
+    const cfg = loadFullConfig();
+    const opts = cfg.witnessOptions as Record<string, unknown>;
+    if (opts.apiKey) apiKey = opts.apiKey as string;
+    if (opts.endpoint) endpoint = opts.endpoint as string;
+  } catch { /* no config file */ }
+
+  if (!apiKey) {
+    console.error("No API key found. Set SWT3_API_KEY or add apiKey to swt3.config.yaml");
+    process.exit(1);
+  }
+
+  const statusUrl = `${endpoint.replace(/\/$/, "")}/api/v1/status`;
+  let data: Record<string, unknown>;
+  try {
+    const res = await fetch(statusUrl, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error(`Error ${res.status}: ${(body as Record<string, string>).error ?? res.statusText}`);
+      process.exit(1);
+    }
+    data = await res.json() as Record<string, unknown>;
+  } catch (err) {
+    console.error(`Failed to connect to ${endpoint}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  if (args.includes("--json")) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  const c = data.completeness as Record<string, unknown> | null;
+  const a = data.anchors as Record<string, unknown>;
+  const f = data.findings as Record<string, unknown>;
+
+  if (cmd === "status") {
+    console.log(`\n\x1b[1mSWT3 Cloud Status\x1b[0m`);
+    console.log(`  Tenant:     ${data.tenant}`);
+    console.log(`  Framework:  ${data.framework}`);
+    console.log(`  Tier:       ${data.tier}`);
+    console.log();
+
+    if (c) {
+      const pct = c.pct as number;
+      const color = pct >= 80 ? "\x1b[32m" : pct >= 50 ? "\x1b[33m" : "\x1b[31m";
+      console.log(`  Completeness: ${color}${c.label} procedures witnessed (${pct}%)\x1b[0m`);
+    }
+    console.log(`  Anchors:      ${a.total} total`);
+    if (a.expiringInDays !== null && a.expiringInDays !== undefined) {
+      const days = a.expiringInDays as number;
+      const color = days <= 5 ? "\x1b[31m" : days <= 14 ? "\x1b[33m" : "\x1b[32m";
+      console.log(`  Retention:    ${color}${days} days until oldest expires\x1b[0m (${a.retentionDays}d policy)`);
+    }
+    if ((f.open as number) > 0) {
+      console.log(`  Findings:     \x1b[31m${f.open} open\x1b[0m`);
+    } else {
+      console.log(`  Findings:     \x1b[32m0 open\x1b[0m`);
+    }
+    console.log();
+  }
+
+  if (cmd === "completeness") {
+    if (!c) {
+      console.log("No completeness data available.");
+      return;
+    }
+    const sections = c.bySection as Array<Record<string, unknown>>;
+    console.log(`\n\x1b[1mEvidence Completeness: ${c.label} (${c.pct}%)\x1b[0m\n`);
+
+    if (sections && sections.length > 0) {
+      for (const s of sections) {
+        const pct = s.completionPct as number;
+        const w = (s.witnessed as string[]).length;
+        const r = (s.required as string[]).length;
+        const color = pct >= 80 ? "\x1b[32m" : pct >= 50 ? "\x1b[33m" : "\x1b[31m";
+        const bar = `[${"#".repeat(Math.round(pct / 5))}${".".repeat(20 - Math.round(pct / 5))}]`;
+        console.log(`  ${color}${bar}\x1b[0m ${String(pct).padStart(3)}%  ${s.label} (${w}/${r})`);
+      }
+    }
+
+    const missing = c.missing as string[];
+    if (missing.length > 0) {
+      console.log(`\n  Missing procedures:`);
+      for (const p of missing) {
+        console.log(`    \x1b[31m-\x1b[0m ${p}`);
+      }
+    }
+    console.log();
+  }
+
+  if (cmd === "findings") {
+    if ((f.open as number) === 0) {
+      console.log("\x1b[32mNo open findings.\x1b[0m");
+      return;
+    }
+    // For detailed findings, we'd need the findings list endpoint
+    // For now, show the count from status
+    console.log(`\n\x1b[1mOpen Findings: ${f.open}\x1b[0m`);
+    console.log(`\nUse the dashboard to view and resolve findings.`);
+    console.log(`  ${(data as Record<string, unknown>).tenant ? `https://sovereign.tenova.io/audit-log` : ""}\n`);
+  }
 }
 
 async function main(): Promise<void> {
@@ -307,6 +428,25 @@ Zero network calls. Recomputes the SHA-256 fingerprint locally.`);
         console.log(`  Claimed:    ${claimed}`);
         console.log(`  Recomputed: ${recomputed}`);
       }
+      break;
+    }
+    case "procedures": {
+      const { handleProcedures } = await import("./procedures.js");
+      const nsIdx = rest.indexOf("--namespace");
+      const namespace = nsIdx !== -1 && rest[nsIdx + 1] ? rest[nsIdx + 1] : undefined;
+      const useJson = rest.includes("--json");
+      handleProcedures({ namespace, json: useJson });
+      break;
+    }
+    case "quickstart": {
+      const { handleQuickstart } = await import("./procedures.js");
+      handleQuickstart();
+      break;
+    }
+    case "status":
+    case "completeness":
+    case "findings": {
+      await handleCloudStatus(cmd, rest);
       break;
     }
     case "help":

@@ -104,12 +104,6 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-TOOL.2", name: "Tool Permission Attestation", namespace: "TOOL" },
   { id: "AI-LCM.1", name: "Agent Lifecycle Witnessing", namespace: "LCM" },
   { id: "AI-JUR.1", name: "Cross-Border Inference Routing", namespace: "JUR" },
-  // Agent Lifecycle (PPA #23)
-  { id: "AI-COST.1", name: "Resource Consumption Witnessing", namespace: "COST" },
-  { id: "AI-DEL.1", name: "Delegation Tree Witnessing", namespace: "DEL" },
-  { id: "AI-CAP.1", name: "Capability Attestation", namespace: "CAP" },
-  { id: "AI-AUTO.3", name: "Autonomy Level Transition", namespace: "AUTO" },
-  { id: "AI-CLR.2", name: "Clearing Fidelity Attestation", namespace: "CLR" },
   // Healthcare / Clinical AI (HCF)
   { id: "HCF-DX.1", name: "Diagnostic Accountability", namespace: "HCF" },
   { id: "HCF-RX.1", name: "Prescription Safety", namespace: "HCF" },

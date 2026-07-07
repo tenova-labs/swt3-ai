@@ -9,6 +9,11 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the cryptographic primitives.
 
+## What's New in v0.5.9
+
+- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. Core primitives in this package remain stable and unchanged.
+- 2,069 tests passing across all 7 SDK languages.
+
 ## What You Get
 
 - **`Swt3Ai::Fingerprint.mint_fingerprint`** -- canonical SWT3 fingerprint from tenant, procedure, factors, and timestamp

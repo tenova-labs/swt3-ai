@@ -51,6 +51,8 @@ export interface TrustCredential {
   hasHardwareAttestation?: boolean;
   hasGuardrails?: boolean;
   credentialSignature?: string;
+  governancePolicyHash?: string;
+  governanceVersion?: number;
 }
 
 export interface TrustResult {

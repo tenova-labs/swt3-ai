@@ -152,3 +152,32 @@ impl KeyPurpose {
         }
     }
 }
+
+/// AI model lifecycle stages (NIST AI RMF MAP 1.3).
+pub const LIFECYCLE_STAGES: &[&str] = &[
+    "design", "development", "testing", "deployment", "monitoring", "decommission",
+];
+
+/// METAGOV governance domain scope codes (AI-METAGOV.5).
+pub const METAGOV_SCOPES: &[&str] = &[
+    "verdict_rules", "trust_mesh", "enforcement", "clearing", "full",
+];
+
+/// METAGOV permission level codes (AI-METAGOV.5).
+pub const METAGOV_PERMISSIONS: &[&str] = &["read", "modify", "approve"];
+
+/// METAGOV emergency override reason codes (AI-METAGOV.6).
+pub const METAGOV_OVERRIDE_REASONS: &[&str] = &[
+    "unspecified", "incident_response", "regulatory_deadline", "system_failure", "security_breach",
+];
+
+/// METAGOV review status codes (AI-METAGOV.6).
+pub const METAGOV_REVIEW_STATUSES: &[&str] = &["unreviewed", "attested", "revoked"];
+
+/// METAGOV governance divergence codes (AI-METAGOV.7).
+pub const METAGOV_DIVERGENCE_TYPES: &[&str] = &[
+    "equivalent", "version_divergent", "structural_divergent", "coverage_divergent",
+];
+
+/// METAGOV attestation purity tiers (AI-METAGOV.8).
+pub const METAGOV_PURITY_TIERS: &[&str] = &["verified_pure", "unverified_purity", "impure"];

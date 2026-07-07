@@ -162,7 +162,7 @@ export interface InferenceRecord {
   accessScope?: string;
 }
 
-/** Valid AI procedure IDs from SWT3 Spec v1.2.0 */
+/** Valid AI procedure IDs from SWT3 Spec v1.3.0 (98 procedures) */
 export const AI_PROCEDURES = new Set([
   "AI-INF.1", "AI-INF.2", "AI-INF.3",
   "AI-MDL.1", "AI-MDL.2", "AI-MDL.3",
@@ -220,6 +220,27 @@ export const AI_PROCEDURES = new Set([
   "AI-DUALUSE.1",
   "AI-SUPPLY.1",
   "AI-PMM.1",
+  "AI-GOV.6",
+  "AI-RISK.1",
+  "AI-IR.1",
+  "AI-METAGOV.1",
+  "AI-METAGOV.2",
+  "AI-METAGOV.3",
+  "AI-METAGOV.4",
+  "AI-METAGOV.5",
+  "AI-METAGOV.6",
+  "AI-METAGOV.7",
+  "AI-METAGOV.8",
+  "AI-ENG.1",
+  "AI-ENG.2",
+  "AI-ENG.3",
+  "AI-ENG.4",
+  "AI-ENG.5",
+  "AI-ENG.6",
+  "AI-FIN.1",
+  "AI-TOOL.2",
+  "AI-LCM.1",
+  "AI-JUR.1",
 ]);
 
 /** A single retrieved context chunk for RAG witnessing. */
@@ -414,6 +435,69 @@ export const SUPPLY_RISK_CODES: Record<string, number> = {
 export const PMM_TYPE_CODES: Record<string, number> = {
   performance: 0, fairness: 1, safety: 2, security: 3, comprehensive: 4,
 };
+export const LIFECYCLE_STAGE_CODES: Record<string, number> = {
+  design: 0, development: 1, testing: 2, deployment: 3, monitoring: 4, decommission: 5,
+};
+
+/** Governance domain scope codes for AI-METAGOV.5. */
+export const METAGOV_SCOPE_CODES: Record<string, number> = {
+  verdict_rules: 0, trust_mesh: 1, enforcement: 2, clearing: 3, full: 4,
+};
+
+/** Governance permission level codes for AI-METAGOV.5. */
+export const METAGOV_PERMISSION_CODES: Record<string, number> = {
+  read: 0, modify: 1, approve: 2,
+};
+
+/** Emergency override reason codes for AI-METAGOV.6. */
+export const METAGOV_OVERRIDE_REASON_CODES: Record<string, number> = {
+  unspecified: 0, incident_response: 1, regulatory_deadline: 2, system_failure: 3, security_breach: 4,
+};
+
+/** Emergency override review status codes for AI-METAGOV.6. */
+export const METAGOV_REVIEW_STATUS_CODES: Record<string, number> = {
+  unreviewed: 0, attested: 1, revoked: 2,
+};
+
+/** Governance divergence classification codes for AI-METAGOV.7. */
+export const METAGOV_DIVERGENCE_CODES: Record<string, number> = {
+  equivalent: 0, version_divergent: 1, structural_divergent: 2, coverage_divergent: 3,
+};
+
+/** Attestation purity tier codes for AI-METAGOV.8. */
+export const METAGOV_PURITY_TIERS: Record<string, number> = {
+  verified_pure: 0, unverified_purity: 1, impure: 2,
+};
+
+/** Design domain codes for AI-ENG.1 design generation provenance. */
+export const DESIGN_DOMAIN_CODES: Record<string, number> = {
+  mechanical: 0, chemical: 1, electrical: 2, structural: 3, thermal: 4, pharmaceutical: 5, semiconductor: 6, custom: 7,
+};
+
+/** Simulation type codes for AI-ENG.2 simulation validation. */
+export const SIMULATION_TYPE_CODES: Record<string, number> = {
+  fea: 0, cfd: 1, molecular: 2, thermal: 3, electromagnetic: 4, multiphysics: 5, custom: 6,
+};
+
+/** Approval type codes for AI-ENG.3 safety-critical review gate. */
+export const APPROVAL_TYPE_CODES: Record<string, number> = {
+  peer: 0, pe_stamp: 1, safety_board: 2, regulatory: 3, independent_assessor: 4,
+};
+
+/** Material standard codes for AI-ENG.4 material specification compliance. */
+export const MATERIAL_STANDARD_CODES: Record<string, number> = {
+  asme: 0, iso: 1, astm: 2, mil_spec: 3, fda_usp: 4, iec: 5, custom: 6,
+};
+
+/** Chain status codes for AI-ENG.5 design revision chain. */
+export const CHAIN_STATUS_CODES: Record<string, number> = {
+  in_progress: 0, approved: 1, rejected: 2, superseded: 3, archived: 4,
+};
+
+/** Release type codes for AI-ENG.6 fabrication release attestation. */
+export const RELEASE_TYPE_CODES: Record<string, number> = {
+  prototype: 0, limited_run: 1, mass_production: 2, field_modification: 3, emergency: 4,
+};
 
 // ── Declarative Governance Config Types ────────────────────────────────
 
@@ -442,7 +526,6 @@ export interface RuntimeProfileConfig {
   minGpuCount?: number;
   minMemoryMb?: number;
   expectedAccelerator?: string;  // substring match against GPU names
-  expectedSiliconVendor?: string; // nvidia, google, amd, aws, intel
   maxTemperatureCelsius?: number;
   maxPowerWatts?: number;
 }

@@ -28,7 +28,7 @@ from .types import InferenceRecord, WitnessPayload
 from .fingerprint import mint_fingerprint, sha256_truncated, timestamp_ms
 
 
-# All 17 AI procedures from the SWT3 AI Witnessing Profile
+# All AI procedures from the SWT3 AI Witnessing Profile (76 total)
 AI_PROCEDURES = [
     "AI-INF.1",  # Inference Provenance
     "AI-INF.2",  # Inference Latency
@@ -72,6 +72,17 @@ AI_PROCEDURES = [
     "AI-DUALUSE.1",   # Dual-Use Model Classification
     "AI-SUPPLY.1",    # Supply Chain Risk
     "AI-PMM.1",       # Post-Market Monitoring
+    "AI-GOV.6",       # AI Risk Management Scope Definition
+    "AI-RISK.1",      # AI Risk Identification and Categorization
+    "AI-IR.1",        # AI Incident Response Capability
+    "AI-METAGOV.1",   # Governance Infrastructure Attestation
+    "AI-METAGOV.2",   # Governance Layer Registration
+    "AI-METAGOV.3",   # Policy Downgrade Detection
+    "AI-METAGOV.4",   # Circular Dependency Check
+    "AI-METAGOV.5",   # Governance Authorization
+    "AI-METAGOV.6",   # Emergency Override Attestation
+    "AI-METAGOV.7",   # Governance Sync Verification
+    "AI-METAGOV.8",   # Attestation Purity Verification
 ]
 
 # Revocation reason code mapping

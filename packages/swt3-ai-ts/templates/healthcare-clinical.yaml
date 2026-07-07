@@ -46,6 +46,10 @@ policy:
     - AI-SAFE.1    # Clinical safe state (failover to human)
     - AI-AUDIT.1   # Audit log integrity (HIPAA requirement)
     - AI-DRIFT.1   # Model drift (population shift detection)
+    # Healthcare-specific (HCF namespace)
+    - HCF-DX.1     # Diagnostic accountability (FDA SaMD)
+    - HCF-RX.1     # Prescription safety (drug interaction checks)
+    - HCF-PRIV.1   # PHI access audit (HIPAA authorization)
 
 trust_mesh:
   mode: strict

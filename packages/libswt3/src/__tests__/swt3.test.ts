@@ -88,7 +88,7 @@ describe("buildFingerprintInput", () => {
 
 const MINT_PARAMS: MintParams = {
   tier: "E",
-  provider: "AWS",
+  provider: "VULTR",
   uct: "NET",
   procedure_id: TEST_PROCEDURE,
   tenant_id: TEST_TENANT,
@@ -132,7 +132,7 @@ describe("parseAnchor", () => {
     assert.ok(parsed !== null);
     assert.equal(parsed!.protocol, "SWT3");
     assert.equal(parsed!.tier, "E");
-    assert.equal(parsed!.provider, "AWS");
+    assert.equal(parsed!.provider, "VULTR");
     assert.equal(parsed!.uct, "NET");
     assert.equal(parsed!.procedure, "SC76");
     assert.equal(parsed!.verdict, "PASS");
