@@ -31,6 +31,10 @@ interface WitnessArgs {
   jurisdiction?: string;
   legal_basis?: string;
   purpose_class?: string;
+  lifecycle_chain_id?: string;
+  lifecycle_parent?: string;
+  lifecycle_stage?: string;
+  escalation_chain_id?: string;
 }
 
 export async function handleWitness(
@@ -107,6 +111,11 @@ export async function handleWitness(
   if (args.jurisdiction) payload.jurisdiction = args.jurisdiction;
   if (args.legal_basis) payload.legal_basis = args.legal_basis;
   if (args.purpose_class) payload.purpose_class = args.purpose_class;
+  // Lifecycle chain fields (v6.0, survive all clearing levels)
+  if (args.lifecycle_chain_id) payload.lifecycle_chain_id = args.lifecycle_chain_id;
+  if (args.lifecycle_parent) payload.lifecycle_parent = args.lifecycle_parent;
+  if (args.lifecycle_stage) payload.lifecycle_stage = args.lifecycle_stage;
+  if (args.escalation_chain_id) payload.escalation_chain_id = args.escalation_chain_id;
   if (config.signingKey) {
     payload.payload_signature = signPayload(config.signingKey, fp, agentId);
   }

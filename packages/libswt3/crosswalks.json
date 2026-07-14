@@ -3,9 +3,9 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-07-02T01:21:12Z",
+  "generated_at": "2026-07-11T17:21:53Z",
   "source": "uct-registry.json",
-  "description": "Bidirectional crosswalk between 103 SWT3 AI procedures and 24 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
+  "description": "Bidirectional crosswalk between 103 SWT3 AI procedures and 28 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "frameworks": {
     "CA-SB-942": {
@@ -82,6 +82,14 @@
       "url": "https://digital-strategy.ec.europa.eu/en/policies/gpai-code-practice",
       "procedure_count": 3,
       "requirement_count": 2
+    },
+    "HEALTH-INS-AI": {
+      "name": "US Health Insurance AI Regulations (6-State Composite)",
+      "authority": "Multiple State Legislatures (IN, AL, UT, WA, IA, GA)",
+      "document": "HEA 1304, SB 149, SB 5518, NAIC Model Bulletin adoptions",
+      "version": "2024-2027",
+      "procedure_count": 10,
+      "requirement_count": 11
     },
     "ID-SB-1297": {
       "name": "Idaho AI Disclosure Act",
@@ -205,6 +213,15 @@
       "procedure_count": 16,
       "requirement_count": 9
     },
+    "RI-AI-LAWS": {
+      "name": "Rhode Island AI Therapy, Safety, and Clinical Disclosure Laws",
+      "authority": "Rhode Island General Assembly",
+      "document": "SB 2195 + companion bills",
+      "version": "2026",
+      "enforcement_date": "2026-06-01",
+      "procedure_count": 8,
+      "requirement_count": 8
+    },
     "SG-IMDA-AGENTIC": {
       "name": "Singapore IMDA Model AI Governance Framework for Agentic AI",
       "authority": "IMDA Singapore",
@@ -223,6 +240,15 @@
       "procedure_count": 20,
       "requirement_count": 6
     },
+    "TN-SB-1580": {
+      "name": "Tennessee AI Mental Health Therapy Ban",
+      "authority": "Tennessee General Assembly",
+      "document": "SB 1580",
+      "version": "2026",
+      "enforcement_date": "2026-07-01",
+      "procedure_count": 6,
+      "requirement_count": 6
+    },
     "TX-TRAIGA": {
       "name": "Texas Responsible AI Governance Act",
       "authority": "Texas Legislature",
@@ -232,6 +258,15 @@
       "enforcement_date": "2026-01-01",
       "procedure_count": 0,
       "requirement_count": 0
+    },
+    "VN-LAW-134": {
+      "name": "Vietnam Law on Digital Technology Industry",
+      "authority": "National Assembly of Vietnam",
+      "document": "Law No. 134/2025/QH15",
+      "version": "2025",
+      "enforcement_date": "2026-03-01",
+      "procedure_count": 12,
+      "requirement_count": 12
     }
   },
   "procedures": {
@@ -254,10 +289,13 @@
         "CO-SB-26-189": "6-1-1706",
         "EU-AI-ACT": "Art.12",
         "GDPR": "Art.30",
+        "HEALTH-INS-AI": "NAIC-MB Sec.4",
         "IL-SB-315": "Sec.30",
         "ISO-42001": "9.2",
         "MD-HB-895": "Sec.5",
-        "NIST-AI-RMF": "GOVERN 1.4"
+        "NIST-AI-RMF": "GOVERN 1.4",
+        "RI-AI-LAWS": "SB-2195 Sec.6",
+        "VN-LAW-134": "Art.49"
       }
     },
     "AI-AUDIT.2": {
@@ -278,6 +316,7 @@
         "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.14",
         "GDPR": "Art.22",
+        "HEALTH-INS-AI": "NAIC-MB, IN-HEA-1304",
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MANAGE 3.2"
       }
@@ -368,8 +407,11 @@
         "CO-SB-26-189": "6-1-1704",
         "EU-AI-ACT": "Art.10",
         "GDPR": "Art.6/7",
+        "HEALTH-INS-AI": "UT-SB-149, WA-SB-5518",
         "ISO-42001": "A.8.2",
-        "NIST-AI-RMF": "GOVERN 1.5"
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "RI-AI-LAWS": "Clinical Disclosure Sec.3",
+        "TN-SB-1580": "Sec.6"
       }
     },
     "AI-COST.1": {
@@ -398,12 +440,15 @@
       "frameworks": {
         "EU-AI-ACT": "Art.10(2)(a)",
         "FIVE-EYES-AGENTIC": "FE-14",
+        "HEALTH-INS-AI": "NAIC-MB Sec.6",
         "ISO-42001": "A.8.4",
         "KR-AI-BASIC": "Art.28",
         "MD-HB-895": "Sec.4(a)",
         "NIST-AI-RMF": "MAP 3.5",
         "OWASP-AGENTIC": "MCP-10",
-        "SR-11-7": "III.B"
+        "RI-AI-LAWS": "Clinical Disclosure Sec.5",
+        "SR-11-7": "III.B",
+        "VN-LAW-134": "Art.44"
       }
     },
     "AI-DATA.2": {
@@ -467,6 +512,35 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
+        "SR-11-7": "IV.A"
+      }
+    },
+    "AI-DRIFT.2": {
+      "title": "Consequence-Mapped Drift Threshold Response",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(b)",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "NIST-800-53": "SI-2",
+        "SR-11-7": "IV.A"
+      }
+    },
+    "AI-EMRG.1": {
+      "title": "Emergency Override Lifecycle Witnessing",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.14",
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "NIST-800-53": "IR-4"
+      }
+    },
+    "AI-ASSESS.1": {
+      "title": "Champion-Challenger Assessment Witnessing",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.15",
+        "NIST-AI-RMF": "MAP 2.3",
+        "NIST-800-53": "SA-11",
         "SR-11-7": "IV.A"
       }
     },
@@ -581,6 +655,7 @@
         "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.13(1)",
         "FIVE-EYES-AGENTIC": "FE-9",
+        "HEALTH-INS-AI": "IN-HEA-1304 Sec.4",
         "ISO-42001": "A.8.3",
         "KR-AI-BASIC": "Art.22",
         "MD-HB-895": "Sec.3(c)",
@@ -607,11 +682,13 @@
         "CO-SB-26-189": "6-1-1705",
         "EU-AI-ACT": "Art.10(2)(f)",
         "FIVE-EYES-AGENTIC": "FE-15",
+        "HEALTH-INS-AI": "NAIC-MB Sec.5",
         "ISO-42001": "A.8.4",
         "KR-AI-BASIC": "Art.25",
         "MD-HB-895": "Sec.3(a)",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "III.A"
+        "SR-11-7": "III.A",
+        "VN-LAW-134": "Art.48"
       }
     },
     "AI-FAIR.2": {
@@ -653,9 +730,13 @@
       "frameworks": {
         "EU-AI-ACT": "Art.9",
         "FIVE-EYES-AGENTIC": "FE-5",
+        "HEALTH-INS-AI": "NAIC-MB Sec.3",
         "ISO-42001": "5.2",
         "NIST-800-53": "PL-4",
-        "NIST-AI-RMF": "GOVERN 1.1"
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "RI-AI-LAWS": "Therapy Ban Sec.5",
+        "TN-SB-1580": "Sec.7",
+        "VN-LAW-134": "Art.40"
       }
     },
     "AI-GOV.2": {
@@ -761,11 +842,15 @@
         "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.14(1)",
         "FIVE-EYES-AGENTIC": "FE-5",
+        "HEALTH-INS-AI": "IN-HEA-1304 Sec.3",
         "ID-SB-1297": "Sec.2(b)",
         "ISO-42001": "A.8.5",
         "KR-AI-BASIC": "Art.24",
         "NIST-AI-RMF": "GOVERN 1.1",
-        "SR-11-7": "IV.B"
+        "RI-AI-LAWS": "Therapy Ban Sec.2",
+        "SR-11-7": "IV.B",
+        "TN-SB-1580": "Sec.4",
+        "VN-LAW-134": "Art.45"
       }
     },
     "AI-HITL.2": {
@@ -819,7 +904,10 @@
         "ID-SB-1297": "Sec.2(a)",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MAP 1.1",
-        "OWASP-AGENTIC": "MCP-01,MCP-07"
+        "OWASP-AGENTIC": "MCP-01,MCP-07",
+        "RI-AI-LAWS": "Therapy Ban Sec.3",
+        "TN-SB-1580": "Sec.3(b)",
+        "VN-LAW-134": "Art.42(b)"
       }
     },
     "AI-IMPACT.1": {
@@ -841,7 +929,8 @@
         "IL-SB-315": "Sec.30",
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-4",
-        "NIST-AI-RMF": "MANAGE 3.2"
+        "NIST-AI-RMF": "MANAGE 3.2",
+        "VN-LAW-134": "Art.47"
       }
     },
     "AI-INF.1": {
@@ -852,7 +941,8 @@
         "EU-AI-ACT": "Art.12(1)",
         "FIVE-EYES-AGENTIC": "FE-2,FE-4",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "VN-LAW-134": "Art.41"
       }
     },
     "AI-INF.2": {
@@ -932,7 +1022,8 @@
         "EU-AI-ACT": "Art.50(2)",
         "GPAI-CoP": "Transparency",
         "ISO-42001": "A.8.3",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "VN-LAW-134": "Art.42(c)"
       }
     },
     "AI-MDL.1": {
@@ -1183,11 +1274,15 @@
       "namespace": "AI",
       "frameworks": {
         "EU-AI-ACT": "Art.9(4)(b)",
+        "HEALTH-INS-AI": "WA-SB-5518 Sec.5",
         "ID-SB-1297": "Sec.2(b)",
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "KR-AI-BASIC": "Art.26",
-        "NIST-AI-RMF": "MANAGE 2.3"
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "RI-AI-LAWS": "SB-2195 Sec.4",
+        "TN-SB-1580": "Sec.5",
+        "VN-LAW-134": "Art.43"
       }
     },
     "AI-SBOM.1": {
@@ -1199,7 +1294,8 @@
         "G7-CISA": "SBOM-AI",
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.4",
-        "NIST-AI-RMF": "MAP 1.1"
+        "NIST-AI-RMF": "MAP 1.1",
+        "VN-LAW-134": "Art.46"
       }
     },
     "AI-SEC.1": {
@@ -1296,11 +1392,15 @@
         "CO-SB-26-189": "6-1-1703",
         "EU-AI-ACT": "Art.13",
         "GDPR": "Art.13/14",
+        "HEALTH-INS-AI": "IN-HEA-1304, WA-SB-5518",
         "ID-SB-1297": "Sec.2(a)",
         "ISO-42001": "A.8.3",
         "KR-AI-BASIC": "Art.22",
         "MD-HB-895": "Sec.3(b)",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "RI-AI-LAWS": "SB-2195 Sec.3",
+        "TN-SB-1580": "Sec.3(a)",
+        "VN-LAW-134": "Art.42"
       }
     },
     "AI-TRUST.1": {
@@ -1520,7 +1620,8 @@
       ],
       "Art.14": [
         "AI-AUTO.1",
-        "AI-AUTO.2"
+        "AI-AUTO.2",
+        "AI-EMRG.1"
       ],
       "Art.14(1)": [
         "AI-ENG.3",
@@ -1531,6 +1632,7 @@
         "AI-REV.1"
       ],
       "Art.15": [
+        "AI-ASSESS.1",
         "AI-HW.3"
       ],
       "Art.15(1)": [
@@ -1617,7 +1719,8 @@
       ],
       "Art.9(2)(b)": [
         "AI-BASE.1",
-        "AI-DRIFT.1"
+        "AI-DRIFT.1",
+        "AI-DRIFT.2"
       ],
       "Art.9(4)(a)": [
         "AI-FAIR.2",
@@ -1792,6 +1895,43 @@
       "Transparency": [
         "AI-MARK.1",
         "AI-WATERMARK.1"
+      ]
+    },
+    "HEALTH-INS-AI": {
+      "IN-HEA-1304": [
+        "AI-AUTO.1",
+        "AI-TRANS.1"
+      ],
+      "IN-HEA-1304 Sec.3": [
+        "AI-HITL.1"
+      ],
+      "IN-HEA-1304 Sec.4": [
+        "AI-EXPL.1"
+      ],
+      "NAIC-MB": [
+        "AI-AUTO.1"
+      ],
+      "NAIC-MB Sec.3": [
+        "AI-GOV.1"
+      ],
+      "NAIC-MB Sec.4": [
+        "AI-AUDIT.1"
+      ],
+      "NAIC-MB Sec.5": [
+        "AI-FAIR.1"
+      ],
+      "NAIC-MB Sec.6": [
+        "AI-DATA.1"
+      ],
+      "UT-SB-149": [
+        "AI-CONSENT.1"
+      ],
+      "WA-SB-5518": [
+        "AI-CONSENT.1",
+        "AI-TRANS.1"
+      ],
+      "WA-SB-5518 Sec.5": [
+        "AI-SAFE.1"
       ]
     },
     "ID-SB-1297": {
@@ -2045,6 +2185,7 @@
         "AI-GOV.3"
       ],
       "IR-4": [
+        "AI-EMRG.1",
         "AI-GOV.4",
         "AI-INCIDENT.1"
       ],
@@ -2068,6 +2209,7 @@
         "AI-IMPACT.1"
       ],
       "SA-11": [
+        "AI-ASSESS.1",
         "AI-METAGOV.8"
       ],
       "SA-4": [
@@ -2080,6 +2222,9 @@
       ],
       "SI-10": [
         "AI-SEC.2"
+      ],
+      "SI-2": [
+        "AI-DRIFT.2"
       ],
       "SI-7": [
         "AI-HW.1",
@@ -2095,6 +2240,7 @@
     "NIST-AI-RMF": {
       "GOVERN 1.1": [
         "AI-DUALUSE.1",
+        "AI-EMRG.1",
         "AI-GOV.1",
         "AI-HITL.1",
         "AI-METAGOV.1"
@@ -2210,6 +2356,7 @@
         "AI-RISK.1"
       ],
       "MAP 2.3": [
+        "AI-ASSESS.1",
         "AI-ENG.5",
         "AI-EXPL.2",
         "AI-FAIR.2",
@@ -2241,6 +2388,7 @@
       "MEASURE 2.6": [
         "AI-BASE.1",
         "AI-DRIFT.1",
+        "AI-DRIFT.2",
         "AI-ENG.2",
         "AI-MDL.3",
         "AI-MDL.7",
@@ -2305,6 +2453,32 @@
         "AI-TOOL.2"
       ]
     },
+    "RI-AI-LAWS": {
+      "Clinical Disclosure Sec.3": [
+        "AI-CONSENT.1"
+      ],
+      "Clinical Disclosure Sec.5": [
+        "AI-DATA.1"
+      ],
+      "SB-2195 Sec.3": [
+        "AI-TRANS.1"
+      ],
+      "SB-2195 Sec.4": [
+        "AI-SAFE.1"
+      ],
+      "SB-2195 Sec.6": [
+        "AI-AUDIT.1"
+      ],
+      "Therapy Ban Sec.2": [
+        "AI-HITL.1"
+      ],
+      "Therapy Ban Sec.3": [
+        "AI-ID.1"
+      ],
+      "Therapy Ban Sec.5": [
+        "AI-GOV.1"
+      ]
+    },
     "SR-11-7": {
       "II.A": [
         "AI-RISK.1"
@@ -2322,7 +2496,9 @@
         "AI-MDL.5"
       ],
       "IV.A": [
+        "AI-ASSESS.1",
         "AI-DRIFT.1",
+        "AI-DRIFT.2",
         "AI-INF.1",
         "AI-INF.2",
         "AI-MDL.3",
@@ -2337,6 +2513,64 @@
       ],
       "V.A": [
         "AI-GOV.5"
+      ]
+    },
+    "TN-SB-1580": {
+      "Sec.3(a)": [
+        "AI-TRANS.1"
+      ],
+      "Sec.3(b)": [
+        "AI-ID.1"
+      ],
+      "Sec.4": [
+        "AI-HITL.1"
+      ],
+      "Sec.5": [
+        "AI-SAFE.1"
+      ],
+      "Sec.6": [
+        "AI-CONSENT.1"
+      ],
+      "Sec.7": [
+        "AI-GOV.1"
+      ]
+    },
+    "VN-LAW-134": {
+      "Art.40": [
+        "AI-GOV.1"
+      ],
+      "Art.41": [
+        "AI-INF.1"
+      ],
+      "Art.42": [
+        "AI-TRANS.1"
+      ],
+      "Art.42(b)": [
+        "AI-ID.1"
+      ],
+      "Art.42(c)": [
+        "AI-MARK.1"
+      ],
+      "Art.43": [
+        "AI-SAFE.1"
+      ],
+      "Art.44": [
+        "AI-DATA.1"
+      ],
+      "Art.45": [
+        "AI-HITL.1"
+      ],
+      "Art.46": [
+        "AI-SBOM.1"
+      ],
+      "Art.47": [
+        "AI-INCIDENT.1"
+      ],
+      "Art.48": [
+        "AI-FAIR.1"
+      ],
+      "Art.49": [
+        "AI-AUDIT.1"
       ]
     }
   },

@@ -117,6 +117,10 @@ export interface WitnessPayload {
   references?: AnchorReference[];
   revocation_target?: string;
   revocation_reason?: string;
+  lifecycle_chain_id?: string;
+  lifecycle_parent?: string;
+  lifecycle_stage?: string;
+  escalation_chain_id?: string;
 }
 
 export interface WitnessReceipt {
@@ -241,6 +245,9 @@ export const AI_PROCEDURES = new Set([
   "AI-TOOL.2",
   "AI-LCM.1",
   "AI-JUR.1",
+  "AI-EMRG.1",
+  "AI-DRIFT.2",
+  "AI-ASSESS.1",
 ]);
 
 /** A single retrieved context chunk for RAG witnessing. */

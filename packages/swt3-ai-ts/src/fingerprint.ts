@@ -68,3 +68,22 @@ export function timestampMs(): [number, number] {
   const epoch = Math.floor(ts / 1000);
   return [ts, epoch];
 }
+
+// ── Lifecycle Chain ID (v6.0) ──────────────────────────────────────
+
+/**
+ * Generate a deterministic lifecycle chain ID.
+ *
+ * Formula: LC-{SHA256("LIFECYCLE:{tenant}:{proc}:{fp}:{ts}").hex()[:16]}
+ * Cross-language parity with Python SDK and libswt3.
+ */
+export function generateLifecycleChainId(
+  tenantId: string,
+  procedureId: string,
+  initiatorFingerprint: string,
+  timestampMs: number,
+): string {
+  const input = `LIFECYCLE:${tenantId}:${procedureId}:${initiatorFingerprint}:${timestampMs}`;
+  const digest = createHash("sha256").update(input, "utf-8").digest("hex");
+  return `LC-${digest.slice(0, 16)}`;
+}

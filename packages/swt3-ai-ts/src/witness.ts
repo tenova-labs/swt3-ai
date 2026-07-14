@@ -21,7 +21,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { sha256Truncated, mintFingerprint, timestampMs } from "./fingerprint.js";
+import { sha256Truncated, mintFingerprint, timestampMs, generateLifecycleChainId } from "./fingerprint.js";
 import { extractPayloads, extractGatekeeperPayload, extractRevocationPayload, extractChainTrustDegradationPayload, REVOCATION_REASONS } from "./clearing.js";
 import { signPayload } from "./signing.js";
 import { WitnessBuffer } from "./buffer.js";
@@ -50,6 +50,21 @@ import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS
 import { loadConfig as loadConfigFromFile, loadFullConfig, validatePolicy } from "./config.js";
 import type { TrustMeshConfig, HardwareConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, ChainRule, ChainPolicyViolation, RuntimeProfileConfig } from "./types.js";
 import { MerkleAccumulator } from "./merkle.js";
+
+// ── Lifecycle Chain Stages (v6.0) ────────────────────────────────────
+
+export const LIFECYCLE_CHAIN_STAGES: Record<string, number> = {
+  initiated: 0, checkpoint: 1, escalated: 2,
+  resolved: 3, abandoned: 4, superseded: 5,
+};
+const TERMINAL_STAGES = new Set(["resolved", "abandoned", "superseded"]);
+
+// ── Operational Governance Codes (v6.0) ────────────────────────────
+export const OVERRIDE_TRIGGER_CODES: Record<string, number> = { emergency_stop: 0, operator_command: 1, escalation_protocol: 2, external_responder: 3 };
+export const AUTHORIZATION_LEVEL_CODES: Record<string, number> = { operator: 0, supervisor: 1, site_manager: 2, emergency_responder: 3 };
+export const FALLBACK_STATE_CODES: Record<string, number> = { safe_state: 0, legacy_controller: 1, manual_mode: 2, degraded_operation: 3, full_shutdown: 4 };
+export const CONSEQUENCE_CATEGORY_CODES: Record<string, number> = { safety: 0, environmental: 1, financial: 2, operational: 3, reputational: 4 };
+export const DRIFT_RESPONSE_CODES: Record<string, number> = { notification_only: 0, increased_monitoring: 1, throttle: 2, circuit_breaker: 3, forced_failover: 4, emergency_shutdown: 5 };
 
 // ── Chain Density Enforcement ──────────────────────────────────────────
 
@@ -4276,6 +4291,348 @@ export class Witness {
   /** All receipts from completed flushes. */
   get receipts(): WitnessReceipt[] {
     return this.buffer.receipts;
+  }
+
+  // ── Operational Governance Methods (v6.0) ─────────────────────
+
+  /**
+   * Witness a CI emergency override event (AI-EMRG.1).
+   *
+   * For governance policy overrides, use witnessEmergencyOverride() (AI-METAGOV.6).
+   */
+  witnessOperationalOverride(options: {
+    triggerType: string;
+    authorizationLevel: string;
+    fallbackState: string;
+    overrideReason?: string;
+    systemId?: string;
+    operatorId?: string;
+  }): WitnessPayload {
+    const fa = OVERRIDE_TRIGGER_CODES[options.triggerType] ?? 0;
+    const fb = AUTHORIZATION_LEVEL_CODES[options.authorizationLevel] ?? 0;
+    const fc = FALLBACK_STATE_CODES[options.fallbackState] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-EMRG.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-EMRG.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.systemId ?? "unknown-system";
+      const ctx: Record<string, unknown> = {
+        provider: "emergency_override",
+        trigger_type: options.triggerType,
+        authorization_level: options.authorizationLevel,
+        fallback_state: options.fallbackState,
+      };
+      if (options.overrideReason) ctx.override_reason = options.overrideReason;
+      if (options.operatorId) ctx.operator_id = options.operatorId;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  /**
+   * Witness a consequence-mapped drift response (AI-DRIFT.2).
+   */
+  witnessDriftConsequence(options: {
+    driftMagnitude: number;
+    consequenceCategory: string;
+    responseAction: string;
+    driftMetric?: string;
+    modelId?: string;
+    mappingVersion?: string;
+  }): WitnessPayload {
+    const fa = options.driftMagnitude;
+    const fb = CONSEQUENCE_CATEGORY_CODES[options.consequenceCategory] ?? 0;
+    const fc = DRIFT_RESPONSE_CODES[options.responseAction] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DRIFT.2", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DRIFT.2",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "unknown-model";
+      const ctx: Record<string, unknown> = {
+        provider: "drift_consequence",
+        consequence_category: options.consequenceCategory,
+        response_action: options.responseAction,
+      };
+      if (options.driftMetric) ctx.drift_metric = options.driftMetric;
+      if (options.mappingVersion) ctx.mapping_version = options.mappingVersion;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  /**
+   * Witness a champion-challenger assessment result (AI-ASSESS.1).
+   */
+  witnessChampionChallenger(options: {
+    inputsProcessed: number;
+    maxDivergence: number;
+    thresholdBreached: boolean;
+    championId?: string;
+    challengerId?: string;
+    divergenceMetric?: string;
+    evaluationPeriod?: string;
+  }): WitnessPayload {
+    const fa = options.inputsProcessed;
+    const fb = options.maxDivergence * 1000; // x1000 quantization per spec
+    const fc = options.thresholdBreached ? 1 : 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-ASSESS.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-ASSESS.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.championId ?? "unknown-champion";
+      const ctx: Record<string, unknown> = {
+        provider: "champion_challenger",
+        threshold_breached: options.thresholdBreached,
+      };
+      if (options.challengerId) ctx.challenger_id = options.challengerId;
+      if (options.divergenceMetric) ctx.divergence_metric = options.divergenceMetric;
+      if (options.evaluationPeriod) ctx.evaluation_period = options.evaluationPeriod;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  // ── Lifecycle Chain API (v6.0) ──────────────────────────────────
+
+  /**
+   * Start a new lifecycle chain for a governance procedure.
+   *
+   * Mints the first anchor with lifecycle_stage="initiated" and generates
+   * a deterministic lifecycle_chain_id. Returns a LifecycleChain handle
+   * that auto-links subsequent anchors.
+   */
+  beginLifecycle(
+    procedureId: string,
+    fa: number,
+    fb: number,
+    fc: number,
+    options?: { modelId?: string; context?: Record<string, unknown> },
+  ): LifecycleChain {
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, procedureId, fa, fb, fc, ts);
+    const chainId = generateLifecycleChainId(this.config.tenantId, procedureId, fp, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12)
+      : undefined;
+
+    const payload: WitnessPayload = {
+      procedure_id: procedureId,
+      factor_a: fa,
+      factor_b: fb,
+      factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp,
+      anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+      lifecycle_chain_id: chainId,
+      lifecycle_stage: "initiated",
+    };
+    if (options?.modelId && this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId;
+    }
+    if (options?.context && this.config.clearingLevel <= 1) {
+      payload.ai_context = options.context;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return new LifecycleChain(this, procedureId, chainId, fp);
+  }
+
+  /**
+   * Resume a lifecycle chain after crash recovery or process restart.
+   *
+   * Reconstructs a LifecycleChain handle from known state without
+   * minting any new anchors.
+   */
+  resumeLifecycle(
+    procedureId: string,
+    chainId: string,
+    lastFingerprint: string,
+    anchorCount: number = 1,
+  ): LifecycleChain {
+    if (!chainId.startsWith("LC-") || chainId.length !== 19) {
+      throw new Error(`Invalid lifecycle chain ID: "${chainId}" (expected LC- + 16 hex chars)`);
+    }
+    return new LifecycleChain(this, procedureId, chainId, lastFingerprint, anchorCount);
+  }
+}
+
+/**
+ * Handle for a multi-anchor lifecycle chain.
+ *
+ * Auto-links anchors via lifecycle_chain_id and lifecycle_parent.
+ * Enforces terminal stage finality (no minting after resolve/abandon).
+ *
+ * Usage:
+ *   const chain = witness.beginLifecycle("AI-EMRG.1", 1.0, 1.0, 0.0);
+ *   chain.checkpoint(1.0, 0.8, 0.0);
+ *   chain.resolve(1.0, 1.0, 0.0);
+ */
+export class LifecycleChain {
+  private _witness: Witness;
+  private _procedureId: string;
+  private _chainId: string;
+  private _lastFingerprint: string;
+  private _anchorCount: number;
+  private _closed: boolean;
+
+  constructor(
+    witness: Witness,
+    procedureId: string,
+    chainId: string,
+    lastFingerprint: string,
+    anchorCount: number = 1,
+  ) {
+    this._witness = witness;
+    this._procedureId = procedureId;
+    this._chainId = chainId;
+    this._lastFingerprint = lastFingerprint;
+    this._anchorCount = anchorCount;
+    this._closed = false;
+  }
+
+  get chainId(): string { return this._chainId; }
+  get lastFingerprint(): string { return this._lastFingerprint; }
+  get anchorCount(): number { return this._anchorCount; }
+  get closed(): boolean { return this._closed; }
+
+  private _assertOpen(): void {
+    if (this._closed) {
+      throw new Error(
+        `Lifecycle chain ${this._chainId} is closed (terminal stage reached). Cannot mint further anchors.`,
+      );
+    }
+  }
+
+  private _mint(
+    fa: number,
+    fb: number,
+    fc: number,
+    stage: string,
+    options?: {
+      procedureId?: string;
+      escalationChainId?: string;
+      context?: Record<string, unknown>;
+    },
+  ): WitnessPayload {
+    this._assertOpen();
+    const w = this._witness as any;
+    const proc = options?.procedureId ?? this._procedureId;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(w.config.tenantId, proc, fa, fb, fc, ts);
+    const policyHash = w.config.policyVersion
+      ? sha256Truncated(w.config.policyVersion, 12)
+      : undefined;
+
+    const payload: WitnessPayload = {
+      procedure_id: proc,
+      factor_a: fa,
+      factor_b: fb,
+      factor_c: fc,
+      clearing_level: w.config.clearingLevel,
+      anchor_fingerprint: fp,
+      anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+      lifecycle_chain_id: this._chainId,
+      lifecycle_parent: this._lastFingerprint,
+      lifecycle_stage: stage,
+    };
+    if (options?.escalationChainId) {
+      payload.escalation_chain_id = options.escalationChainId;
+    }
+    if (options?.context && w.config.clearingLevel <= 1) {
+      payload.ai_context = options.context;
+    }
+    w._applyOperationalMetadata(payload, policyHash);
+    w.buffer.enqueueMany([payload]);
+    this._lastFingerprint = fp;
+    this._anchorCount++;
+    if (TERMINAL_STAGES.has(stage)) {
+      this._closed = true;
+    }
+    return payload;
+  }
+
+  /** Mint a checkpoint anchor in this lifecycle chain. */
+  checkpoint(
+    fa: number,
+    fb: number,
+    fc: number,
+    options?: { context?: Record<string, unknown> },
+  ): WitnessPayload {
+    return this._mint(fa, fb, fc, "checkpoint", { context: options?.context });
+  }
+
+  /**
+   * Escalate to a new lifecycle chain for a different procedure.
+   *
+   * Mints an "escalated" anchor on THIS chain, then starts a new chain
+   * for the target procedure. The two chains are linked via escalation_chain_id.
+   */
+  escalate(
+    targetProcedureId: string,
+    fa: number = 0.0,
+    fb: number = 0.0,
+    fc: number = 0.0,
+    options?: { context?: Record<string, unknown> },
+  ): LifecycleChain {
+    const targetChain = this._witness.beginLifecycle(
+      targetProcedureId, fa, fb, fc, { context: options?.context },
+    );
+    this._mint(fa, fb, fc, "escalated", {
+      escalationChainId: targetChain.chainId,
+      context: options?.context,
+    });
+    return targetChain;
+  }
+
+  /** Mint a resolution anchor, closing this lifecycle chain. */
+  resolve(
+    fa: number,
+    fb: number,
+    fc: number,
+    options?: { context?: Record<string, unknown> },
+  ): WitnessPayload {
+    return this._mint(fa, fb, fc, "resolved", { context: options?.context });
+  }
+
+  /** Mint an abandonment anchor, closing this lifecycle chain. */
+  abandon(options?: { reason?: string; context?: Record<string, unknown> }): WitnessPayload {
+    const ctx = { ...(options?.context ?? {}) };
+    if (options?.reason) {
+      (ctx as any).abandon_reason = options.reason;
+    }
+    return this._mint(0.0, 0.0, 0.0, "abandoned", { context: Object.keys(ctx).length ? ctx : undefined });
   }
 }
 

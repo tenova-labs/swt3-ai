@@ -236,6 +236,33 @@ MATERIAL_STANDARD_CODES: Dict[str, int] = {"asme": 0, "iso": 1, "astm": 2, "mil_
 CHAIN_STATUS_CODES: Dict[str, int] = {"in_progress": 0, "approved": 1, "rejected": 2, "superseded": 3, "archived": 4}
 RELEASE_TYPE_CODES: Dict[str, int] = {"prototype": 0, "limited_run": 1, "mass_production": 2, "field_modification": 3, "emergency": 4}
 
+# ── Operational Governance Codes (v6.0) ──────────────────────────────
+OVERRIDE_TRIGGER_CODES: Dict[str, int] = {"emergency_stop": 0, "operator_command": 1, "escalation_protocol": 2, "external_responder": 3}
+AUTHORIZATION_LEVEL_CODES: Dict[str, int] = {"operator": 0, "supervisor": 1, "site_manager": 2, "emergency_responder": 3}
+FALLBACK_STATE_CODES: Dict[str, int] = {"safe_state": 0, "legacy_controller": 1, "manual_mode": 2, "degraded_operation": 3, "full_shutdown": 4}
+CONSEQUENCE_CATEGORY_CODES: Dict[str, int] = {"safety": 0, "environmental": 1, "financial": 2, "operational": 3, "reputational": 4}
+DRIFT_RESPONSE_CODES: Dict[str, int] = {"notification_only": 0, "increased_monitoring": 1, "throttle": 2, "circuit_breaker": 3, "forced_failover": 4, "emergency_shutdown": 5}
+
+# ── Lifecycle Chain Stages (v6.0) ────────────────────────────────────
+LIFECYCLE_CHAIN_STAGES: Dict[str, int] = {
+    "initiated": 0, "checkpoint": 1, "escalated": 2,
+    "resolved": 3, "abandoned": 4, "superseded": 5,
+}
+_TERMINAL_STAGES = frozenset({"resolved", "abandoned", "superseded"})
+
+
+def _generate_lifecycle_chain_id(
+    tenant_id: str, procedure_id: str, initiator_fingerprint: str, ts_ms: int,
+) -> str:
+    """Generate a deterministic lifecycle chain ID.
+
+    Formula: LC-{SHA256("LIFECYCLE:{tenant}:{proc}:{fp}:{ts}").hex()[:16]}
+    """
+    import hashlib
+    data = f"LIFECYCLE:{tenant_id}:{procedure_id}:{initiator_fingerprint}:{ts_ms}"
+    digest = hashlib.sha256(data.encode("utf-8")).hexdigest()
+    return f"LC-{digest[:16]}"
+
 
 def _safe_hex_int(s: str, chars: int = 8) -> int:
     """Parse first `chars` hex chars from string, returning 0 for non-hex input."""
@@ -3771,6 +3798,342 @@ class Witness:
     def config(self) -> WitnessConfig:
         """Current witness configuration (read-only)."""
         return self._config
+
+    # ── Operational Governance Methods (v6.0) ─────────────────────
+
+    def witness_operational_override(
+        self,
+        trigger_type: str,
+        authorization_level: str,
+        fallback_state: str,
+        *,
+        override_reason: Optional[str] = None,
+        system_id: Optional[str] = None,
+        operator_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness a CI emergency override event (AI-EMRG.1).
+
+        For governance policy overrides, use witness_emergency_override() (AI-METAGOV.6).
+
+        Args:
+            trigger_type: emergency_stop, operator_command, escalation_protocol, external_responder.
+            authorization_level: operator, supervisor, site_manager, emergency_responder.
+            fallback_state: safe_state, legacy_controller, manual_mode, degraded_operation, full_shutdown.
+            override_reason: Human-readable reason for the override.
+            system_id: Identifier of the AI system being overridden.
+            operator_id: Identity of the overriding human entity.
+        """
+        fa = float(OVERRIDE_TRIGGER_CODES.get(trigger_type, 0))
+        fb = float(AUTHORIZATION_LEVEL_CODES.get(authorization_level, 0))
+        fc = float(FALLBACK_STATE_CODES.get(fallback_state, 0))
+        payload = self._mint_and_sign("AI-EMRG.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = system_id or "unknown-system"
+            ctx: Dict[str, Any] = {
+                "provider": "emergency_override",
+                "trigger_type": trigger_type,
+                "authorization_level": authorization_level,
+                "fallback_state": fallback_state,
+            }
+            if override_reason:
+                ctx["override_reason"] = override_reason
+            if operator_id:
+                ctx["operator_id"] = operator_id
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    def witness_drift_consequence(
+        self,
+        drift_magnitude: float,
+        consequence_category: str,
+        response_action: str,
+        *,
+        drift_metric: Optional[str] = None,
+        model_id: Optional[str] = None,
+        mapping_version: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness a consequence-mapped drift response (AI-DRIFT.2).
+
+        Args:
+            drift_magnitude: Statistical divergence value (PSI, KL, etc.).
+            consequence_category: safety, environmental, financial, operational, reputational.
+            response_action: notification_only, increased_monitoring, throttle,
+                circuit_breaker, forced_failover, emergency_shutdown.
+            drift_metric: Name of the metric (e.g., "psi", "kl_divergence").
+            model_id: AI model being monitored.
+            mapping_version: Version of the consequence severity mapping.
+        """
+        fa = drift_magnitude
+        fb = float(CONSEQUENCE_CATEGORY_CODES.get(consequence_category, 0))
+        fc = float(DRIFT_RESPONSE_CODES.get(response_action, 0))
+        payload = self._mint_and_sign("AI-DRIFT.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "unknown-model"
+            ctx: Dict[str, Any] = {
+                "provider": "drift_consequence",
+                "consequence_category": consequence_category,
+                "response_action": response_action,
+            }
+            if drift_metric:
+                ctx["drift_metric"] = drift_metric
+            if mapping_version:
+                ctx["mapping_version"] = mapping_version
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    def witness_champion_challenger(
+        self,
+        inputs_processed: int,
+        max_divergence: float,
+        threshold_breached: bool,
+        *,
+        champion_id: Optional[str] = None,
+        challenger_id: Optional[str] = None,
+        divergence_metric: Optional[str] = None,
+        evaluation_period: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness a champion-challenger assessment result (AI-ASSESS.1).
+
+        Args:
+            inputs_processed: Number of identical inputs routed to both models.
+            max_divergence: Highest divergence metric observed (raw, multiplied by 1000 internally).
+            threshold_breached: True if acceptance criteria were breached.
+            champion_id: Production model identifier.
+            challenger_id: Candidate model identifier.
+            divergence_metric: Name of the metric (e.g., "kl_divergence", "cosine_drift").
+            evaluation_period: Description of evaluation window.
+        """
+        fa = float(inputs_processed)
+        fb = max_divergence * 1000.0  # x1000 quantization per spec
+        fc = 1.0 if threshold_breached else 0.0
+        payload = self._mint_and_sign("AI-ASSESS.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = champion_id or "unknown-champion"
+            ctx: Dict[str, Any] = {
+                "provider": "champion_challenger",
+                "threshold_breached": threshold_breached,
+            }
+            if challenger_id:
+                ctx["challenger_id"] = challenger_id
+            if divergence_metric:
+                ctx["divergence_metric"] = divergence_metric
+            if evaluation_period:
+                ctx["evaluation_period"] = evaluation_period
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Lifecycle Chain API (v6.0) ──────────────────────────────────
+
+    def begin_lifecycle(
+        self,
+        procedure_id: str,
+        fa: float,
+        fb: float,
+        fc: float,
+        *,
+        model_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> "LifecycleChain":
+        """Start a new lifecycle chain for a governance procedure.
+
+        Mints the first anchor with lifecycle_stage="initiated" and generates
+        a deterministic lifecycle_chain_id. Returns a LifecycleChain handle
+        that auto-links subsequent anchors.
+
+        Args:
+            procedure_id: The procedure (e.g., "AI-EMRG.1", "AI-DRIFT.2").
+            fa, fb, fc: Evidence factors for the initiation anchor.
+            model_id: Optional AI model identifier.
+            context: Optional ai_context dict (clearing-level dependent).
+
+        Returns:
+            LifecycleChain handle for minting checkpoint/escalate/resolve anchors.
+        """
+        payload = self._mint_and_sign(procedure_id, fa, fb, fc)
+        chain_id = _generate_lifecycle_chain_id(
+            self._tenant_id, procedure_id, payload.anchor_fingerprint, payload.fingerprint_timestamp_ms,
+        )
+        payload.lifecycle_chain_id = chain_id
+        payload.lifecycle_stage = "initiated"
+        if model_id and self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id
+        if context and self._config.clearing_level <= 1:
+            payload.ai_context = context
+        self._buffer.enqueue_many([payload])
+        logger.info(
+            "Lifecycle chain initiated: %s procedure=%s chain=%s",
+            payload.anchor_fingerprint, procedure_id, chain_id,
+        )
+        return LifecycleChain(self, procedure_id, chain_id, payload.anchor_fingerprint)
+
+    def resume_lifecycle(
+        self,
+        procedure_id: str,
+        chain_id: str,
+        last_fingerprint: str,
+        anchor_count: int = 1,
+    ) -> "LifecycleChain":
+        """Resume a lifecycle chain after crash recovery or process restart.
+
+        Reconstructs a LifecycleChain handle from known state without
+        minting any new anchors. No server call needed.
+
+        Args:
+            procedure_id: The procedure this chain belongs to.
+            chain_id: The LC- prefixed chain ID.
+            last_fingerprint: The 12-char fingerprint of the last known anchor.
+            anchor_count: Number of anchors already minted in this chain.
+
+        Returns:
+            LifecycleChain handle ready for further minting.
+        """
+        if not chain_id.startswith("LC-") or len(chain_id) != 19:
+            raise ValueError(f"Invalid lifecycle chain ID: {chain_id!r} (expected LC- + 16 hex chars)")
+        return LifecycleChain(self, procedure_id, chain_id, last_fingerprint, anchor_count)
+
+
+class LifecycleChain:
+    """Handle for a multi-anchor lifecycle chain.
+
+    Auto-links anchors via lifecycle_chain_id and lifecycle_parent.
+    Enforces terminal stage finality (no minting after resolve/abandon).
+
+    Usage:
+        chain = witness.begin_lifecycle("AI-EMRG.1", fa=1.0, fb=1.0, fc=0.0)
+        chain.checkpoint(fa=1.0, fb=0.8, fc=0.0)
+        chain.checkpoint(fa=1.0, fb=0.9, fc=0.0)
+        chain.resolve(fa=1.0, fb=1.0, fc=0.0)
+    """
+
+    def __init__(
+        self,
+        witness: "Witness",
+        procedure_id: str,
+        chain_id: str,
+        last_fingerprint: str,
+        anchor_count: int = 1,
+    ) -> None:
+        self._witness = witness
+        self._procedure_id = procedure_id
+        self._chain_id = chain_id
+        self._last_fingerprint = last_fingerprint
+        self._anchor_count = anchor_count
+        self._closed = False
+
+    @property
+    def chain_id(self) -> str:
+        return self._chain_id
+
+    @property
+    def last_fingerprint(self) -> str:
+        return self._last_fingerprint
+
+    @property
+    def anchor_count(self) -> int:
+        return self._anchor_count
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def _assert_open(self) -> None:
+        if self._closed:
+            raise RuntimeError(
+                f"Lifecycle chain {self._chain_id} is closed (terminal stage reached). "
+                "Cannot mint further anchors."
+            )
+
+    def _mint(
+        self,
+        fa: float,
+        fb: float,
+        fc: float,
+        stage: str,
+        *,
+        procedure_id: Optional[str] = None,
+        escalation_chain_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        self._assert_open()
+        proc = procedure_id or self._procedure_id
+        payload = self._witness._mint_and_sign(proc, fa, fb, fc)
+        payload.lifecycle_chain_id = self._chain_id
+        payload.lifecycle_parent = self._last_fingerprint
+        payload.lifecycle_stage = stage
+        if escalation_chain_id:
+            payload.escalation_chain_id = escalation_chain_id
+        if context and self._witness._config.clearing_level <= 1:
+            payload.ai_context = context
+        self._witness._buffer.enqueue_many([payload])
+        self._last_fingerprint = payload.anchor_fingerprint
+        self._anchor_count += 1
+        if stage in _TERMINAL_STAGES:
+            self._closed = True
+        return payload
+
+    def checkpoint(
+        self,
+        fa: float,
+        fb: float,
+        fc: float,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Mint a checkpoint anchor in this lifecycle chain."""
+        return self._mint(fa, fb, fc, "checkpoint", context=context)
+
+    def escalate(
+        self,
+        target_procedure_id: str,
+        fa: float = 0.0,
+        fb: float = 0.0,
+        fc: float = 0.0,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> "LifecycleChain":
+        """Escalate to a new lifecycle chain for a different procedure.
+
+        Mints an "escalated" anchor on THIS chain, then starts a new chain
+        for the target procedure. The two chains are linked via escalation_chain_id.
+
+        Returns:
+            A new LifecycleChain for the target procedure.
+        """
+        target_chain = self._witness.begin_lifecycle(
+            target_procedure_id, fa, fb, fc, context=context,
+        )
+        self._mint(
+            fa, fb, fc, "escalated",
+            escalation_chain_id=target_chain.chain_id,
+            context=context,
+        )
+        return target_chain
+
+    def resolve(
+        self,
+        fa: float,
+        fb: float,
+        fc: float,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Mint a resolution anchor, closing this lifecycle chain."""
+        return self._mint(fa, fb, fc, "resolved", context=context)
+
+    def abandon(
+        self,
+        *,
+        reason: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Mint an abandonment anchor, closing this lifecycle chain."""
+        ctx = dict(context or {})
+        if reason:
+            ctx["abandon_reason"] = reason
+        return self._mint(0.0, 0.0, 0.0, "abandoned", context=ctx or None)
 
 
 def validate_governance_graph(rules: List[Dict[str, Any]]) -> Dict[str, Any]:

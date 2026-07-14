@@ -6,10 +6,14 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
-## What's New in v0.5.9
+## What's New in v0.6.0
 
-- **Compliance Intelligence** -- two new tools: `resolve_crosswalk` maps any procedure to every framework control it satisfies (24 frameworks, 103 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
-- **20 tools** (up from 18), 31 frameworks, 2 resources.
+- **Lifecycle Chains** -- multi-anchor governance sequences. Emergency override, consequence-mapped drift, and champion-challenger assessment witnessing. 3 new procedures (AI-EMRG.1, AI-DRIFT.2, AI-ASSESS.1).
+- **20 tools**, 31 frameworks, 106 procedures, 2 resources.
+
+### v0.5.9
+
+- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (29 frameworks, 106 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
 - Aligned with core SDK v0.5.9 (`resolve()`, `coverage()`, local witness mode).
 
 ## Why This Exists

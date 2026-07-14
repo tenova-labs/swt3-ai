@@ -9,22 +9,115 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK for TypeScript**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
-Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, and any OpenAI-compatible endpoint (vLLM, Ollama, Azure, Llama.cpp).
+Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, xAI (Grok), and any OpenAI-compatible endpoint (vLLM, Ollama, Azure, Llama.cpp).
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.5.9
+## What's New in v0.6.0
+
+Everything until now has been single-anchor-per-event. v0.6.0 introduces **lifecycle chains** -- sequences of linked anchors that capture an entire governance process from start to finish, reconstructable from a single identifier.
+
+### Lifecycle Chains
+
+When an operator overrides your AI, when a model drifts and triggers a circuit breaker, when you run a challenger model against production -- these are not point events. They are processes with a beginning, middle, and end. A single anchor cannot capture them. A lifecycle chain can.
+
+Regulators and auditors do not accept point-in-time snapshots as evidence for ongoing governance decisions. When your model drifts and you escalate to an emergency override, an auditor needs to see the complete decision sequence: what triggered the escalation, who authorized the override, what fallback was activated, and when normal operation resumed. Without a chain, you reconstruct that narrative from scattered log entries during the audit. With a chain, the evidence trail is cryptographically linked and queryable from a single identifier before the auditor asks.
+
+```typescript
+// Promote a challenger model, monitor it, handle problems
+const assessChain = witness.beginLifecycle("AI-ASSESS.1", 10000, 23.0, 0);  // 10K inputs, divergence 0.023, threshold not breached
+assessChain.resolve(10000, 23.0, 0);  // challenger promoted
+
+// Monitor the promoted model for drift
+const driftChain = witness.beginLifecycle("AI-DRIFT.2", 0.05, 3.0, 1.0);  // low drift, operational category, monitoring
+driftChain.checkpoint(0.12, 3.0, 1.0);  // drift increasing
+driftChain.checkpoint(0.35, 0.0, 3.0);  // safety threshold -- circuit breaker
+
+// Drift triggered emergency override
+const emrgChain = driftChain.escalate("AI-EMRG.1", 1.0, 1.0, 0.0);  // operator command, supervisor auth, safe state
+emrgChain.checkpoint(1.0, 1.0, 0.0);  // system stable under fallback
+emrgChain.resolve(1.0, 1.0, 0.0);  // AI control restored
+
+// Every anchor shares the same chain ID, each links to its parent
+console.log(emrgChain.chainId);  // LC-7a38936db8ecec94
+```
+
+That is the full governance loop: assessment to promotion to monitoring to escalation to override to restoration. Every transition is a cryptographic anchor. Every chain is reconstructable from a single ID. Auditors query one endpoint and get the complete evidence trail:
+
+```
+GET /api/v1/witness/chain?lifecycle_chain_id=LC-7a38936db8ecec94
+```
+
+Crash recovery is built in. If your process restarts mid-chain, reconstruct the handle from known state:
+
+```typescript
+const chain = witness.resumeLifecycle("AI-EMRG.1", "LC-7a38936db8ecec94", "2e16e2fe92dd");
+chain.checkpoint(1.0, 0.9, 0.0);  // continues from where it left off
+```
+
+### Emergency Override Witnessing (AI-EMRG.1)
+
+When a human overrides an AI system -- kills a valve controller, disables a fraud model, intervenes in a decision pipeline -- there is no standard way to produce cryptographic evidence of who authorized it, what fallback state was activated, and when control was restored. Now there is.
+
+```typescript
+witness.witnessOperationalOverride({
+  triggerType: "operator_command",       // emergency_stop, operator_command, escalation_protocol, external_responder
+  authorizationLevel: "supervisor",      // operator, supervisor, site_manager, emergency_responder
+  fallbackState: "safe_state",           // safe_state, legacy_controller, manual_mode, degraded_operation, full_shutdown
+  systemId: "reactor-ai-v3",
+  operatorId: "eng-042",
+  overrideReason: "valve pressure anomaly",
+});
+```
+
+Maps to: EU AI Act Art. 14 (human override for high-risk AI), NIST 800-53 IR-4 (incident handling), IEC 61511 (safety instrumented systems).
+
+### Consequence-Mapped Drift (AI-DRIFT.2)
+
+Most drift detection tells you a number changed. It does not tell you what that number means for your operation. AI-DRIFT.2 maps statistical drift to real-world consequence categories with graduated response witnessing.
+
+```typescript
+witness.witnessDriftConsequence({
+  driftMagnitude: 0.15,                  // PSI, KL divergence, or any statistical metric
+  consequenceCategory: "safety",         // safety, environmental, financial, operational, reputational
+  responseAction: "circuit_breaker",     // notification_only, increased_monitoring, throttle, circuit_breaker, forced_failover, emergency_shutdown
+  driftMetric: "psi",
+  modelId: "fraud-model-v7",
+  mappingVersion: "2026-Q2",
+});
+```
+
+Maps to: EU AI Act Art. 9(2)(b) (continuous risk estimation), OCC 2026-13 / SR 26-2 (model risk management with materiality mapping).
+
+### Champion-Challenger Assessment (AI-ASSESS.1)
+
+Running a shadow model alongside production? The comparison dashboard in your ML platform is a mutable database entry. AI-ASSESS.1 makes it a cryptographic evidence chain: session configuration, periodic divergence snapshots, and the promotion or rejection decision -- all linked by a shared assessment ID.
+
+```typescript
+witness.witnessChampionChallenger({
+  inputsProcessed: 10000,
+  maxDivergence: 0.023,                  // highest divergence observed (raw value, x1000 internally)
+  thresholdBreached: false,              // true = FAIL, false = PASS
+  championId: "gpt-4o-2026-05",
+  challengerId: "gpt-4o-2026-07",
+  divergenceMetric: "kl_divergence",
+});
+```
+
+Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (challenger runs with versioned sign-off).
+
+### v0.5.9
 
 - **Local Witness Mode** -- `new Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
-- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 24 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 24 frameworks and 103 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 31 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 29 frameworks and 106 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 15 adapters, 103 procedures, 52 namespaces, 28 frameworks, 18 profiles
+- 15 adapters, 106 procedures, 55 namespaces, 29 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -759,7 +852,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (103 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (106 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -776,7 +869,7 @@ SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapp
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 103 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 106 are available in production with real inference data. 226 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -893,6 +986,14 @@ const localClient = witness.wrap(
   new OpenAI({ baseURL: "http://localhost:11434/v1" }),
 ) as OpenAI;
 
+// xAI Grok
+const grokClient = witness.wrap(
+  new OpenAI({
+    apiKey: process.env.XAI_API_KEY,
+    baseURL: "https://api.x.ai/v1",
+  }),
+) as OpenAI;
+
 // Azure OpenAI
 const azureClient = witness.wrap(
   new OpenAI({
@@ -975,7 +1076,7 @@ resolve("AI-INF.1");
 // { "EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ... }
 ```
 
-24 frameworks bundled. 103 procedures mapped. Updated with each SDK release.
+31 frameworks bundled. 106 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1098,7 +1199,7 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 ## Cross-Language Parity
 
-This SDK produces identical fingerprints to the Python, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 207 cross-language test vectors verified at build time.
+This SDK produces identical fingerprints to the Python, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 226 cross-language test vectors verified at build time.
 
 | Layer | Language | Package |
 |-------|----------|---------|
@@ -1116,6 +1217,14 @@ This SDK produces identical fingerprints to the Python, Swift, Rust, C#, and Rub
 Your prompts and responses **never leave your infrastructure**. The SDK computes SHA-256 hashes locally and transmits only irreversible hashes and numeric factors. At Clearing Level 3, even the model name is hashed. The witness endpoint is a blind registrar: it stores cryptographic proofs, not your data.
 
 ---
+
+## Upgrading to v0.6.0
+
+**Lifecycle chains (new):** `beginLifecycle()`, `resumeLifecycle()` added. New exports: `LifecycleChainHandle`, `OVERRIDE_TRIGGER_CODES`, `AUTHORIZATION_LEVEL_CODES`, `FALLBACK_STATE_CODES`, `CONSEQUENCE_CATEGORY_CODES`, `DRIFT_RESPONSE_CODES`. No breaking changes. All existing code works unchanged.
+
+**3 new procedures:** `witnessOperationalOverride()` (AI-EMRG.1), `witnessDriftConsequence()` (AI-DRIFT.2), `witnessChampionChallenger()` (AI-ASSESS.1). These are additive -- no existing behavior changes.
+
+**Crosswalks updated:** 29 frameworks bundled (was 28). 4 new: TN-SB-1580, RI-AI-LAWS, VN-LAW-134, HEALTH-INS-AI.
 
 ## Upgrading to v0.5.9
 
@@ -1153,8 +1262,8 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 24 frameworks
-- [All 112 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 31 frameworks
+- [All 118 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

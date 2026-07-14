@@ -83,6 +83,9 @@ AI_PROCEDURES = [
     "AI-METAGOV.6",   # Emergency Override Attestation
     "AI-METAGOV.7",   # Governance Sync Verification
     "AI-METAGOV.8",   # Attestation Purity Verification
+    "AI-EMRG.1",      # Emergency Override Lifecycle (v6.0)
+    "AI-DRIFT.2",     # Consequence-Mapped Drift (v6.0)
+    "AI-ASSESS.1",    # Champion-Challenger Assessment (v6.0)
 ]
 
 # Revocation reason code mapping

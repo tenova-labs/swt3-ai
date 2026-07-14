@@ -152,6 +152,10 @@ class WitnessPayload:
     references: Optional[List[Dict[str, str]]] = None  # upstream anchor references for provenance chains (survives all clearing levels)
     revocation_target: Optional[str] = None  # fingerprint of anchor being revoked (survives all clearing levels)
     revocation_reason: Optional[str] = None  # reason for revocation (survives all clearing levels)
+    lifecycle_chain_id: Optional[str] = None  # LC- prefixed chain ID linking multi-anchor lifecycle (survives all clearing levels)
+    lifecycle_parent: Optional[str] = None  # fingerprint of previous anchor in chain (survives all clearing levels)
+    lifecycle_stage: Optional[str] = None  # initiated/checkpoint/escalated/resolved/abandoned/superseded (survives all clearing levels)
+    escalation_chain_id: Optional[str] = None  # chain ID of escalation target for cross-procedure linking (survives all clearing levels)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dict for JSON transmission."""
@@ -210,6 +214,14 @@ class WitnessPayload:
             d["revocation_target"] = self.revocation_target
         if self.revocation_reason is not None:
             d["revocation_reason"] = self.revocation_reason
+        if self.lifecycle_chain_id is not None:
+            d["lifecycle_chain_id"] = self.lifecycle_chain_id
+        if self.lifecycle_parent is not None:
+            d["lifecycle_parent"] = self.lifecycle_parent
+        if self.lifecycle_stage is not None:
+            d["lifecycle_stage"] = self.lifecycle_stage
+        if self.escalation_chain_id is not None:
+            d["escalation_chain_id"] = self.escalation_chain_id
         return d
 
 

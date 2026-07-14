@@ -18,6 +18,13 @@ export {
   FINGERPRINT_LENGTH,
 } from "./fingerprint.js";
 export { verifyAnchor, verifyEnclave } from "./verify.js";
+export {
+  generateLifecycleChainId,
+  isLifecycleChainId,
+  validateLifecycleStage,
+  isTerminalStage,
+  isValidFingerprint,
+} from "./lifecycle.js";
 export type {
   Tier,
   Provider,
@@ -30,4 +37,7 @@ export type {
   VerifyResult,
   EnclaveIntegrity,
   EvidenceFactor,
+  LifecycleStage,
+  LifecycleChainMeta,
 } from "./types.js";
+export { LIFECYCLE_CHAIN_STAGES } from "./types.js";

@@ -31,6 +31,10 @@ export interface WitnessPayload {
   legal_basis?: string;
   purpose_class?: string;
   witness_source?: string;
+  lifecycle_chain_id?: string;
+  lifecycle_parent?: string;
+  lifecycle_stage?: string;
+  escalation_chain_id?: string;
 }
 
 export interface WitnessReceipt {

@@ -25,9 +25,9 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.5.9"
+__version__ = "0.6.0"
 
-from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph
+from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph, LifecycleChain, LIFECYCLE_CHAIN_STAGES
 from .exporters.chain_monitor import ChainMonitorExporter
 from .exporters.evidence import EvidenceExporter
 from .types import (
@@ -46,7 +46,9 @@ from .config import load_config, load_full_config, compute_config_hash
 from .types import (
     TrustMeshConfig, HardwareConfig, RuntimeProfileConfig, SkillCardConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, LoadedConfig,
 )
-from .witness import (CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES,
+from .witness import (OVERRIDE_TRIGGER_CODES, AUTHORIZATION_LEVEL_CODES, FALLBACK_STATE_CODES,
+    CONSEQUENCE_CATEGORY_CODES, DRIFT_RESPONSE_CODES,
+    CONTENT_TYPE_CODES, MARKING_METHODS, BASELINE_MODE_CODES, LICENSE_TYPE_CODES,
     SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES,
     DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES,
     BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES,
@@ -199,5 +201,12 @@ __all__ = [
     "CHAIN_STATUS_CODES",
     "RELEASE_TYPE_CODES",
     "validate_governance_graph",
+    "LifecycleChain",
+    "LIFECYCLE_CHAIN_STAGES",
+    "OVERRIDE_TRIGGER_CODES",
+    "AUTHORIZATION_LEVEL_CODES",
+    "FALLBACK_STATE_CODES",
+    "CONSEQUENCE_CATEGORY_CODES",
+    "DRIFT_RESPONSE_CODES",
     "__version__",
 ]

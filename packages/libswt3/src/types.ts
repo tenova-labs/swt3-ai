@@ -110,3 +110,30 @@ export interface EvidenceFactor {
   witnessed_at: string;
   metadata?: Record<string, unknown>;
 }
+
+// ── Lifecycle Chains (v6.0) ─────────────────────────────────────────
+
+/** Canonical lifecycle chain stage codes. */
+export const LIFECYCLE_CHAIN_STAGES = {
+  initiated: 0,
+  checkpoint: 1,
+  escalated: 2,
+  resolved: 3,
+  abandoned: 4,
+  superseded: 5,
+} as const;
+
+/** Valid lifecycle stage name. */
+export type LifecycleStage = keyof typeof LIFECYCLE_CHAIN_STAGES;
+
+/** Lifecycle chain metadata carried in observations JSONB (survives all clearing levels). */
+export interface LifecycleChainMeta {
+  /** Deterministic chain ID: LC- + 16 hex chars. Groups all anchors in a lifecycle. */
+  lifecycle_chain_id: string;
+  /** 12-char fingerprint of the previous anchor in the chain. */
+  lifecycle_parent?: string;
+  /** Canonical stage of this anchor within its lifecycle. */
+  lifecycle_stage: LifecycleStage;
+  /** Chain ID of an escalation target (cross-procedure linking). */
+  escalation_chain_id?: string;
+}
