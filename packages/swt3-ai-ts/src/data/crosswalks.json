@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "generated_at": "2026-07-02T01:21:12Z",
   "source": "uct-registry.json",
-  "description": "Bidirectional crosswalk between 103 SWT3 AI procedures and 24 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
+  "description": "Bidirectional crosswalk between 108 SWT3 AI procedures and 31 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "frameworks": {
     "CA-SB-942": {
@@ -44,7 +44,7 @@
       "version": "2024/1689",
       "url": "https://eur-lex.europa.eu/eli/reg/2024/1689",
       "enforcement_date": "2027-12-02",
-      "procedure_count": 103,
+      "procedure_count": 108,
       "requirement_count": 50
     },
     "FIVE-EYES-AGENTIC": {

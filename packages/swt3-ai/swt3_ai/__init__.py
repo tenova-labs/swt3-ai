@@ -25,7 +25,7 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph, LifecycleChain, LIFECYCLE_CHAIN_STAGES
 from .exporters.chain_monitor import ChainMonitorExporter

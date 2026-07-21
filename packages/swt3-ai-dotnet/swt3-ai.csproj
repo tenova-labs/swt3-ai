@@ -2,10 +2,10 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>swt3-ai</PackageId>
-    <Version>0.6.0</Version>
+    <Version>0.6.1</Version>
     <Authors>TeNova Labs</Authors>
     <Company>TeNova Labs</Company>
-    <Description>SWT3 AI Witness SDK: cryptographic attestation for AI inference. 103 procedures, 52 namespaces, 7 languages, 18 profiles, 21 integrations. EU AI Act, NIST AI RMF, CMMC, SR 11-7.</Description>
+    <Description>SWT3 AI Witness SDK: cryptographic attestation for AI inference. 108 procedures, 56 namespaces, 7 languages, 18 profiles, 21 integrations. EU AI Act, NIST AI RMF, CMMC, SR 11-7.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tenova-labs/swt3-ai</RepositoryUrl>
     <PackageProjectUrl>https://sovereign.tenova.io/docs/</PackageProjectUrl>

@@ -11,9 +11,102 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
 
-## What's New in v0.6.0
+## What's New in v0.6.1
 
-Everything until now has been single-anchor-per-event. v0.6.0 introduces **lifecycle chains** -- sequences of linked anchors that capture an entire governance process from start to finish, reconstructable from a single identifier.
+AI systems are no longer single-process, single-model, single-cloud. A production AI pipeline today is an orchestrator delegating to sub-agents, each burning tokens across providers, running on different infrastructure in different jurisdictions. When an auditor asks "who had access to what, how much did it cost, and where was it running," most teams reconstruct answers from scattered logs, billing dashboards, and infrastructure state files. v0.6.1 makes these answers part of the witness record.
+
+### Delegation Trees (AI-DEL.1)
+
+Multi-agent systems delegate permissions in trees, not pairs. Agent A delegates to Agent B with scope "read_file, execute_query." Agent B sub-delegates a subset to Agent C. Agent C spawns workers. When something goes wrong three levels deep, regulators want to know: who granted what scope, at what depth, and whether revoking the root grant cascades to every descendant.
+
+AI-MULTI.1 witnessed single-hop delegation. AI-DEL.1 witnesses the entire tree structure -- the scope hash that binds what was granted, the depth that shows how far authority has traveled from a human, and the cascade revocation flag that proves a single revocation can unwind the whole chain.
+
+```python
+# Witness a delegation grant scoped to specific tools
+witness.witness_delegation_tree(
+    delegator_id="orchestrator-main",
+    scope="read_file,write_file,execute_query",
+    delegation_depth=2,
+    delegates=["worker-alpha", "worker-beta"],
+    cascade_revocation=True,
+    time_bound_minutes=120,
+)
+
+# Convenience: scope from a tool list (sorted, joined automatically)
+Witness.delegation_tree_from_tools(
+    witness, "orchestrator", ["execute_query", "read_file", "write_file"],
+    delegates=["worker-1"],
+)
+```
+
+Factor semantics: `fa` = SHA256(delegator\_id)[:8] as uint32, `fb` = SHA256(scope)[:8] as uint32, `fc` = delegation depth. Delegate identities are SHA-256 hashed in context. All factors survive every clearing level.
+
+### Resource Consumption Witnessing (AI-COST.1)
+
+EU AI Act Art. 53 requires GPAI providers to disclose computational resources used in training. US Executive Order 14110 established FLOP thresholds that trigger reporting requirements. SR 11-7 expects model risk management to include resource consumption in operational risk assessments. None of these obligations have a standard evidence format. AI-COST.1 provides one.
+
+The SDK witnesses cumulative resource consumption -- tokens, API calls, estimated cost -- as cryptographic evidence. Verdict is always PASS. This is a notary, not a budget enforcer. It records what was consumed so there is proof when the auditor, the regulator, or the CFO asks.
+
+```python
+witness.witness_resource_consumption(
+    tokens_in=15000,
+    tokens_out=3200,
+    api_calls=47,
+    cost_cents=142,
+    provider="anthropic",
+    model_id="claude-sonnet-4-20250514",
+)
+```
+
+### Deployment Context Detection
+
+The same model running on AWS us-east-1 and on Azure Germany has different regulatory obligations. Kubernetes vs. Lambda vs. bare metal changes the threat model. NVIDIA A100 vs. TPU v4 affects reproducibility claims. Until now, deployment context lived in infrastructure configs that the compliance team never saw.
+
+The SDK now auto-detects cloud provider, region, runtime environment, and accelerator hardware from environment variables at startup. No metadata service calls, no subprocess spawns, no credentials required. The context embeds directly in witness payloads so auditors see where evidence was generated without asking the DevOps team.
+
+```python
+from swt3_ai.deployment import detect_deployment_context
+
+ctx = detect_deployment_context()
+# DeploymentContext(cloud_provider='aws', region='us-east-1', runtime='kubernetes', accelerator_type='nvidia-gpu', accelerator_count=4)
+
+# Embed in a resource consumption witness
+witness.witness_resource_consumption(
+    tokens_in=5000, tokens_out=1200, api_calls=12,
+    provider="openai", model_id="gpt-4o",
+    deployment_context=ctx.to_dict(),
+)
+```
+
+Detects: AWS, GCP, Azure, Vultr | Kubernetes, Lambda, ECS, Cloud Run, container, bare-metal | NVIDIA GPU, TPU, AWS Neuron. Cached for 5 minutes. Clearing-level aware: full context at CL 0-1, provider+runtime at CL 2, hashed at CL 3.
+
+### Compliance Status CLI (`swt3 status`)
+
+Every compliance framework your AI system faces -- EU AI Act, NIST AI RMF, SR 11-7, CMMC -- maps to dozens of requirements across multiple articles. Developers integrate the SDK, mint anchors, and know their code is witnessed. But no one could answer the question that matters most before an assessment: "How much of my framework is actually covered right now?"
+
+The answer used to require logging into a dashboard, cross-referencing a crosswalk spreadsheet, and hoping your ledger had recent entries. `swt3 status` puts that answer in the terminal where developers already live. One command, zero network calls, instant result.
+
+```bash
+$ swt3 status
+
+  EU Artificial Intelligence Act ██████░░░░░░░░░░░░░░  30% (15/50)
+
+  Covered:
+    ✓ Art.9(2)(a)    AI-GRD.1   5m ago
+    ✓ Art.13(1)      AI-EXPL.1  8m ago
+    ✓ Art.27         AI-DPIA.1  2w ago
+
+  Next steps:
+    AI-COST.1    witness.witness_resource_consumption()
+    AI-CONSENT.1 witness.witness_consent()
+    AI-DATA.2    witness.witness_data_quality()
+```
+
+The bar goes up every time you implement another procedure. Gaps show the exact SDK method to close them -- not documentation links, not vague guidance, but the function call. Use `--json` in CI to fail builds when coverage drops. Use `--compact` for Slack notifications. Use `--full` the week before an assessment to see every article, covered or not. Hand the output to your CISO. Hand the [assessor hot sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) to the auditor.
+
+### v0.6.0
+
+Everything until now has been single-anchor-per-event. v0.6.0 introduced **lifecycle chains** -- sequences of linked anchors that capture an entire governance process from start to finish, reconstructable from a single identifier.
 
 ### Lifecycle Chains
 
@@ -108,14 +201,14 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
 - **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 31 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 29 frameworks and 106 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Bundled Crosswalks** -- 29 frameworks and 108 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 21 adapters, 106 procedures, 55 namespaces, 29 frameworks, 18 profiles
+- 21 adapters, 108 procedures, 56 namespaces, 29 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -638,6 +731,36 @@ Supports single files or chains (`extends: [base.yaml, team.yaml]`). Merge order
 | `content-platform` | Content moderation: watermark verification, transparency, consent |
 | `autonomous-systems` | Autonomous/robotics: safety, robustness, dual-use, human oversight |
 
+### Compliance Status
+
+See your framework coverage at a glance:
+
+```bash
+swt3 status                       # brief: progress bar + next steps
+swt3 status --full                # all articles, covered + gaps
+swt3 status --framework EU-AI-ACT # override target framework
+swt3 status --json                # machine-readable for CI/CD
+swt3 status --compact             # one-line summary for scripts
+```
+
+Output shows which framework articles are covered, which procedures are missing, and the exact SDK method to close each gap:
+
+```
+  EU Artificial Intelligence Act ██████░░░░░░░░░░░░░░  30% (15/50)
+
+  Covered:
+    ✓ Art.9(2)(a)    AI-GRD.1   5m ago
+    ✓ Art.13(1)      AI-EXPL.1  8m ago
+    ✓ Art.27         AI-DPIA.1  2w ago
+
+  Next steps:
+    AI-COST.1    witness.witness_resource_consumption()
+    AI-CONSENT.1 witness.witness_consent()
+    AI-DATA.2    witness.witness_data_quality()
+```
+
+Zero network calls. Works offline. Reads your local WAL and crosswalk data.
+
 ### Diagnostics
 
 ```bash
@@ -802,7 +925,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (106 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (108 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -819,7 +942,7 @@ SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapp
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 106 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 108 are available in production with real inference data. 226 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -946,7 +1069,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-29 frameworks bundled. 106 procedures mapped. Updated with each SDK release.
+29 frameworks bundled. 108 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1233,6 +1356,14 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 ---
 
+## Upgrading to v0.6.1
+
+**Delegation trees (new):** `witness_delegation_tree()`, `delegation_tree_from_tools()`, `delegation_tree_from_capabilities()` added. AI-DEL.1 procedure. No breaking changes.
+
+**Resource consumption (new):** `witness_resource_consumption()` now accepts optional `deployment_context` dict. No breaking changes.
+
+**Deployment detection (new):** `from swt3_ai.deployment import detect_deployment_context`. New module, no changes to existing code.
+
 ## Upgrading to v0.6.0
 
 **Lifecycle chains (new):** `begin_lifecycle()`, `resume_lifecycle()` added. New exports: `LifecycleChainHandle`, `OVERRIDE_TRIGGER_CODES`, `AUTHORIZATION_LEVEL_CODES`, `FALLBACK_STATE_CODES`, `CONSEQUENCE_CATEGORY_CODES`, `DRIFT_RESPONSE_CODES`. No breaking changes. All existing code works unchanged.
@@ -1277,6 +1408,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [What Your Auditor Sees](https://sovereign.tenova.io/guides/developer-auditor-bridge.html) -- both sides of a witness anchor, developer to auditor
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
+- [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
 - [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 31 frameworks
 - [All 118 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides

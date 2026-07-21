@@ -1,8 +1,8 @@
 {
   "name": "@tenova/swt3-mcp",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "mcpName": "io.tenova/swt3-witness",
-  "description": "MCP server for AI compliance audit trail and governance. 20 tools, 31 frameworks. EU AI Act, NIST AI RMF, GDPR, CMMC, ISO 42001, OWASP Agentic Top 10, SR 11-7. Witness every inference, gate tool calls, enforce clearing levels. Cryptographic attestation with tamper-proof anchor chain.",
+  "description": "MCP server for AI compliance audit trail and governance. 22 tools, 31 frameworks. EU AI Act, NIST AI RMF, GDPR, CMMC, ISO 42001, OWASP Agentic Top 10, SR 11-7. Witness every inference, gate tool calls, enforce clearing levels. Cryptographic attestation with tamper-proof anchor chain.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

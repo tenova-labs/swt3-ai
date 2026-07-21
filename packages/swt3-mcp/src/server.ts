@@ -26,6 +26,8 @@ import { handleWitnessModelIntegrity, handleWitnessAdapterStack } from "./tools/
 import { handleAttestSkillManifest, handleAttestMemoryContext } from "./tools/skill.js";
 import { handleVerifyAgentTrust, handlePresentCredential } from "./tools/trust.js";
 import { handleResolveCrosswalk, handleCoverageReport } from "./tools/crosswalk.js";
+import { handleWitnessResourceConsumption } from "./tools/cost.js";
+import { handleWitnessDelegationTree } from "./tools/delegation.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
 import { REGISTRY_RESOURCE } from "./resources/registry.js";
@@ -749,6 +751,87 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
   }, async (args) => {
     try {
       const text = handleCoverageReport(args as any, sessionState);
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Delegation Tree Tool ---
+
+  server.registerTool("witness_delegation_tree", {
+    description:
+      "Witness a hierarchical delegation tree grant (AI-DEL.1). " +
+      "Records permission scope binding, tree depth, cascade revocation intent, " +
+      "and delegate identities. Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      delegator_id: z.string().describe("Identity of the granting agent"),
+      scope: z.string().describe("Permission scope descriptor (e.g., 'read_file,write_file')"),
+      delegation_depth: z.number().describe("Tree depth from root authorization (0=root)"),
+      delegates: z.array(z.string()).optional().describe("Agent IDs receiving delegation (hashed in context)"),
+      tree_hash: z.string().optional().describe("SHA-256 of the complete delegation tree manifest"),
+      cascade_revocation: z.boolean().optional().describe("Whether revoking this grant cascades to children (default: false)"),
+      time_bound_minutes: z.number().optional().describe("Minutes until grant expires (0 = unbounded)"),
+      parent_grant_fingerprint: z.string().optional().describe("Anchor fingerprint of the parent grant"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessDelegationTree(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-DEL.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Resource Consumption Tool ---
+
+  server.registerTool("witness_resource_consumption", {
+    description:
+      "Witness cumulative resource consumption (AI-COST.1). " +
+      "Records token usage, API call counts, and estimated cost for " +
+      "accountability and budget governance. Verdict is always PASS -- " +
+      "witnesses consumption, does not enforce budgets." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      tokens_in: z.number().describe("Input token count (cumulative)"),
+      tokens_out: z.number().describe("Output token count (cumulative)"),
+      api_calls: z.number().describe("Number of API calls (cumulative)"),
+      cost_cents: z.number().optional().describe("Estimated cost in cents (-1 for unknown)"),
+      provider: z.string().optional().describe("AI provider name (e.g., openai, anthropic)"),
+      model_id: z.string().optional().describe("AI model identifier"),
+      compute_seconds: z.number().optional().describe("Wall-clock compute time in seconds"),
+      cost_table_version: z.string().optional().describe("Version of the cost table used for estimation"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessResourceConsumption(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-COST.1");
       return { content: [{ type: "text" as const, text }] };
     } catch (err) {
       return {

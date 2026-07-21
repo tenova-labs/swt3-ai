@@ -65,6 +65,8 @@ export {
   MerkleAccumulator,
 } from "./merkle.js";
 export type { MerkleProof, MerkleProofStep, SessionRoot, MerkleAccumulatorOptions } from "./merkle.js";
+export { detectDeploymentContext, contextToObservations, resetCache as resetDeploymentCache } from "./deployment.js";
+export type { DeploymentContext } from "./deployment.js";
 export { queryEnvironment, NODE_TYPE_CODES } from "./environment.js";
 export type { EnvironmentSnapshot } from "./environment.js";
 export {

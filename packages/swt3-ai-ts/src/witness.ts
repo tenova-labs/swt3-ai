@@ -2198,6 +2198,135 @@ export class Witness {
     return payload;
   }
 
+  // ── Delegation Tree Witnessing (AI-DEL.1) ──────────────────────
+
+  /**
+   * Witness a delegation tree grant (AI-DEL.1).
+   *
+   * Records hierarchical permission delegation with scope binding and
+   * cascade revocation intent. Complements AI-MULTI.1 (single-hop)
+   * by witnessing the TREE structure per EU AI Act Art. 9 and
+   * NIST AI RMF GOVERN 1.3.
+   *
+   * Factor semantics:
+   *   factor_a: SHA256(delegatorId)[:8] as uint32
+   *   factor_b: SHA256(scope)[:8] as uint32
+   *   factor_c: delegationDepth
+   *
+   * @param options.delegatorId - Identity of the granting agent.
+   * @param options.scope - Permission scope descriptor (e.g., "read_file,write_file").
+   * @param options.delegationDepth - Tree depth from root authorization (0=root).
+   * @param options.delegates - Agent IDs receiving delegation (hashed in context).
+   * @param options.treeHash - SHA-256 of the complete delegation tree manifest.
+   * @param options.cascadeRevocation - Whether revoking this grant cascades to children.
+   * @param options.timeBoundMinutes - Minutes until grant expires (0 = unbounded).
+   * @param options.parentGrantFingerprint - Anchor fingerprint of the parent grant.
+   */
+  witnessDelegationTree(options: {
+    delegatorId: string;
+    scope: string;
+    delegationDepth: number;
+    delegates?: string[];
+    treeHash?: string;
+    cascadeRevocation?: boolean;
+    timeBoundMinutes?: number;
+    parentGrantFingerprint?: string;
+  }): WitnessPayload {
+    const delegatorHash = sha256Truncated(options.delegatorId, 16);
+    const scopeHash = sha256Truncated(options.scope, 16);
+    const fa = parseInt(delegatorHash.slice(0, 8), 16);
+    const fb = parseInt(scopeHash.slice(0, 8), 16);
+    const fc = options.delegationDepth;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DEL.1", fa, fb, fc, ts);
+
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DEL.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `delegation-tree-depth-${options.delegationDepth}`;
+      const ctx: Record<string, unknown> = {
+        provider: "delegation-tree",
+        delegator_hash: delegatorHash,
+        scope_hash: scopeHash,
+        cascade_revocation: options.cascadeRevocation ?? false,
+        time_bound_minutes: options.timeBoundMinutes ?? 0,
+      };
+      if (options.delegates) {
+        ctx.delegates = options.delegates.map((d) => sha256Truncated(d));
+      }
+      if (options.treeHash) ctx.tree_hash = options.treeHash;
+      if (options.parentGrantFingerprint) {
+        ctx.parent_grant_fingerprint = options.parentGrantFingerprint;
+      }
+      payload.ai_context = ctx;
+    }
+
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  /**
+   * Helper: witness a delegation tree scoped to a list of tools.
+   * Scope is computed as the sorted, comma-joined tool names.
+   */
+  delegationTreeFromTools(options: {
+    delegatorId: string;
+    tools: string[];
+    delegationDepth?: number;
+    delegates?: string[];
+    treeHash?: string;
+    cascadeRevocation?: boolean;
+    timeBoundMinutes?: number;
+    parentGrantFingerprint?: string;
+  }): WitnessPayload {
+    const scope = [...options.tools].sort().join(",");
+    return this.witnessDelegationTree({
+      delegatorId: options.delegatorId,
+      scope,
+      delegationDepth: options.delegationDepth ?? 1,
+      delegates: options.delegates,
+      treeHash: options.treeHash,
+      cascadeRevocation: options.cascadeRevocation,
+      timeBoundMinutes: options.timeBoundMinutes,
+      parentGrantFingerprint: options.parentGrantFingerprint,
+    });
+  }
+
+  /**
+   * Helper: witness a delegation tree scoped to a list of capabilities.
+   * Scope is computed as the sorted, comma-joined capability names.
+   */
+  delegationTreeFromCapabilities(options: {
+    delegatorId: string;
+    capabilities: string[];
+    delegationDepth?: number;
+    delegates?: string[];
+    treeHash?: string;
+    cascadeRevocation?: boolean;
+    timeBoundMinutes?: number;
+    parentGrantFingerprint?: string;
+  }): WitnessPayload {
+    const scope = [...options.capabilities].sort().join(",");
+    return this.witnessDelegationTree({
+      delegatorId: options.delegatorId,
+      scope,
+      delegationDepth: options.delegationDepth ?? 1,
+      delegates: options.delegates,
+      treeHash: options.treeHash,
+      cascadeRevocation: options.cascadeRevocation,
+      timeBoundMinutes: options.timeBoundMinutes,
+      parentGrantFingerprint: options.parentGrantFingerprint,
+    });
+  }
+
   // ── Model Drift Detection (AI-DRIFT.1) ─────────────────────────
 
   /**
@@ -4417,6 +4546,70 @@ export class Witness {
       if (options.evaluationPeriod) ctx.evaluation_period = options.evaluationPeriod;
       payload.ai_context = ctx;
     }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  /**
+   * Witness cumulative resource consumption (AI-COST.1).
+   *
+   * Records token usage, API call counts, and estimated cost for
+   * accountability and budget governance. Verdict is always PASS --
+   * this procedure witnesses consumption, it does not enforce budgets.
+   */
+  witnessResourceConsumption(options: {
+    tokensIn: number;
+    tokensOut: number;
+    apiCalls: number;
+    costCents?: number;
+    provider?: string;
+    modelId?: string;
+    computeSeconds?: number;
+    costTableVersion?: string;
+    deploymentContext?: Record<string, unknown>;
+  }): WitnessPayload {
+    const costCents = options.costCents ?? -1;
+    const provider = options.provider ?? "unknown";
+    const fa = options.tokensIn + options.tokensOut;
+    const fb = options.apiCalls;
+    const fc = costCents;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-COST.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-COST.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep,
+      fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "unknown-model";
+      const ctx: Record<string, unknown> = {
+        provider,
+        tokens_in: options.tokensIn,
+        tokens_out: options.tokensOut,
+        api_calls: options.apiCalls,
+        cost_cents: costCents,
+      };
+      if (options.computeSeconds !== undefined) ctx.compute_seconds = options.computeSeconds;
+      if (options.costTableVersion) ctx.cost_table_version = options.costTableVersion;
+      if (options.deploymentContext) ctx.deployment_context = options.deploymentContext;
+      payload.ai_context = ctx;
+    } else if (this.config.clearingLevel === 2) {
+      payload.ai_model_id = options.modelId ?? "unknown-model";
+      const ctx2: Record<string, unknown> = { provider_category: "llm_provider" };
+      if (options.deploymentContext) {
+        ctx2.deployment_context = {
+          cloud_provider: options.deploymentContext.cloud_provider,
+          runtime: options.deploymentContext.runtime,
+        };
+      }
+      payload.ai_context = ctx2;
+    }
+    // clearing_level 3: factors only, no metadata
     this._applyOperationalMetadata(payload, policyHash);
     this.buffer.enqueueMany([payload]);
     return payload;

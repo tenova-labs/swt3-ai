@@ -46,6 +46,11 @@ def _print_help() -> None:
         "  swt3 init --profile <name> --expand   Full profile template",
         "  swt3 init --ci-template              Dump GitHub Action workflow",
         "  swt3 init --profile <name> --tenant <id> --agent <id>",
+        "  swt3 status                       Compliance posture at a glance",
+        "  swt3 status --full                All articles + all gaps",
+        "  swt3 status --framework EU-AI-ACT Override target framework",
+        "  swt3 status --json                Machine-readable (CI/CD)",
+        "  swt3 status --compact             One-line summary",
         "  swt3 demo                         Run the zero-friction demo",
         "  swt3 doctor                       Diagnose config health",
         "  swt3 doctor --ci                   Strict mode (exit 1 on warnings)",
@@ -232,7 +237,10 @@ def main() -> None:
     args = sys.argv[1:]
     cmd = args[0] if args else None
 
-    if cmd == "init":
+    if cmd == "status":
+        from .status import handle_status
+        handle_status(args[1:])
+    elif cmd == "init":
         handle_init(args[1:])
     elif cmd == "demo":
         if "--mesh-test" in args[1:]:

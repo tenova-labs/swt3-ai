@@ -6,14 +6,21 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
-## What's New in v0.6.0
+## What's New in v0.6.1
+
+Multi-agent systems delegate in trees, not pairs. Production AI burns tokens across providers. Regulators want to know who had access to what, how much it cost, and where it ran. Two new tools make these answers part of the witness record without leaving your MCP client.
+
+- **Delegation Tree Witnessing** (AI-DEL.1) -- `witness_delegation_tree` tool. When Agent A delegates to Agent B and B sub-delegates to C, auditors need to see the full permission tree: scope, depth from human authorization, and whether revoking the root cascades to every descendant. This tool witnesses the entire tree structure, not just individual hops.
+- **Resource Consumption Witnessing** (AI-COST.1) -- `witness_resource_consumption` tool. EU AI Act Art. 53, EO 14110 FLOP thresholds, SR 11-7 operational risk -- all require evidence of resource consumption. This tool records tokens, API calls, and estimated cost as cryptographic evidence. Notary, not budget enforcer.
+- **22 tools**, 31 frameworks, 108 procedures, 2 resources.
+
+### v0.6.0
 
 - **Lifecycle Chains** -- multi-anchor governance sequences. Emergency override, consequence-mapped drift, and champion-challenger assessment witnessing. 3 new procedures (AI-EMRG.1, AI-DRIFT.2, AI-ASSESS.1).
-- **20 tools**, 31 frameworks, 106 procedures, 2 resources.
 
 ### v0.5.9
 
-- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (29 frameworks, 106 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
+- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (29 frameworks, 108 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
 - Aligned with core SDK v0.5.9 (`resolve()`, `coverage()`, local witness mode).
 
 ## Why This Exists
@@ -213,10 +220,14 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (20)
+## Tools (22)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.
+
+**Delegation and Resource Governance:**
+`witness_delegation_tree` -- witness hierarchical permission delegation with scope binding, cascade revocation, and depth tracking (AI-DEL.1).
+`witness_resource_consumption` -- witness cumulative token usage, API call counts, and estimated cost (AI-COST.1).
 
 **Verification:**
 `verify_anchor` -- verify the cryptographic integrity of an existing anchor.
@@ -250,7 +261,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (103 AI procedures, 52 namespaces).
+`list_procedures` -- browse the UCT procedure registry (108 procedures, 56 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

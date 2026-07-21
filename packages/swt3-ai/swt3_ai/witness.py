@@ -2167,6 +2167,96 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    # ── Delegation Tree Witnessing (AI-DEL.1) ────────────────────────────
+
+    def witness_delegation_tree(
+        self,
+        delegator_id: str,
+        scope: str,
+        delegation_depth: int,
+        *,
+        delegates: Optional[List[str]] = None,
+        tree_hash: Optional[str] = None,
+        cascade_revocation: bool = False,
+        time_bound_minutes: int = 0,
+        parent_grant_fingerprint: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness a delegation tree grant (AI-DEL.1).
+
+        Records hierarchical permission delegation with scope binding and
+        cascade revocation intent. Complements AI-MULTI.1 (single-hop)
+        by witnessing the TREE structure per EU AI Act Art. 9 and
+        NIST AI RMF GOVERN 1.3.
+
+        Factor semantics:
+            factor_a: SHA256(delegator_id)[:8] as uint32
+            factor_b: SHA256(scope)[:8] as uint32
+            factor_c: delegation_depth
+
+        Args:
+            delegator_id: Identity of the granting agent.
+            scope: Permission scope descriptor (e.g., "read_file,write_file").
+            delegation_depth: Tree depth from root authorization (0=root).
+            delegates: List of agent IDs receiving delegation (hashed in context).
+            tree_hash: SHA-256 of the complete delegation tree manifest.
+            cascade_revocation: Whether revoking this grant cascades to children.
+            time_bound_minutes: Minutes until grant expires (0 = unbounded).
+            parent_grant_fingerprint: Anchor fingerprint of the parent grant.
+        """
+        delegator_hash = sha256_truncated(delegator_id, 16)
+        scope_hash = sha256_truncated(scope, 16)
+        fa = float(int(delegator_hash[:8], 16))
+        fb = float(int(scope_hash[:8], 16))
+        fc = float(delegation_depth)
+
+        payload = self._mint_and_sign("AI-DEL.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"delegation-tree-depth-{delegation_depth}"
+            ctx: Dict[str, Any] = {
+                "provider": "delegation-tree",
+                "delegator_hash": delegator_hash,
+                "scope_hash": scope_hash,
+                "cascade_revocation": cascade_revocation,
+                "time_bound_minutes": time_bound_minutes,
+            }
+            if delegates:
+                ctx["delegates"] = [sha256_truncated(d) for d in delegates]
+            if tree_hash:
+                ctx["tree_hash"] = tree_hash
+            if parent_grant_fingerprint:
+                ctx["parent_grant_fingerprint"] = parent_grant_fingerprint
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    @staticmethod
+    def delegation_tree_from_tools(
+        witness_instance: "Witness",
+        delegator_id: str,
+        tools: List[str],
+        **kwargs: Any,
+    ) -> WitnessPayload:
+        """Helper: witness a delegation tree scoped to a list of tools."""
+        scope = ",".join(sorted(tools))
+        return witness_instance.witness_delegation_tree(
+            delegator_id, scope, kwargs.pop("delegation_depth", 1), **kwargs,
+        )
+
+    @staticmethod
+    def delegation_tree_from_capabilities(
+        witness_instance: "Witness",
+        delegator_id: str,
+        capabilities: List[str],
+        **kwargs: Any,
+    ) -> WitnessPayload:
+        """Helper: witness a delegation tree scoped to a list of capabilities."""
+        scope = ",".join(sorted(capabilities))
+        return witness_instance.witness_delegation_tree(
+            delegator_id, scope, kwargs.pop("delegation_depth", 1), **kwargs,
+        )
+
     # ── Model Drift Detection (AI-DRIFT.1) ──────────────────────────────
 
     def witness_drift(self, metrics_evaluated: int, drifted_count: int, drift_type: str, *, baseline_hash: Optional[str] = None, drift_score: Optional[float] = None, detection_method: Optional[str] = None, window_size: Optional[int] = None, threshold: Optional[float] = None) -> WitnessPayload:
@@ -3925,6 +4015,71 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    def witness_resource_consumption(
+        self,
+        tokens_in: int,
+        tokens_out: int,
+        api_calls: int,
+        cost_cents: int = -1,
+        provider: str = "unknown",
+        model_id: Optional[str] = None,
+        compute_seconds: Optional[float] = None,
+        cost_table_version: Optional[str] = None,
+        deployment_context: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness cumulative resource consumption (AI-COST.1).
+
+        Records token usage, API call counts, and estimated cost for
+        accountability and budget governance. Verdict is always PASS --
+        this procedure witnesses consumption, it does not enforce budgets.
+
+        Args:
+            tokens_in: Input token count (cumulative).
+            tokens_out: Output token count (cumulative).
+            api_calls: Number of API calls (cumulative).
+            cost_cents: Estimated cost in cents (integer, provider-normalized).
+                Use -1 for unknown.
+            provider: Provider name (e.g., "openai", "anthropic").
+            model_id: AI model identifier.
+            compute_seconds: Wall-clock compute time in seconds.
+            cost_table_version: Version of the cost table used for estimation.
+            deployment_context: Pre-computed deployment context dict. If None
+                and auto_detect_context is set in config, auto-detects.
+        """
+        fa = float(tokens_in + tokens_out)
+        fb = float(api_calls)
+        fc = float(cost_cents)
+        payload = self._mint_and_sign("AI-COST.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "unknown-model"
+            ctx: Dict[str, Any] = {
+                "provider": provider,
+                "tokens_in": tokens_in,
+                "tokens_out": tokens_out,
+                "api_calls": api_calls,
+                "cost_cents": cost_cents,
+            }
+            if compute_seconds is not None:
+                ctx["compute_seconds"] = compute_seconds
+            if cost_table_version:
+                ctx["cost_table_version"] = cost_table_version
+            if deployment_context:
+                ctx["deployment_context"] = deployment_context
+            payload.ai_context = ctx
+        elif self._config.clearing_level == 2:
+            payload.ai_model_id = model_id or "unknown-model"
+            ctx2: Dict[str, Any] = {"provider_category": "llm_provider"}
+            if deployment_context:
+                ctx2["deployment_context"] = {
+                    k: deployment_context[k]
+                    for k in ("cloud_provider", "runtime")
+                    if k in deployment_context
+                }
+            payload.ai_context = ctx2
+        # clearing_level 3: factors only, no metadata
+        self._buffer.enqueue_many([payload])
+        return payload
+
     # ── Lifecycle Chain API (v6.0) ──────────────────────────────────
 
     def begin_lifecycle(
@@ -3993,6 +4148,269 @@ class Witness:
         if not chain_id.startswith("LC-") or len(chain_id) != 19:
             raise ValueError(f"Invalid lifecycle chain ID: {chain_id!r} (expected LC- + 16 hex chars)")
         return LifecycleChain(self, procedure_id, chain_id, last_fingerprint, anchor_count)
+
+    # ── Risk Assessment (AI-RISK.1) ──────────────────────────────────────
+
+    RISK_LEVEL_CODES: Dict[str, int] = {"low": 0, "medium": 1, "high": 2, "critical": 3, "unacceptable": 4}
+
+    def witness_risk_assessment(
+        self,
+        risks_identified: int,
+        risks_mitigated: int,
+        risk_level: str,
+        *,
+        assessment_id: Optional[str] = None,
+        methodology: Optional[str] = None,
+        residual_risk_score: Optional[float] = None,
+        reviewer: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness a risk assessment completion (AI-RISK.1). EU Art.9, ISO 42001, NIST GOVERN 1.1."""
+        fa = float(risks_identified)
+        fb = float(risks_mitigated)
+        fc = float(self.RISK_LEVEL_CODES.get(risk_level, 1))
+        payload = self._mint_and_sign("AI-RISK.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"risk-assessment-{risk_level}"
+            ctx: Dict[str, Any] = {"provider": "risk-management", "risk_level": risk_level}
+            if assessment_id:
+                ctx["assessment_id"] = assessment_id
+            if methodology:
+                ctx["methodology"] = methodology
+            if residual_risk_score is not None:
+                ctx["residual_risk_score"] = residual_risk_score
+            if reviewer:
+                ctx["reviewer"] = reviewer
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Governance Framework (AI-GOV.1) ──────────────────────────────────
+
+    def witness_governance_framework(
+        self,
+        controls_defined: int,
+        controls_active: int,
+        *,
+        framework_version: Optional[str] = None,
+        last_review_date: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness governance framework attestation (AI-GOV.1). EU Art.4, ISO 42001, NIST GOVERN."""
+        fa = float(controls_defined)
+        fb = float(controls_active)
+        fc = 1.0 if controls_active >= controls_defined else 0.0
+        payload = self._mint_and_sign("AI-GOV.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "governance-framework"
+            ctx: Dict[str, Any] = {"provider": "governance"}
+            if framework_version:
+                ctx["framework_version"] = framework_version
+            if last_review_date:
+                ctx["last_review_date"] = last_review_date
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Governance Review Cadence (AI-GOV.2) ─────────────────────────────
+
+    def witness_governance_review(
+        self,
+        reviews_scheduled: int,
+        reviews_completed: int,
+        *,
+        review_period_days: int = 90,
+        last_review_date: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness governance review cadence (AI-GOV.2). EU Art.4, NIST GOVERN 1.3."""
+        fa = float(reviews_scheduled)
+        fb = float(reviews_completed)
+        fc = float(review_period_days)
+        payload = self._mint_and_sign("AI-GOV.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "governance-review"
+            ctx: Dict[str, Any] = {"provider": "governance", "review_period_days": review_period_days}
+            if last_review_date:
+                ctx["last_review_date"] = last_review_date
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Governance Escalation (AI-GOV.3) ─────────────────────────────────
+
+    def witness_governance_escalation(
+        self,
+        escalation_paths_defined: int,
+        escalation_paths_tested: int,
+        *,
+        last_test_date: Optional[str] = None,
+        escalation_target: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness governance escalation path (AI-GOV.3). EU Art.49, NIST GOVERN 1.4."""
+        fa = float(escalation_paths_defined)
+        fb = float(escalation_paths_tested)
+        fc = 1.0 if escalation_paths_tested >= escalation_paths_defined else 0.0
+        payload = self._mint_and_sign("AI-GOV.3", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "governance-escalation"
+            ctx: Dict[str, Any] = {"provider": "governance"}
+            if last_test_date:
+                ctx["last_test_date"] = last_test_date
+            if escalation_target:
+                ctx["escalation_target"] = escalation_target
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Governance Update Tracking (AI-GOV.4) ────────────────────────────
+
+    def witness_governance_update(
+        self,
+        previous_version: int,
+        current_version: int,
+        *,
+        change_summary: Optional[str] = None,
+        approver: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness governance policy update (AI-GOV.4). EU Art.26, NIST GOVERN 1.5."""
+        fa = float(previous_version)
+        fb = float(current_version)
+        fc = float(current_version - previous_version)
+        payload = self._mint_and_sign("AI-GOV.4", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"governance-v{current_version}"
+            ctx: Dict[str, Any] = {"provider": "governance", "version_delta": current_version - previous_version}
+            if change_summary:
+                ctx["change_summary"] = change_summary
+            if approver:
+                ctx["approver"] = approver
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Governance Accountability (AI-GOV.5) ─────────────────────────────
+
+    def witness_governance_accountability(
+        self,
+        roles_assigned: int,
+        roles_acknowledged: int,
+        *,
+        responsible_party: Optional[str] = None,
+        accountability_matrix_hash: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness governance accountability assignment (AI-GOV.5). EU Art.25, SR 11-7, NIST GOVERN."""
+        fa = float(roles_assigned)
+        fb = float(roles_acknowledged)
+        fc = 1.0 if roles_acknowledged >= roles_assigned else 0.0
+        payload = self._mint_and_sign("AI-GOV.5", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "governance-accountability"
+            ctx: Dict[str, Any] = {"provider": "governance"}
+            if responsible_party:
+                ctx["responsible_party"] = responsible_party
+            if accountability_matrix_hash:
+                ctx["accountability_matrix_hash"] = accountability_matrix_hash
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Risk Scope Definition (AI-GOV.6) ─────────────────────────────────
+
+    def witness_risk_scope(
+        self,
+        systems_in_scope: int,
+        systems_assessed: int,
+        *,
+        scope_definition_hash: Optional[str] = None,
+        exclusion_count: int = 0,
+    ) -> "WitnessPayload":
+        """Witness AI risk management scope definition (AI-GOV.6). EU Art.17, NIST GOVERN 1.1."""
+        fa = float(systems_in_scope)
+        fb = float(systems_assessed)
+        fc = float(exclusion_count)
+        payload = self._mint_and_sign("AI-GOV.6", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "governance-scope"
+            ctx: Dict[str, Any] = {"provider": "governance", "exclusion_count": exclusion_count}
+            if scope_definition_hash:
+                ctx["scope_definition_hash"] = scope_definition_hash
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Impact Assessment (AI-IMPACT.1) ──────────────────────────────────
+
+    def witness_impact_assessment(
+        self,
+        affected_population: int,
+        risk_categories_assessed: int,
+        *,
+        assessment_type: str = "fundamental_rights",
+        high_risk_findings: int = 0,
+        assessment_hash: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness impact assessment completion (AI-IMPACT.1). EU Art.27, GDPR Art.35, NIST MAP."""
+        fa = float(affected_population)
+        fb = float(risk_categories_assessed)
+        fc = float(high_risk_findings)
+        payload = self._mint_and_sign("AI-IMPACT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"impact-{assessment_type}"
+            ctx: Dict[str, Any] = {"provider": "impact-assessment", "assessment_type": assessment_type}
+            if assessment_hash:
+                ctx["assessment_hash"] = assessment_hash
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Logging Completeness (AI-LOG.1) ──────────────────────────────────
+
+    def witness_log_completeness(
+        self,
+        events_expected: int,
+        events_logged: int,
+        *,
+        log_retention_days: int = 0,
+        log_integrity_hash: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness logging completeness (AI-LOG.1). EU Art.12(3), NIST AU-12."""
+        fa = float(events_expected)
+        fb = float(events_logged)
+        fc = float(log_retention_days)
+        payload = self._mint_and_sign("AI-LOG.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "log-completeness"
+            ctx: Dict[str, Any] = {"provider": "logging", "retention_days": log_retention_days}
+            if log_integrity_hash:
+                ctx["log_integrity_hash"] = log_integrity_hash
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Incident Response Capability (AI-IR.1) ───────────────────────────
+
+    def witness_incident_response(
+        self,
+        playbooks_defined: int,
+        playbooks_tested: int,
+        *,
+        last_drill_date: Optional[str] = None,
+        mean_response_minutes: Optional[int] = None,
+        contact_list_current: bool = True,
+    ) -> "WitnessPayload":
+        """Witness incident response capability (AI-IR.1). EU Art.62, NIST IR-1, ISO 42001."""
+        fa = float(playbooks_defined)
+        fb = float(playbooks_tested)
+        fc = 1.0 if contact_list_current else 0.0
+        payload = self._mint_and_sign("AI-IR.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = "incident-response"
+            ctx: Dict[str, Any] = {"provider": "incident-response"}
+            if last_drill_date:
+                ctx["last_drill_date"] = last_drill_date
+            if mean_response_minutes is not None:
+                ctx["mean_response_minutes"] = mean_response_minutes
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
 
 
 class LifecycleChain:

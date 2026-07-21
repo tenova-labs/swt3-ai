@@ -264,6 +264,20 @@ const KEYWORD_MAP: Array<{
     reason: "Post-market monitoring activity detected -- witness the monitoring attestation",
     priority: 2,
   },
+  {
+    keywords: ["delegation tree", "scope grant", "cascade revoke", "permission tree", "hierarchical delegation", "tree binding", "scope hash"],
+    procedure: "AI-DEL.1",
+    title: "Delegation Tree Witnessing",
+    reason: "Hierarchical delegation or permission tree detected -- witness the delegation tree grant",
+    priority: 2,
+  },
+  {
+    keywords: ["cost", "token usage", "budget", "resource consumption", "spending", "billing", "token count", "api cost", "compute cost"],
+    procedure: "AI-COST.1",
+    title: "Resource Consumption Witnessing",
+    reason: "Resource consumption or cost context detected -- witness token usage and spend for budget governance",
+    priority: 2,
+  },
   // --- Additional procedure keyword mappings (full coverage) ---
   {
     keywords: ["latency", "response time", "timeout", "p95", "p99", "slow", "performance budget"],
