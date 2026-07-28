@@ -9,20 +9,211 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
-GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
+EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
-## What's New in v0.5.9
+## What's New in v0.6.2
+
+Compliance policy as code, automatic evidence linking, and forensic reconstruction. One YAML file defines what your system must prove. The SDK enforces it. The auditor verifies it.
+
+### Governance Gate (.swt3-gate.yml)
+
+A `.swt3-gate.yml` file in your repo declares which procedures your system must witness, how fresh the evidence must be, and which gaps are critical. Generate one from any supported framework with `--init`, then enforce it in CI. The assessor reads the same file you do.
+
+```yaml
+# .swt3-gate.yml
+version: "1.0"
+name: "credit-decision-service"
+strict: true
+frameworks:
+  EU-AI-ACT:
+    risk_class: high
+    gates:
+      - group: "Article 9 -- Risk Management"
+        procedures:
+          - procedure: AI-INF.1
+            required: true
+            max_age: 24h
+            description: "Every inference must be witnessed"
+          - procedure: AI-GRD.1
+            required: true
+            critical: true
+            hint: "Guardrails must be active at inference time"
+```
+
+```bash
+swt3 gate --init EU-AI-ACT          # Generate from crosswalk
+swt3 gate --validate                 # Check YAML syntax and structure
+swt3 gate                            # Evaluate against live ledger (exit 0/1)
+swt3 gate --json                     # Machine-readable for CI/CD
+```
+
+`swt3 gate` is your pre-merge compliance check. Add it to any CI pipeline that supports exit code checks -- GitHub Actions, GitLab CI, Jenkins, or a local pre-commit hook. Exit 1 means a gap exists -- fix it before it becomes an audit finding. The gate config is version-controlled policy: developers see what's required, CI enforces it, and assessors run `swt3 gate --json` independently against your ledger to confirm compliance without relying on self-reported results. When `strict: true` is set and a `critical` procedure fails, the gate blocks. Non-critical failures warn but pass.
+
+### Auto-Chaining Context Manager
+
+A single AI decision -- retrieve context, run inference, check guardrails -- produces multiple anchors. Without a shared identifier, those anchors are isolated events. The context manager injects a shared `cycle_id` into every witness call inside the block so the full decision is queryable as one chain.
+
+```python
+with witness.chain("credit-decision") as ctx:
+    wrapped.chat.completions.create(model="gpt-4o", messages=[...])
+    witness.witness_rag_context(source="policy-db", chunks=12)
+    witness.witness_resource_consumption(tokens_in=8000, tokens_out=2400, api_calls=3)
+```
+
+Nesting is supported -- inner chains save and restore the outer cycle_id. Exception-safe. No manual ID management. Use `swt3 reconstruct --cycle CYCLE_ID` to replay the full chain later.
+
+### Forensic Reconstruction (HTML Export)
+
+`swt3 reconstruct` queries the witness ledger and rebuilds a chronological narrative of what an AI system did and when. Every line in the output is backed by a verifiable fingerprint. The `--html` flag produces a self-contained report you can hand to legal, compliance, or a regulator without giving them dashboard access.
+
+```bash
+swt3 reconstruct --cycle CYCLE_ID               # Terminal output
+swt3 reconstruct --agent orchestrator --last 1h  # By agent
+swt3 reconstruct --cycle CYCLE_ID --html         # Self-contained HTML report
+swt3 reconstruct --last 30m --json               # Machine-readable
+```
+
+The report is independently verifiable. Assessors do not need to trust it -- they can recompute any fingerprint and confirm the evidence is intact.
+
+### Status Findings
+
+`swt3 status` now includes gate evaluation results. If a `.swt3-gate.yml` exists in your project, the output shows which gates pass, which fail, and which procedures need attention -- compliance posture at a glance without leaving the terminal.
+
+### v0.6.1
+
+- **Delegation Trees** (AI-DEL.1) -- witness hierarchical permission delegation with scope binding, cascade revocation, and depth tracking.
+- **Resource Consumption Witnessing** (AI-COST.1) -- witness cumulative token usage, API calls, and estimated cost as cryptographic evidence.
+- **Deployment Context Detection** -- auto-detect cloud provider, region, runtime, and accelerator from environment variables. Clearing-level aware.
+
+### Compliance Status CLI (`swt3 status`)
+
+Every compliance framework your AI system faces -- EU AI Act, NIST AI RMF, SR 11-7, CMMC -- maps to dozens of requirements across multiple articles. Developers integrate the SDK, mint anchors, and know their code is witnessed. But no one could answer the question that matters most before an assessment: "How much of my framework is actually covered right now?"
+
+The answer used to require logging into a dashboard, cross-referencing a crosswalk spreadsheet, and hoping your ledger had recent entries. `swt3 status` puts that answer in the terminal where developers already live. One command, zero network calls, instant result.
+
+```bash
+$ swt3 status
+
+  EU Artificial Intelligence Act ██████░░░░░░░░░░░░░░  30% (15/50)
+
+  Covered:
+    ✓ Art.9(2)(a)    AI-GRD.1   5m ago
+    ✓ Art.13(1)      AI-EXPL.1  8m ago
+    ✓ Art.27         AI-DPIA.1  2w ago
+
+  Next steps:
+    AI-COST.1    witness.witness_resource_consumption()
+    AI-CONSENT.1 witness.witness_consent()
+    AI-DATA.2    witness.witness_data_quality()
+```
+
+The bar goes up every time you implement another procedure. Gaps show the exact SDK method to close them -- not documentation links, not vague guidance, but the function call. Use `--json` in CI to fail builds when coverage drops. Use `--compact` for Slack notifications. Use `--full` the week before an assessment to see every article, covered or not. Hand the output to your CISO. Hand the [assessor hot sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) to the auditor.
+
+### v0.6.0
+
+Everything until now has been single-anchor-per-event. v0.6.0 introduced **lifecycle chains** -- sequences of linked anchors that capture an entire governance process from start to finish, reconstructable from a single identifier.
+
+### Lifecycle Chains
+
+When an operator overrides your AI, when a model drifts and triggers a circuit breaker, when you run a challenger model against production -- these are not point events. They are processes with a beginning, middle, and end. A single anchor cannot capture them. A lifecycle chain can.
+
+Regulators and auditors do not accept point-in-time snapshots as evidence for ongoing governance decisions. When your model drifts and you escalate to an emergency override, an auditor needs to see the complete decision sequence: what triggered the escalation, who authorized the override, what fallback was activated, and when normal operation resumed. Without a chain, you reconstruct that narrative from scattered log entries during the audit. With a chain, the evidence trail is cryptographically linked and queryable from a single identifier before the auditor asks.
+
+```python
+# Promote a challenger model, monitor it, handle problems
+assess_chain = witness.begin_lifecycle("AI-ASSESS.1", fa=10000, fb=23.0, fc=0.0)  # 10K inputs, divergence 0.023, threshold not breached
+assess_chain.resolve(fa=10000, fb=23.0, fc=0.0)  # challenger promoted
+
+# Monitor the promoted model for drift
+drift_chain = witness.begin_lifecycle("AI-DRIFT.2", fa=0.05, fb=3.0, fc=1.0)  # low drift, operational category, monitoring
+drift_chain.checkpoint(fa=0.12, fb=3.0, fc=1.0)  # drift increasing
+drift_chain.checkpoint(fa=0.35, fb=0.0, fc=3.0)  # safety threshold -- circuit breaker
+
+# Drift triggered emergency override
+emrg_chain = drift_chain.escalate("AI-EMRG.1", fa=1.0, fb=1.0, fc=0.0)  # operator command, supervisor auth, safe state
+emrg_chain.checkpoint(fa=1.0, fb=1.0, fc=0.0)  # system stable under fallback
+emrg_chain.resolve(fa=1.0, fb=1.0, fc=0.0)  # AI control restored
+
+# Every anchor shares the same chain ID, each links to its parent
+print(emrg_chain.chain_id)  # LC-7a38936db8ecec94
+```
+
+That is the full governance loop: assessment to promotion to monitoring to escalation to override to restoration. Every transition is a cryptographic anchor. Every chain is reconstructable from a single ID. Auditors query one endpoint and get the complete evidence trail:
+
+```
+GET /api/v1/witness/chain?lifecycle_chain_id=LC-7a38936db8ecec94
+```
+
+Crash recovery is built in. If your process restarts mid-chain, reconstruct the handle from known state:
+
+```python
+chain = witness.resume_lifecycle("AI-EMRG.1", "LC-7a38936db8ecec94", "2e16e2fe92dd")
+chain.checkpoint(fa=1.0, fb=0.9, fc=0.0)  # continues from where it left off
+```
+
+### Emergency Override Witnessing (AI-EMRG.1)
+
+When a human overrides an AI system -- kills a valve controller, disables a fraud model, intervenes in a decision pipeline -- there is no standard way to produce cryptographic evidence of who authorized it, what fallback state was activated, and when control was restored. Now there is.
+
+```python
+witness.witness_operational_override(
+    trigger_type="operator_command",       # emergency_stop, operator_command, escalation_protocol, external_responder
+    authorization_level="supervisor",      # operator, supervisor, site_manager, emergency_responder
+    fallback_state="safe_state",           # safe_state, legacy_controller, manual_mode, degraded_operation, full_shutdown
+    system_id="reactor-ai-v3",
+    operator_id="eng-042",
+    override_reason="valve pressure anomaly",
+)
+```
+
+Maps to: EU AI Act Art. 14 (human override for high-risk AI), NIST 800-53 IR-4 (incident handling), IEC 61511 (safety instrumented systems).
+
+### Consequence-Mapped Drift (AI-DRIFT.2)
+
+Most drift detection tells you a number changed. It does not tell you what that number means for your operation. AI-DRIFT.2 maps statistical drift to real-world consequence categories with graduated response witnessing.
+
+```python
+witness.witness_drift_consequence(
+    drift_magnitude=0.15,                  # PSI, KL divergence, or any statistical metric
+    consequence_category="safety",         # safety, environmental, financial, operational, reputational
+    response_action="circuit_breaker",     # notification_only, increased_monitoring, throttle, circuit_breaker, forced_failover, emergency_shutdown
+    drift_metric="psi",
+    model_id="fraud-model-v7",
+    mapping_version="2026-Q2",
+)
+```
+
+Maps to: EU AI Act Art. 9(2)(b) (continuous risk estimation), OCC 2026-13 / SR 26-2 (model risk management with materiality mapping).
+
+### Champion-Challenger Assessment (AI-ASSESS.1)
+
+Running a shadow model alongside production? The comparison dashboard in your ML platform is a mutable database entry. AI-ASSESS.1 makes it a cryptographic evidence chain: session configuration, periodic divergence snapshots, and the promotion or rejection decision -- all linked by a shared assessment ID.
+
+```python
+witness.witness_champion_challenger(
+    inputs_processed=10000,
+    max_divergence=0.023,                  # highest divergence observed (raw value, x1000 internally)
+    threshold_breached=False,              # True = FAIL, False = PASS
+    champion_id="gpt-4o-2026-05",
+    challenger_id="gpt-4o-2026-07",
+    divergence_metric="kl_divergence",
+)
+```
+
+Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (challenger runs with versioned sign-off).
+
+### v0.5.9
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
-- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 24 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 24 frameworks and 103 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 31 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 29 frameworks and 108 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 21 adapters, 103 procedures, 52 namespaces, 28 frameworks, 18 profiles
+- 21 adapters, 108 procedures, 56 namespaces, 29 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -152,7 +343,7 @@ from swt3_ai import verify_anchor
 
 result = verify_anchor(
     anchor,
-    tenant_id="MY_TENANT",
+    tenant_id="<YOUR_TENANT_ID>",
     procedure_id="AI-INF.1",
     factor_a=1, factor_b=1, factor_c=0,
     timestamp_ms=1773316622000,
@@ -545,6 +736,36 @@ Supports single files or chains (`extends: [base.yaml, team.yaml]`). Merge order
 | `content-platform` | Content moderation: watermark verification, transparency, consent |
 | `autonomous-systems` | Autonomous/robotics: safety, robustness, dual-use, human oversight |
 
+### Compliance Status
+
+See your framework coverage at a glance:
+
+```bash
+swt3 status                       # brief: progress bar + next steps
+swt3 status --full                # all articles, covered + gaps
+swt3 status --framework EU-AI-ACT # override target framework
+swt3 status --json                # machine-readable for CI/CD
+swt3 status --compact             # one-line summary for scripts
+```
+
+Output shows which framework articles are covered, which procedures are missing, and the exact SDK method to close each gap:
+
+```
+  EU Artificial Intelligence Act ██████░░░░░░░░░░░░░░  30% (15/50)
+
+  Covered:
+    ✓ Art.9(2)(a)    AI-GRD.1   5m ago
+    ✓ Art.13(1)      AI-EXPL.1  8m ago
+    ✓ Art.27         AI-DPIA.1  2w ago
+
+  Next steps:
+    AI-COST.1    witness.witness_resource_consumption()
+    AI-CONSENT.1 witness.witness_consent()
+    AI-DATA.2    witness.witness_data_quality()
+```
+
+Zero network calls. Works offline. Reads your local WAL and crosswalk data.
+
 ### Diagnostics
 
 ```bash
@@ -709,7 +930,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (103 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (108 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -726,7 +947,7 @@ SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapp
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 103 are available in production with real inference data. 207 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 108 are available in production with real inference data. 226 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -853,7 +1074,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-24 frameworks bundled. 103 procedures mapped. Updated with each SDK release.
+29 frameworks bundled. 108 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -931,6 +1152,8 @@ docker save axiom-sovereign-engine:latest | gzip > axiom-sovereign.tar.gz
 | OpenAI | `openai.OpenAI` / `openai.AsyncOpenAI` | Supported |
 | Anthropic | `anthropic.Anthropic` / `anthropic.AsyncAnthropic` | Supported |
 | Azure OpenAI | `openai.AzureOpenAI` | Supported (via openai SDK) |
+| xAI (Grok) | `openai.OpenAI(base_url="https://api.x.ai/v1")` | Supported (OpenAI-compatible) |
+| Thinking Machines (Inkling) | `openai.OpenAI(base_url="http://gpu-cluster:8000/v1")` | Supported (OpenAI-compatible, vLLM Day-0) |
 | Ollama / vLLM | `openai.OpenAI(base_url=...)` | Supported (OpenAI-compatible) |
 | AWS Bedrock | `boto3` (`bedrock-runtime`) | Supported |
 | LiteLLM | `litellm` module | Supported (100+ providers) |
@@ -1131,13 +1354,29 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 ## Cross-Language Parity
 
-This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 207 cross-language test vectors verified at build time.
+This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 226 cross-language test vectors verified at build time.
 
 ## Privacy
 
 Your prompts and responses **never leave your infrastructure**. The SDK computes SHA-256 hashes locally and transmits only irreversible hashes and numeric factors. At Clearing Level 3, even the model name is hashed. The witness endpoint is a blind registrar: it stores cryptographic proofs, not your data.
 
 ---
+
+## Upgrading to v0.6.1
+
+**Delegation trees (new):** `witness_delegation_tree()`, `delegation_tree_from_tools()`, `delegation_tree_from_capabilities()` added. AI-DEL.1 procedure. No breaking changes.
+
+**Resource consumption (new):** `witness_resource_consumption()` now accepts optional `deployment_context` dict. No breaking changes.
+
+**Deployment detection (new):** `from swt3_ai.deployment import detect_deployment_context`. New module, no changes to existing code.
+
+## Upgrading to v0.6.0
+
+**Lifecycle chains (new):** `begin_lifecycle()`, `resume_lifecycle()` added. New exports: `LifecycleChainHandle`, `OVERRIDE_TRIGGER_CODES`, `AUTHORIZATION_LEVEL_CODES`, `FALLBACK_STATE_CODES`, `CONSEQUENCE_CATEGORY_CODES`, `DRIFT_RESPONSE_CODES`. No breaking changes. All existing code works unchanged.
+
+**3 new procedures:** `witness_operational_override()` (AI-EMRG.1), `witness_drift_consequence()` (AI-DRIFT.2), `witness_champion_challenger()` (AI-ASSESS.1). These are additive -- no existing behavior changes.
+
+**Crosswalks updated:** 29 frameworks bundled (was 28). 4 new: TN-SB-1580, RI-AI-LAWS, VN-LAW-134, HEALTH-INS-AI.
 
 ## Upgrading to v0.5.9
 
@@ -1175,9 +1414,10 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [What Your Auditor Sees](https://sovereign.tenova.io/guides/developer-auditor-bridge.html) -- both sides of a witness anchor, developer to auditor
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
+- [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 24 frameworks
-- [All 112 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 31 frameworks
+- [All 150 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

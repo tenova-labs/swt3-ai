@@ -14,7 +14,7 @@
  *   const client = witness.wrap(new OpenAI()) as OpenAI;
  */
 
-export { Witness, GatekeeperError, ChainTrustError, ChainEnforcer, PolicyViolationError, LifecycleChain, LIFECYCLE_CHAIN_STAGES, OVERRIDE_TRIGGER_CODES, AUTHORIZATION_LEVEL_CODES, FALLBACK_STATE_CODES, CONSEQUENCE_CATEGORY_CODES, DRIFT_RESPONSE_CODES } from "./witness.js";
+export { Witness, GatekeeperError, ChainTrustError, ChainEnforcer, PolicyViolationError, LifecycleChain, ChainContext, LIFECYCLE_CHAIN_STAGES, OVERRIDE_TRIGGER_CODES, AUTHORIZATION_LEVEL_CODES, FALLBACK_STATE_CODES, CONSEQUENCE_CATEGORY_CODES, DRIFT_RESPONSE_CODES } from "./witness.js";
 export { ChainMonitorExporter } from "./exporters/chain-monitor.js";
 export type { ChainMonitorOptions, AuditReport, TimelineEntry } from "./exporters/chain-monitor.js";
 export { EvidenceExporter } from "./exporters/evidence.js";
@@ -45,6 +45,8 @@ export { extractPayloads, extractGatekeeperPayload, extractRevocationPayload, ex
 export { signPayload, generateMldsaKeypair, verifyMldsa, SIGNING_ALGORITHM_HMAC, SIGNING_ALGORITHM_MLDSA, VALID_SIGNING_ALGORITHMS, DEFAULT_SIGNING_ALGORITHM } from "./signing.js";
 export type { SigningAlgorithm } from "./signing.js";
 export { loadConfig, loadFullConfig, computeConfigHash } from "./config.js";
+export { loadGateConfig, parseGateDict, parseMaxAge, findGateFile, validateProcedures, allProcedures } from "./gate.js";
+export type { GateConfig, GateProcedure, GateGroup, FrameworkGate, GateModel, GateDefaults } from "./gate.js";
 export type { TrustMeshConfig, HardwareConfig, RuntimeProfileConfig, SkillCardConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, LoadedConfig, ChainRule, ChainPolicyViolation } from "./types.js";
 export { validateSchema } from "./schema.js";
 export type { ValidationResult, ValidationError } from "./schema.js";

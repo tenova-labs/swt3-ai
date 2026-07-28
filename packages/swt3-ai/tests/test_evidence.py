@@ -115,7 +115,7 @@ class TestMetadata:
         assert bundle.metadata.tenant_id == "MY_TENANT"
         assert bundle.metadata.agent_id == "agent-1"
         assert bundle.metadata.clearing_level == 2
-        assert bundle.metadata.sdk_version == "0.5.3"
+        assert bundle.metadata.sdk_version == "0.6.1"
         assert "T" in bundle.metadata.generated_at
         assert bundle.metadata.export_timestamp > 0
 

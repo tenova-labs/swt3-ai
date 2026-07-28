@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-VERSION = "0.5.1"
+VERSION = "0.6.1"
 
 PROFILES = {
     "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",
@@ -48,9 +48,13 @@ def _print_help() -> None:
         "  swt3 init --profile <name> --tenant <id> --agent <id>",
         "  swt3 status                       Compliance posture at a glance",
         "  swt3 status --full                All articles + all gaps",
+        "  swt3 status --coverage            Visual procedure coverage bars",
         "  swt3 status --framework EU-AI-ACT Override target framework",
         "  swt3 status --json                Machine-readable (CI/CD)",
         "  swt3 status --compact             One-line summary",
+        "  swt3 diff --since 7d              Compliance posture delta",
+        "  swt3 diff --since 30d --json      Machine-readable diff",
+        "  swt3 diff --since 7d --compact    One-line diff for CI/CD",
         "  swt3 demo                         Run the zero-friction demo",
         "  swt3 doctor                       Diagnose config health",
         "  swt3 doctor --ci                   Strict mode (exit 1 on warnings)",
@@ -58,6 +62,10 @@ def _print_help() -> None:
         "  swt3 procedures --namespace MDL   Filter by namespace",
         "  swt3 procedures --json            Machine-readable output",
         "  swt3 quickstart                   Generate a working example script",
+        "  swt3 gate --init --framework X      Generate .swt3-gate.yml from crosswalk",
+        "  swt3 gate --init                    List available frameworks",
+        "  swt3 gate --validate                Validate gate config (offline)",
+        "  swt3 gate                           Evaluate gate (requires API)",
         "  swt3 verify                       Offline anchor verification",
         "  swt3 audit                        Forensic chain timeline (html or json)",
         "  swt3 help                         Show this message\n",
@@ -240,6 +248,9 @@ def main() -> None:
     if cmd == "status":
         from .status import handle_status
         handle_status(args[1:])
+    elif cmd == "diff":
+        from .diff import handle_diff
+        handle_diff(args[1:])
     elif cmd == "init":
         handle_init(args[1:])
     elif cmd == "demo":
@@ -308,7 +319,7 @@ def main() -> None:
                 "--fa <n> --fb <n> --fc <n> --ts <ms>\n\n"
                 "Example:\n"
                 "  swt3 verify --anchor SWT3-E-AWS-AI-AIINF1-PASS-1773316622-a1b2c3d4e5f6 \\\n"
-                "    --tenant MY_TENANT --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000\n\n"
+                "    --tenant <YOUR_TENANT_ID> --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000\n\n"
                 "Zero network calls. Recomputes the SHA-256 fingerprint locally."
             )
         else:
@@ -334,6 +345,12 @@ def main() -> None:
         namespace = _get_flag(args[1:], "--namespace")
         use_json = "--json" in args[1:]
         handle_procedures(namespace=namespace, use_json=use_json)
+    elif cmd == "reconstruct":
+        from .reconstruct import handle_reconstruct
+        handle_reconstruct(args[1:])
+    elif cmd == "gate":
+        from .gate import handle_gate
+        handle_gate(args[1:])
     elif cmd == "quickstart":
         _handle_quickstart()
     elif cmd in ("help", "--help", "-h", None):

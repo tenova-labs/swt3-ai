@@ -142,7 +142,7 @@ class EvidenceExporter:
         return EvidenceBundle(
             metadata=EvidenceBundleMetadata(
                 generated_at=now.isoformat(),
-                sdk_version="0.5.3",
+                sdk_version="0.6.1",
                 tenant_id=self.tenant_id,
                 agent_id=self.agent_id,
                 clearing_level=self.clearing_level,

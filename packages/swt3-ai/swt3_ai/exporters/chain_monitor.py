@@ -35,7 +35,7 @@ class TimelineEntry:
 @dataclass
 class AuditReportMetadata:
     generated_at: str = ""
-    sdk_version: str = "0.5.3"
+    sdk_version: str = "0.6.1"
     tenant_id: str = "UNKNOWN"
     agent_id: str = "UNKNOWN"
     model_id: str = "UNKNOWN"

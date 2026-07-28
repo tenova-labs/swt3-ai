@@ -660,6 +660,33 @@ export class Witness {
    *   const client = witness.wrap(new OpenAI()) as OpenAI;
    *   const client = witness.wrap(new Anthropic()) as Anthropic;
    */
+
+  /**
+   * Auto-chaining: all witness calls inside the callback share the same cycle_id.
+   *
+   * Usage:
+   *   await witness.chain("credit-decision", async (ctx) => {
+   *     witness.record(inference1);
+   *     witness.witnessDrift(...);
+   *     // ctx.cycleId available for correlation
+   *   });
+   */
+  async chain<T>(
+    name: string,
+    fn: (ctx: ChainContext) => Promise<T>,
+    options?: { cycleId?: string },
+  ): Promise<T> {
+    const cycleId = options?.cycleId ?? `CHAIN-${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    const previousCycleId = this.config.cycleId;
+    const ctx = new ChainContext(cycleId, name);
+    this.config.cycleId = cycleId;
+    try {
+      return await fn(ctx);
+    } finally {
+      this.config.cycleId = previousCycleId;
+    }
+  }
+
   wrap(client: unknown): unknown {
     const proto = Object.getPrototypeOf(client);
     const name = proto?.constructor?.name ?? "";
@@ -4691,6 +4718,20 @@ export class Witness {
  *   chain.checkpoint(1.0, 0.8, 0.0);
  *   chain.resolve(1.0, 1.0, 0.0);
  */
+
+/**
+ * Scoped cycle_id injection for auto-chaining.
+ * All witness calls inside the callback share the same cycle_id.
+ */
+export class ChainContext {
+  readonly cycleId: string;
+  readonly name: string;
+  constructor(cycleId: string, name: string) {
+    this.cycleId = cycleId;
+    this.name = name;
+  }
+}
+
 export class LifecycleChain {
   private _witness: Witness;
   private _procedureId: string;

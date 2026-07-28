@@ -25,9 +25,10 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
-from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph, LifecycleChain, LIFECYCLE_CHAIN_STAGES
+from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph, LifecycleChain, ChainContext, LIFECYCLE_CHAIN_STAGES
+from .gate import GateConfig, GateProcedure, GateGroup, FrameworkGate, GateDefaults, GateModel, load_gate_config, parse_gate_dict, parse_max_age, find_gate_file, validate_procedures, all_procedures
 from .exporters.chain_monitor import ChainMonitorExporter
 from .exporters.evidence import EvidenceExporter
 from .types import (

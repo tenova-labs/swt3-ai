@@ -126,7 +126,7 @@ export class EvidenceExporter {
     return {
       metadata: {
         generatedAt: new Date().toISOString(),
-        sdkVersion: "0.5.3",
+        sdkVersion: "0.6.1",
         tenantId: this.options.tenantId ?? "UNKNOWN",
         agentId: this.options.agentId ?? "UNKNOWN",
         clearingLevel: this.options.clearingLevel ?? 1,

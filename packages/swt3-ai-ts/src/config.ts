@@ -16,9 +16,10 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readFileSync, existsSync, realpathSync } from "node:fs";
+import { join, dirname, resolve as pathResolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { validateSchema as runSchemaValidation } from "./schema.js";
 import type { WitnessOptions } from "./witness.js";
 import type {
@@ -125,8 +126,8 @@ const VALID_PROFILES = new Set([
 
 function getYamlParser(): (input: string) => unknown {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yamlMod = require("yaml");
+    const _require = createRequire(import.meta.url);
+    const yamlMod = _require("yaml");
     return yamlMod.parse;
   } catch {
     throw new Error(
@@ -189,11 +190,11 @@ function processExtends(
       throw new Error(`Extends file not found: ${file} (resolved: ${resolved})`);
     }
 
-    const real = require("node:fs").realpathSync(resolved);
+    const real = realpathSync(resolved);
 
     // Path containment: relative paths must resolve within the root config directory tree
     if (!isAbsolute) {
-      const realBoundary = require("node:fs").realpathSync(boundary);
+      const realBoundary = realpathSync(boundary);
       if (!real.startsWith(realBoundary + "/") && real !== realBoundary) {
         throw new Error(
           `Extends path escapes config directory: ${file} (resolved: ${real}). ` +
@@ -590,8 +591,8 @@ export function loadFullConfig(path?: string): LoadedConfig {
   }
 
   // Extends: load parent files and deep-merge (extends < profile < user config)
-  const configDir = dirname(require("node:path").resolve(configPath));
-  const realPath = require("node:fs").realpathSync(require("node:path").resolve(configPath));
+  const configDir = dirname(pathResolve(configPath));
+  const realPath = realpathSync(pathResolve(configPath));
   // Containment boundary: one level above config dir (allows ../shared.yaml but blocks ../../etc/passwd)
   const extendsRootDir = dirname(configDir);
   const extendsResult = processExtends(raw, configDir, parse, new Set([realPath]), 0, extendsRootDir);

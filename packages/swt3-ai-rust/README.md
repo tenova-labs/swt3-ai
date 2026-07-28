@@ -7,7 +7,7 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK for Rust**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external runtime dependencies beyond `sha2`, `hmac`, and `hex`.
 
-GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the cryptographic primitives.
+EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
 ## What's New in v0.5.9
 

@@ -8,7 +8,7 @@ Witness your AI at the edge. Prove it followed the rules. Cryptographic accounta
 
 Your models run on-device. Your attestation stays on-device until you choose to transmit. Only irreversible hashes leave the device -- never prompts, responses, or model weights.
 
-GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. Edge inference is not exempt.
+EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
 ## What's New in v0.5.9
 

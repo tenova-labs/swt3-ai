@@ -6,7 +6,10 @@ import { existsSync, readFileSync, realpathSync, writeFileSync, mkdtempSync, rmS
 import { execSync } from "node:child_process";
 import { resolve, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import { createRequire } from "node:module";
 import { validateSchema } from "./schema.js";
+
+const _require = createRequire(import.meta.url);
 
 export interface DoctorCheck {
   name: string;
@@ -37,8 +40,7 @@ function checkYamlFound(): DoctorCheck {
 
 function checkYamlValid(path: string): DoctorCheck {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const content = readFileSync(path, "utf-8");
     const raw = yaml.parse(content);
     if (!raw || typeof raw !== "object") {
@@ -52,8 +54,7 @@ function checkYamlValid(path: string): DoctorCheck {
 
 function checkEnvVars(path: string): DoctorCheck {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const raw = yaml.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
     const missing: string[] = [];
 
@@ -85,8 +86,7 @@ function checkEnvVars(path: string): DoctorCheck {
 
 function checkProfile(path: string): DoctorCheck {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const raw = yaml.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
     const profile = raw.profile as string | undefined;
     if (!profile) {
@@ -104,8 +104,7 @@ function checkProfile(path: string): DoctorCheck {
 
 function checkSections(path: string): DoctorCheck {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const raw = yaml.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
     const result = validateSchema(raw);
     if (result.valid) {
@@ -130,8 +129,7 @@ function checkSections(path: string): DoctorCheck {
 
 function checkExtends(path: string): DoctorCheck {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const raw = yaml.parse(readFileSync(path, "utf-8")) as Record<string, unknown>;
     const ext = raw.extends as string | string[] | undefined;
     if (!ext) {
@@ -159,7 +157,7 @@ function checkTpm(configPath?: string): DoctorCheck {
   if (configPath) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const yaml = require("yaml");
+      const yaml = _require("yaml");
       const raw = yaml.parse(readFileSync(configPath, "utf-8"));
       requireAttestation = raw?.hardware?.require_attestation === true;
     } catch { /* ignore */ }
@@ -192,7 +190,7 @@ function checkTpm(configPath?: string): DoctorCheck {
 
 function checkRuntimeProfile(configPath: string): DoctorCheck {
   try {
-    const yaml = require("yaml");
+    const yaml = _require("yaml");
     const raw = yaml.parse(readFileSync(configPath, "utf-8"));
     const hw = raw?.hardware;
     if (!hw?.runtime_profile) {
@@ -309,10 +307,10 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   const tmpDir = mkdtempSync(join(tmpdir(), "swt3-friction-"));
   const configPath = join(tmpDir, "swt3.yaml");
 
-  function step(name: string, fn: () => void): void {
+  async function step(name: string, fn: () => void | Promise<void>): Promise<void> {
     const start = performance.now();
     try {
-      fn();
+      await fn();
       steps.push({ name, status: "pass", durationMs: Math.round(performance.now() - start) });
     } catch (err: any) {
       steps.push({ name, status: "fail", durationMs: Math.round(performance.now() - start), error: err.message });
@@ -320,7 +318,7 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   }
 
   // 1. Config discovery
-  step("Config discovery", () => {
+  await step("Config discovery", () => {
     writeFileSync(configPath, [
       "clearing_level: 1",
       "tenant_id: FRICTION_TEST",
@@ -335,16 +333,16 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   });
 
   // 2. fromConfig loads
-  step("fromConfig() loads", () => {
-    const { loadFullConfig } = require("./config.js");
+  await step("fromConfig() loads", async () => {
+    const { loadFullConfig } = await import("./config.js");
     const loaded = loadFullConfig(configPath);
     if (!loaded.mcpPolicy) throw new Error("mcpPolicy not parsed");
     if (!loaded.mcpPolicy.toolBlocklist?.length) throw new Error("toolBlocklist empty");
   });
 
   // 3. ChainEnforcer created
-  step("ChainEnforcer created", () => {
-    const { ChainEnforcer } = require("./witness.js");
+  await step("ChainEnforcer created", async () => {
+    const { ChainEnforcer } = await import("./witness.js");
     const enforcer = new ChainEnforcer({
       witnessedTools: [], exemptTools: [], requireTrustLevel: 0,
       autoWitness: true, blockOnFailure: false,
@@ -355,8 +353,8 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   });
 
   // 4. wrapTool blocks on violation
-  step("Blocklist enforcement", () => {
-    const { ChainEnforcer, PolicyViolationError } = require("./witness.js");
+  await step("Blocklist enforcement", async () => {
+    const { ChainEnforcer } = await import("./witness.js");
     const enforcer = new ChainEnforcer({
       witnessedTools: [], exemptTools: [], requireTrustLevel: 0,
       autoWitness: true, blockOnFailure: false,
@@ -368,8 +366,8 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   });
 
   // 5. Token budget enforcement
-  step("Token budget enforcement", () => {
-    const { ChainEnforcer } = require("./witness.js");
+  await step("Token budget enforcement", async () => {
+    const { ChainEnforcer } = await import("./witness.js");
     const enforcer = new ChainEnforcer({
       witnessedTools: [], exemptTools: [], requireTrustLevel: 0,
       autoWitness: true, blockOnFailure: false,
@@ -382,8 +380,8 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   });
 
   // 6. Audit report generation
-  step("Audit report generation", () => {
-    const { ChainMonitorExporter } = require("./exporters/chain-monitor.js");
+  await step("Audit report generation", async () => {
+    const { ChainMonitorExporter } = await import("./exporters/chain-monitor.js");
     const exporter = new ChainMonitorExporter({ walDir: tmpDir, tenantId: "FRICTION_TEST" });
     const html = exporter.exportHtml();
     if (!html.includes("SWT3 Exploit Chain Monitor")) throw new Error("HTML missing title");
@@ -391,10 +389,10 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
   });
 
   // 7. Error message clarity
-  step("Error message clarity", () => {
-    const { PolicyViolationError } = require("./witness.js");
+  await step("Error message clarity", async () => {
+    const { PolicyViolationError } = await import("./witness.js");
     const violation = {
-      rule: "blocklist", toolName: "dangerous_tool", action: "blocked",
+      rule: "blocklist", toolName: "dangerous_tool", action: "blocked" as const,
       reason: 'Tool "dangerous_tool" is on the blocklist', timestamp: Date.now(),
     };
     const err = new PolicyViolationError(violation);
@@ -409,7 +407,7 @@ export async function runFrictionTest(): Promise<FrictionStep[]> {
 }
 
 export function printFrictionResults(steps: FrictionStep[]): void {
-  const VERSION = "0.5.3";
+  const VERSION = "0.6.1";
   console.log(`\n  SWT3 Friction Test v${VERSION}\n`);
 
   for (let i = 0; i < steps.length; i++) {

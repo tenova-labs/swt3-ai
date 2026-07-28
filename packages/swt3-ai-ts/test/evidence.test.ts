@@ -138,7 +138,7 @@ describe("EvidenceExporter", () => {
     expect(bundle.metadata.tenantId).toBe("MY_TENANT");
     expect(bundle.metadata.agentId).toBe("agent-1");
     expect(bundle.metadata.clearingLevel).toBe(2);
-    expect(bundle.metadata.sdkVersion).toBe("0.5.3");
+    expect(bundle.metadata.sdkVersion).toBe("0.6.1");
     expect(bundle.metadata.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(bundle.metadata.exportTimestamp).toBeGreaterThan(0);
   });

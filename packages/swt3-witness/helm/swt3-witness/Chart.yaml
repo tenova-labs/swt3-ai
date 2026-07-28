@@ -1,9 +1,9 @@
 apiVersion: v2
 name: swt3-witness
-description: SWT3 Witness - Cross-silicon hardware attestation DaemonSet for AI compliance
+description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 0.5.9
-appVersion: "0.5.9"
+version: 0.6.2
+appVersion: "0.6.2"
 keywords:
   - ai
   - compliance
@@ -15,7 +15,15 @@ keywords:
   - multi-silicon
   - hardware
   - swt3
-home: https://tenova.io
+  - eu-ai-act
+  - nist
+  - audit
+  - governance
+  - mlops
+  - inference
+  - cmmc
+  - ai-governance
+home: https://sovereign.tenova.io
 sources:
   - https://github.com/tenova-labs/swt3-ai
 maintainers:

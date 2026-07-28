@@ -15,7 +15,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
 
-const VERSION = "0.5.1";
+const VERSION = "0.6.1";
 
 const PROFILES: Record<string, string> = {
   "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",
@@ -58,8 +58,16 @@ Usage:
   swt3 verify                       Offline anchor verification
   swt3 audit                        Forensic chain timeline (html or json)
   swt3 status                       Cloud status (completeness, anchors, findings)
+  swt3 status --coverage            Visual procedure coverage bars
   swt3 completeness                 Detailed completeness by framework section
   swt3 findings                     List open auditor findings
+  swt3 diff --since 7d              Compliance posture delta
+  swt3 diff --since 30d --json      Machine-readable diff
+  swt3 diff --since 7d --compact    One-line diff for CI/CD
+  swt3 gate --init --framework X      Generate .swt3-gate.yml from crosswalk
+  swt3 gate --init                    List available frameworks
+  swt3 gate --validate                Validate gate config (offline)
+  swt3 gate                           Evaluate gate (requires API)
   swt3 help                         Show this message
 
 Profiles:
@@ -209,6 +217,126 @@ async function handleInit(args: string[]): Promise<void> {
   console.log(`    const witness = Witness.fromConfig();  // done.\n`);
 }
 
+// ── Diff Command ────────────────────────────────────────────────────
+
+function parseSince(since: string): number {
+  const now = Date.now();
+  // Duration: 1d, 7d, 30d
+  const dMatch = since.match(/^(\d+)d$/);
+  if (dMatch) return now - parseInt(dMatch[1], 10) * 86400 * 1000;
+  // Duration: 1w, 2w
+  const wMatch = since.match(/^(\d+)w$/);
+  if (wMatch) return now - parseInt(wMatch[1], 10) * 7 * 86400 * 1000;
+  // ISO date: 2026-07-17
+  const dt = Date.parse(since);
+  if (!isNaN(dt)) return dt;
+  return 0;
+}
+
+function sinceLabel(sinceMs: number): string {
+  const from = new Date(sinceMs);
+  const now = new Date();
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${fmt(from)} to ${fmt(now)}`;
+}
+
+async function handleDiff(args: string[]): Promise<void> {
+  const useJson = args.includes("--json");
+  const useCompact = args.includes("--compact");
+
+  const sinceIdx = args.indexOf("--since");
+  const since = sinceIdx !== -1 && args[sinceIdx + 1] ? args[sinceIdx + 1] : "";
+
+  if (!since) {
+    console.log(`
+\x1b[1mUsage:\x1b[0m swt3 diff --since <period>
+\x1b[2mExamples: --since 7d, --since 30d, --since 2026-07-17\x1b[0m
+`);
+    return;
+  }
+
+  const sinceMs = parseSince(since);
+  if (!sinceMs) {
+    console.error(`\x1b[31mInvalid period: ${since}\x1b[0m`);
+    console.error(`\x1b[2mUse: 1d, 7d, 14d, 30d, 90d, or YYYY-MM-DD\x1b[0m`);
+    process.exit(1);
+  }
+
+  // Resolve API key and endpoint
+  let apiKey = process.env.SWT3_API_KEY ?? "";
+  let endpoint = process.env.SWT3_ENDPOINT ?? "https://sovereign.tenova.io";
+
+  try {
+    const { loadFullConfig } = await import("./config.js");
+    const cfg = loadFullConfig();
+    const opts = cfg.witnessOptions as Record<string, unknown>;
+    if (opts.apiKey) apiKey = opts.apiKey as string;
+    if (opts.endpoint) endpoint = opts.endpoint as string;
+  } catch { /* no config file */ }
+
+  if (!apiKey) {
+    console.error("No API key found. Set SWT3_API_KEY or add apiKey to swt3.config.yaml");
+    process.exit(1);
+  }
+
+  const diffUrl = `${endpoint.replace(/\/$/, "")}/api/v1/status?since=${sinceMs}`;
+  let data: Record<string, unknown>;
+  try {
+    const res = await fetch(diffUrl, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.error(`Error ${res.status}: ${(body as Record<string, string>).error ?? res.statusText}`);
+      process.exit(1);
+    }
+    data = await res.json() as Record<string, unknown>;
+  } catch (err) {
+    console.error(`Failed to connect to ${endpoint}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  if (useJson) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  const label = sinceLabel(sinceMs);
+  const a = data.anchors as Record<string, unknown>;
+  const c = data.completeness as Record<string, unknown> | null;
+  const f = data.findings as Record<string, unknown>;
+
+  if (useCompact) {
+    const total = a?.total ?? 0;
+    const open = (f?.open as number) ?? 0;
+    const pct = c ? `${(c.pct as number)}%` : "n/a";
+    console.log(`coverage:${pct} | anchors:${total} | findings:${open} | ${label}`);
+    return;
+  }
+
+  console.log(`\n\x1b[1mSWT3 Diff\x1b[0m  \x1b[2m${label}\x1b[0m`);
+  console.log(`  ${"─".repeat(50)}`);
+  console.log();
+
+  if (c) {
+    const pct = c.pct as number;
+    const color = pct >= 80 ? "\x1b[32m" : pct >= 50 ? "\x1b[33m" : "\x1b[31m";
+    console.log(`  Coverage: ${color}${c.label} (${pct}%)\x1b[0m`);
+  }
+
+  console.log(`  Anchors:  ${a.total} total`);
+
+  if ((f.open as number) > 0) {
+    console.log(`  Findings: \x1b[31m${f.open} open\x1b[0m`);
+  } else {
+    console.log(`  Findings: \x1b[32m0 open\x1b[0m`);
+  }
+
+  console.log();
+  console.log(`  \x1b[2mFull timeline: https://sovereign.tenova.io/ai-witness\x1b[0m`);
+  console.log();
+}
+
 // ── Cloud Status Commands ────────────────────────────────────────────
 
 async function handleCloudStatus(cmd: string, args: string[]): Promise<void> {
@@ -229,7 +357,8 @@ async function handleCloudStatus(cmd: string, args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const statusUrl = `${endpoint.replace(/\/$/, "")}/api/v1/status`;
+  const includeFindings = cmd === "findings" ? "?include=findings" : "";
+  const statusUrl = `${endpoint.replace(/\/$/, "")}/api/v1/status${includeFindings}`;
   let data: Record<string, unknown>;
   try {
     const res = await fetch(statusUrl, {
@@ -279,6 +408,28 @@ async function handleCloudStatus(cmd: string, args: string[]): Promise<void> {
       console.log(`  Findings:     \x1b[32m0 open\x1b[0m`);
     }
     console.log();
+
+    // Coverage bars (--coverage flag)
+    if (args.includes("--coverage") && c) {
+      const sections = (c as Record<string, unknown>).bySection as Array<Record<string, unknown>> | undefined;
+      if (sections && sections.length > 0) {
+        console.log(`\x1b[1m  Procedure Coverage\x1b[0m`);
+        console.log(`  ${"─".repeat(50)}`);
+        for (const s of sections) {
+          const pct = s.completionPct as number;
+          const barWidth = 10;
+          const filled = Math.round(barWidth * pct / 100);
+          const bar = "\u2588".repeat(filled) + "\u2591".repeat(barWidth - filled);
+          const color = pct >= 80 ? "\x1b[32m" : pct >= 50 ? "\x1b[33m" : "\x1b[31m";
+          const w = (s.witnessed as string[]).length;
+          const r = (s.required as string[]).length;
+          console.log(`  ${(s.label as string).padEnd(14)} ${color}${bar}\x1b[0m  ${w}/${r}`);
+        }
+        console.log();
+        console.log(`  \x1b[2mDetails: https://sovereign.tenova.io/ai-witness\x1b[0m`);
+        console.log();
+      }
+    }
   }
 
   if (cmd === "completeness") {
@@ -315,11 +466,22 @@ async function handleCloudStatus(cmd: string, args: string[]): Promise<void> {
       console.log("\x1b[32mNo open findings.\x1b[0m");
       return;
     }
-    // For detailed findings, we'd need the findings list endpoint
-    // For now, show the count from status
-    console.log(`\n\x1b[1mOpen Findings: ${f.open}\x1b[0m`);
-    console.log(`\nUse the dashboard to view and resolve findings.`);
-    console.log(`  ${(data as Record<string, unknown>).tenant ? `https://sovereign.tenova.io/audit-log` : ""}\n`);
+    console.log(`\n\x1b[1m\x1b[31m! ${f.open} Open Assessment Finding${(f.open as number) !== 1 ? "s" : ""}\x1b[0m\n`);
+
+    const items = (f as Record<string, unknown>).items as Array<Record<string, unknown>> | undefined;
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const proc = (item.procedure as string) || "";
+        const sev = (item.severity as string) || "";
+        let obs = (item.observation as string) || "";
+        if (obs.length > 60) obs = obs.slice(0, 57) + "...";
+        console.log(`  \x1b[31m#${item.id}\x1b[0m  ${proc.padEnd(12)} \x1b[33m${sev.padEnd(8)}\x1b[0m \x1b[2m${obs}\x1b[0m`);
+      }
+      if ((f.open as number) > items.length) {
+        console.log(`  \x1b[2m+${(f.open as number) - items.length} more\x1b[0m`);
+      }
+    }
+    console.log(`\n  \x1b[2mResolve via audit portal: https://sovereign.tenova.io/audit-log\x1b[0m\n`);
   }
 }
 
@@ -405,7 +567,7 @@ Usage:
 
 Example:
   swt3 verify --anchor SWT3-E-AWS-AI-AIINF1-PASS-1773316622-a1b2c3d4e5f6 \\
-    --tenant MY_TENANT --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000
+    --tenant <YOUR_TENANT_ID> --procedure AI-INF.1 --fa 1 --fb 1 --fc 0 --ts 1773316622000
 
 Zero network calls. Recomputes the SHA-256 fingerprint locally.`);
         break;
@@ -447,6 +609,20 @@ Zero network calls. Recomputes the SHA-256 fingerprint locally.`);
     case "completeness":
     case "findings": {
       await handleCloudStatus(cmd, rest);
+      break;
+    }
+    case "diff": {
+      await handleDiff(rest);
+      break;
+    }
+    case "reconstruct": {
+      const { handleReconstruct } = await import("./reconstruct.js");
+      await handleReconstruct(rest);
+      break;
+    }
+    case "gate": {
+      const { handleGate } = await import("./gate.js");
+      await handleGate(rest);
       break;
     }
     case "help":

@@ -1,5 +1,5 @@
-# Deny-all, allow only what the multi-stage build needs
+# Deny-all, allow only what the container needs
 *
 !package.json
-!tsconfig.json
-!src/
+!dist/
+!node_modules/

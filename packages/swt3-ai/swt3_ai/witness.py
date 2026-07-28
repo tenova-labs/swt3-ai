@@ -711,6 +711,21 @@ class Witness:
         )
         return payload
 
+    def chain(self, name: str, *, cycle_id: Optional[str] = None) -> "ChainContext":
+        """Context manager that auto-injects cycle_id into all anchors.
+
+        All witness calls inside the block share the same cycle_id,
+        making lifecycle chains the default behavior.
+
+        Usage:
+            with witness.chain("credit-decision") as ctx:
+                witness.record(inference1)
+                witness.witness_bias_detection(...)
+                witness.witness_guardrail(...)
+            # ctx.cycle_id available for correlation
+        """
+        return ChainContext(self, name, cycle_id)
+
     def wrap(self, client: Any) -> Any:
         """Wrap an AI client with transparent witnessing.
 
@@ -4411,6 +4426,31 @@ class Witness:
             payload.ai_context = ctx
         self._buffer.enqueue_many([payload])
         return payload
+
+
+class ChainContext:
+    """Scoped cycle_id injection for auto-chaining.
+
+    All witness calls inside the context share the same cycle_id.
+    Supports nesting: inner contexts save and restore the outer cycle_id.
+    """
+
+    def __init__(self, witness: "Witness", name: str, cycle_id: Optional[str] = None):
+        self._witness = witness
+        self.name = name
+        self.cycle_id = cycle_id or f"CHAIN-{os.urandom(8).hex()}"
+        self._previous_cycle_id: Optional[str] = None
+
+    def __enter__(self) -> "ChainContext":
+        self._previous_cycle_id = self._witness._config.cycle_id
+        self._witness._config.cycle_id = self.cycle_id
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self._witness._config.cycle_id = self._previous_cycle_id
+
+    def __repr__(self) -> str:
+        return f"ChainContext(name={self.name!r}, cycle_id={self.cycle_id!r})"
 
 
 class LifecycleChain:

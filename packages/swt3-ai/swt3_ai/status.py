@@ -3,6 +3,7 @@
 Run with:
     swt3 status
     swt3 status --framework EU-AI-ACT
+    swt3 status --coverage
     swt3 status --json
     swt3 status --compact
 """
@@ -16,7 +17,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 # ── Colors ──
 
@@ -207,6 +208,8 @@ class StatusResult:
     last_anchor_ts: int = 0
     last_anchor_fp: str = ""
     extra_procedures: List[str] = field(default_factory=list)
+    findings: List[Dict[str, str]] = field(default_factory=list)
+    findings_count: int = 0
 
 
 # ── WAL Scanner ──
@@ -513,6 +516,20 @@ def render_status_brief(result: StatusResult) -> str:
     elif result.gaps:
         lines.append(f"  {DIM}{len(result.gaps)} remaining articles need coverage (swt3 status --full){RESET}")
 
+    # Findings (from API, if available)
+    if result.findings_count > 0:
+        lines.append("")
+        lines.append(f"  {RED}! {result.findings_count} Open Assessment Finding{'s' if result.findings_count != 1 else ''}{RESET}")
+        for f in result.findings[:5]:
+            proc = f.get("procedure", "") or ""
+            sev = f.get("severity", "")
+            obs = f.get("observation", "")
+            if len(obs) > 60:
+                obs = obs[:57] + "..."
+            lines.append(f"    {RED}#{f.get('id', '')}{RESET}  {WHITE}{proc:<12}{RESET} {AMBER}{sev:<8}{RESET} {DIM}{obs}{RESET}")
+        if result.findings_count > 5:
+            lines.append(f"    {DIM}+{result.findings_count - 5} more (resolve via audit portal){RESET}")
+
     # Footer
     lines.append("")
     lines.append(f"  {'─' * 55}")
@@ -594,12 +611,102 @@ def render_status_full(result: StatusResult) -> str:
     if result.extra_procedures:
         lines.append(f"\n  {DIM}+{len(result.extra_procedures)} procedures beyond {result.framework_id} scope{RESET}")
 
+    # Findings (full list in --full mode)
+    if result.findings_count > 0:
+        lines.append("")
+        lines.append(f"  {RED}! {result.findings_count} Open Assessment Finding{'s' if result.findings_count != 1 else ''}{RESET}")
+        for f in result.findings:
+            proc = f.get("procedure", "") or ""
+            sev = f.get("severity", "")
+            obs = f.get("observation", "")
+            lines.append(f"    {RED}#{f.get('id', '')}{RESET}  {WHITE}{proc:<12}{RESET} {AMBER}{sev:<8}{RESET} {DIM}{obs}{RESET}")
+
     # Footer
     lines.append("")
     lines.append(f"  {'─' * 55}")
     if result.last_anchor_fp:
         lines.append(f"  {DIM}Last: ...{result.last_anchor_fp}  ({_time_ago(result.last_anchor_ts)}){RESET}")
     lines.append(f"  {DIM}Prep: sovereign.tenova.io/guides/assessor-hot-sheet.html{RESET}")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def render_coverage(result: StatusResult) -> str:
+    """Render visual procedure coverage bars by namespace."""
+    lines: List[str] = []
+
+    wal_entries = scan_wal(result.tenant_id)
+    if not wal_entries:
+        lines.append(f"\n  {DIM}No anchors found. Coverage requires witnessed procedures.{RESET}\n")
+        return "\n".join(lines)
+
+    # Group procedures by namespace
+    ns_counts: Dict[str, Dict[str, int]] = {}
+    for proc_id, entry in wal_entries.items():
+        if "-" in proc_id:
+            parts = proc_id.split("-")
+            if len(parts) >= 2:
+                ns = parts[1].split(".")[0]
+            else:
+                ns = "OTHER"
+        else:
+            ns = "OTHER"
+
+        if ns not in ns_counts:
+            ns_counts[ns] = {"witnessed": 0, "anchors": 0}
+        ns_counts[ns]["witnessed"] += 1
+        ns_counts[ns]["anchors"] += entry.count
+
+    if not ns_counts:
+        return ""
+
+    lines.append("")
+    lines.append(f"  {BOLD}Procedure Coverage{RESET}")
+    lines.append(f"  {'─' * 50}")
+
+    # Sort by namespace name, render two columns where possible
+    sorted_ns = sorted(ns_counts.keys())
+    bar_width = 10
+
+    # Render in two-column layout
+    rows: List[str] = []
+    for ns in sorted_ns:
+        data = ns_counts[ns]
+        count = data["witnessed"]
+        # Bar: use anchor count relative to max for visual weight
+        # But show procedure count as the number
+        filled = min(bar_width, max(1, count))
+        bar = "\u2588" * filled + "\u2591" * (bar_width - filled)
+
+        if count >= 5:
+            color = GREEN
+        elif count >= 2:
+            color = AMBER
+        else:
+            color = WHITE
+
+        rows.append(f"{ns:<6} {color}{bar}{RESET}  {count} proc{'s' if count != 1 else ''}")
+
+    # Two-column layout
+    mid = (len(rows) + 1) // 2
+    left = rows[:mid]
+    right = rows[mid:] if len(rows) > 1 else []
+
+    for i in range(mid):
+        l = left[i] if i < len(left) else ""
+        r = right[i] if i < len(right) else ""
+        if r:
+            lines.append(f"  {l}     {r}")
+        else:
+            lines.append(f"  {l}")
+
+    # Overall
+    total_procs = sum(d["witnessed"] for d in ns_counts.values())
+    total_anchors = sum(d["anchors"] for d in ns_counts.values())
+    lines.append("")
+    lines.append(f"  {DIM}Total: {total_procs} procedures across {len(ns_counts)} namespaces ({total_anchors} anchors){RESET}")
+    lines.append(f"  {DIM}Details: https://sovereign.tenova.io/ai-witness{RESET}")
     lines.append("")
 
     return "\n".join(lines)
@@ -630,6 +737,10 @@ def render_status_json(result: StatusResult) -> str:
         "gaps": result.gaps,
         "anchors_total": result.anchors_total,
         "last_anchor_ts": result.last_anchor_ts or None,
+        "findings": {
+            "count": result.findings_count,
+            "items": result.findings,
+        },
     }
     return json.dumps(data, indent=2)
 
@@ -644,10 +755,50 @@ def render_status_compact(result: StatusResult) -> str:
     gap_ids = ",".join(g["procedure_id"] for g in result.gaps[:5])
     gap_str = f" | gaps: {gap_ids}" if gap_ids else ""
 
-    return f"{result.framework_id} {pct:.0f}% ({result.covered_articles}/{result.total_articles}) | {result.anchors_total} anchors | last: {time_str}{gap_str}"
+    findings_str = f" | findings:{result.findings_count}" if result.findings_count > 0 else ""
+    return f"{result.framework_id} {pct:.0f}% ({result.covered_articles}/{result.total_articles}) | {result.anchors_total} anchors | last: {time_str}{gap_str}{findings_str}"
 
 
 # ── CLI Entry Point ──
+
+def _fetch_findings_from_api() -> Tuple[int, List[Dict[str, str]]]:
+    """Fetch open findings from status API. Returns (count, items). Skips silently on failure."""
+    api_key = os.environ.get("SWT3_API_KEY", "")
+    endpoint = os.environ.get("SWT3_ENDPOINT", "https://sovereign.tenova.io")
+
+    if not api_key:
+        try:
+            from .config import load_full_config
+            loaded = load_full_config()
+            kw = loaded.witness_kwargs
+            api_key = kw.get("api_key", "")
+            endpoint = kw.get("endpoint", endpoint)
+        except Exception:
+            pass
+
+    if not api_key:
+        return 0, []
+
+    try:
+        from urllib.request import Request, urlopen
+        url = f"{endpoint.rstrip('/')}/api/v1/status?include=findings"
+        req = Request(url, headers={"Authorization": f"Bearer {api_key}"})
+        with urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        findings = data.get("findings", {})
+        count = findings.get("open", 0)
+        items = findings.get("items", [])
+        return count, items
+    except Exception:
+        return 0, []
+
+
+def _fetch_findings_threaded(result: StatusResult) -> None:
+    """Fetch findings in a thread and attach to result."""
+    count, items = _fetch_findings_from_api()
+    result.findings_count = count
+    result.findings = items
+
 
 def handle_status(args: List[str]) -> None:
     """CLI handler for `swt3 status`."""
@@ -655,6 +806,7 @@ def handle_status(args: List[str]) -> None:
     use_json = "--json" in args
     use_compact = "--compact" in args
     use_full = "--full" in args
+    use_coverage = "--coverage" in args
     wal_dir = None
 
     framework_override = None
@@ -701,7 +853,16 @@ def handle_status(args: List[str]) -> None:
             print()
             sys.exit(1)
 
-    # Compute
+    # Compute (findings fetch in parallel)
+    import threading
+    findings_holder: List[Tuple[int, List[Dict[str, str]]]] = []
+
+    def _bg_findings() -> None:
+        findings_holder.append(_fetch_findings_from_api())
+
+    findings_thread = threading.Thread(target=_bg_findings, daemon=True)
+    findings_thread.start()
+
     result = compute_status(
         tenant_id=tenant_id,
         agent_id=agent_id,
@@ -710,12 +871,23 @@ def handle_status(args: List[str]) -> None:
         wal_dir=wal_dir,
     )
 
+    # Wait for findings (max 2s, already started in parallel)
+    findings_thread.join(timeout=2.0)
+    if findings_holder:
+        result.findings_count, result.findings = findings_holder[0]
+
     # Render
     if use_json:
         print(render_status_json(result))
     elif use_compact:
         print(render_status_compact(result))
     elif use_full:
-        print(render_status_full(result))
+        output = render_status_full(result)
+        if use_coverage:
+            output += render_coverage(result)
+        print(output)
     else:
-        print(render_status_brief(result))
+        output = render_status_brief(result)
+        if use_coverage:
+            output += render_coverage(result)
+        print(output)

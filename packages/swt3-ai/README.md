@@ -9,76 +9,81 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
-GPAI transparency obligations are enforceable now. EU AI Act high-risk enforcement begins **December 2, 2027**. This SDK gives you the evidence chain.
+EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
-## What's New in v0.6.1
+## What's New in v0.6.2
 
-AI systems are no longer single-process, single-model, single-cloud. A production AI pipeline today is an orchestrator delegating to sub-agents, each burning tokens across providers, running on different infrastructure in different jurisdictions. When an auditor asks "who had access to what, how much did it cost, and where was it running," most teams reconstruct answers from scattered logs, billing dashboards, and infrastructure state files. v0.6.1 makes these answers part of the witness record.
+Compliance policy as code, automatic evidence linking, and forensic reconstruction. One YAML file defines what your system must prove. The SDK enforces it. The auditor verifies it.
 
-### Delegation Trees (AI-DEL.1)
+### Governance Gate (.swt3-gate.yml)
 
-Multi-agent systems delegate permissions in trees, not pairs. Agent A delegates to Agent B with scope "read_file, execute_query." Agent B sub-delegates a subset to Agent C. Agent C spawns workers. When something goes wrong three levels deep, regulators want to know: who granted what scope, at what depth, and whether revoking the root grant cascades to every descendant.
+A `.swt3-gate.yml` file in your repo declares which procedures your system must witness, how fresh the evidence must be, and which gaps are critical. Generate one from any supported framework with `--init`, then enforce it in CI. The assessor reads the same file you do.
 
-AI-MULTI.1 witnessed single-hop delegation. AI-DEL.1 witnesses the entire tree structure -- the scope hash that binds what was granted, the depth that shows how far authority has traveled from a human, and the cascade revocation flag that proves a single revocation can unwind the whole chain.
-
-```python
-# Witness a delegation grant scoped to specific tools
-witness.witness_delegation_tree(
-    delegator_id="orchestrator-main",
-    scope="read_file,write_file,execute_query",
-    delegation_depth=2,
-    delegates=["worker-alpha", "worker-beta"],
-    cascade_revocation=True,
-    time_bound_minutes=120,
-)
-
-# Convenience: scope from a tool list (sorted, joined automatically)
-Witness.delegation_tree_from_tools(
-    witness, "orchestrator", ["execute_query", "read_file", "write_file"],
-    delegates=["worker-1"],
-)
+```yaml
+# .swt3-gate.yml
+version: "1.0"
+name: "credit-decision-service"
+strict: true
+frameworks:
+  EU-AI-ACT:
+    risk_class: high
+    gates:
+      - group: "Article 9 -- Risk Management"
+        procedures:
+          - procedure: AI-INF.1
+            required: true
+            max_age: 24h
+            description: "Every inference must be witnessed"
+          - procedure: AI-GRD.1
+            required: true
+            critical: true
+            hint: "Guardrails must be active at inference time"
 ```
 
-Factor semantics: `fa` = SHA256(delegator\_id)[:8] as uint32, `fb` = SHA256(scope)[:8] as uint32, `fc` = delegation depth. Delegate identities are SHA-256 hashed in context. All factors survive every clearing level.
-
-### Resource Consumption Witnessing (AI-COST.1)
-
-EU AI Act Art. 53 requires GPAI providers to disclose computational resources used in training. US Executive Order 14110 established FLOP thresholds that trigger reporting requirements. SR 11-7 expects model risk management to include resource consumption in operational risk assessments. None of these obligations have a standard evidence format. AI-COST.1 provides one.
-
-The SDK witnesses cumulative resource consumption -- tokens, API calls, estimated cost -- as cryptographic evidence. Verdict is always PASS. This is a notary, not a budget enforcer. It records what was consumed so there is proof when the auditor, the regulator, or the CFO asks.
-
-```python
-witness.witness_resource_consumption(
-    tokens_in=15000,
-    tokens_out=3200,
-    api_calls=47,
-    cost_cents=142,
-    provider="anthropic",
-    model_id="claude-sonnet-4-20250514",
-)
+```bash
+swt3 gate --init EU-AI-ACT          # Generate from crosswalk
+swt3 gate --validate                 # Check YAML syntax and structure
+swt3 gate                            # Evaluate against live ledger (exit 0/1)
+swt3 gate --json                     # Machine-readable for CI/CD
 ```
 
-### Deployment Context Detection
+`swt3 gate` is your pre-merge compliance check. Add it to any CI pipeline that supports exit code checks -- GitHub Actions, GitLab CI, Jenkins, or a local pre-commit hook. Exit 1 means a gap exists -- fix it before it becomes an audit finding. The gate config is version-controlled policy: developers see what's required, CI enforces it, and assessors run `swt3 gate --json` independently against your ledger to confirm compliance without relying on self-reported results. When `strict: true` is set and a `critical` procedure fails, the gate blocks. Non-critical failures warn but pass.
 
-The same model running on AWS us-east-1 and on Azure Germany has different regulatory obligations. Kubernetes vs. Lambda vs. bare metal changes the threat model. NVIDIA A100 vs. TPU v4 affects reproducibility claims. Until now, deployment context lived in infrastructure configs that the compliance team never saw.
+### Auto-Chaining Context Manager
 
-The SDK now auto-detects cloud provider, region, runtime environment, and accelerator hardware from environment variables at startup. No metadata service calls, no subprocess spawns, no credentials required. The context embeds directly in witness payloads so auditors see where evidence was generated without asking the DevOps team.
+A single AI decision -- retrieve context, run inference, check guardrails -- produces multiple anchors. Without a shared identifier, those anchors are isolated events. The context manager injects a shared `cycle_id` into every witness call inside the block so the full decision is queryable as one chain.
 
 ```python
-from swt3_ai.deployment import detect_deployment_context
-
-ctx = detect_deployment_context()
-# DeploymentContext(cloud_provider='aws', region='us-east-1', runtime='kubernetes', accelerator_type='nvidia-gpu', accelerator_count=4)
-
-# Embed in a resource consumption witness
-witness.witness_resource_consumption(
-    tokens_in=5000, tokens_out=1200, api_calls=12,
-    provider="openai", model_id="gpt-4o",
-    deployment_context=ctx.to_dict(),
-)
+with witness.chain("credit-decision") as ctx:
+    wrapped.chat.completions.create(model="gpt-4o", messages=[...])
+    witness.witness_rag_context(source="policy-db", chunks=12)
+    witness.witness_resource_consumption(tokens_in=8000, tokens_out=2400, api_calls=3)
 ```
 
-Detects: AWS, GCP, Azure, Vultr | Kubernetes, Lambda, ECS, Cloud Run, container, bare-metal | NVIDIA GPU, TPU, AWS Neuron. Cached for 5 minutes. Clearing-level aware: full context at CL 0-1, provider+runtime at CL 2, hashed at CL 3.
+Nesting is supported -- inner chains save and restore the outer cycle_id. Exception-safe. No manual ID management. Use `swt3 reconstruct --cycle CYCLE_ID` to replay the full chain later.
+
+### Forensic Reconstruction (HTML Export)
+
+`swt3 reconstruct` queries the witness ledger and rebuilds a chronological narrative of what an AI system did and when. Every line in the output is backed by a verifiable fingerprint. The `--html` flag produces a self-contained report you can hand to legal, compliance, or a regulator without giving them dashboard access.
+
+```bash
+swt3 reconstruct --cycle CYCLE_ID               # Terminal output
+swt3 reconstruct --agent orchestrator --last 1h  # By agent
+swt3 reconstruct --cycle CYCLE_ID --html         # Self-contained HTML report
+swt3 reconstruct --last 30m --json               # Machine-readable
+```
+
+The report is independently verifiable. Assessors do not need to trust it -- they can recompute any fingerprint and confirm the evidence is intact.
+
+### Status Findings
+
+`swt3 status` now includes gate evaluation results. If a `.swt3-gate.yml` exists in your project, the output shows which gates pass, which fail, and which procedures need attention -- compliance posture at a glance without leaving the terminal.
+
+### v0.6.1
+
+- **Delegation Trees** (AI-DEL.1) -- witness hierarchical permission delegation with scope binding, cascade revocation, and depth tracking.
+- **Resource Consumption Witnessing** (AI-COST.1) -- witness cumulative token usage, API calls, and estimated cost as cryptographic evidence.
+- **Deployment Context Detection** -- auto-detect cloud provider, region, runtime, and accelerator from environment variables. Clearing-level aware.
 
 ### Compliance Status CLI (`swt3 status`)
 
@@ -338,7 +343,7 @@ from swt3_ai import verify_anchor
 
 result = verify_anchor(
     anchor,
-    tenant_id="MY_TENANT",
+    tenant_id="<YOUR_TENANT_ID>",
     procedure_id="AI-INF.1",
     factor_a=1, factor_b=1, factor_c=0,
     timestamp_ms=1773316622000,
@@ -1148,6 +1153,7 @@ docker save axiom-sovereign-engine:latest | gzip > axiom-sovereign.tar.gz
 | Anthropic | `anthropic.Anthropic` / `anthropic.AsyncAnthropic` | Supported |
 | Azure OpenAI | `openai.AzureOpenAI` | Supported (via openai SDK) |
 | xAI (Grok) | `openai.OpenAI(base_url="https://api.x.ai/v1")` | Supported (OpenAI-compatible) |
+| Thinking Machines (Inkling) | `openai.OpenAI(base_url="http://gpu-cluster:8000/v1")` | Supported (OpenAI-compatible, vLLM Day-0) |
 | Ollama / vLLM | `openai.OpenAI(base_url=...)` | Supported (OpenAI-compatible) |
 | AWS Bedrock | `boto3` (`bedrock-runtime`) | Supported |
 | LiteLLM | `litellm` module | Supported (100+ providers) |
@@ -1411,7 +1417,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
 - [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 31 frameworks
-- [All 118 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [All 150 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 
