@@ -25,9 +25,19 @@ import { handleReportViolation } from "./tools/violation.js";
 import { handleWitnessModelIntegrity, handleWitnessAdapterStack } from "./tools/model.js";
 import { handleAttestSkillManifest, handleAttestMemoryContext } from "./tools/skill.js";
 import { handleVerifyAgentTrust, handlePresentCredential } from "./tools/trust.js";
-import { handleResolveCrosswalk, handleCoverageReport } from "./tools/crosswalk.js";
+import { handleResolveCrosswalk, handleCoverageReport, handleResolveJurisdiction } from "./tools/crosswalk.js";
 import { handleWitnessResourceConsumption } from "./tools/cost.js";
 import { handleWitnessDelegationTree } from "./tools/delegation.js";
+import { handleWitnessRagContext } from "./tools/rag.js";
+import { handleWitnessGuardrail } from "./tools/guardrail.js";
+import { handleWitnessHumanReview } from "./tools/hitl.js";
+import { handleGateEvaluate } from "./tools/gate.js";
+import { handleReconstructTimeline } from "./tools/reconstruct.js";
+import { handleWitnessConsent } from "./tools/consent.js";
+import { handleWitnessOutputFilter } from "./tools/output-filter.js";
+import { handleWitnessIncident } from "./tools/incident.js";
+import { handleWitnessDataProvenance } from "./tools/data-provenance.js";
+import { buildComplianceCheckPrompt } from "./prompts/compliance-check.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
 import { REGISTRY_RESOURCE } from "./resources/registry.js";
@@ -195,7 +205,7 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
 
   const server = new McpServer({
     name: "swt3-mcp",
-    version: "0.1.0",
+    version: "0.6.3",
   });
 
   // --- Tools ---
@@ -739,6 +749,28 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     }
   });
 
+  server.registerTool("resolve_jurisdiction", {
+    description:
+      "Look up which regulatory frameworks apply to a jurisdiction. Given an ISO 3166-1 country code " +
+      "(e.g., JP, DE, US) or ISO 3166-2 subdivision code (e.g., US-CA, US-TX), returns all applicable " +
+      "mandatory, advisory, and voluntary frameworks with enforcement dates and binding status. " +
+      "For subdivisions, includes both local and national frameworks. Offline -- uses bundled data.",
+    inputSchema: {
+      jurisdiction: z.string().describe("ISO 3166-1 alpha-2 country code (e.g., 'JP', 'DE') or ISO 3166-2 subdivision (e.g., 'US-CA')"),
+    },
+    annotations: { readOnlyHint: true },
+  }, async (args) => {
+    try {
+      const text = handleResolveJurisdiction(args as any);
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
   server.registerTool("coverage_report", {
     description:
       "Report framework coverage for the current audit session. Shows which " +
@@ -839,6 +871,344 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
         isError: true,
       };
     }
+  });
+
+  // --- RAG Context Witnessing Tool ---
+
+  server.registerTool("witness_rag_context", {
+    description:
+      "Witness RAG (Retrieval-Augmented Generation) context retrieval (AI-RAG.1). " +
+      "Records chunk provenance, corpus identity, and embedding model. " +
+      "Chunk text is hashed locally and never sent to the server. " +
+      "If similarity_threshold and similarity_scores are provided, also mints " +
+      "an AI-RAG.2 anchor for context relevance scoring." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      chunks: z.array(z.string()).describe("Retrieved text chunks (hashed locally, never sent to server)"),
+      corpus_id: z.string().optional().describe("Retrieval corpus/index identifier (e.g., 'legal-docs-v3')"),
+      corpus_hash: z.string().optional().describe("SHA-256 hash of corpus version"),
+      embedding_model: z.string().optional().describe("Embedding model used for retrieval"),
+      retrieval_latency_ms: z.number().optional().describe("Retrieval latency in milliseconds"),
+      top_k: z.number().optional().describe("Number of chunks requested"),
+      similarity_threshold: z.number().optional().describe("Minimum relevance threshold (0.0-1.0). Triggers AI-RAG.2 if scores provided."),
+      similarity_scores: z.array(z.number()).optional().describe("Per-chunk similarity scores (must match chunks length). Required for AI-RAG.2."),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessRagContext(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-RAG.1");
+      if (args.similarity_threshold != null && args.similarity_scores != null) {
+        trackProcedure(sessionState, "AI-RAG.2");
+      }
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Guardrail Witnessing Tool ---
+
+  server.registerTool("witness_guardrail", {
+    description:
+      "Witness guardrail implementation and activation (AI-GRD.1). " +
+      "Records whether a guardrail is present, triggered, and what action it took. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      guardrail_name: z.string().describe("Name of the guardrail (e.g., 'content-filter', 'pii-redaction')"),
+      triggered: z.boolean().describe("Whether the guardrail was triggered"),
+      guardrail_version: z.string().optional().describe("Guardrail version"),
+      action_taken: z.string().optional().describe("Action taken: 'blocked', 'redacted', 'flagged', or 'allowed'"),
+      input_hash: z.string().optional().describe("SHA-256 hash of input that triggered the guardrail"),
+      output_hash: z.string().optional().describe("SHA-256 hash of modified output after guardrail action"),
+      model_id: z.string().optional().describe("Model the guardrail protects"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessGuardrail(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-GRD.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Human Review Witnessing Tool ---
+
+  server.registerTool("witness_human_review", {
+    description:
+      "Witness that human review occurred on AI-generated output (AI-HITL.1). " +
+      "Records review outcome, reviewer binding, and latency. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      review_outcome: z.enum(["approved", "rejected", "modified", "escalated"])
+        .describe("Outcome of the human review"),
+      reviewer_id_hash: z.string().optional().describe("Pre-hashed reviewer identity (never cleartext)"),
+      review_latency_ms: z.number().optional().describe("Time taken for review in milliseconds"),
+      items_reviewed: z.number().optional().describe("Number of items reviewed (default: 1)"),
+      modification_hash: z.string().optional().describe("SHA-256 hash of modifications made"),
+      escalation_reason: z.string().optional().describe("Reason for escalation (if escalated)"),
+      model_id: z.string().optional().describe("Model whose output was reviewed"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessHumanReview(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-HITL.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Gate Evaluation Tool ---
+
+  server.registerTool("gate_evaluate", {
+    description:
+      "Parse and validate a .swt3-gate.yml governance gate configuration. " +
+      "Shows gate counts, framework coverage, model risk assignments, and warnings. " +
+      "Optionally evaluates against live anchors (set evaluate_live: true). " +
+      "Offline by default -- no network calls. Read-only -- no anchors minted.",
+    inputSchema: {
+      gate_yaml: z.string().describe("Raw YAML content of .swt3-gate.yml file"),
+      framework: z.string().optional().describe("Framework ID to filter evaluation (e.g., 'eu-ai-act')"),
+      model_id: z.string().optional().describe("Model ID to evaluate against model risk config"),
+      evaluate_live: z.boolean().optional().describe("If true, evaluate against live anchors via server API (requires account)"),
+    },
+    annotations: { readOnlyHint: true },
+  }, async (args) => {
+    try {
+      const text = await handleGateEvaluate(
+        args as any, config, client,
+      );
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Forensic Timeline Reconstruction Tool ---
+
+  server.registerTool("reconstruct_timeline", {
+    description:
+      "Reconstruct a forensic timeline of SWT3 witness anchors. " +
+      "Query by cycle_id, agent_id, fingerprint, chain_id, or time window. " +
+      "Returns a chronological view with procedure labels, verdicts, and key details. " +
+      "Read-only -- no anchors minted." +
+      (config.demo ? " Requires a live account -- use the signup tool first." : ""),
+    inputSchema: {
+      cycle_id: z.string().optional().describe("Lifecycle chain cycle ID to reconstruct"),
+      agent_id: z.string().optional().describe("Agent ID to reconstruct activity for"),
+      fingerprint: z.string().optional().describe("Single anchor fingerprint to look up"),
+      chain_id: z.string().optional().describe("Lifecycle chain ID (LC-... format)"),
+      last: z.string().optional().describe("Time window (e.g., '1h', '6h', '24h', '7d')"),
+    },
+    annotations: { readOnlyHint: true },
+  }, async (args) => {
+    try {
+      const text = await handleReconstructTimeline(
+        args as any, config, client,
+      );
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Consent Witnessing (AI-CONSENT.1) ---
+
+  server.registerTool("witness_consent", {
+    description:
+      "Witness data subject consent or lawful basis documentation (AI-CONSENT.1). " +
+      "Records that consent was obtained per GDPR Art. 6/7 and EU AI Act Art. 10. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      subjects_covered: z.number().optional().describe("Number of data subjects in scope (default: 1)"),
+      legal_basis: z.string().optional().describe("GDPR lawful basis: 'consent', 'contract', 'legal_obligation', 'vital_interest', 'public_task', 'legitimate_interest'"),
+      withdrawal_available: z.boolean().optional().describe("Whether withdrawal mechanism exists (default: true)"),
+      jurisdiction: z.string().optional().describe("ISO 3166-1 jurisdiction code (e.g., 'DE', 'IE', 'US-CA')"),
+      purpose: z.string().optional().describe("Processing purpose description"),
+      consent_mechanism: z.string().optional().describe("Mechanism used (e.g., 'opt-in-form', 'cookie-banner')"),
+      model_id: z.string().optional().describe("Model processing the data"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessConsent(args as any, config, client);
+      trackProcedure(sessionState, "AI-CONSENT.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+    }
+  });
+
+  // --- Output Filter Witnessing (AI-GRD.2) ---
+
+  server.registerTool("witness_output_filter", {
+    description:
+      "Witness output content safety classification result (AI-GRD.2). " +
+      "Records whether model output passed content safety filters. " +
+      "Distinct from witness_guardrail (AI-GRD.1) which witnesses guardrail activation. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      passed: z.boolean().describe("Whether the output passed content safety classification (true = clean, false = filter triggered)"),
+      filter_type: z.string().optional().describe("Filter category: 'content-safety', 'toxicity', 'pii', 'copyright', 'custom'"),
+      confidence: z.number().optional().describe("Filter confidence score (0.0-1.0)"),
+      action_taken: z.string().optional().describe("Action taken: 'allowed', 'flagged', 'redacted', or 'blocked'"),
+      output_hash: z.string().optional().describe("SHA-256 hash of the classified output"),
+      model_id: z.string().optional().describe("Model that generated the output"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessOutputFilter(args as any, config, client);
+      trackProcedure(sessionState, "AI-GRD.2");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+    }
+  });
+
+  // --- Incident Witnessing (AI-INCIDENT.1) ---
+
+  server.registerTool("witness_incident", {
+    description:
+      "Witness incident detection and reporting (AI-INCIDENT.1). " +
+      "Creates a tamper-evident record of when an incident was detected and its severity. " +
+      "Critical for NIS-2 24h/72h reporting windows and EU AI Act Art. 62. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      severity: z.string().describe("Incident severity: 'low', 'medium', 'high', 'critical'"),
+      incident_type: z.string().optional().describe("Type: 'safety', 'rights', 'security', 'performance', 'bias', 'other'"),
+      authority_notified: z.boolean().optional().describe("Whether the relevant authority was notified"),
+      description_hash: z.string().optional().describe("SHA-256 hash of the incident description"),
+      detection_method: z.string().optional().describe("How the incident was detected"),
+      reporting_deadline_hours: z.number().optional().describe("Regulatory reporting deadline in hours (e.g., 24 for NIS-2)"),
+      incident_id: z.string().optional().describe("Internal incident tracking ID"),
+      model_id: z.string().optional().describe("Model involved in the incident"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessIncident(args as any, config, client);
+      trackProcedure(sessionState, "AI-INCIDENT.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+    }
+  });
+
+  // --- Data Provenance Witnessing (AI-DATA.1) ---
+
+  server.registerTool("witness_data_provenance", {
+    description:
+      "Witness training data governance diligence (AI-DATA.1). " +
+      "Attests that data governance review was performed WITHOUT disclosing training data contents. " +
+      "Satisfies EU AI Act Art. 10, SR 11-7 III.A, and CA-AB-2013. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      governance_reviewed: z.boolean().optional().describe("Whether data governance review was completed (default: true)"),
+      documentation_hash: z.string().optional().describe("SHA-256 of the data card or documentation artifact"),
+      license_verified: z.boolean().optional().describe("Whether license compliance was verified"),
+      demographic_features_excluded: z.boolean().optional().describe("Whether prohibited demographic features were confirmed absent"),
+      data_sources_count: z.number().optional().describe("Number of distinct data sources reviewed"),
+      model_id: z.string().optional().describe("Model the data governance applies to"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessDataProvenance(args as any, config, client);
+      trackProcedure(sessionState, "AI-DATA.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+    }
+  });
+
+  // --- Prompt Templates ---
+
+  server.registerPrompt("compliance-check", {
+    description:
+      "Generate a guided compliance witnessing session prompt for a specific regulatory framework. " +
+      "Lists applicable procedures, available MCP tools, and session workflow.",
+    argsSchema: {
+      framework: z.string().describe("Regulatory framework ID (e.g., EU-AI-ACT, NIST-AI-RMF, SR-11-7, CMMC)"),
+      model_id: z.string().optional().describe("AI model being used in this session"),
+      context: z.string().optional().describe("What the AI system is doing (e.g., 'RAG-based medical triage')"),
+    },
+  }, async (args) => {
+    const text = buildComplianceCheckPrompt(args as any);
+    return { messages: [{ role: "user" as const, content: { type: "text" as const, text } }] };
   });
 
   // --- Resources ---

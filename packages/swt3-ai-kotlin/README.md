@@ -9,7 +9,23 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
-## What's New in v0.1.0
+## What's New in v0.6.3
+
+Four new attestation types and code objects for the procedures regulators ask about first. Each maps to regulations enforcing now or within months.
+
+- **Output Filter Result** (`OutputFilterResult` + `FilterAction`, AI-GRD.2) -- Guardrails run, but proving the output classification result is a separate evidence requirement. When Tencent's Doubao was shut down overnight for output violations, the gap was not whether guardrails existed but whether there was proof each output passed classification. This data class records whether model output passed content safety filters, what type of filter ran, and what action was taken. Distinct from input-side guardrail activation (AI-GRD.1) -- this is the output-side classification result. EU AI Act Art. 15(3), NIST AI RMF GOVERN 1.5.
+
+- **Data Provenance Attestation** (`DataProvenanceAttestation`, AI-DATA.1) -- Training data is the most guarded secret in AI. This type solves the tension: it attests that data governance review was performed WITHOUT disclosing what the training data was. No dataset names, no license strings, no content hashes of the data itself. Instead: governance reviewed (bool), documentation hash (SHA-256 of the data card, not the data), license compliance verified, demographic features confirmed absent. Satisfies EU AI Act Art. 10, SR 11-7 III.A, and CA-AB-2013 through diligence attestation, not disclosure.
+
+- **Consent Attestation** (`ConsentAttestation` + `ConsentBasis`, AI-CONSENT.1) -- GDPR lawful basis encoding for mobile apps that collect consent before on-device inference. Basis code, subject count, withdrawal availability, jurisdiction. When an Android app runs Gemini Nano locally, the consent evidence must exist before inference starts.
+
+- **Incident Report** (`IncidentReport` + `IncidentSeverity` / `IncidentType`, AI-INCIDENT.1) -- NIS-2 gives you 24 hours to report. EU AI Act Art. 62 gives you 72. The question regulators ask is "when did you know?" This type records severity, incident type, authority notification status, detection method, and reporting deadline -- structured evidence that the clock started when you say it did.
+
+### v0.1.1
+
+Four new attestation types: `ConsentAttestation`, `OutputFilterResult`, `IncidentReport`, `DataProvenanceAttestation` with supporting code objects.
+
+### v0.1.0
 
 First release. Kotlin is the 8th language in the SWT3 protocol family.
 
@@ -65,7 +81,7 @@ Your auditor never sees your prompts, responses, or model outputs. They see:
 - Numeric factors (latency within threshold, guardrails active, model hash matches)
 - A clearing level controlling how much metadata survives
 
-They can verify any anchor independently -- in their browser, from their terminal, or with any of the 8 SDKs. No vendor dependency. No trust required.
+They can verify any anchor independently -- in their browser, from their terminal, or with any of the 9 SDKs. No vendor dependency. No trust required.
 
 ## Privacy Architecture
 
@@ -98,7 +114,7 @@ val result = witness.wrap(
     outputTokens = 89,
 )
 
-println(result.fingerprint)  // 12-char hex, matches all 8 SDKs
+println(result.fingerprint)  // 12-char hex, matches all 9 SDKs
 val receipts = witness.flush()
 ```
 
@@ -169,7 +185,7 @@ SWT3-E-CLOUD-AI-AIINF1-PASS-1773316622-96b7d56c0245
      +----------------------------------------- Deployment tier
 ```
 
-The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}:{fc}:{ts_ms}")`. This formula is locked and identical across all 8 SDK languages.
+The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}:{fc}:{ts_ms}")`. This formula is locked and identical across all 9 SDK languages.
 
 ## Run the Demo
 
@@ -187,7 +203,7 @@ The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}
 
 ## Regulatory Coverage
 
-108 AI procedures across 56 namespaces. 31 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
+107 AI procedures across 56 namespaces. 34 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
 
 ## Resources
 

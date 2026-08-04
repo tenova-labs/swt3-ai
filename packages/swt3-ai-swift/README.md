@@ -10,10 +10,26 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
-## What's New in v0.5.9
+## What's New in v0.6.3
 
-- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. Core primitives, Core ML witnessing, Secure Enclave signing, and spatial provenance in this package remain stable and unchanged.
-- 2,069 tests passing across all 7 SDK languages.
+Four new attestation types for the procedures regulators ask about first. Each maps to regulations enforcing now or within months.
+
+- **Output Filter Result** (`OutputFilterResult` + `FilterAction`, AI-GRD.2) -- Guardrails run, but proving the output classification result is a separate evidence requirement. When Tencent's Doubao was shut down overnight for output violations, the gap was not whether guardrails existed but whether there was proof each output passed classification. This struct records whether model output passed content safety filters, what type of filter ran, and what action was taken. Distinct from input-side guardrail activation (AI-GRD.1) -- this is the output-side classification result. EU AI Act Art. 15(3), NIST AI RMF GOVERN 1.5.
+
+- **Data Provenance Attestation** (`DataProvenanceAttestation`, AI-DATA.1) -- Training data is the most guarded secret in AI. This type solves the tension: it attests that data governance review was performed WITHOUT disclosing what the training data was. No dataset names, no license strings, no content hashes of the data itself. Instead: governance reviewed (bool), documentation hash (SHA-256 of the data card, not the data), license compliance verified, demographic features confirmed absent. Satisfies EU AI Act Art. 10, SR 11-7 III.A, and CA-AB-2013 through diligence attestation, not disclosure.
+
+- **Consent Attestation** (`ConsentAttestation`, AI-CONSENT.1) -- GDPR lawful basis encoding for mobile apps that collect consent before on-device inference. Basis code, subject count, withdrawal availability, jurisdiction. When an iOS app runs Core ML locally, the consent evidence must exist before inference starts.
+
+- **Incident Report** (`IncidentReport`, AI-INCIDENT.1) -- NIS-2 gives you 24 hours to report. EU AI Act Art. 62 gives you 72. The question regulators ask is "when did you know?" This struct records severity, incident type, authority notification status, detection method, and reporting deadline -- structured evidence that the clock started when you say it did.
+- **Code Maps** -- `consentBasisCodes`, `incidentSeverityCodes`, `incidentTypeCodes`, `filterActionCodes` dictionaries for factor encoding.
+- **Governance Gate Types** -- `GateConfig`, `GateProcedure`, `GateGroup`, `FrameworkGate` structs for parsing .swt3-gate.yml configurations.
+- **Delegation Tree Types** -- `DelegationTree` struct for AI-DEL.1 hierarchical permission delegation.
+- **Resource Consumption Types** -- `ResourceConsumption` struct for AI-COST.1 token usage and cost witnessing.
+- **Deployment Context Types** -- `DeploymentContext` struct for device model, OS, chip type, and container image metadata.
+
+### v0.5.9
+
+- Compliance Intelligence available in Python, TypeScript, and MCP SDKs. Core primitives unchanged.
 
 ## What You Get
 
@@ -23,7 +39,7 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 - **`SWT3.signPayload`** -- HMAC-SHA256 signing with optional agent identity binding
 - **`SWT3.sha256Truncated`** -- truncated SHA-256 hashing for prompts, responses, and model weights
 - **`SWT3.timestampMs`** -- millisecond-precision timestamps matching the protocol clock
-- **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `RevocationReason` structs (Sendable, Equatable, Codable)
+- **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `GateConfig`, `DelegationTree`, `ResourceConsumption`, `DeploymentContext`, `RevocationReason` structs (Sendable, Equatable, Codable)
 - **Model Integrity** -- `SWT3.hashFile` and `SWT3.hashDirectory` for model weight verification
 
 ### Apple Platform Features
@@ -34,7 +50,7 @@ Available on iOS, macOS, and visionOS via `#if canImport`:
 - **`SWT3.witnessModelIntegrity`** -- witness Core ML model integrity (AI-MDL.1). Hashes the compiled `.mlmodelc` bundle for tamper detection and drift monitoring.
 - **`SWT3.witnessSpatialInference`** -- witness an AI decision with spatial context. Captures a 4x4 world transform matrix and hashes it into the anchor. For AI systems making decisions in physical space (navigation, object recognition, spatial reasoning on Vision Pro), this proves WHERE the decision was made, not just WHAT was decided.
 
-All output is byte-identical to the Python, TypeScript, Rust, C#, Ruby, and MCP SDKs. 7 languages, one audit trail. Verified by 74 tests covering 47 fingerprint vectors, 2 signing vectors, and 5 hash vectors.
+All output is byte-identical to the Python, TypeScript, Rust, C#, Ruby, and MCP SDKs. 9 languages, one audit trail. Verified by 74 tests covering 47 fingerprint vectors, 2 signing vectors, and 5 hash vectors.
 
 ## Quick Start
 

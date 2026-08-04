@@ -1,0 +1,43 @@
+family: "PE"
+family_name: "Physical and Environmental Protection"
+check_type: "attestation"
+controls:
+  - id: "PE-1.1"
+    parent_control: "PE-1"
+    name: "Physical Access Control"
+    description: "Facility has badge, biometric, or key-card access on all entry points"
+    attestation_prompt: "Confirm physical access to the server facility requires badge or biometric authentication."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PE-1"
+    nist_800_171_ref: "3.10.1"
+
+  - id: "PE-6.1"
+    parent_control: "PE-6"
+    name: "Physical Monitoring"
+    description: "Facility is monitored with CCTV, intrusion detection, and security staff"
+    attestation_prompt: "Confirm the server facility has 24/7 monitoring (CCTV, intrusion detection)."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PE-6"
+    nist_800_171_ref: "3.10.2"
+
+  - id: "PE-10.1"
+    parent_control: "PE-10"
+    name: "Emergency Power"
+    description: "UPS and backup generators provide emergency power for critical systems"
+    attestation_prompt: "Confirm UPS and backup generators are in place and tested within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PE-10"
+    nist_800_171_ref: "3.10.6"
+
+  - id: "PE-13.1"
+    parent_control: "PE-13"
+    name: "Fire Protection"
+    description: "Fire detection and suppression systems protect the server facility"
+    attestation_prompt: "Confirm fire detection and clean-agent suppression systems are installed and tested annually."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "PE-13"
+    nist_800_171_ref: "3.10.3"

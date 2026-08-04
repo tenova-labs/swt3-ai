@@ -248,6 +248,7 @@ export const AI_PROCEDURES = new Set([
   "AI-EMRG.1",
   "AI-DRIFT.2",
   "AI-ASSESS.1",
+  "AI-COST.1",
 ]);
 
 /** A single retrieved context chunk for RAG witnessing. */

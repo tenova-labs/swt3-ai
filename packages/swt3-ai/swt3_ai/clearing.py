@@ -86,6 +86,7 @@ AI_PROCEDURES = [
     "AI-EMRG.1",      # Emergency Override Lifecycle (v6.0)
     "AI-DRIFT.2",     # Consequence-Mapped Drift (v6.0)
     "AI-ASSESS.1",    # Champion-Challenger Assessment (v6.0)
+    "AI-COST.1",      # Resource Consumption Witnessing (v6.1)
 ]
 
 # Revocation reason code mapping

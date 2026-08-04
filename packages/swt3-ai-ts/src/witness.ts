@@ -2483,6 +2483,104 @@ export class Witness {
     return payload;
   }
 
+  // ── Training Data Provenance (AI-DATA.1) ──────────────────────
+
+  /**
+   * Witness training data governance diligence (AI-DATA.1).
+   *
+   * Attests that data governance review was performed WITHOUT
+   * disclosing training data contents. Satisfies EU AI Act Art. 10,
+   * SR 11-7 III.A, and CA-AB-2013 through diligence attestation.
+   */
+  witnessDataProvenance(options: {
+    governanceReviewed?: boolean;
+    documentationHash?: string;
+    licenseVerified?: boolean;
+    demographicFeaturesExcluded?: boolean;
+    dataSourcesCount?: number;
+    modelId?: string;
+  } = {}): WitnessPayload {
+    const govReviewed = options.governanceReviewed ?? true;
+    const fa = 1; // provenance required
+    const fb = govReviewed ? 1 : 0;
+    const fc = 0; // reserved per registry
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DATA.1", fa, fb, fc, ts);
+
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DATA.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "data-provenance";
+      const ctx: Record<string, unknown> = {
+        provider: "data-provenance",
+        governance_reviewed: govReviewed,
+        license_verified: options.licenseVerified ?? false,
+        demographic_features_excluded: options.demographicFeaturesExcluded ?? false,
+      };
+      if (options.documentationHash) ctx.documentation_hash = options.documentationHash;
+      if (options.dataSourcesCount != null) ctx.data_sources_count = options.dataSourcesCount;
+      payload.ai_context = ctx;
+    }
+
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  // ── Output Safety Filter (AI-GRD.2) ─────────────────────────
+
+  /**
+   * Witness output content safety classification (AI-GRD.2).
+   *
+   * Records whether model output passed content safety filters.
+   * Distinct from AI-GRD.1 (guardrail presence/activation) -- this
+   * witnesses the classification RESULT on the output side.
+   */
+  witnessOutputFilter(options: {
+    passed: boolean;
+    filterType?: string;
+    confidence?: number;
+    actionTaken?: string;
+    outputHash?: string;
+    modelId?: string;
+  }): WitnessPayload {
+    const filterType = options.filterType ?? "content-safety";
+    const fa = 1; // content safety required
+    const fb = options.passed ? 1 : 0;
+    const fc = 0; // reserved per registry
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GRD.2", fa, fb, fc, ts);
+
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GRD.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? `output-${filterType}`;
+      const ctx: Record<string, unknown> = {
+        provider: "output-filter",
+        filter_type: filterType,
+        passed: options.passed,
+        action_taken: options.actionTaken ?? "allowed",
+      };
+      if (options.confidence != null) ctx.confidence = Math.round(options.confidence * 10000) / 10000;
+      if (options.outputHash) ctx.output_hash = options.outputHash;
+      payload.ai_context = ctx;
+    }
+
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
   // ── Performance Metrics (AI-PERF.1) ───────────────────────────
 
   /**

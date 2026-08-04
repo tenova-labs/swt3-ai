@@ -1,0 +1,84 @@
+# ── IR: Incident Response Family ────────────────────────────────────
+# NIST 800-53 Rev 5 / CMMC v2.0 Level 2
+# All controls are attestation-based (organizational policy/process)
+
+family: IR
+family_name: Incident Response
+check_type: attestation
+
+controls:
+  - id: IR-1.1
+    parent_control: IR-1
+    name: Incident Response Policy
+    rule_name: attestation
+    rule_description: >
+      Organization maintains a current, formally approved incident response
+      policy that addresses purpose, scope, roles, responsibilities,
+      management commitment, and coordination. Subject to annual review.
+    review_interval_days: 365
+    cmmc_practice: IR.L2-3.6.1
+    cci: CCI-000393
+
+  - id: IR-2.1
+    parent_control: IR-2
+    name: Incident Response Training
+    rule_name: attestation
+    rule_description: >
+      Organization provides incident response training to system users
+      consistent with assigned roles and responsibilities within the
+      defined time period of assuming an incident response role.
+    review_interval_days: 365
+    cmmc_practice: IR.L2-3.6.2
+    cci: CCI-000396
+
+  - id: IR-4.1
+    parent_control: IR-4
+    name: Incident Handling
+    rule_name: attestation
+    rule_description: >
+      Organization implements an incident handling capability including
+      preparation, detection, analysis, containment, eradication, and
+      recovery. Incident response actions are coordinated with
+      contingency planning activities.
+    review_interval_days: 180
+    cmmc_practice: IR.L2-3.6.1
+    cci: CCI-000399
+
+  - id: IR-5.1
+    parent_control: IR-5
+    name: Incident Monitoring
+    rule_name: attestation
+    rule_description: >
+      Organization tracks and documents system security incidents on
+      an ongoing basis. Incident data is preserved for forensic analysis
+      and trend reporting.
+    review_interval_days: 180
+    cmmc_practice: IR.L2-3.6.1
+    cci: CCI-000401
+
+  - id: IR-6.1
+    parent_control: IR-6
+    name: Incident Reporting
+    rule_name: attestation
+    rule_description: >
+      Organization requires personnel to report suspected incidents to
+      the incident response team within the organization-defined time
+      period. Reports are forwarded to required external authorities
+      (e.g., US-CERT, DIBCAC) as appropriate.
+    review_interval_days: 365
+    cmmc_practice: IR.L2-3.6.2
+    cci: CCI-000403
+
+  - id: IR-8.1
+    parent_control: IR-8
+    name: Incident Response Plan
+    rule_name: attestation
+    rule_description: >
+      Organization develops and maintains an incident response plan that
+      provides a roadmap for implementing the incident response capability,
+      describes the structure and organization of the response team,
+      provides a high-level approach for how the capability fits into
+      the overall organization, and is reviewed and approved by the AO.
+    review_interval_days: 365
+    cmmc_practice: IR.L2-3.6.3
+    cci: CCI-000407

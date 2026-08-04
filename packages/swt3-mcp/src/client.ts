@@ -151,6 +151,11 @@ export class AxiomClient {
     return this.request<Record<string, unknown>>("/api/v1/ai-witness");
   }
 
+  async fetchTimeline(params: URLSearchParams): Promise<Record<string, unknown>> {
+    const qs = params.toString();
+    return this.request<Record<string, unknown>>(`/api/v1/reconstruct?${qs}`);
+  }
+
   async fetchRegistry(): Promise<Record<string, unknown>> {
     const url = `${this.baseUrl}/registry/uct-registry.json`;
     const controller = new AbortController();

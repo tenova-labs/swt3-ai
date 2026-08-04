@@ -575,3 +575,177 @@ final class TypesTests: XCTestCase {
         XCTAssertEqual(config.maxRetries, 3)
     }
 }
+
+// MARK: - v0.6.3 Type Parity Tests
+
+final class GateConfigTests: XCTestCase {
+
+    func testGateProcedureCodableRoundTrip() throws {
+        let proc = GateProcedure(
+            procedure: "AI-GRD.1",
+            required: true,
+            maxAge: "24h",
+            maxAgeSeconds: 86400,
+            ref: "Art. 9(2)",
+            critical: true,
+            description: "Guardrail implementation",
+            hint: "witness.witnessGuardrail()"
+        )
+        let data = try JSONEncoder().encode(proc)
+        let decoded = try JSONDecoder().decode(GateProcedure.self, from: data)
+        XCTAssertEqual(proc, decoded)
+        // Verify snake_case encoding
+        let json = String(data: data, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\"max_age\""))
+        XCTAssertTrue(json.contains("\"must_not_exist\""))
+    }
+
+    func testGateGroupCodableRoundTrip() throws {
+        let group = GateGroup(
+            group: "Article 9: Risk Management",
+            procedures: [
+                GateProcedure(procedure: "AI-GRD.1", required: true, critical: true),
+                GateProcedure(procedure: "AI-INF.1", required: true),
+            ]
+        )
+        let data = try JSONEncoder().encode(group)
+        let decoded = try JSONDecoder().decode(GateGroup.self, from: data)
+        XCTAssertEqual(group, decoded)
+        XCTAssertEqual(decoded.procedures.count, 2)
+    }
+
+    func testFrameworkGateCodableRoundTrip() throws {
+        let fw = FrameworkGate(
+            riskClass: "high-risk",
+            crosswalkHash: "abc123",
+            gates: [
+                GateGroup(group: "Art 9", procedures: [
+                    GateProcedure(procedure: "AI-GRD.1", required: true),
+                ]),
+            ]
+        )
+        let data = try JSONEncoder().encode(fw)
+        let decoded = try JSONDecoder().decode(FrameworkGate.self, from: data)
+        XCTAssertEqual(fw, decoded)
+        let json = String(data: data, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\"risk_class\""))
+        XCTAssertTrue(json.contains("\"crosswalk_hash\""))
+    }
+
+    func testGateConfigCodableRoundTrip() throws {
+        let config = GateConfig(
+            version: "1.0",
+            name: "Test Policy",
+            strict: true,
+            models: ["gpt-4o": GateModel(risk: "high")],
+            frameworks: ["eu-ai-act": FrameworkGate(riskClass: "high-risk", gates: [])],
+            warnings: ["test warning"]
+        )
+        let data = try JSONEncoder().encode(config)
+        let decoded = try JSONDecoder().decode(GateConfig.self, from: data)
+        XCTAssertEqual(config, decoded)
+    }
+}
+
+final class DelegationTreeTests: XCTestCase {
+
+    func testDelegationTreeCodableRoundTrip() throws {
+        let tree = DelegationTree(
+            delegatorId: "agent-root",
+            scope: "read_file,write_file",
+            delegationDepth: 2,
+            delegates: ["agent-a", "agent-b"],
+            treeHash: "sha256hash",
+            cascadeRevocation: true,
+            timeBoundMinutes: 60,
+            parentGrantFingerprint: "abc123def456"
+        )
+        let data = try JSONEncoder().encode(tree)
+        let decoded = try JSONDecoder().decode(DelegationTree.self, from: data)
+        XCTAssertEqual(tree, decoded)
+        let json = String(data: data, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\"delegator_id\""))
+        XCTAssertTrue(json.contains("\"delegation_depth\""))
+        XCTAssertTrue(json.contains("\"cascade_revocation\""))
+        XCTAssertTrue(json.contains("\"time_bound_minutes\""))
+        XCTAssertTrue(json.contains("\"parent_grant_fingerprint\""))
+    }
+
+    func testDelegationTreeDefaults() {
+        let tree = DelegationTree(delegatorId: "root", scope: "all")
+        XCTAssertEqual(tree.delegationDepth, 0)
+        XCTAssertEqual(tree.cascadeRevocation, false)
+        XCTAssertNil(tree.delegates)
+        XCTAssertNil(tree.timeBoundMinutes)
+    }
+}
+
+final class ResourceConsumptionTests: XCTestCase {
+
+    func testResourceConsumptionCodableRoundTrip() throws {
+        let rc = ResourceConsumption(
+            tokensIn: 5000,
+            tokensOut: 2000,
+            apiCalls: 10,
+            costCents: 150,
+            provider: "openai",
+            modelId: "gpt-4o",
+            computeSeconds: 3.5,
+            costTableVersion: "2026-07"
+        )
+        let data = try JSONEncoder().encode(rc)
+        let decoded = try JSONDecoder().decode(ResourceConsumption.self, from: data)
+        XCTAssertEqual(rc, decoded)
+        let json = String(data: data, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\"tokens_in\""))
+        XCTAssertTrue(json.contains("\"tokens_out\""))
+        XCTAssertTrue(json.contains("\"api_calls\""))
+        XCTAssertTrue(json.contains("\"cost_cents\""))
+        XCTAssertTrue(json.contains("\"cost_table_version\""))
+    }
+
+    func testResourceConsumptionDefaults() {
+        let rc = ResourceConsumption(tokensIn: 100, tokensOut: 50, apiCalls: 1)
+        XCTAssertEqual(rc.costCents, -1)
+        XCTAssertNil(rc.provider)
+        XCTAssertNil(rc.computeSeconds)
+    }
+}
+
+final class DeploymentContextTests: XCTestCase {
+
+    func testDeploymentContextCodableRoundTrip() throws {
+        let ctx = DeploymentContext(
+            deviceModel: "MacBook Pro M3 Max",
+            osVersion: "macOS 15.4",
+            chipType: "Apple M3 Max",
+            runtimeVersion: "Swift 6.0",
+            containerImage: "ghcr.io/tenova-labs/swt3-witness:0.6.3"
+        )
+        let data = try JSONEncoder().encode(ctx)
+        let decoded = try JSONDecoder().decode(DeploymentContext.self, from: data)
+        XCTAssertEqual(ctx, decoded)
+        let json = String(data: data, encoding: .utf8)!
+        XCTAssertTrue(json.contains("\"device_model\""))
+        XCTAssertTrue(json.contains("\"os_version\""))
+        XCTAssertTrue(json.contains("\"chip_type\""))
+        XCTAssertTrue(json.contains("\"runtime_version\""))
+        XCTAssertTrue(json.contains("\"container_image\""))
+    }
+
+    func testDeploymentContextAllNil() throws {
+        let ctx = DeploymentContext()
+        let data = try JSONEncoder().encode(ctx)
+        let decoded = try JSONDecoder().decode(DeploymentContext.self, from: data)
+        XCTAssertEqual(ctx, decoded)
+        XCTAssertNil(decoded.deviceModel)
+        XCTAssertNil(decoded.osVersion)
+    }
+}
+
+final class VersionTests: XCTestCase {
+
+    func testVersionIs063() {
+        XCTAssertEqual(SWT3.version, "0.6.3")
+    }
+}

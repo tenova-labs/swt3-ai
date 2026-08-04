@@ -1,0 +1,53 @@
+family: "CP"
+family_name: "Contingency Planning"
+check_type: "attestation"
+controls:
+  - id: "CP-1.1"
+    parent_control: "CP-1"
+    name: "Contingency Planning Policy"
+    description: "Organization has a documented contingency planning policy"
+    attestation_prompt: "Confirm your organization has a current contingency planning policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "CP-1"
+    nist_800_171_ref: "3.6.1"
+
+  - id: "CP-2.1"
+    parent_control: "CP-2"
+    name: "Contingency Plan"
+    description: "A contingency plan exists identifying essential missions, recovery objectives, and roles"
+    attestation_prompt: "Confirm a contingency plan exists with RTOs, RPOs, and assigned recovery roles."
+    review_interval_days: 180
+    uct_category: "POL"
+    nist_800_53_ref: "CP-2"
+    nist_800_171_ref: "3.6.1"
+
+  - id: "CP-3.1"
+    parent_control: "CP-3"
+    name: "Contingency Training"
+    description: "Personnel are trained in their contingency roles and responsibilities"
+    attestation_prompt: "Confirm key personnel have been trained on the contingency plan within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "CP-3"
+    nist_800_171_ref: "3.6.2"
+
+  - id: "CP-4.1"
+    parent_control: "CP-4"
+    name: "Contingency Plan Testing"
+    description: "The contingency plan is tested at least annually"
+    attestation_prompt: "Confirm the contingency plan was tested (tabletop or live) within the last 12 months."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "CP-4"
+    nist_800_171_ref: "3.6.3"
+
+  - id: "CP-9.1"
+    parent_control: "CP-9"
+    name: "Information System Backup"
+    description: "Backups of user-level and system-level information are conducted and tested"
+    attestation_prompt: "Confirm regular backups are performed and restore tests have been completed."
+    review_interval_days: 90
+    uct_category: "POL"
+    nist_800_53_ref: "CP-9"
+    nist_800_171_ref: "3.8.9"

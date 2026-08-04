@@ -528,7 +528,7 @@
     "AI-GRD.1": {
       "procedure_id": "AI-GRD.1",
       "parent_control": "AI-GRD",
-      "title": "Guardrail Enforcement \u2014 Required Safety Filters Active",
+      "title": "Guardrail Enforcement — Required Safety Filters Active",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_GUARDRAIL_ENFORCEMENT",
@@ -566,7 +566,7 @@
     "AI-GRD.2": {
       "procedure_id": "AI-GRD.2",
       "parent_control": "AI-GRD",
-      "title": "Content Safety Filter \u2014 Output Classification Passed",
+      "title": "Content Safety Filter — Output Classification Passed",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_CONTENT_SAFETY",
@@ -602,7 +602,7 @@
     "AI-INF.1": {
       "procedure_id": "AI-INF.1",
       "parent_control": "AI-INF",
-      "title": "Inference Provenance \u2014 Prompt/Response Hash Capture",
+      "title": "Inference Provenance — Prompt/Response Hash Capture",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_INFERENCE_PROVENANCE",
@@ -639,7 +639,7 @@
     "AI-INF.2": {
       "procedure_id": "AI-INF.2",
       "parent_control": "AI-INF",
-      "title": "Inference Latency \u2014 Response Time Within Threshold",
+      "title": "Inference Latency — Response Time Within Threshold",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_INFERENCE_LATENCY",
@@ -675,7 +675,7 @@
     "AI-MDL.1": {
       "procedure_id": "AI-MDL.1",
       "parent_control": "AI-MDL",
-      "title": "Model Weight Integrity \u2014 Deployed Hash Matches Approved",
+      "title": "Model Weight Integrity — Deployed Hash Matches Approved",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_MODEL_INTEGRITY",
@@ -714,7 +714,7 @@
     "AI-MDL.2": {
       "procedure_id": "AI-MDL.2",
       "parent_control": "AI-MDL",
-      "title": "Model Version Tracking \u2014 Version Identifier Recorded",
+      "title": "Model Version Tracking — Version Identifier Recorded",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_MODEL_VERSION",
@@ -4079,7 +4079,7 @@
     "VARP-BASELINE": {
       "procedure_id": "VARP-BASELINE",
       "parent_control": "SI-2",
-      "title": "VARP Baseline \u2014 All remediations completed",
+      "title": "VARP Baseline — All remediations completed",
       "category": "linux_infra",
       "scope": "linux_infra",
       "check_type": "VARP Baseline Completeness",
@@ -4108,7 +4108,7 @@
     "VARP-FLAGGED-REM": {
       "procedure_id": "VARP-FLAGGED-REM",
       "parent_control": "SI-2",
-      "title": "VARP Flagged Items \u2014 All critical findings resolved",
+      "title": "VARP Flagged Items — All critical findings resolved",
       "category": "linux_infra",
       "scope": "linux_infra",
       "check_type": "VARP Flagged Items Remediation",
@@ -8197,10 +8197,147 @@
         "NIST-AI-RMF": "MEASURE 2.5"
       },
       "namespace": "AI"
+    },
+    "AI-MDL.8": {
+      "procedure_id": "AI-MDL.8",
+      "parent_control": "AI-MDL",
+      "title": "Model Registry Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MDL_REGISTRY",
+      "factors": {
+        "factor_a": {
+          "label": "registry_entries_expected",
+          "description": "Number of model versions expected in the approved model registry.",
+          "regulatory_ref": "EU AI Act Art. 11; NIST 800-53 CM-3"
+        },
+        "factor_b": {
+          "label": "registry_entries_verified",
+          "description": "Number of model versions confirmed present and integrity-checked.",
+          "regulatory_ref": "EU AI Act Art. 11; NIST AI RMF GOVERN 1.5"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All expected model versions must be present and verified in the registry."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.11",
+        "NIST-800-53": "CM-3",
+        "NIST-AI-RMF": "GOVERN 1.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-EMRG.1": {
+      "procedure_id": "AI-EMRG.1",
+      "parent_control": "AI-EMRG",
+      "title": "Emergency Override Lifecycle Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_EMRG_OVERRIDE_LIFECYCLE",
+      "factors": {
+        "factor_a": {
+          "label": "override_trigger_type",
+          "description": "Trigger: 0=emergency_stop, 1=operator_command, 2=escalation_protocol, 3=external_responder.",
+          "regulatory_ref": "EU AI Act Art. 14; IEC 61511"
+        },
+        "factor_b": {
+          "label": "authorization_level",
+          "description": "Authority: 0=operator, 1=supervisor, 2=site_manager, 3=emergency_responder.",
+          "regulatory_ref": "EU AI Act Art. 14; NIST 800-53 IR-4"
+        },
+        "factor_c": {
+          "label": "fallback_state_activated",
+          "description": "Fallback: 0=safe_state, 1=legacy_controller, 2=manual_mode, 3=degraded_operation, 4=full_shutdown.",
+          "regulatory_ref": "IEC 61511; CISA AI in OT Sec. 4.1"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "Authorization level must meet or exceed the minimum required for the trigger type."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.14",
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "NIST-800-53": "IR-4"
+      },
+      "namespace": "AI"
+    },
+    "AI-DRIFT.2": {
+      "procedure_id": "AI-DRIFT.2",
+      "parent_control": "AI-DRIFT",
+      "title": "Consequence-Mapped Drift Threshold Response",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DRIFT_CONSEQUENCE_MAPPED",
+      "factors": {
+        "factor_a": {
+          "label": "drift_magnitude",
+          "description": "Statistical divergence value (PSI, KL, etc.) quantized to configurable precision.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(b); OCC 2026-13"
+        },
+        "factor_b": {
+          "label": "consequence_category_triggered",
+          "description": "Highest consequence category: 0=safety, 1=environmental, 2=financial, 3=operational, 4=reputational.",
+          "regulatory_ref": "ISA-18.2; EU AI Act Art. 9(2)(b)"
+        },
+        "factor_c": {
+          "label": "response_action_taken",
+          "description": "Graduated response: 0=notification_only, 1=increased_monitoring, 2=throttle, 3=circuit_breaker, 4=forced_failover, 5=emergency_shutdown.",
+          "regulatory_ref": "OCC 2026-13 / SR 26-2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c >= factor_b",
+        "description": "Response escalation must match or exceed consequence severity."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(b)",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "NIST-800-53": "SI-2",
+        "SR-11-7": "IV.A"
+      },
+      "namespace": "AI"
+    },
+    "AI-ASSESS.1": {
+      "procedure_id": "AI-ASSESS.1",
+      "parent_control": "AI-ASSESS",
+      "title": "Champion-Challenger Assessment Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_ASSESS_CHAMPION_CHALLENGER",
+      "factors": {
+        "factor_a": {
+          "label": "inputs_processed",
+          "description": "Number of identical inputs routed to both champion and challenger models.",
+          "regulatory_ref": "EU AI Act Art. 15; OCC 2026-13"
+        },
+        "factor_b": {
+          "label": "max_divergence_observed",
+          "description": "Highest divergence metric observed across all evaluation intervals (x1000 scale).",
+          "regulatory_ref": "OCC 2026-13 / SR 26-2"
+        },
+        "factor_c": {
+          "label": "acceptance_threshold_breached",
+          "description": "1 = acceptance criteria breached, 0 = within bounds.",
+          "regulatory_ref": "EU AI Act Art. 15; NIST AI RMF MAP 2.3"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 0",
+        "description": "Acceptance criteria must NOT be breached for PASS."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.15",
+        "NIST-AI-RMF": "MAP 2.3",
+        "NIST-800-53": "SA-11",
+        "SR-11-7": "IV.A"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (82 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (107 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",

@@ -11,9 +11,17 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
-## What's New in v0.6.2
+## What's New in v0.6.3
 
-Compliance policy as code, automatic evidence linking, and forensic reconstruction. One YAML file defines what your system must prove. The SDK enforces it. The auditor verifies it.
+Four new witness methods that close the most-requested evidence gaps -- consent, output safety, incident reporting, and training data governance. Each maps to regulations enforcing now or within months.
+
+- **Output Safety Witnessing** (`witness_output_filter`, AI-GRD.2) -- Guardrails run, but proving the output classification result is a separate evidence requirement. When Tencent's Doubao was shut down overnight for output violations, the gap was not whether guardrails existed but whether there was proof each output passed classification. This method records whether model output passed content safety filters, what type of filter ran, and what action was taken. Distinct from `witness_guardrail` (AI-GRD.1, input-side activation) -- this is the output-side classification result. EU AI Act Art. 15(3), NIST AI RMF GOVERN 1.5.
+
+- **Data Provenance Witnessing** (`witness_data_provenance`, AI-DATA.1) -- Training data is the most guarded secret in AI. This method solves the tension: it attests that data governance review was performed WITHOUT disclosing what the training data was. No dataset names, no license strings, no content hashes of the data itself. Instead: governance reviewed (bool), documentation hash (SHA-256 of the data card, not the data), license compliance verified, demographic features confirmed absent. Satisfies EU AI Act Art. 10, SR 11-7 III.A, and CA-AB-2013 through diligence attestation, not disclosure.
+
+- **Jurisdiction Resolver** (`frameworks_for_jurisdiction`) -- Pass an ISO 3166-1 country code or ISO 3166-2 subdivision and get back every applicable regulatory framework with enforcement dates and binding status (mandatory, advisory, voluntary). `frameworks_for_jurisdiction("US-CA")` returns California state laws + US federal frameworks + universal standards. Accepts lists for multi-jurisdiction deployments. 34 frameworks mapped across 50+ jurisdiction codes. Derived from the bundled crosswalks.json -- single source of truth, offline, zero API calls.
+
+### v0.6.2
 
 ### Governance Gate (.swt3-gate.yml)
 
@@ -205,15 +213,15 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 ### v0.5.9
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
-- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 31 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 29 frameworks and 108 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 34 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 27 frameworks and 107 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 21 adapters, 108 procedures, 56 namespaces, 29 frameworks, 18 profiles
+- 21 adapters, 107 procedures, 56 namespaces, 27 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -336,7 +344,7 @@ All verification is local. Zero cloud overhead. No data exchanged until both age
 
 ## Offline Verification
 
-Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 7 SDK languages -- recompute it anywhere in microseconds.
+Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 9 SDK languages -- recompute it anywhere in microseconds.
 
 ```python
 from swt3_ai import verify_anchor
@@ -930,7 +938,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (108 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (107 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -1074,7 +1082,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-29 frameworks bundled. 108 procedures mapped. Updated with each SDK release.
+27 frameworks bundled. 107 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1376,7 +1384,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 **3 new procedures:** `witness_operational_override()` (AI-EMRG.1), `witness_drift_consequence()` (AI-DRIFT.2), `witness_champion_challenger()` (AI-ASSESS.1). These are additive -- no existing behavior changes.
 
-**Crosswalks updated:** 29 frameworks bundled (was 28). 4 new: TN-SB-1580, RI-AI-LAWS, VN-LAW-134, HEALTH-INS-AI.
+**Crosswalks updated:** 27 frameworks bundled (was 28). 4 new: TN-SB-1580, RI-AI-LAWS, VN-LAW-134, HEALTH-INS-AI.
 
 ## Upgrading to v0.5.9
 
@@ -1416,7 +1424,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 31 frameworks
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 34 frameworks
 - [All 150 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---

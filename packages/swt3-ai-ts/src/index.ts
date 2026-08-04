@@ -83,5 +83,5 @@ export type { SentinelClientOptions, SentinelCheckResult, SentinelStatusResult }
 export { generateProfile, signProfile, verifyProfileSignature, isProfileValid, coverageScore, buildProfileMessage, RECOMMENDED_PROCEDURES } from "./profile.js";
 export type { GenerateProfileOptions } from "./profile.js";
 export { buildLookup, walkChain, verifyChainIntegrity } from "./chain.js";
-export { resolve, resolveFramework, frameworks as crosswalkFrameworks, procedures as crosswalkProcedures, crosswalkVersion } from "./crosswalk.js";
-export type { FrameworkMeta, ProcedureMeta } from "./crosswalk.js";
+export { resolve, resolveFramework, frameworks as crosswalkFrameworks, procedures as crosswalkProcedures, crosswalkVersion, frameworksForJurisdiction } from "./crosswalk.js";
+export type { FrameworkMeta, ProcedureMeta, JurisdictionFramework } from "./crosswalk.js";

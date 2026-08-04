@@ -8,9 +8,9 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 ## What's New in v0.5.9
 
-- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. DaemonSet and Helm chart unchanged.
+- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 34 frameworks. DaemonSet and Helm chart unchanged.
 - Container image rebuilt with latest Alpine base (CVE fixes).
-- 2,069 tests passing across all 7 SDK languages.
+- 2,746 tests passing across all 9 SDK languages.
 
 ## Quick Start
 

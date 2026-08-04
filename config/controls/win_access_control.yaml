@@ -1,0 +1,175 @@
+family: "AC"
+family_name: "Access Control"
+controls:
+  # -------------------------------------------------------------------
+  # AC-2: Account Management
+  # DISA Windows Server 2022 STIG: V-254239, V-254240
+  # -------------------------------------------------------------------
+  - id: "AC-2.1"
+    parent_control: "AC-2"
+    name: "Account Management - Inactive Accounts"
+    platform: "windows"
+    windows_command: "(Get-LocalUser | Where-Object { $_.Enabled -and $_.LastLogon -and $_.LastLogon -lt (Get-Date).AddDays(-35) } | Measure-Object).Count"
+    factor_a: 0
+    factor_a_label: "max_inactive_accounts"
+    factor_b_source: "stdout_int"
+    factor_b_label: "inactive_accounts_found"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-2"
+    nist_800_171_ref: "3.1.1"
+    disa_stig_id: "V-254239"
+    stig_severity: "CAT II"
+
+  - id: "AC-2.2"
+    parent_control: "AC-2"
+    name: "Account Management - No Accounts Without Passwords"
+    platform: "windows"
+    windows_command: "(Get-LocalUser | Where-Object { $_.Enabled -and $_.PasswordRequired -eq $false } | Measure-Object).Count"
+    factor_a: 0
+    factor_a_label: "max_no_password_accounts"
+    factor_b_source: "stdout_int"
+    factor_b_label: "no_password_accounts"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-2"
+    nist_800_171_ref: "3.1.1"
+    disa_stig_id: "V-254240"
+    stig_severity: "CAT I"
+
+  # -------------------------------------------------------------------
+  # AC-3: Access Enforcement
+  # DISA Windows Server 2022 STIG: V-254241
+  # -------------------------------------------------------------------
+  - id: "AC-3.1"
+    parent_control: "AC-3"
+    name: "Access Enforcement - UAC Enabled"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name 'EnableLUA' -ErrorAction SilentlyContinue).EnableLUA"
+    factor_a: 1
+    factor_a_label: "uac_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "uac_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-3"
+    nist_800_171_ref: "3.1.1"
+    disa_stig_id: "V-254241"
+    stig_severity: "CAT I"
+
+  - id: "AC-3.3"
+    parent_control: "AC-3"
+    name: "Access Enforcement - UAC Admin Approval Mode"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System' -Name 'FilterAdministratorToken' -ErrorAction SilentlyContinue).FilterAdministratorToken"
+    factor_a: 1
+    factor_a_label: "admin_approval_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "admin_approval_mode"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-3"
+    nist_800_171_ref: "3.1.1"
+    disa_stig_id: "V-254242"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # AC-7: Unsuccessful Logon Attempts
+  # DISA Windows Server 2022 STIG: V-254253
+  # -------------------------------------------------------------------
+  - id: "AC-7.1"
+    parent_control: "AC-7"
+    name: "Unsuccessful Logon Attempts - Lockout Counter Reset"
+    platform: "windows"
+    windows_command: "(net accounts | Select-String 'Lockout observation' | ForEach-Object { ($_ -split ':\\s+')[1] }) -replace '\\D',''"
+    factor_a: 15
+    factor_a_label: "min_lockout_observation_minutes"
+    factor_b_source: "stdout_int"
+    factor_b_label: "lockout_observation_configured"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-7"
+    nist_800_171_ref: "3.1.8"
+    disa_stig_id: "V-254253"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # AC-17: Remote Access — RDP Security
+  # DISA Windows Server 2022 STIG: V-254254, V-254255
+  # -------------------------------------------------------------------
+  - id: "AC-17.1"
+    parent_control: "AC-17"
+    name: "Remote Access - RDP NLA Required"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name 'UserAuthentication' -ErrorAction SilentlyContinue).UserAuthentication"
+    factor_a: 1
+    factor_a_label: "nla_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "nla_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-17"
+    nist_800_171_ref: "3.1.12"
+    disa_stig_id: "V-254254"
+    stig_severity: "CAT II"
+
+  - id: "AC-17.2"
+    parent_control: "AC-17"
+    name: "Remote Access - RDP Encryption Level"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name 'MinEncryptionLevel' -ErrorAction SilentlyContinue).MinEncryptionLevel"
+    factor_a: 3
+    factor_a_label: "min_encryption_level"
+    factor_b_source: "stdout_int"
+    factor_b_label: "encryption_level_configured"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "ACCESS"
+    nist_800_53_ref: "AC-17"
+    nist_800_171_ref: "3.1.13"
+    disa_stig_id: "V-254255"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # AU-3/AU-9: Audit Policy
+  # DISA Windows Server 2022 STIG: V-254256
+  # -------------------------------------------------------------------
+  - id: "AU-3.1"
+    parent_control: "AU-3"
+    name: "Audit Events - Logon/Logoff Auditing"
+    platform: "windows"
+    windows_command: "(auditpol /get /category:'Logon/Logoff' 2>$null | Select-String 'Success and Failure' | Measure-Object).Count"
+    factor_a: 1
+    factor_a_label: "min_logon_audit_policies"
+    factor_b_source: "stdout_int"
+    factor_b_label: "logon_audit_policies_found"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AUDIT"
+    nist_800_53_ref: "AU-3"
+    nist_800_171_ref: "3.3.1"
+    disa_stig_id: "V-254256"
+    stig_severity: "CAT II"
+
+  - id: "AU-9.1"
+    parent_control: "AU-9"
+    name: "Audit Log Protection - Security Log Max Size"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Security' -Name 'MaxSize' -ErrorAction SilentlyContinue).MaxSize / 1024"
+    factor_a: 1024
+    factor_a_label: "min_security_log_kb"
+    factor_b_source: "stdout_int"
+    factor_b_label: "security_log_size_kb"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "AUDIT"
+    nist_800_53_ref: "AU-9"
+    nist_800_171_ref: "3.3.8"
+    disa_stig_id: "V-254257"
+    stig_severity: "CAT II"

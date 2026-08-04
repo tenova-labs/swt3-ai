@@ -2894,6 +2894,108 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    # ── Training Data Provenance (AI-DATA.1) ─────────────────────────
+
+    def witness_data_provenance(
+        self,
+        *,
+        governance_reviewed: bool = True,
+        documentation_hash: Optional[str] = None,
+        license_verified: bool = False,
+        demographic_features_excluded: bool = False,
+        data_sources_count: Optional[int] = None,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness training data governance diligence (AI-DATA.1).
+
+        Attests that data governance review was performed WITHOUT
+        disclosing training data contents. Satisfies EU AI Act Art. 10,
+        SR 11-7 III.A, and CA-AB-2013 through diligence attestation.
+
+        Args:
+            governance_reviewed: Whether data governance review was completed.
+            documentation_hash: SHA-256 of the data card / documentation artifact.
+            license_verified: Whether license compliance was verified.
+            demographic_features_excluded: Whether prohibited demographic features
+                were confirmed absent from training data.
+            data_sources_count: Number of distinct data sources reviewed.
+            model_id: Model the data governance applies to.
+        """
+        fa = 1.0  # provenance required
+        fb = 1.0 if governance_reviewed else 0.0
+        fc = 0.0  # reserved per registry
+
+        payload = self._mint_and_sign("AI-DATA.1", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "data-provenance"
+            ctx: Dict[str, Any] = {
+                "provider": "data-provenance",
+                "governance_reviewed": governance_reviewed,
+                "license_verified": license_verified,
+                "demographic_features_excluded": demographic_features_excluded,
+            }
+            if documentation_hash:
+                ctx["documentation_hash"] = documentation_hash
+            if data_sources_count is not None:
+                ctx["data_sources_count"] = data_sources_count
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Output Safety Filter (AI-GRD.2) ────────────────────────────────
+
+    def witness_output_filter(
+        self,
+        passed: bool,
+        *,
+        filter_type: str = "content-safety",
+        confidence: Optional[float] = None,
+        action_taken: str = "allowed",
+        output_hash: Optional[str] = None,
+        model_id: Optional[str] = None,
+    ) -> WitnessPayload:
+        """Witness output content safety classification (AI-GRD.2).
+
+        Records whether model output passed content safety filters.
+        Distinct from AI-GRD.1 (guardrail presence/activation) -- this
+        witnesses the classification RESULT on the output side.
+
+        Args:
+            passed: True if output passed safety classification (clean).
+                False if content filter was triggered.
+            filter_type: Filter category (e.g. "content-safety", "toxicity",
+                "pii", "copyright", "custom").
+            confidence: Filter confidence score (0.0-1.0).
+            action_taken: Action on filter trigger: "allowed", "flagged",
+                "redacted", or "blocked".
+            output_hash: SHA-256 of the output that was classified.
+            model_id: Model that generated the output.
+        """
+        fa = 1.0  # content safety required
+        fb = 1.0 if passed else 0.0
+        fc = 0.0  # reserved per registry
+
+        payload = self._mint_and_sign("AI-GRD.2", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or f"output-{filter_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "output-filter",
+                "filter_type": filter_type,
+                "passed": passed,
+                "action_taken": action_taken,
+            }
+            if confidence is not None:
+                ctx["confidence"] = round(confidence, 4)
+            if output_hash:
+                ctx["output_hash"] = output_hash
+            payload.ai_context = ctx
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
     # ── Bias Assessment (AI-FAIR.3) ────────────────────────────────────
 
     def witness_bias_assessment(

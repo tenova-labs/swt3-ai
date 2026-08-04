@@ -14,7 +14,7 @@ import json
 import os
 import warnings
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 _crosswalk_data: Optional[Dict[str, Any]] = None
 _STALENESS_DAYS = 90
@@ -84,3 +84,50 @@ def procedures() -> Dict[str, Dict[str, Any]]:
 def crosswalk_version() -> str:
     """Return the generated_at timestamp of the bundled crosswalks."""
     return _load().get("generated_at", "unknown")
+
+
+def frameworks_for_jurisdiction(
+    code: Union[str, Sequence[str]],
+) -> List[Dict[str, Any]]:
+    """Return applicable regulatory frameworks for ISO 3166-1/2 jurisdiction codes.
+
+    Accepts a single code or list of codes. For subdivision codes (e.g., "US-CA"),
+    returns both subdivision-specific and national frameworks. Frameworks marked
+    with jurisdictions: ["*"] (universal standards) are always included.
+
+        frameworks_for_jurisdiction("JP")
+        # [{"id": "JP-AI-PROMOTION", "name": "...", "binding": "mandatory", ...}]
+
+        frameworks_for_jurisdiction(["US-CA", "DE"])
+        # union of California + US federal + Germany/EU frameworks
+    """
+    codes = [code.upper()] if isinstance(code, str) else [c.upper() for c in code]
+
+    # Expand subdivision codes to include parent country
+    expanded: set[str] = set()
+    for c in codes:
+        expanded.add(c)
+        dash = c.find("-")
+        if dash > 0:
+            expanded.add(c[:dash])
+
+    fws = _load().get("frameworks", {})
+    seen: set[str] = set()
+    results: List[Dict[str, Any]] = []
+
+    for fw_id, meta in fws.items():
+        jurisdictions = meta.get("jurisdictions")
+        if not jurisdictions or fw_id in seen:
+            continue
+
+        if "*" in jurisdictions or any(j in expanded for j in jurisdictions):
+            seen.add(fw_id)
+            results.append({
+                "id": fw_id,
+                "name": meta.get("name", ""),
+                "enforcement_date": meta.get("enforcement_date"),
+                "binding": meta.get("binding", "advisory"),
+            })
+
+    results.sort(key=lambda r: r["id"])
+    return results

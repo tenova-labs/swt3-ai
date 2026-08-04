@@ -209,6 +209,178 @@ controls:
     nist_800_53_ref: "PM-3"
     nist_ai_rmf_ref: "GOVERN 2.2"
 
+  # ── Meta-Governance Controls (recursive governance) ──────
+
+  - id: "AI-METAGOV.1"
+    parent_control: "AI-METAGOV"
+    name: "Governance Infrastructure Attestation"
+    check_type: "attestation"
+    description: "Governance system attests its own configuration (verdict rules, trust mesh policies, enforcement policies) using the same protocol it enforces on governed systems"
+    attestation_prompt: "Confirm governance infrastructure configuration is cryptographically attested before operational events are processed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CA-2"
+    nist_ai_rmf_ref: "GOVERN 1.1"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-METAGOV.2"
+    parent_control: "AI-METAGOV"
+    name: "Governance Layer Registration"
+    check_type: "attestation"
+    description: "Each AI governance layer registers itself with the non-AI witness layer before its outputs are considered authoritative, terminating infinite governance recursion"
+    attestation_prompt: "Confirm all AI governance layers are registered with the cryptographic witness layer and produce anchored outputs."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CA-7"
+    nist_ai_rmf_ref: "GOVERN 1.3"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-METAGOV.3"
+    parent_control: "AI-METAGOV"
+    name: "Policy Downgrade Detection"
+    check_type: "attestation"
+    description: "Governance system enforces monotonic policy version progression and detects unauthorized downgrades to weaker governance rules"
+    attestation_prompt: "Confirm policy version monotonicity is enforced and downgrade attempts are detected and logged."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-3"
+    nist_ai_rmf_ref: "GOVERN 1.4"
+    eu_ai_act_ref: "Art. 17"
+
+  - id: "AI-METAGOV.4"
+    parent_control: "AI-METAGOV"
+    name: "Circular Dependency Check"
+    check_type: "attestation"
+    description: "Governance rule configurations are validated for circular dependencies using topological sort before activation"
+    attestation_prompt: "Confirm governance rule graphs are validated for circular dependencies at configuration load time."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "CM-4"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-METAGOV.5"
+    parent_control: "AI-METAGOV"
+    name: "Governance Authorization"
+    check_type: "attestation"
+    description: "Governance configuration changes require cryptographically signed authorization from operators with appropriate authority scope credentials"
+    attestation_prompt: "Confirm governance changes require signed authorization with scope-appropriate credentials and separation of duties."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-6"
+    nist_ai_rmf_ref: "GOVERN 2.1"
+    eu_ai_act_ref: "Art. 17"
+
+  - id: "AI-METAGOV.6"
+    parent_control: "AI-METAGOV"
+    name: "Emergency Override Attestation"
+    check_type: "attestation"
+    description: "Emergency governance changes made outside normal approval workflow are automatically witnessed and trigger mandatory review within a configurable window"
+    attestation_prompt: "Confirm emergency governance overrides are witnessed, logged, and subject to mandatory post-hoc review."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-6(1)"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-METAGOV.7"
+    parent_control: "AI-METAGOV"
+    name: "Governance Sync Verification"
+    check_type: "attestation"
+    description: "Federated organizations verify governance policy equivalence during trust credential exchange, detecting version, structural, and coverage divergence"
+    attestation_prompt: "Confirm governance policy equivalence is verified during federated trust exchanges with minimum governance floor enforcement."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SA-9"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 25"
+
+  - id: "AI-METAGOV.8"
+    parent_control: "AI-METAGOV"
+    name: "Attestation Purity Verification"
+    check_type: "attestation"
+    description: "Attestation engine source code is hashed and verified to contain no machine learning inference, proving the witness layer is a non-AI recursion terminator"
+    attestation_prompt: "Confirm attestation engine purity is verified via source hash manifest with no ML components in the attestation path."
+    review_interval_days: 180
+    uct_category: "AI"
+    nist_800_53_ref: "SA-11"
+    nist_ai_rmf_ref: "MEASURE 2.5"
+    eu_ai_act_ref: "Art. 17"
+
+  # ── Physical AI / Large Engineering Model (LEM) Controls ────────────
+
+  - id: "AI-ENG.1"
+    parent_control: "AI-ENG"
+    name: "Design Generation Provenance"
+    check_type: "attestation"
+    description: "AI-generated engineering designs record provenance including applied constraints, generated parameters, and design domain for traceability from model to manufactured output"
+    attestation_prompt: "Confirm AI-generated engineering designs are witnessed with constraint count, parameter count, and design domain classification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MAP 1.1"
+    eu_ai_act_ref: "Art. 10(2)"
+
+  - id: "AI-ENG.2"
+    parent_control: "AI-ENG"
+    name: "Simulation Validation"
+    check_type: "attestation"
+    description: "AI-generated designs are validated through simulation (FEA, CFD, molecular, thermal, electromagnetic, multiphysics) with pass/fail recorded against acceptance criteria"
+    attestation_prompt: "Confirm simulation validation results for AI-generated designs are witnessed with run count, pass count, and simulation type."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SI-7"
+    nist_ai_rmf_ref: "MEASURE 2.6"
+    eu_ai_act_ref: "Art. 15(1)"
+
+  - id: "AI-ENG.3"
+    parent_control: "AI-ENG"
+    name: "Safety-Critical Review Gate"
+    check_type: "attestation"
+    description: "AI-generated designs for safety-critical applications require human reviewer approval before fabrication, with approval type and reviewer count recorded"
+    attestation_prompt: "Confirm safety-critical review gates are enforced for AI-generated designs with required reviewer count and approval type."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-3"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+    eu_ai_act_ref: "Art. 14(1)"
+
+  - id: "AI-ENG.4"
+    parent_control: "AI-ENG"
+    name: "Material Specification Compliance"
+    check_type: "attestation"
+    description: "AI-generated designs are validated against material and safety specifications from standards bodies (ASME, ISO, ASTM, MIL-SPEC, FDA USP, IEC)"
+    attestation_prompt: "Confirm AI-generated designs are validated against applicable material and safety specifications with compliance count recorded."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "SA-4"
+    nist_ai_rmf_ref: "MANAGE 2.1"
+    eu_ai_act_ref: "Art. 15(3)"
+
+  - id: "AI-ENG.5"
+    parent_control: "AI-ENG"
+    name: "Design Revision Chain"
+    check_type: "attestation"
+    description: "Full revision chain from initial AI generation through human modifications to final approved design is recorded with AI vs human authorship attribution"
+    attestation_prompt: "Confirm design revision chains are maintained with total revision count, AI-generated count, and chain approval status."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-3"
+    nist_ai_rmf_ref: "MAP 2.3"
+    eu_ai_act_ref: "Art. 12(1)"
+
+  - id: "AI-ENG.6"
+    parent_control: "AI-ENG"
+    name: "Fabrication Release Attestation"
+    check_type: "attestation"
+    description: "AI-generated designs are attested at the fabrication release boundary, verifying the final design hash matches the approved design and all required authorizations are recorded"
+    attestation_prompt: "Confirm fabrication releases of AI-generated designs are witnessed with design hash verification, authorization count, and release type classification."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-3"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 16(a)"
+
   - id: "AI-IMPACT.1"
     parent_control: "AI-IMPACT"
     name: "AI Societal Impact Assessment"
@@ -393,7 +565,8 @@ controls:
     review_interval_days: 90
     uct_category: "AI"
     nist_800_53_ref: "SI-7"
-    nist_ai_rmf_ref: "MANAGE 1.3"
+    nist_ai_rmf_ref: "MAP 1.1"
+    supplemental_ai_rmf_ref: "MANAGE 1.3"
     eu_ai_act_ref: "Art. 9(4)(a)"
 
   - id: "AI-MDL.2"
@@ -1060,3 +1233,90 @@ controls:
     uct_category: "AI"
     nist_800_53_ref: "SA-12"
     nist_ai_rmf_ref: "MEASURE 3.1"
+
+  # --- Healthcare / Clinical AI (HCF) ---
+
+  # ── Frontier Procedures (v0.5.7: agentic infrastructure) ──────
+
+  - id: "AI-FIN.1"
+    parent_control: "AI-FIN"
+    name: "Agent Transaction Witnessing"
+    check_type: "attestation"
+    description: "AI agents executing financial transactions attest authorization type, amount, and status before settlement"
+    attestation_prompt: "Confirm agent financial transactions are witnessed with authorization type, amount, and settlement status before execution."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AU-2"
+    nist_ai_rmf_ref: "MANAGE 2.2"
+    eu_ai_act_ref: "Art. 14"
+
+  - id: "AI-TOOL.2"
+    parent_control: "AI-TOOL"
+    name: "Tool Permission Attestation"
+    check_type: "attestation"
+    description: "Runtime tool permission sets are attested against agent charter, detecting permission drift and escalation"
+    attestation_prompt: "Confirm runtime tool permissions are validated against charter and permission changes are witnessed."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-6"
+    nist_ai_rmf_ref: "GOVERN 1.5"
+    eu_ai_act_ref: "Art. 9"
+
+  - id: "AI-LCM.1"
+    parent_control: "AI-LCM"
+    name: "Agent Lifecycle Witnessing"
+    check_type: "attestation"
+    description: "Agent lifecycle events (spawn, checkpoint, migrate, terminate, crash) are witnessed with context size and state hash"
+    attestation_prompt: "Confirm agent lifecycle events are witnessed with context token count and optional state hash for recovery."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "CM-3"
+    nist_ai_rmf_ref: "MAP 1.3"
+    eu_ai_act_ref: "Art. 12"
+
+  - id: "AI-JUR.1"
+    parent_control: "AI-JUR"
+    name: "Cross-Border Inference Routing"
+    check_type: "attestation"
+    description: "Cross-border AI inference routing decisions are witnessed with serving and user regions and compliance status"
+    attestation_prompt: "Confirm cross-border inference routing decisions are evaluated and witnessed with region codes and compliance status."
+    review_interval_days: 90
+    uct_category: "AI"
+    nist_800_53_ref: "AC-4"
+    nist_ai_rmf_ref: "GOVERN 1.7"
+    eu_ai_act_ref: "Art. 10(5)"
+
+  # ── Healthcare / Clinical AI (HCF) ──────
+
+  - id: "HCF-DX.1"
+    parent_control: "HCF-DX"
+    name: "Diagnostic Accountability"
+    check_type: "attestation"
+    description: "AI diagnostic systems meet clinical confidence thresholds and accuracy is tracked against ground truth"
+    attestation_prompt: "Confirm diagnostic AI confidence thresholds are enforced and accuracy metrics are recorded per 21 CFR 820.30(g) and FDA SaMD guidance."
+    review_interval_days: 90
+    uct_category: "HCF"
+    hipaa_ref: "164.312(b)"
+    fda_ref: "21 CFR 820.30(g); 21 CFR 11.10(a)"
+
+  - id: "HCF-RX.1"
+    parent_control: "HCF-RX"
+    name: "Prescription Safety"
+    check_type: "attestation"
+    description: "AI prescription systems complete all drug interaction and allergy checks with contraindication tracking"
+    attestation_prompt: "Confirm all drug interaction checks are completed and contraindication flags are resolved before prescription issuance per 21 CFR 820.30(f)."
+    review_interval_days: 90
+    uct_category: "HCF"
+    hipaa_ref: "164.312(c)(1)"
+    fda_ref: "21 CFR 820.30(f); 21 CFR 11.10(a)"
+
+  - id: "HCF-PRIV.1"
+    parent_control: "HCF-PRIV"
+    name: "PHI Access Audit"
+    check_type: "attestation"
+    description: "AI systems accessing protected health information verify patient consent and requestor authorization"
+    attestation_prompt: "Confirm PHI access events are logged with consent verification and authorized role checks per HIPAA 164.508 and 21 CFR 820.180."
+    review_interval_days: 90
+    uct_category: "HCF"
+    hipaa_ref: "164.508"
+    fda_ref: "21 CFR 820.180; 21 CFR 11.10(e)"

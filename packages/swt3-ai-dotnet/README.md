@@ -9,10 +9,13 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
-## What's New in v0.5.9
+## What's New in v0.6.3
 
-- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 24 frameworks. Core primitives in this package remain stable and unchanged.
-- 2,069 tests passing across all 7 SDK languages.
+- **v0.6.3 across the ecosystem**: Python, TypeScript, and MCP SDKs add consent witnessing (AI-CONSENT.1), output safety classification (AI-GRD.2), incident reporting (AI-INCIDENT.1), and training data provenance (AI-DATA.1). Swift and Kotlin add typed attestation structs. Core primitives in this package remain stable -- the fingerprint formula and signing functions are unchanged. 32 MCP tools, 34+ frameworks, 107 procedures.
+
+### v0.5.9
+
+- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 34+ frameworks. Core primitives in this package remain stable and unchanged.
 
 ## What You Get
 

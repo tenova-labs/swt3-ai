@@ -316,6 +316,249 @@ public enum KeyPurpose: String, Sendable, Codable, CaseIterable {
     case delegation = "delegation"
 }
 
+// MARK: - Governance Gate Types
+
+/// A single gate procedure entry in a .swt3-gate.yml configuration.
+public struct GateProcedure: Sendable, Equatable, Codable {
+    public var procedure: String
+    public var required: Bool
+    public var maxAge: String?
+    public var maxAgeSeconds: Int?
+    public var ref: String?
+    public var critical: Bool
+    public var description: String?
+    public var hint: String?
+    public var mustNotExist: Bool
+
+    public init(
+        procedure: String,
+        required: Bool = false,
+        maxAge: String? = nil,
+        maxAgeSeconds: Int? = nil,
+        ref: String? = nil,
+        critical: Bool = false,
+        description: String? = nil,
+        hint: String? = nil,
+        mustNotExist: Bool = false
+    ) {
+        self.procedure = procedure
+        self.required = required
+        self.maxAge = maxAge
+        self.maxAgeSeconds = maxAgeSeconds
+        self.ref = ref
+        self.critical = critical
+        self.description = description
+        self.hint = hint
+        self.mustNotExist = mustNotExist
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case procedure, required, ref, critical, description, hint
+        case maxAge = "max_age"
+        case maxAgeSeconds = "max_age_seconds"
+        case mustNotExist = "must_not_exist"
+    }
+}
+
+/// A named group of gate procedures (e.g., "Article 9: Risk Management").
+public struct GateGroup: Sendable, Equatable, Codable {
+    public var group: String
+    public var procedures: [GateProcedure]
+
+    public init(group: String, procedures: [GateProcedure]) {
+        self.group = group
+        self.procedures = procedures
+    }
+}
+
+/// Framework-specific gate configuration with risk class and grouped procedures.
+public struct FrameworkGate: Sendable, Equatable, Codable {
+    public var riskClass: String?
+    public var crosswalkHash: String?
+    public var gates: [GateGroup]
+
+    public init(riskClass: String? = nil, crosswalkHash: String? = nil, gates: [GateGroup] = []) {
+        self.riskClass = riskClass
+        self.crosswalkHash = crosswalkHash
+        self.gates = gates
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case gates
+        case riskClass = "risk_class"
+        case crosswalkHash = "crosswalk_hash"
+    }
+}
+
+/// Parsed .swt3-gate.yml configuration. Spec version 1.0 (locked July 24, 2026).
+public struct GateConfig: Sendable, Equatable, Codable {
+    public var version: String
+    public var name: String?
+    public var strict: Bool
+    public var models: [String: GateModel]
+    public var defaults: GateDefaults?
+    public var frameworks: [String: FrameworkGate]
+    public var warnings: [String]
+
+    public init(
+        version: String,
+        name: String? = nil,
+        strict: Bool = false,
+        models: [String: GateModel] = [:],
+        defaults: GateDefaults? = nil,
+        frameworks: [String: FrameworkGate] = [:],
+        warnings: [String] = []
+    ) {
+        self.version = version
+        self.name = name
+        self.strict = strict
+        self.models = models
+        self.defaults = defaults
+        self.frameworks = frameworks
+        self.warnings = warnings
+    }
+}
+
+/// Model risk assignment in a gate config.
+public struct GateModel: Sendable, Equatable, Codable {
+    public var risk: String?
+
+    public init(risk: String? = nil) {
+        self.risk = risk
+    }
+}
+
+/// Default gates applied to all models.
+public struct GateDefaults: Sendable, Equatable, Codable {
+    public var gates: [GateProcedure]
+
+    public init(gates: [GateProcedure] = []) {
+        self.gates = gates
+    }
+}
+
+// MARK: - Delegation Tree Types
+
+/// Delegation tree grant for AI-DEL.1 witnessing.
+public struct DelegationTree: Sendable, Equatable, Codable {
+    public var delegatorId: String
+    public var scope: String
+    public var delegationDepth: Int
+    public var delegates: [String]?
+    public var treeHash: String?
+    public var cascadeRevocation: Bool
+    public var timeBoundMinutes: Int?
+    public var parentGrantFingerprint: String?
+
+    public init(
+        delegatorId: String,
+        scope: String,
+        delegationDepth: Int = 0,
+        delegates: [String]? = nil,
+        treeHash: String? = nil,
+        cascadeRevocation: Bool = false,
+        timeBoundMinutes: Int? = nil,
+        parentGrantFingerprint: String? = nil
+    ) {
+        self.delegatorId = delegatorId
+        self.scope = scope
+        self.delegationDepth = delegationDepth
+        self.delegates = delegates
+        self.treeHash = treeHash
+        self.cascadeRevocation = cascadeRevocation
+        self.timeBoundMinutes = timeBoundMinutes
+        self.parentGrantFingerprint = parentGrantFingerprint
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case scope, delegates
+        case delegatorId = "delegator_id"
+        case delegationDepth = "delegation_depth"
+        case treeHash = "tree_hash"
+        case cascadeRevocation = "cascade_revocation"
+        case timeBoundMinutes = "time_bound_minutes"
+        case parentGrantFingerprint = "parent_grant_fingerprint"
+    }
+}
+
+// MARK: - Resource Consumption Types
+
+/// Resource consumption data for AI-COST.1 witnessing.
+public struct ResourceConsumption: Sendable, Equatable, Codable {
+    public var tokensIn: Int64
+    public var tokensOut: Int64
+    public var apiCalls: Int64
+    public var costCents: Int64
+    public var provider: String?
+    public var modelId: String?
+    public var computeSeconds: Double?
+    public var costTableVersion: String?
+
+    public init(
+        tokensIn: Int64,
+        tokensOut: Int64,
+        apiCalls: Int64,
+        costCents: Int64 = -1,
+        provider: String? = nil,
+        modelId: String? = nil,
+        computeSeconds: Double? = nil,
+        costTableVersion: String? = nil
+    ) {
+        self.tokensIn = tokensIn
+        self.tokensOut = tokensOut
+        self.apiCalls = apiCalls
+        self.costCents = costCents
+        self.provider = provider
+        self.modelId = modelId
+        self.computeSeconds = computeSeconds
+        self.costTableVersion = costTableVersion
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case provider
+        case tokensIn = "tokens_in"
+        case tokensOut = "tokens_out"
+        case apiCalls = "api_calls"
+        case costCents = "cost_cents"
+        case modelId = "model_id"
+        case computeSeconds = "compute_seconds"
+        case costTableVersion = "cost_table_version"
+    }
+}
+
+// MARK: - Deployment Context
+
+/// Deployment environment context for witness payloads.
+public struct DeploymentContext: Sendable, Equatable, Codable {
+    public var deviceModel: String?
+    public var osVersion: String?
+    public var chipType: String?
+    public var runtimeVersion: String?
+    public var containerImage: String?
+
+    public init(
+        deviceModel: String? = nil,
+        osVersion: String? = nil,
+        chipType: String? = nil,
+        runtimeVersion: String? = nil,
+        containerImage: String? = nil
+    ) {
+        self.deviceModel = deviceModel
+        self.osVersion = osVersion
+        self.chipType = chipType
+        self.runtimeVersion = runtimeVersion
+        self.containerImage = containerImage
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case deviceModel = "device_model"
+        case osVersion = "os_version"
+        case chipType = "chip_type"
+        case runtimeVersion = "runtime_version"
+        case containerImage = "container_image"
+    }
+}
+
 // MARK: - Constants (namespaced under SWT3)
 
 extension SWT3 {
@@ -347,4 +590,169 @@ extension SWT3 {
 
     /// METAGOV attestation purity tiers (AI-METAGOV.8).
     public static let metagovPurityTiers: [String] = ["verified_pure", "unverified_purity", "impure"]
+
+    /// GDPR lawful basis codes (AI-CONSENT.1).
+    public static let consentBasisCodes: [String: Int] = [
+        "consent": 0, "contract": 1, "legal_obligation": 2,
+        "vital_interest": 3, "public_task": 4, "legitimate_interest": 5,
+    ]
+
+    /// Incident severity codes (AI-INCIDENT.1).
+    public static let incidentSeverityCodes: [String: Int] = [
+        "low": 1, "medium": 2, "high": 3, "critical": 4,
+    ]
+
+    /// Incident type codes (AI-INCIDENT.1).
+    public static let incidentTypeCodes: [String: Int] = [
+        "safety": 0, "rights": 1, "security": 2,
+        "performance": 3, "bias": 4, "other": 5,
+    ]
+
+    /// Output filter action codes (AI-GRD.2).
+    public static let filterActionCodes: [String: Int] = [
+        "allowed": 0, "flagged": 1, "redacted": 2, "blocked": 3,
+    ]
+}
+
+// MARK: - Consent Attestation Types
+
+/// Data subject consent attestation for AI-CONSENT.1 witnessing.
+public struct ConsentAttestation: Sendable, Equatable, Codable {
+    public var subjectsCovered: Int
+    public var legalBasisCode: Int
+    public var withdrawalAvailable: Bool
+    public var jurisdiction: String?
+    public var purpose: String?
+    public var consentMechanism: String?
+
+    public init(
+        subjectsCovered: Int = 1,
+        legalBasisCode: Int = 0,
+        withdrawalAvailable: Bool = true,
+        jurisdiction: String? = nil,
+        purpose: String? = nil,
+        consentMechanism: String? = nil
+    ) {
+        self.subjectsCovered = subjectsCovered
+        self.legalBasisCode = legalBasisCode
+        self.withdrawalAvailable = withdrawalAvailable
+        self.jurisdiction = jurisdiction
+        self.purpose = purpose
+        self.consentMechanism = consentMechanism
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case jurisdiction, purpose
+        case subjectsCovered = "subjects_covered"
+        case legalBasisCode = "legal_basis_code"
+        case withdrawalAvailable = "withdrawal_available"
+        case consentMechanism = "consent_mechanism"
+    }
+}
+
+// MARK: - Output Filter Result Types
+
+/// Output content safety classification result for AI-GRD.2 witnessing.
+public struct OutputFilterResult: Sendable, Equatable, Codable {
+    public var passed: Bool
+    public var filterType: String
+    public var confidence: Double?
+    public var actionTaken: String
+    public var outputHash: String?
+
+    public init(
+        passed: Bool,
+        filterType: String = "content-safety",
+        confidence: Double? = nil,
+        actionTaken: String = "allowed",
+        outputHash: String? = nil
+    ) {
+        self.passed = passed
+        self.filterType = filterType
+        self.confidence = confidence
+        self.actionTaken = actionTaken
+        self.outputHash = outputHash
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case passed, confidence
+        case filterType = "filter_type"
+        case actionTaken = "action_taken"
+        case outputHash = "output_hash"
+    }
+}
+
+// MARK: - Incident Report Types
+
+/// Incident report for AI-INCIDENT.1 witnessing.
+public struct IncidentReport: Sendable, Equatable, Codable {
+    public var severityCode: Int
+    public var incidentTypeCode: Int
+    public var authorityNotified: Bool
+    public var descriptionHash: String?
+    public var detectionMethod: String?
+    public var reportingDeadlineHours: Int?
+    public var incidentId: String?
+
+    public init(
+        severityCode: Int = 2,
+        incidentTypeCode: Int = 5,
+        authorityNotified: Bool = false,
+        descriptionHash: String? = nil,
+        detectionMethod: String? = nil,
+        reportingDeadlineHours: Int? = nil,
+        incidentId: String? = nil
+    ) {
+        self.severityCode = severityCode
+        self.incidentTypeCode = incidentTypeCode
+        self.authorityNotified = authorityNotified
+        self.descriptionHash = descriptionHash
+        self.detectionMethod = detectionMethod
+        self.reportingDeadlineHours = reportingDeadlineHours
+        self.incidentId = incidentId
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case severityCode = "severity_code"
+        case incidentTypeCode = "incident_type_code"
+        case authorityNotified = "authority_notified"
+        case descriptionHash = "description_hash"
+        case detectionMethod = "detection_method"
+        case reportingDeadlineHours = "reporting_deadline_hours"
+        case incidentId = "incident_id"
+    }
+}
+
+// MARK: - Data Provenance Attestation Types
+
+/// Training data governance attestation for AI-DATA.1 witnessing.
+/// Attests diligence without disclosing training data contents.
+public struct DataProvenanceAttestation: Sendable, Equatable, Codable {
+    public var governanceReviewed: Bool
+    public var documentationHash: String?
+    public var licenseVerified: Bool
+    public var demographicFeaturesExcluded: Bool
+    public var dataSourcesCount: Int?
+
+    public init(
+        governanceReviewed: Bool = true,
+        documentationHash: String? = nil,
+        licenseVerified: Bool = false,
+        demographicFeaturesExcluded: Bool = false,
+        dataSourcesCount: Int? = nil
+    ) {
+        self.governanceReviewed = governanceReviewed
+        self.documentationHash = documentationHash
+        self.licenseVerified = licenseVerified
+        self.demographicFeaturesExcluded = demographicFeaturesExcluded
+        self.dataSourcesCount = dataSourcesCount
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case governanceReviewed = "governance_reviewed"
+        case documentationHash = "documentation_hash"
+        case licenseVerified = "license_verified"
+        case demographicFeaturesExcluded = "demographic_features_excluded"
+        case dataSourcesCount = "data_sources_count"
+    }
 }

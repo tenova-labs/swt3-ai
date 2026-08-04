@@ -2,10 +2,10 @@ package io.tenova.swt3
 
 /** SWT3 AI Witness SDK for Kotlin/Android. */
 object Swt3 {
-    const val VERSION = "0.1.0"
+    const val VERSION = "0.1.1"
     const val SDK_NAME = "swt3-ai-kotlin"
     const val DESCRIPTION = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. " +
-        "108 procedures, 56 namespaces, 31 frameworks. " +
+        "107 procedures, 56 namespaces, 34 frameworks. " +
         "EU AI Act, NIST AI RMF, CMMC, SR 11-7."
 }
 

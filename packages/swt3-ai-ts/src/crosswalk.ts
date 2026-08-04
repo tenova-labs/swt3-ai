@@ -30,6 +30,15 @@ export interface FrameworkMeta {
   enforcement_date?: string;
   procedure_count: number;
   requirement_count?: number;
+  jurisdictions?: string[];
+  binding?: "mandatory" | "advisory" | "voluntary";
+}
+
+export interface JurisdictionFramework {
+  id: string;
+  name: string;
+  enforcement_date?: string;
+  binding: "mandatory" | "advisory" | "voluntary";
 }
 
 export interface ProcedureMeta {
@@ -94,4 +103,58 @@ export function procedures(): Record<string, ProcedureMeta> {
 /** Return the generated_at timestamp of the bundled crosswalks. */
 export function crosswalkVersion(): string {
   return load().generated_at ?? "unknown";
+}
+
+/**
+ * Return applicable regulatory frameworks for ISO 3166-1/2 jurisdiction codes.
+ *
+ * Accepts a single code or array of codes. For subdivision codes (e.g., "US-CA"),
+ * returns both subdivision-specific and national frameworks. Frameworks marked
+ * with jurisdictions: ["*"] (universal standards) are always included.
+ *
+ *   frameworksForJurisdiction("JP")
+ *   // [{ id: "JP-AI-PROMOTION", name: "...", binding: "mandatory", ... }, ...]
+ *
+ *   frameworksForJurisdiction(["US-CA", "DE"])
+ *   // union of California + US federal + Germany/EU frameworks
+ */
+export function frameworksForJurisdiction(
+  code: string | string[],
+): JurisdictionFramework[] {
+  const codes = (Array.isArray(code) ? code : [code]).map((c) =>
+    c.toUpperCase(),
+  );
+
+  // Expand subdivision codes to include parent country (e.g., "US-CA" -> also check "US")
+  const expandedCodes = new Set<string>();
+  for (const c of codes) {
+    expandedCodes.add(c);
+    const dash = c.indexOf("-");
+    if (dash > 0) expandedCodes.add(c.slice(0, dash));
+  }
+
+  const fws = load().frameworks;
+  const seen = new Set<string>();
+  const results: JurisdictionFramework[] = [];
+
+  for (const [id, meta] of Object.entries(fws)) {
+    if (!meta.jurisdictions || seen.has(id)) continue;
+
+    const match =
+      meta.jurisdictions.includes("*") ||
+      meta.jurisdictions.some((j: string) => expandedCodes.has(j));
+
+    if (match) {
+      seen.add(id);
+      results.push({
+        id,
+        name: meta.name,
+        enforcement_date: meta.enforcement_date,
+        binding: meta.binding ?? "advisory",
+      });
+    }
+  }
+
+  results.sort((a, b) => a.id.localeCompare(b.id));
+  return results;
 }

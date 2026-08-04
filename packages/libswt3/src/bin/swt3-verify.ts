@@ -61,7 +61,7 @@ ${dim("Independent verification for C3PAO assessors and GRC platforms")}
 ${bold("USAGE")}
 
   ${cyan("Single anchor verification:")}
-  swt3-verify --anchor SWT3-E-AWS-NET-SC76-PASS-1773316622-a1b2c3d4e5f6 \\
+  swt3-verify --anchor SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245 \\
               --evidence factors.json
 
   ${cyan("Full evidence factor file (anchor + factors in one JSON):")}
@@ -86,7 +86,7 @@ ${bold("OPTIONS")}
 ${bold("EVIDENCE FACTOR FORMAT")} (--file)
   {
     "swt3_version": "1.0",
-    "anchor": "SWT3-E-AWS-NET-SC76-PASS-1773316622-a1b2c3d4e5f6",
+    "anchor": "SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245",
     "factors": {
       "procedure_id": "SC-7.6",
       "tenant_id": "DEMO_ENCLAVE",

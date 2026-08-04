@@ -1,0 +1,171 @@
+family: "SI"
+family_name: "System and Information Integrity"
+controls:
+  # -------------------------------------------------------------------
+  # SI-2: Flaw Remediation — Windows Update / Patching
+  # DISA Windows Server 2022 STIG: V-254276
+  # -------------------------------------------------------------------
+  - id: "SI-2.1"
+    parent_control: "SI-2"
+    name: "Flaw Remediation - Outstanding Critical Patches"
+    platform: "windows"
+    windows_command: "$days = 30; $cutoff = (Get-Date).AddDays(-$days); $installed = Get-HotFix | Where-Object { $_.InstalledOn -ge $cutoff } | Measure-Object; if ($installed.Count -ge 1) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "recent_patches_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "recent_patches_found"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-2"
+    nist_800_171_ref: "3.14.1"
+    disa_stig_id: "V-254276"
+    stig_severity: "CAT I"
+
+  - id: "SI-2.2"
+    parent_control: "SI-2"
+    name: "Flaw Remediation - WSUS or SCCM Configured"
+    platform: "windows"
+    windows_command: "$wu = (Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate' -Name 'WUServer' -ErrorAction SilentlyContinue).WUServer; if ($wu) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "wsus_configured_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "wsus_configured"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-2"
+    nist_800_171_ref: "3.14.1"
+    disa_stig_id: "V-254277"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # SI-3: Malicious Code Protection — Windows Defender
+  # DISA Windows Server 2022 STIG: V-254278, V-254279
+  # -------------------------------------------------------------------
+  - id: "SI-3.1"
+    parent_control: "SI-3"
+    name: "Malicious Code Protection - Windows Defender Enabled"
+    platform: "windows"
+    windows_command: "if ((Get-MpComputerStatus -ErrorAction SilentlyContinue).AntivirusEnabled -eq $true) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "antivirus_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "antivirus_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-3"
+    nist_800_171_ref: "3.14.2"
+    disa_stig_id: "V-254278"
+    stig_severity: "CAT I"
+
+  - id: "SI-3.2"
+    parent_control: "SI-3"
+    name: "Malicious Code Protection - Real-Time Protection Active"
+    platform: "windows"
+    windows_command: "if ((Get-MpComputerStatus -ErrorAction SilentlyContinue).RealTimeProtectionEnabled -eq $true) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "realtime_protection_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "realtime_protection_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-3"
+    nist_800_171_ref: "3.14.2"
+    disa_stig_id: "V-254279"
+    stig_severity: "CAT I"
+
+  - id: "SI-3.3"
+    parent_control: "SI-3"
+    name: "Malicious Code Protection - Defender Definitions Current"
+    platform: "windows"
+    windows_command: "$sig = (Get-MpComputerStatus -ErrorAction SilentlyContinue).AntivirusSignatureAge; if ($null -eq $sig) { 999 } else { $sig }"
+    factor_a: 7
+    factor_a_label: "max_signature_age_days"
+    factor_b_source: "stdout_int"
+    factor_b_label: "signature_age_days"
+    factor_c_source: "none"
+    rule_expression: "factor_b <= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-3"
+    nist_800_171_ref: "3.14.2"
+    disa_stig_id: "V-254280"
+    stig_severity: "CAT I"
+
+  # -------------------------------------------------------------------
+  # SI-7: Software and Information Integrity
+  # DISA Windows Server 2022 STIG: V-254281
+  # -------------------------------------------------------------------
+  - id: "SI-7.1"
+    parent_control: "SI-7"
+    name: "Software Integrity - Code Integrity Policy"
+    platform: "windows"
+    windows_command: "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeviceGuard' -Name 'EnableVirtualizationBasedSecurity' -ErrorAction SilentlyContinue).EnableVirtualizationBasedSecurity -ge 1) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "vbs_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "vbs_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-7"
+    nist_800_171_ref: "3.14.4"
+    disa_stig_id: "V-254281"
+    stig_severity: "CAT II"
+
+  - id: "SI-7.2"
+    parent_control: "SI-7"
+    name: "Software Integrity - Credential Guard Enabled"
+    platform: "windows"
+    windows_command: "if ((Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DeviceGuard' -Name 'LsaCfgFlags' -ErrorAction SilentlyContinue).LsaCfgFlags -ge 1) { 1 } else { 0 }"
+    factor_a: 1
+    factor_a_label: "credential_guard_required"
+    factor_b_source: "stdout_int"
+    factor_b_label: "credential_guard_enabled"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-7"
+    nist_800_171_ref: "3.14.4"
+    disa_stig_id: "V-254282"
+    stig_severity: "CAT II"
+
+  # -------------------------------------------------------------------
+  # SI-4: System Monitoring — Event Log Settings
+  # DISA Windows Server 2022 STIG: V-254283
+  # -------------------------------------------------------------------
+  - id: "SI-4.1"
+    parent_control: "SI-4"
+    name: "System Monitoring - Application Log Max Size"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application' -Name 'MaxSize' -ErrorAction SilentlyContinue).MaxSize / 1024"
+    factor_a: 32768
+    factor_a_label: "min_app_log_kb"
+    factor_b_source: "stdout_int"
+    factor_b_label: "app_log_size_kb"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-4"
+    nist_800_171_ref: "3.14.6"
+    disa_stig_id: "V-254283"
+    stig_severity: "CAT II"
+
+  - id: "SI-4.2"
+    parent_control: "SI-4"
+    name: "System Monitoring - System Log Max Size"
+    platform: "windows"
+    windows_command: "(Get-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\System' -Name 'MaxSize' -ErrorAction SilentlyContinue).MaxSize / 1024"
+    factor_a: 32768
+    factor_a_label: "min_system_log_kb"
+    factor_b_source: "stdout_int"
+    factor_b_label: "system_log_size_kb"
+    factor_c_source: "none"
+    rule_expression: "factor_b >= factor_a"
+    uct_category: "INTEGRITY"
+    nist_800_53_ref: "SI-4"
+    nist_800_171_ref: "3.14.6"
+    disa_stig_id: "V-254284"
+    stig_severity: "CAT II"

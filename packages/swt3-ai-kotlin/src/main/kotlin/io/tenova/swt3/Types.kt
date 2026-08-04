@@ -108,3 +108,79 @@ object ClearingLevel {
 
 /** Lifecycle stages (AI-LCM.1) */
 val LIFECYCLE_STAGES = listOf("design", "development", "testing", "deployment", "monitoring", "decommission")
+
+/** GDPR lawful basis codes (AI-CONSENT.1) */
+object ConsentBasis {
+    const val CONSENT = 0
+    const val CONTRACT = 1
+    const val LEGAL_OBLIGATION = 2
+    const val VITAL_INTEREST = 3
+    const val PUBLIC_TASK = 4
+    const val LEGITIMATE_INTEREST = 5
+}
+
+/** Incident severity codes (AI-INCIDENT.1) */
+object IncidentSeverity {
+    const val LOW = 1
+    const val MEDIUM = 2
+    const val HIGH = 3
+    const val CRITICAL = 4
+}
+
+/** Incident type codes (AI-INCIDENT.1) */
+object IncidentType {
+    const val SAFETY = 0
+    const val RIGHTS = 1
+    const val SECURITY = 2
+    const val PERFORMANCE = 3
+    const val BIAS = 4
+    const val OTHER = 5
+}
+
+/** Output filter action codes (AI-GRD.2) */
+object FilterAction {
+    const val ALLOWED = 0
+    const val FLAGGED = 1
+    const val REDACTED = 2
+    const val BLOCKED = 3
+}
+
+/** Consent attestation data for AI-CONSENT.1 witnessing. */
+data class ConsentAttestation(
+    val subjectsCovered: Int = 1,
+    val legalBasisCode: Int = ConsentBasis.CONSENT,
+    val withdrawalAvailable: Boolean = true,
+    val jurisdiction: String? = null,
+    val purpose: String? = null,
+    val consentMechanism: String? = null,
+)
+
+/** Output content safety classification result for AI-GRD.2 witnessing. */
+data class OutputFilterResult(
+    val passed: Boolean,
+    val filterType: String = "content-safety",
+    val confidence: Double? = null,
+    val actionTaken: String = "allowed",
+    val outputHash: String? = null,
+)
+
+/** Incident report for AI-INCIDENT.1 witnessing. */
+data class IncidentReport(
+    val severityCode: Int = IncidentSeverity.MEDIUM,
+    val incidentTypeCode: Int = IncidentType.OTHER,
+    val authorityNotified: Boolean = false,
+    val descriptionHash: String? = null,
+    val detectionMethod: String? = null,
+    val reportingDeadlineHours: Int? = null,
+    val incidentId: String? = null,
+)
+
+/** Training data governance attestation for AI-DATA.1 witnessing.
+ *  Attests diligence without disclosing training data contents. */
+data class DataProvenanceAttestation(
+    val governanceReviewed: Boolean = true,
+    val documentationHash: String? = null,
+    val licenseVerified: Boolean = false,
+    val demographicFeaturesExcluded: Boolean = false,
+    val dataSourcesCount: Int? = null,
+)

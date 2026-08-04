@@ -11,6 +11,7 @@ import {
   crosswalkFrameworks as frameworks,
   crosswalkProcedures as procedures,
   crosswalkVersion,
+  frameworksForJurisdiction,
 } from "@tenova/swt3-ai";
 import type { SessionState } from "../state.js";
 
@@ -129,5 +130,53 @@ export function handleCoverageReport(
     lines.push(`Note: No active audit session. Use start_audit_session first to track witnessed procedures.`);
   }
 
+  return lines.join("\n");
+}
+
+interface JurisdictionArgs {
+  jurisdiction: string;
+}
+
+/**
+ * Resolve applicable regulatory frameworks for a jurisdiction code.
+ */
+export function handleResolveJurisdiction(args: JurisdictionArgs): string {
+  const results = frameworksForJurisdiction(args.jurisdiction);
+  if (results.length === 0) {
+    return (
+      `No mapped frameworks for jurisdiction "${args.jurisdiction}". ` +
+      `Use ISO 3166-1 alpha-2 (e.g., "JP", "DE") or ISO 3166-2 for subdivisions (e.g., "US-CA").`
+    );
+  }
+
+  const mandatory = results.filter((r) => r.binding === "mandatory");
+  const advisory = results.filter((r) => r.binding === "advisory");
+  const voluntary = results.filter((r) => r.binding === "voluntary");
+
+  const lines: string[] = [
+    `Applicable frameworks for ${args.jurisdiction.toUpperCase()} (${results.length} total):`,
+    `${"─".repeat(50)}`,
+  ];
+
+  const formatEntry = (r: typeof results[0]) => {
+    const parts = [`  ${r.id}: ${r.name}`];
+    if (r.enforcement_date) parts[0] += ` (enforced ${r.enforcement_date})`;
+    return parts[0];
+  };
+
+  if (mandatory.length > 0) {
+    lines.push(`\nMandatory (${mandatory.length}):`);
+    for (const r of mandatory) lines.push(formatEntry(r));
+  }
+  if (advisory.length > 0) {
+    lines.push(`\nAdvisory (${advisory.length}):`);
+    for (const r of advisory) lines.push(formatEntry(r));
+  }
+  if (voluntary.length > 0) {
+    lines.push(`\nVoluntary Standards (${voluntary.length}):`);
+    for (const r of voluntary) lines.push(formatEntry(r));
+  }
+
+  lines.push(`\nData version: ${crosswalkVersion()}`);
   return lines.join("\n");
 }

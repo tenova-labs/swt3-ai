@@ -1,0 +1,33 @@
+family: "SA"
+family_name: "System and Services Acquisition"
+check_type: "attestation"
+controls:
+  - id: "SA-1.1"
+    parent_control: "SA-1"
+    name: "System Acquisition Policy"
+    description: "Organization has a documented system and services acquisition policy"
+    attestation_prompt: "Confirm your organization has a current system acquisition and supply chain policy."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "SA-1"
+    nist_800_171_ref: "3.4.1"
+
+  - id: "SA-4.1"
+    parent_control: "SA-4"
+    name: "Acquisition Process"
+    description: "Security requirements are included in acquisition contracts"
+    attestation_prompt: "Confirm security requirements are defined in vendor/service contracts."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "SA-4"
+    nist_800_171_ref: "3.4.2"
+
+  - id: "SA-9.1"
+    parent_control: "SA-9"
+    name: "External Information System Services"
+    description: "External service providers comply with organizational security requirements"
+    attestation_prompt: "Confirm external service providers have current SOC 2 or equivalent compliance certifications."
+    review_interval_days: 365
+    uct_category: "POL"
+    nist_800_53_ref: "SA-9"
+    nist_800_171_ref: "3.4.5"

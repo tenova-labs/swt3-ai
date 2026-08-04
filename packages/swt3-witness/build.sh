@@ -2,8 +2,8 @@
 # Build the SWT3 Witness container image.
 #
 # Usage:
-#   ./build.sh              # builds ghcr.io/tenova-labs/swt3-witness:0.5.8
-#   ./build.sh 0.5.9        # builds with custom tag
+#   ./build.sh              # builds ghcr.io/tenova-labs/swt3-witness:0.5.9
+#   ./build.sh 1.0.0        # builds with custom tag
 #
 # Prerequisites:
 #   npm install && npm run build   (compile TypeScript first)
@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-TAG="${1:-0.5.8}"
+TAG="${1:-0.5.9}"
 IMAGE="ghcr.io/tenova-labs/swt3-witness:${TAG}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 STAGE=$(mktemp -d)
