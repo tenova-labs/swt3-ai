@@ -1,6 +1,6 @@
 # SWT3 Protocol Specification
 
-**Version 1.0 | August 2026**
+**Version 1.0.1 | August 2026**
 
 **Sovereign Witness Traceability (SWT3)**
 
@@ -32,6 +32,8 @@ Cryptographic Witness Anchors for AI Systems and Regulated Infrastructure
 20. [Protocol Adoption Rationale](#20-protocol-adoption-rationale)
 21. [Reference Implementations](#21-reference-implementations)
 22. [Bibliography](#22-bibliography)
+23. [Auditor Display Requirements](#23-auditor-display-requirements)
+24. [Conformity Evidence Package](#24-conformity-evidence-package)
 
 ---
 
@@ -56,7 +58,7 @@ This specification does NOT cover:
 - Policy frameworks, risk assessment methodologies, or organizational governance structures
 - Verdict evaluation logic (procedure-specific; defined by the implementing platform)
 - Platform infrastructure (ingestion endpoints, storage, analytics, dashboards)
-- Compliance passport generation, OSCAL export, or report formatting
+- Compliance passport generation or OSCAL export
 - Trust mesh credential exchange protocol (specified separately)
 
 The SWT3 protocol is industry-agnostic, framework-neutral, and designed for cross-language interoperability. It operates independently of any specific AI provider, cloud platform, or regulatory regime.
@@ -931,6 +933,358 @@ The following documents are referenced informatively in this specification:
 - **W3C Verifiable Credentials Data Model v2.0** -- (W3C, 2024)
 - **NIST SP 800-53 Rev. 5** -- Security and Privacy Controls for Information Systems and Organizations (NIST, 2020)
 - **CMMC Model 2.0** -- Cybersecurity Maturity Model Certification (DoD, 2021)
+
+---
+
+## 23. Auditor Display Requirements
+
+*This section is normative.*
+
+This section defines minimum display requirements for tools that render SWT3 Witness Anchors to human assessors. Compliance with this section is OPTIONAL for implementations that do not render anchors to humans (e.g., machine-to-machine pipelines). Compliance is REQUIRED for any tool that claims "SWT3 Verified Display" conformity.
+
+When multiple tools present SWT3 anchors in different formats, assessors must learn each tool's layout before they can evaluate evidence. This increases assessment time and cost, and introduces the risk that a non-standard display obscures critical information (e.g., a truncated fingerprint that cannot be independently verified, or a missing timestamp that prevents timeline reconstruction). A uniform display standard ensures that assessors who learn to read SWT3 evidence in one tool can immediately read it in any other, reducing assessment friction and increasing confidence in the evidence chain. This is the same principle that drives standardized formats in financial messaging (SWIFT MT), transport security indicators (TLS certificate displays), and regulatory filings (XBRL).
+
+### 23.1 Anchor Decomposition Display
+
+When rendering a single witness anchor to a human assessor, a conforming display MUST present the following fields, in this order:
+
+| # | Field | Display Label | Format | Requirement |
+|---|-------|--------------|--------|-------------|
+| 1 | Full anchor token | "Witness Anchor" | Monospace, untruncated | MUST |
+| 2 | Protocol identifier | "Protocol" | Literal "SWT3" | MUST |
+| 3 | Deployment tier | "Tier" | Full label: Enclave, SaaS, or Hybrid | MUST |
+| 4 | Provider | "Provider" | Uppercase alphanumeric | MUST |
+| 5 | UCT domain | "Domain" | Uppercase | MUST |
+| 6 | Procedure ID | "Procedure" | Original punctuated form (e.g., AI-INF.1) | MUST |
+| 7 | Verdict | "Verdict" | PASS or FAIL with semantic color per Section 23.2 | MUST |
+| 8 | Timestamp | "Witnessed" | Per Section 23.5 | MUST |
+| 9 | Fingerprint | "Fingerprint" | Per Section 23.3 | MUST |
+
+Implementations SHOULD also display the following when available in the witness payload:
+
+| Field | Display Label | Source |
+|-------|--------------|--------|
+| Factor values | "Evidence Factors" | factor_a, factor_b, factor_c from payload |
+| Signing status | "Signature" | "Verified", "Unsigned", or "Invalid" |
+| Clearing level | "Clearing Level" | Integer 0-3 with label (Analytics, Standard, Sensitive, Classified) |
+| Merkle inclusion | "Merkle Proof" | "Available" or "Unavailable" |
+| Lifecycle chain | "Chain ID" | lifecycle_chain_id if present |
+| Agent identity | "Agent" | agent_id if present |
+
+### 23.2 Verdict Color Semantics
+
+Conforming displays MUST use the following semantic color mapping:
+
+| Verdict | Required Color Family | HSL Hue Range | Reference Hex | Prohibited Colors |
+|---------|----------------------|---------------|---------------|-------------------|
+| PASS | Green | 100-160 | `#16a34a` | Red, amber, gray |
+| FAIL | Red | 340-20 | `#dc2626` | Green, blue, gray |
+| INHERITED | Blue | 190-230 | `#2563eb` | Red, green |
+
+The exact shade within each family is implementation-defined. Implementations MUST NOT use identical colors for PASS and FAIL. Implementations MUST NOT render verdicts without visual differentiation.
+
+For print media and accessibility: conforming displays MUST include a text indicator ("PASS"/"FAIL" label, checkmark/cross symbol, or equivalent) in addition to color. Color MUST NOT be the sole differentiator.
+
+### 23.3 Fingerprint Display Rules
+
+- Fingerprints MUST be rendered in a monospace typeface.
+- Fingerprints MUST NOT be truncated; all 12 hexadecimal characters MUST be visible without user interaction.
+- Fingerprints MUST be rendered in lowercase hexadecimal.
+- Implementations SHOULD provide a copy-to-clipboard affordance.
+- Implementations MUST NOT apply word-wrap, hyphenation, or line-breaking within a fingerprint string.
+
+Example of a correctly rendered fingerprint: `2e16e2fe92dd`
+
+### 23.4 Verification Affordance
+
+A conforming display MUST include at least one of the following verification mechanisms:
+
+(a) A hyperlink to a public verification endpoint where the assessor can independently recompute the fingerprint from its input components.
+
+(b) An inline verification command using standard tools (e.g., a shell one-liner using SHA-256 utilities available on any POSIX system).
+
+(c) An embedded client-side verification function that recomputes the fingerprint in the assessor's browser or local environment with no network requests required.
+
+The verification affordance MUST NOT require the assessor to create an account, install proprietary software, pay a fee, or authenticate with any service. Verification independence is a core protocol guarantee (Section 11).
+
+**Example inline verification command** (option b):
+
+```
+echo -n "WITNESS:my_tenant:AI-INF.1:1:0:2500:1774800000000" | sha256sum | cut -c1-12
+# Expected output: 2e16e2fe92dd
+```
+
+This command uses only standard POSIX utilities. The assessor substitutes the tenant ID, procedure ID, factor values, and timestamp from the anchor's witness payload. If the output matches the anchor's fingerprint, the anchor is verified.
+
+### 23.5 Timestamp Display
+
+- Timestamps MUST be rendered in ISO 8601 format with an explicit UTC indicator (e.g., `2026-08-11T14:30:00Z`).
+- Implementations MAY additionally show a relative time (e.g., "2 hours ago") but MUST NOT use relative time as the sole representation.
+- Raw epoch integers MUST NOT be displayed without an accompanying human-readable conversion.
+
+### 23.6 Tabular Display of Multiple Anchors
+
+When rendering multiple anchors in a table or list view, the following column order is REQUIRED for the first four columns:
+
+1. Procedure ID
+2. Verdict (with semantic color per Section 23.2)
+3. Witnessed (timestamp per Section 23.5)
+4. Fingerprint (monospace per Section 23.3)
+
+These four columns MUST NOT be reordered or omitted. Additional columns MAY be appended after column 4. Implementations SHOULD provide filtering by verdict (at minimum: ALL, PASS, FAIL). Implementations SHOULD provide sorting by timestamp.
+
+### 23.7 Evidence Provenance Watermark
+
+Evidence bundles carry a provenance tier indicating how the evidence was collected and verified. This is not a commercial designation; it describes the strength of the evidence chain. Displays that render evidence bundles SHOULD display the provenance tier when present in the bundle metadata:
+
+| Provenance | Display Label | Meaning | Visual Treatment |
+|------------|--------------|---------|-----------------|
+| demo | "LOCAL ONLY" | Evidence generated offline, not transmitted to any verification service | Amber or warning background |
+| connected | "CLOUD VERIFIED" | Evidence transmitted to and recorded by a verification service | Green or success background |
+| sovereign | "HARDWARE ATTESTED" | Evidence cryptographically bound to a hardware root of trust | Gold or distinguished background |
+
+When displayed, the provenance indicator SHOULD be visible without scrolling on initial render. Implementations MUST NOT misrepresent the provenance tier (e.g., displaying "HARDWARE ATTESTED" for evidence that was not hardware-attested).
+
+### 23.8 Conformity Evidence Package Display
+
+When rendering a Conformity Evidence Package (Section 24), a conforming display MUST present:
+
+- Package metadata: generator name and version, generation timestamp, framework identifier, tenant name
+- Anchor summary: total count, verdict distribution (PASS, FAIL, INHERITED counts), compliance rate
+- Gate decision: PASS, FAIL, or CONDITIONAL with semantic color
+- Merkle root and rollup date (if present), with proof verification status
+- Package integrity: the packageHash value and its verification status (valid/invalid)
+- Individual anchor decomposition per Section 23.1 for each anchor in the package
+
+### 23.9 Extensibility
+
+Conforming implementations MAY add fields, columns, visualizations, or interactive features beyond those specified in this section. Extensions MUST NOT alter the order, format, or semantics of required fields. Extensions MUST NOT replace required fields with alternative representations.
+
+### 23.10 Conformity Statement
+
+A display that satisfies all MUST-level requirements in this section MAY include the following conformity statement:
+
+> Conforms to SWT3-SPEC Section 23 (Auditor Display Standard)
+
+A display that does not satisfy all MUST-level requirements MUST NOT display this conformity statement or any variation that implies conformity with this section.
+
+---
+
+## 24. Conformity Evidence Package
+
+*This section is normative.*
+
+A Conformity Evidence Package (CEP) is a self-contained, portable JSON document containing all witness evidence required for a conformity or compliance assessment. Any tool MAY produce a CEP. Any assessor tool that can parse JSON can consume one. The CEP format enables interoperability between evidence producers (SDKs, platforms, agents) and evidence consumers (assessor tools, GRC platforms, regulatory portals).
+
+### 24.1 Package Schema
+
+A conforming CEP MUST contain the following top-level structure:
+
+```json
+{
+  "_meta": { },
+  "summary": { },
+  "anchors": [ ],
+  "merkle": null,
+  "packageHash": ""
+}
+```
+
+### 24.2 Metadata Object
+
+The `_meta` object MUST contain the following fields:
+
+| Field | Type | Description | Requirement |
+|-------|------|-------------|-------------|
+| format | string | Literal: `swt3-conformity-evidence-package` | MUST |
+| version | string | Semantic version of this format (currently "1.0") | MUST |
+| framework | string | Primary framework identifier (e.g., "NIST-800-53") | MUST |
+| generatedAt | string | ISO 8601 UTC timestamp of package generation | MUST |
+| generator | string | Name and version of the producing tool | MUST |
+| tenantId | string | Tenant identifier | MUST |
+| tenantName | string | Human-readable organization name | MUST |
+
+Additional fields MAY be included in `_meta`. Consumers MUST ignore unrecognized fields.
+
+### 24.3 Summary Object
+
+The `summary` object MUST contain the following fields:
+
+| Field | Type | Description | Requirement |
+|-------|------|-------------|-------------|
+| totalProcedures | integer | Total number of procedures assessed | MUST |
+| passing | integer | Count of PASS verdicts | MUST |
+| failing | integer | Count of FAIL verdicts | MUST |
+| inherited | integer | Count of INHERITED verdicts | MUST |
+| complianceRate | number | Percentage (0-100), passing / totalProcedures * 100 | MUST |
+| gateDecision | string | "PASS", "FAIL", or "CONDITIONAL" | MUST |
+
+### 24.4 Anchor Array
+
+The `anchors` array MUST contain one object per witness anchor. Each anchor object MUST contain:
+
+| Field | Type | Description | Requirement |
+|-------|------|-------------|-------------|
+| token | string | Full SWT3 anchor token string | MUST |
+| procedureId | string | Procedure identifier (e.g., "AI-INF.1") | MUST |
+| verdict | string | "PASS" or "FAIL" | MUST |
+| epoch | integer | Unix epoch seconds | MUST |
+| fingerprint | string | 12-character lowercase hex fingerprint | MUST |
+| factorA | number | First evidence factor | MUST |
+| factorB | number | Second evidence factor | MUST |
+| factorC | number | Third evidence factor | MUST |
+
+Each anchor object MAY also contain:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| clearingLevel | integer | 0-3 |
+| signature | string | HMAC-SHA256 hex signature |
+| agentId | string | Agent identity |
+| chainId | string | Lifecycle chain identifier |
+| jurisdictionCode | string | ISO 3166-1 jurisdiction |
+| legalBasis | string | Lawful processing basis |
+
+Anchors MUST be ordered by epoch ascending (oldest first). Consumers MUST NOT assume any other ordering.
+
+### 24.5 Merkle Object
+
+The `merkle` object contains Merkle rollup information. If no rollup data is available, the value MUST be `null`.
+
+When present, the `merkle` object MUST contain:
+
+| Field | Type | Description | Requirement |
+|-------|------|-------------|-------------|
+| root | string | SHA-256 Merkle root (hex) | MUST |
+| rollupDate | string | ISO 8601 date (YYYY-MM-DD) of the rollup | MUST |
+| anchorCount | integer | Number of anchors included in the rollup | MUST |
+| algorithm | string | Literal: `SWT3-DOMAIN-SEPARATED-SHA256` | MUST |
+
+The `merkle` object MAY also contain:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tsaTimestamp | string | RFC 3161 TSA timestamp (ISO 8601) |
+| tsaUrl | string | TSA service URL |
+| proofAvailable | boolean | Whether inclusion proofs can be requested |
+
+### 24.6 Package Integrity
+
+The `packageHash` field MUST contain the SHA-256 hex digest of the canonical JSON serialization of the package with `packageHash` set to the empty string `""`. Canonical serialization is defined as: keys sorted lexicographically at all nesting levels, no whitespace outside quoted strings, UTF-8 encoding.
+
+Consumers SHOULD verify `packageHash` before trusting package contents. A mismatched hash indicates the package has been modified after generation.
+
+**Verification example** (using standard command-line tools):
+
+```
+# 1. Extract the package JSON and set packageHash to ""
+cat package.json | jq '.packageHash = ""' | jq -S -c '.' > canonical.json
+
+# 2. Compute SHA-256 of the canonical form
+sha256sum canonical.json | cut -d' ' -f1
+
+# 3. Compare output to the packageHash value in the original file
+```
+
+If the computed hash matches `packageHash`, the package has not been modified since generation.
+
+### 24.7 Framework-Specific Extensions
+
+Implementations MAY include a `frameworkExtensions` object at the top level containing framework-specific metadata (e.g., CMMC level, FedRAMP baseline, EU AI Act risk classification). The schema of `frameworkExtensions` is not defined by this specification. Consumers MUST ignore unrecognized extension fields.
+
+### 24.8 Versioning
+
+The `_meta.version` field follows semantic versioning. Minor version increments (e.g., 1.0 to 1.1) add optional fields only. Major version increments (e.g., 1.0 to 2.0) may change required fields or remove existing fields. Consumers SHOULD accept any package whose major version matches the consumer's supported major version.
+
+### 24.9 Complete Example
+
+*This subsection is informative.*
+
+The following is a complete, minimal Conformity Evidence Package containing three anchors (PASS, FAIL, and INHERITED) with a Merkle rollup:
+
+```json
+{
+  "_meta": {
+    "format": "swt3-conformity-evidence-package",
+    "version": "1.0",
+    "framework": "NIST-800-53",
+    "generatedAt": "2026-08-11T14:30:00Z",
+    "generator": "axiom-sovereign-engine/5.42.0",
+    "tenantId": "acme-defense-001",
+    "tenantName": "ACME Defense Corp"
+  },
+  "summary": {
+    "totalProcedures": 3,
+    "passing": 1,
+    "failing": 1,
+    "inherited": 1,
+    "complianceRate": 33.3,
+    "gateDecision": "FAIL"
+  },
+  "anchors": [
+    {
+      "token": "SWT3-E-VULTR-AI-AIINF1-PASS-1774800000-2e16e2fe92dd",
+      "procedureId": "AI-INF.1",
+      "verdict": "PASS",
+      "epoch": 1774800000,
+      "fingerprint": "2e16e2fe92dd",
+      "factorA": 1,
+      "factorB": 0,
+      "factorC": 2500
+    },
+    {
+      "token": "SWT3-E-VULTR-AI-AIFAIR1-FAIL-1774800060-cb06b911a3c3",
+      "procedureId": "AI-FAIR.1",
+      "verdict": "FAIL",
+      "epoch": 1774800060,
+      "fingerprint": "cb06b911a3c3",
+      "factorA": 0,
+      "factorB": 3,
+      "factorC": 0
+    },
+    {
+      "token": "SWT3-E-VULTR-NET-SC76-PASS-1774800120-f0ed4dd73cc2",
+      "procedureId": "SC-7.6",
+      "verdict": "PASS",
+      "epoch": 1774800120,
+      "fingerprint": "f0ed4dd73cc2",
+      "factorA": 1,
+      "factorB": 0,
+      "factorC": 443,
+      "clearingLevel": 1,
+      "signature": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+    }
+  ],
+  "merkle": {
+    "root": "c22dcec3e8aa9a684f1b2e3d4c5a6b7890abcdef1234567890abcdef12345678",
+    "rollupDate": "2026-08-11",
+    "anchorCount": 390,
+    "algorithm": "SWT3-DOMAIN-SEPARATED-SHA256",
+    "tsaTimestamp": "2026-08-12T00:01:05Z",
+    "proofAvailable": true
+  },
+  "packageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
+```
+
+### 24.10 Assessor Validation Walkthrough
+
+*This subsection is informative.*
+
+When an assessor receives a Conformity Evidence Package, the following three-step validation confirms the package has not been tampered with and the evidence is independently verifiable:
+
+**Step 1: Verify package integrity.** Set `packageHash` to `""`, serialize the JSON canonically (keys sorted, no whitespace), and compute SHA-256. Compare the result to the original `packageHash`. If they match, the package has not been modified since generation.
+
+**Step 2: Spot-check a fingerprint.** Select any anchor from the `anchors` array. Using the fingerprint formula from Section 7, recompute the fingerprint from the anchor's input components (tenant ID, procedure ID, factors, timestamp in milliseconds). If the recomputed fingerprint matches, the anchor is authentic.
+
+```
+echo -n "WITNESS:acme-defense-001:AI-INF.1:1:0:2500:1774800000000" | sha256sum | cut -c1-12
+# Expected: 2e16e2fe92dd
+```
+
+**Step 3: Verify Merkle inclusion (if available).** If `merkle.proofAvailable` is `true`, request an inclusion proof for the spot-checked fingerprint from the verification service. Walk the proof from leaf to root using the domain-separated algorithm (Section 7). If the computed root matches `merkle.root`, the anchor was included in the daily rollup and has not been altered since the rollup was timestamped.
+
+If all three steps pass, the assessor has independent, cryptographic assurance that the evidence package is authentic and unmodified.
 
 ---
 
