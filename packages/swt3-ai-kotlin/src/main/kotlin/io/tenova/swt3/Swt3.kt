@@ -5,7 +5,7 @@ object Swt3 {
     const val VERSION = "0.1.1"
     const val SDK_NAME = "swt3-ai-kotlin"
     const val DESCRIPTION = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. " +
-        "107 procedures, 56 namespaces, 34 frameworks. " +
+        "113 procedures, 56 namespaces, 36 frameworks. " +
         "EU AI Act, NIST AI RMF, CMMC, SR 11-7."
 }
 

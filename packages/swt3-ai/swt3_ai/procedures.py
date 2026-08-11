@@ -8,7 +8,7 @@ import json
 import sys
 from typing import Optional, List, Dict
 
-# 108 AI procedures across 56 namespaces
+# 113 AI procedures across 61 namespaces
 PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-INF.1", "name": "Inference Provenance", "namespace": "INF"},
     {"id": "AI-INF.2", "name": "Inference Latency", "namespace": "INF"},
@@ -114,6 +114,14 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-GOV.5", "name": "Governance Accountability Assignment", "namespace": "GOV"},
     {"id": "AI-IMPACT.1", "name": "Fundamental Rights Impact Assessment", "namespace": "IMPACT"},
     {"id": "AI-LOG.1", "name": "Logging Completeness Attestation", "namespace": "LOG"},
+    # Lifecycle Governance (v0.6.4)
+    {"id": "AI-REACH.1", "name": "Hazard Reachability Attestation", "namespace": "REACH"},
+    {"id": "AI-DECOM.1", "name": "Decommissioning Lifecycle Witness", "namespace": "DECOM"},
+    {"id": "AI-RECOMM.1", "name": "Re-commissioning Validation Witness", "namespace": "RECOMM"},
+    {"id": "AI-FREEZE.1", "name": "Model Parameter Freeze Attestation", "namespace": "FREEZE"},
+    # Mobile Edge Governance (v0.6.3)
+    {"id": "AI-MOB.6", "name": "Trajectory Decision Attestation", "namespace": "MOB"},
+    {"id": "AI-MOB.7", "name": "VLA Inference Witnessing", "namespace": "MOB"},
     # Healthcare / Clinical AI (HCF)
     {"id": "HCF-DX.1", "name": "Diagnostic Accountability", "namespace": "HCF"},
     {"id": "HCF-RX.1", "name": "Prescription Safety", "namespace": "HCF"},

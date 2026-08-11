@@ -567,6 +567,102 @@
       "fingerprint_timestamp_ms": 1774800047000,
       "clearing_level": 1,
       "expected_fingerprint": "4ff83090bfc4"
+    },
+    {
+      "id": 48,
+      "description": "AI-REACH.1 Hazard Reachability - PASS (all 5 hazards mitigated, automated)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-REACH.1",
+      "factor_a": 5,
+      "factor_b": 5,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800020000,
+      "clearing_level": 1,
+      "expected_fingerprint": "84e3c4b4c9df"
+    },
+    {
+      "id": 49,
+      "description": "AI-REACH.1 Hazard Reachability - FAIL (3/8 mitigated, manual)",
+      "tenant_id": "ACME_DEFENSE",
+      "procedure_id": "AI-REACH.1",
+      "factor_a": 8,
+      "factor_b": 3,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800021000,
+      "clearing_level": 2,
+      "expected_fingerprint": "e87e7975d10e"
+    },
+    {
+      "id": 50,
+      "description": "AI-DECOM.1 Decommissioning - PASS (all deps resolved, archived)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DECOM.1",
+      "factor_a": 4,
+      "factor_b": 4,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800022000,
+      "clearing_level": 1,
+      "expected_fingerprint": "7c3a1b7bdcdd"
+    },
+    {
+      "id": 51,
+      "description": "AI-DECOM.1 Decommissioning - FAIL (2/6 deps resolved, transferred)",
+      "tenant_id": "AWS_NITRO_ENCLAVE",
+      "procedure_id": "AI-DECOM.1",
+      "factor_a": 6,
+      "factor_b": 2,
+      "factor_c": 3,
+      "fingerprint_timestamp_ms": 1774800023000,
+      "clearing_level": 0,
+      "expected_fingerprint": "6820dea7fc0c"
+    },
+    {
+      "id": 52,
+      "description": "AI-RECOMM.1 Re-commissioning - PASS (10/10 checks, full validation)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-RECOMM.1",
+      "factor_a": 10,
+      "factor_b": 10,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800024000,
+      "clearing_level": 1,
+      "expected_fingerprint": "2022f26aef5a"
+    },
+    {
+      "id": 53,
+      "description": "AI-RECOMM.1 Re-commissioning - FAIL (5/8 checks, shadow mode)",
+      "tenant_id": "DEMO_ENCLAVE",
+      "procedure_id": "AI-RECOMM.1",
+      "factor_a": 8,
+      "factor_b": 5,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800025000,
+      "clearing_level": 1,
+      "expected_fingerprint": "02eab528668a"
+    },
+    {
+      "id": 54,
+      "description": "AI-FREEZE.1 Parameter Freeze - PASS (12/12 verified, full stack)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-FREEZE.1",
+      "factor_a": 12,
+      "factor_b": 12,
+      "factor_c": 2,
+      "fingerprint_timestamp_ms": 1774800026000,
+      "clearing_level": 1,
+      "expected_fingerprint": "fd2541054cb7"
+    },
+    {
+      "id": 55,
+      "description": "AI-FREEZE.1 Parameter Freeze - FAIL (18/20 verified, weights only)",
+      "tenant_id": "AZURE_TRUSTED_EXEC",
+      "procedure_id": "AI-FREEZE.1",
+      "factor_a": 20,
+      "factor_b": 18,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800027000,
+      "clearing_level": 0,
+      "expected_fingerprint": "934ab9388917"
     }
   ],
   "signing_vectors": [

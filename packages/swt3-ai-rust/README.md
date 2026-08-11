@@ -9,9 +9,23 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
-## What's New in v0.6.3
+## What's New in v0.6.4
 
-- **v0.6.3 across the ecosystem**: Python, TypeScript, and MCP SDKs add consent witnessing (AI-CONSENT.1), output safety classification (AI-GRD.2), incident reporting (AI-INCIDENT.1), and training data provenance (AI-DATA.1). Swift and Kotlin add typed attestation structs. Core primitives in this package remain stable -- the fingerprint formula and signing functions are unchanged. 32 MCP tools, 34+ frameworks, 107 procedures.
+Version alignment with the full SWT3 SDK ecosystem. The protocol now spans 9 languages (Python, TypeScript, Rust, C#, Ruby, Swift, Kotlin, plus MCP and K8s agent) with 113 procedures across 61 namespaces.
+
+**Why 9 languages matters:** AI systems don't run on one stack. A Python training pipeline feeds a Rust inference engine that serves a Swift mobile app monitored by a TypeScript dashboard. Every handoff is an accountability gap. Cross-language parity means the same fingerprint formula, the same signing algorithm, and the same test vectors produce identical results regardless of where the attestation happens. No translation layer. No format conversion. One protocol, verified across every runtime.
+
+**New in the ecosystem (v0.6.4):**
+- Pre-inference gate module: authorization checkpoint before inference runs
+- Chain reconstruction: forensic timeline rebuilding from witness anchors
+- 10 new MCP compliance tools (33 total): gate, guardrail, HITL, consent, data provenance, RAG, output filter, incident, reconstruct, trajectory
+- Kotlin SDK (v0.1.1): JVM/Android support with full test vector parity
+- 185 compliance guides (5 new regulatory crosswalks)
+- Crosswalk data: 27 frameworks, 339 procedure-framework mappings
+
+### v0.6.3
+
+- **v0.6.3 across the ecosystem**: Python, TypeScript, and MCP SDKs add consent witnessing (AI-CONSENT.1), output safety classification (AI-GRD.2), incident reporting (AI-INCIDENT.1), and training data provenance (AI-DATA.1). Swift and Kotlin add typed attestation structs. Core primitives in this package remain stable: the fingerprint formula and signing functions are unchanged. 32 MCP tools, 34+ frameworks, 113 procedures.
 
 ### v0.5.9
 
@@ -25,7 +39,7 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 - **`timestamp_ms`** -- millisecond-precision timestamps matching the protocol clock
 - **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `RevocationReason` structs ready for serialization
 
-All output is byte-identical to the Python, TypeScript, Swift, C#, Ruby, and MCP SDKs. 7 languages, one audit trail. Verified by shared test vectors at build time.
+All output is byte-identical to the Python, TypeScript, Swift, C#, Ruby, and MCP SDKs. 9 languages, one audit trail. Verified by shared test vectors at build time.
 
 ## Quick Start
 

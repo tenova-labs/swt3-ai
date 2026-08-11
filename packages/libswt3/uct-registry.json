@@ -8198,6 +8198,80 @@
       },
       "namespace": "AI"
     },
+    "AI-MOB.6": {
+      "procedure_id": "AI-MOB.6",
+      "parent_control": "AI-MOB",
+      "title": "Trajectory Decision Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_TRAJECTORY_DECISION",
+      "factors": {
+        "factor_a": {
+          "label": "attestation_required",
+          "description": "1.0 if trajectory attestation is required by policy, 0.0 if voluntary.",
+          "regulatory_ref": "EU AI Act Annex III(3a)",
+          "default": 1.0
+        },
+        "factor_b": {
+          "label": "safety_validated",
+          "description": "1.0 if trajectory passed safety validation, 0.0 if failed or not validated.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(a)"
+        },
+        "factor_c": {
+          "label": "safety_classification",
+          "description": "Safety classification: 0=reserved, 1=nominal, 2=cautionary, 3=degraded, 4=emergency, 5=abort.",
+          "regulatory_ref": "ISO/PAS 8800 Cl. 8"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "Trajectory must pass safety validation when attestation is required."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Annex III(3a), Art. 9(2)(a)",
+        "ISO-PAS-8800": "Cl. 6, Cl. 7, Cl. 8",
+        "NIST-AI-RMF": "MANAGE 4.1, MEASURE 2.6",
+        "UNECE-WP29": "R157"
+      },
+      "namespace": "AI"
+    },
+    "AI-MOB.7": {
+      "procedure_id": "AI-MOB.7",
+      "parent_control": "AI-MOB",
+      "title": "VLA Inference Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_VLA_INFERENCE",
+      "factors": {
+        "factor_a": {
+          "label": "inference_occurred",
+          "description": "1.0 if VLA inference call was executed.",
+          "regulatory_ref": "EU AI Act Art. 12(1)",
+          "default": 1.0
+        },
+        "factor_b": {
+          "label": "latency_ms",
+          "description": "VLA inference latency in milliseconds.",
+          "regulatory_ref": "EU AI Act Art. 15(1)"
+        },
+        "factor_c": {
+          "label": "succeeded",
+          "description": "1 if inference completed successfully, 0 if exception or timeout.",
+          "regulatory_ref": "EU AI Act Art. 9(4)(b)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 1",
+        "description": "VLA inference must complete successfully."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art. 12(1), Art. 15(1), Art. 9(4)(b)",
+        "ISO-PAS-8800": "Cl. 9, Cl. 10",
+        "NIST-AI-RMF": "MEASURE 2.5, MAP 3.2",
+        "UNECE-WP29": "R157"
+      },
+      "namespace": "AI"
+    },
     "AI-MDL.8": {
       "procedure_id": "AI-MDL.8",
       "parent_control": "AI-MDL",
@@ -8334,10 +8408,150 @@
         "SR-11-7": "IV.A"
       },
       "namespace": "AI"
+    },
+    "AI-REACH.1": {
+      "procedure_id": "AI-REACH.1",
+      "parent_control": "AI-REACH",
+      "title": "Hazard Reachability Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_HAZARD_REACHABILITY",
+      "factors": {
+        "factor_a": {
+          "label": "hazards_assessed",
+          "description": "Total number of known model hazards/limitations assessed for operational reachability.",
+          "regulatory_ref": "EU AI Act Art. 53; ISO 42001 6.1.2"
+        },
+        "factor_b": {
+          "label": "hazards_mitigated",
+          "description": "Number of hazards confirmed mitigated (blocked by guardrails, sandboxing, or vendor controls).",
+          "regulatory_ref": "EU AI Act Art. 53; ISO 42001 6.1.2"
+        },
+        "factor_c": {
+          "label": "reachability_method",
+          "description": "Assessment method: 0=manual, 1=automated, 2=vendor_attested.",
+          "regulatory_ref": "EU AI Act Art. 53; ISO 42001 8.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All assessed hazards (A) must be mitigated (B) for PASS."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.53",
+        "ISO-42001": "6.1.2",
+        "NIST-AI-RMF": "MAP 3.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-DECOM.1": {
+      "procedure_id": "AI-DECOM.1",
+      "parent_control": "AI-DECOM",
+      "title": "AI System Decommissioning Lifecycle Witness",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DECOMMISSION_LIFECYCLE",
+      "factors": {
+        "factor_a": {
+          "label": "dependencies_mapped",
+          "description": "Total downstream dependencies identified (systems, data consumers, API callers, shared infrastructure).",
+          "regulatory_ref": "EU AI Act Art. 9; ISO 42001 8.2"
+        },
+        "factor_b": {
+          "label": "dependencies_resolved",
+          "description": "Number of dependencies resolved (migrated, replaced, acknowledged, or transferred).",
+          "regulatory_ref": "EU AI Act Art. 9; ISO 42001 8.2"
+        },
+        "factor_c": {
+          "label": "disposal_method",
+          "description": "Disposal method: 0=archived, 1=destroyed, 2=isolated, 3=transferred.",
+          "regulatory_ref": "EU AI Act Art. 9; ISO 42001 A.6.2.5"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All mapped dependencies (A) must be resolved (B) before decommissioning completes."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "ISO-42001": "8.2",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      },
+      "namespace": "AI"
+    },
+    "AI-RECOMM.1": {
+      "procedure_id": "AI-RECOMM.1",
+      "parent_control": "AI-RECOMM",
+      "title": "AI System Re-commissioning Validation Witness",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_RECOMMISSION_VALIDATION",
+      "factors": {
+        "factor_a": {
+          "label": "checks_required",
+          "description": "Total safety checks required before re-enabling, defined by the organization's re-commissioning policy per EU AI Act Art. 72.",
+          "regulatory_ref": "EU AI Act Art. 72; ISO 42001 10.2"
+        },
+        "factor_b": {
+          "label": "checks_passed",
+          "description": "Number of safety checks that passed during re-commissioning validation.",
+          "regulatory_ref": "EU AI Act Art. 72; ISO 42001 10.2"
+        },
+        "factor_c": {
+          "label": "recommission_type",
+          "description": "Re-commissioning type: 0=full_validation, 1=shadow_mode, 2=limited_scope.",
+          "regulatory_ref": "EU AI Act Art. 72; ISO 42001 10.2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All required checks (A) must pass (B) for the system to be re-commissioned."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.72",
+        "ISO-42001": "10.2",
+        "NIST-AI-RMF": "MANAGE 4.1"
+      },
+      "namespace": "AI"
+    },
+    "AI-FREEZE.1": {
+      "procedure_id": "AI-FREEZE.1",
+      "parent_control": "AI-FREEZE",
+      "title": "Model Parameter Freeze Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_PARAMETER_FREEZE",
+      "factors": {
+        "factor_a": {
+          "label": "config_items_locked",
+          "description": "Count of discrete configuration items (model weight files, hyperparameter entries, boundary logic rules) subject to operational freeze.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(b); ISO 42001 A.6.2.4"
+        },
+        "factor_b": {
+          "label": "config_items_verified",
+          "description": "Number of configuration items confirmed unchanged via checksum, hash, or configuration management attestation.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(b); ISO 42001 A.6.2.4"
+        },
+        "factor_c": {
+          "label": "lock_scope",
+          "description": "Freeze scope: 0=weights_only, 1=config_and_params (hyperparams + thresholds), 2=full_stack (includes guardrails, prompts, tools).",
+          "regulatory_ref": "EU AI Act Art. 9(2)(b); ISO 42001 A.6.2.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= factor_a",
+        "description": "All locked config items (A) must be verified unchanged (B)."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(b)",
+        "ISO-42001": "A.6.2.4",
+        "NIST-800-53": "CM-3"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (107 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (113 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",

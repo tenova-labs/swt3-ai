@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = "swt3-ai"
-  s.version     = "0.6.3"
-  s.summary     = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 107 procedures, 56 namespaces, 8 languages, 18 profiles, 21 integrations."
+  s.version     = "0.6.4"
+  s.summary     = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 113 procedures, 61 namespaces, 9 languages, 18 profiles, 21 integrations."
   s.description = "Mint, verify, and sign SWT3 witness anchors for AI compliance. " \
                   "EU AI Act, NIST AI RMF, CMMC, SR 11-7. " \
                   "Cross-language parity with Python and TypeScript SDKs. " \

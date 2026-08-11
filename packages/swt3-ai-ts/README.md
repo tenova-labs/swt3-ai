@@ -13,9 +13,65 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, xAI (Grok), and any Op
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
-## What's New in v0.6.3
+## What's New in v0.6.4
 
-Four new witness methods that close the most-requested evidence gaps -- consent, output safety, incident reporting, and training data governance. Each maps to regulations enforcing now or within months.
+Pre-inference authorization, chain reconstruction, 10 new MCP compliance tools, and the Kotlin SDK. The theme: proving you checked BEFORE the AI acted, not just after.
+
+### Pre-Inference Gate (`gate.ts`)
+
+**What it does:** Authorization checkpoint that runs before inference begins. Evaluates whether the requesting agent, user, or system has permission to invoke a specific model under the current policy. Returns an authorization_id that links the gate decision to the subsequent inference anchor.
+
+**Why it matters:** EU AI Act Art. 9 requires risk management "prior to placing on the market or putting into service." Regulators increasingly ask not just "did the AI behave?" but "who authorized it to run?" Without a pre-inference gate, you can prove the output was safe but not that someone approved the input. The gate closes that gap: every inference anchor can point back to the authorization decision that allowed it.
+
+```typescript
+import { gate } from '@tenova/swt3-ai';
+
+const auth = await gate.authorize({
+  agent_id: 'credit-scorer',
+  model_id: 'gpt-4o',
+  policy: 'prod-lending-v3',
+  clearing_level: 2
+});
+// auth.authorization_id links to the inference anchor
+```
+
+### Chain Reconstruction (`reconstruct.ts`)
+
+**What it does:** Rebuilds a complete forensic timeline from witness anchors. Given a cycle_id, agent_id, or time window, it queries the ledger and produces a chronological narrative of every action the AI system took, with verifiable fingerprints at each step. Exports to terminal, JSON, or self-contained HTML.
+
+**Why it matters:** When an incident happens, regulators and legal teams need a provable sequence of events, not a log dump. Chain reconstruction turns scattered witness anchors into a coherent audit trail that any assessor can independently verify. The HTML export is designed to be handed directly to legal counsel or a Notified Body without granting system access.
+
+```typescript
+import { reconstruct } from '@tenova/swt3-ai';
+
+const chain = await reconstruct({
+  cycle_id: 'credit-decision-2026-08-10',
+  format: 'html'
+});
+// chain.html is a self-contained forensic report
+```
+
+### MCP Server: 10 New Compliance Tools (33 total)
+
+The `@tenova/swt3-mcp` server now exposes 33 tools. The 10 new tools bring compliance operations directly into agent workflows: `swt3_gate` (pre-inference authorization), `swt3_guardrail` (safety filter activation), `swt3_hitl` (human review), `swt3_consent` (consent collection), `swt3_data_provenance` (data lineage), `swt3_rag` (RAG provenance), `swt3_output_filter` (output classification), `swt3_incident` (incident reporting), `swt3_reconstruct` (chain reconstruction), `swt3_trajectory` (autonomous decision attestation).
+
+These tools matter because MCP is becoming the standard integration layer for AI agents. When an agent calls `swt3_gate` before invoking a model, the attestation happens inside the agent's own workflow, not as an afterthought. Compliance becomes a tool call, not a separate system.
+
+### Kotlin SDK (v0.1.1)
+
+Core SWT3 primitives for the JVM ecosystem: fingerprint generation, HMAC-SHA256 signing, anchor verification, and type definitions. Full test vector parity with all 7 other SDKs. Enables witnessing on 3+ billion Android devices without network round-trips. Published to Maven Central.
+
+### Crosswalk Data + Guides
+
+27 frameworks, 113 procedures, 339 mappings, 16 compliance profiles, 185 guides (up from 180). Five new regulatory crosswalks: EU AI Act Digital Omnibus, Oregon SB 1546, Georgia AI Laws 2026, Washington HB 1170, NIST COSAiS.
+
+### v0.6.3
+
+Six new witness methods. The four newest close the autonomous vehicle compliance vacuum -- the EU AI Act classifies AV systems as high-risk (Annex III, 3a), NVIDIA just open-sourced a 34B VLA model for robotaxis, and every startup fine-tuning it needs accountability infrastructure that doesn't exist yet. Until now.
+
+- **Trajectory Decision Attestation** (`witnessTrajectory`, AI-MOB.6) -- Every autonomous driving decision produces a planned trajectory and a causal reasoning trace. This method records that a VLA or path planning model produced a trajectory, whether it passed safety validation, and its classification level (nominal, cautionary, degraded, emergency, abort). Context stores ONLY hashes and counts -- never raw coordinates, waypoints, or proprietary CoC traces. Works with any VLA model. ISO/PAS 8800, EU AI Act Annex III(3a), UNECE WP.29 R157.
+
+- **VLA Inference Wrapper** (`wrapVLA`, AI-MOB.7) -- Wrap any VLA inference function with three lines. Captures timing, input/output hashes, and success/failure. Frame data is NEVER hashed by default (<0.1ms overhead vs. 50-200ms for raw frame hashing). Pass pre-computed frame hashes if your camera pipeline already produces them. Supports sync and async via promise detection.
 
 - **Output Safety Witnessing** (`witnessOutputFilter`, AI-GRD.2) -- Proves each model output passed content safety classification. Distinct from `witnessGuardrail` (AI-GRD.1, guardrail activation) -- this records the classification RESULT on the output side: what filter type ran, whether the output was clean or triggered, and what action was taken. EU AI Act Art. 15(3). The difference between "we have content filters" and "here is the anchor proving output #7c91 passed toxicity classification at 99.2% confidence."
 
@@ -217,14 +273,14 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 
 - **Local Witness Mode** -- `new Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
 - **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 34 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 27 frameworks and 107 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Bundled Crosswalks** -- 27 frameworks and 113 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 21 adapters, 107 procedures, 56 namespaces, 27 frameworks, 18 profiles
+- 21 adapters, 113 procedures, 56 namespaces, 27 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -973,7 +1029,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (107 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (113 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -1202,7 +1258,7 @@ resolve("AI-INF.1");
 // { "EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ... }
 ```
 
-34 frameworks bundled. 107 procedures mapped. Updated with each SDK release.
+34 frameworks bundled. 113 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 

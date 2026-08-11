@@ -184,3 +184,33 @@ data class DataProvenanceAttestation(
     val demographicFeaturesExcluded: Boolean = false,
     val dataSourcesCount: Int? = null,
 )
+
+/** Safety classification codes for AI-MOB.6 trajectory decision attestation. */
+object SafetyClassification {
+    const val RESERVED = 0
+    const val NOMINAL = 1
+    const val CAUTIONARY = 2
+    const val DEGRADED = 3
+    const val EMERGENCY = 4
+    const val ABORT = 5
+}
+
+/** Trajectory decision attestation for AI-MOB.6 witnessing. */
+data class TrajectoryAttestation(
+    val safetyValidated: Boolean,
+    val waypointCount: Int? = null,
+    val trajectoryHash: String? = null,
+    val cocTraceHash: String? = null,
+    val cocNodeCount: Int? = null,
+    val actionClass: String? = null,
+    val safetyClassification: Int = SafetyClassification.NOMINAL,
+    val sensorSources: List<String>? = null,
+)
+
+/** VLA inference result for AI-MOB.7 witnessing. */
+data class VlaInferenceResult(
+    val modelId: String,
+    val latencyMs: Int,
+    val succeeded: Boolean = true,
+    val inputFrameHashes: List<String>? = null,
+)

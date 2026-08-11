@@ -35,6 +35,7 @@ import { handleGateEvaluate } from "./tools/gate.js";
 import { handleReconstructTimeline } from "./tools/reconstruct.js";
 import { handleWitnessConsent } from "./tools/consent.js";
 import { handleWitnessOutputFilter } from "./tools/output-filter.js";
+import { handleWitnessTrajectory } from "./tools/trajectory.js";
 import { handleWitnessIncident } from "./tools/incident.js";
 import { handleWitnessDataProvenance } from "./tools/data-provenance.js";
 import { buildComplianceCheckPrompt } from "./prompts/compliance-check.js";
@@ -1119,6 +1120,43 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
       if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
       const text = await handleWitnessOutputFilter(args as any, config, client);
       trackProcedure(sessionState, "AI-GRD.2");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };
+    }
+  });
+
+  // --- Trajectory Decision Attestation (AI-MOB.6) ---
+
+  server.registerTool("witness_trajectory", {
+    description:
+      "Witness a safety-critical trajectory decision from a VLA or autonomous planning model (AI-MOB.6). " +
+      "Records trajectory attestation, safety validation, and classification level. " +
+      "Model-agnostic -- works with any VLA, path planner, or motion model. " +
+      "Evidence only -- never blocks execution." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      safety_validated: z.boolean().describe("Whether trajectory passed safety validation (true = safe, false = failed/not validated)"),
+      waypoint_count: z.number().optional().describe("Number of waypoints in the planned trajectory"),
+      trajectory_hash: z.string().optional().describe("SHA-256 hash of trajectory data (pre-computed)"),
+      coc_trace_hash: z.string().optional().describe("SHA-256 hash of the causal reasoning trace"),
+      coc_node_count: z.number().optional().describe("Number of nodes in the causal reasoning graph"),
+      action_class: z.string().optional().describe("Action classification: 'navigate', 'stop', 'yield', 'change_lane', 'park', 'emergency'"),
+      safety_classification: z.string().optional().describe("Safety level: 'nominal', 'cautionary', 'degraded', 'emergency', 'abort'"),
+      sensor_sources: z.array(z.string()).optional().describe("Sensor sources used (e.g. 'camera_front', 'lidar_top', 'radar')"),
+      model_id: z.string().optional().describe("VLA model identifier"),
+      agent_id: z.string().optional().describe("Agent identity"),
+      cycle_id: z.string().optional().describe("Multi-agent chain link identifier"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessTrajectory(args as any, config, client);
+      trackProcedure(sessionState, "AI-MOB.6");
       return { content: [{ type: "text" as const, text }] };
     } catch (err) {
       return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true };

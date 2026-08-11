@@ -399,6 +399,11 @@ export const CYBER_FRAMEWORK_CODES: Record<string, number> = {
   nist_csf: 0, iso27001: 1, owasp: 2, cis: 3, custom: 4,
 };
 
+/** Safety classification codes for AI-MOB.6 trajectory decision attestation. */
+export const SAFETY_CLASSIFICATION_CODES: Record<string, number> = {
+  reserved: 0, nominal: 1, cautionary: 2, degraded: 3, emergency: 4, abort: 5,
+};
+
 /** Disclosure type codes for AI-TRANS.1 transparency disclosure. */
 export const DISCLOSURE_TYPE_CODES: Record<string, number> = {
   ai_usage: 0, data_processing: 1, automated_decision: 2, profiling: 3, capability_limitation: 4,

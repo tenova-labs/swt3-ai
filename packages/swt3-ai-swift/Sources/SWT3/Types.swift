@@ -756,3 +756,88 @@ public struct DataProvenanceAttestation: Sendable, Equatable, Codable {
         case dataSourcesCount = "data_sources_count"
     }
 }
+
+// MARK: - Trajectory Decision Types
+
+/// Safety classification codes for AI-MOB.6 trajectory decision attestation.
+public enum SafetyClassification: Int, Codable, Sendable, CaseIterable {
+    case reserved = 0
+    case nominal = 1
+    case cautionary = 2
+    case degraded = 3
+    case emergency = 4
+    case abort = 5
+}
+
+/// Trajectory decision attestation for AI-MOB.6 witnessing.
+/// Records safety-critical path planning decisions from VLA or autonomous
+/// planning models. Model-agnostic.
+public struct TrajectoryAttestation: Sendable, Equatable, Codable {
+    public var safetyValidated: Bool
+    public var waypointCount: Int?
+    public var trajectoryHash: String?
+    public var cocTraceHash: String?
+    public var cocNodeCount: Int?
+    public var actionClass: String?
+    public var safetyClassification: SafetyClassification
+    public var sensorSources: [String]?
+
+    public init(
+        safetyValidated: Bool,
+        waypointCount: Int? = nil,
+        trajectoryHash: String? = nil,
+        cocTraceHash: String? = nil,
+        cocNodeCount: Int? = nil,
+        actionClass: String? = nil,
+        safetyClassification: SafetyClassification = .nominal,
+        sensorSources: [String]? = nil
+    ) {
+        self.safetyValidated = safetyValidated
+        self.waypointCount = waypointCount
+        self.trajectoryHash = trajectoryHash
+        self.cocTraceHash = cocTraceHash
+        self.cocNodeCount = cocNodeCount
+        self.actionClass = actionClass
+        self.safetyClassification = safetyClassification
+        self.sensorSources = sensorSources
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case safetyValidated = "safety_validated"
+        case waypointCount = "waypoint_count"
+        case trajectoryHash = "trajectory_hash"
+        case cocTraceHash = "coc_trace_hash"
+        case cocNodeCount = "coc_node_count"
+        case actionClass = "action_class"
+        case safetyClassification = "safety_classification"
+        case sensorSources = "sensor_sources"
+    }
+}
+
+/// VLA inference result for AI-MOB.7 witnessing.
+/// Captures timing and success/failure of VLA model inference calls.
+public struct VlaInferenceResult: Sendable, Equatable, Codable {
+    public var modelId: String
+    public var latencyMs: Int
+    public var succeeded: Bool
+    public var inputFrameHashes: [String]?
+
+    public init(
+        modelId: String,
+        latencyMs: Int,
+        succeeded: Bool = true,
+        inputFrameHashes: [String]? = nil
+    ) {
+        self.modelId = modelId
+        self.latencyMs = latencyMs
+        self.succeeded = succeeded
+        self.inputFrameHashes = inputFrameHashes
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case modelId = "model_id"
+        case latencyMs = "latency_ms"
+        case succeeded
+        case inputFrameHashes = "input_frame_hashes"
+    }
+}

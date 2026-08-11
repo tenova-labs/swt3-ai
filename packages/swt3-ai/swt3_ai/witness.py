@@ -212,6 +212,7 @@ INCIDENT_TYPE_CODES: Dict[str, int] = {"safety": 0, "rights": 1, "security": 2, 
 BENCHMARK_TYPE_CODES: Dict[str, int] = {"accuracy": 0, "precision": 1, "recall": 2, "f1": 3, "auc": 4, "custom": 5}
 PERTURBATION_TYPE_CODES: Dict[str, int] = {"noise": 0, "corruption": 1, "missing_data": 2, "out_of_distribution": 3, "edge_case": 4, "adversarial_input": 5}
 CYBER_FRAMEWORK_CODES: Dict[str, int] = {"nist_csf": 0, "iso27001": 1, "owasp": 2, "cis": 3, "custom": 4}
+SAFETY_CLASSIFICATION_CODES: Dict[str, int] = {"reserved": 0, "nominal": 1, "cautionary": 2, "degraded": 3, "emergency": 4, "abort": 5}
 DISCLOSURE_TYPE_CODES: Dict[str, int] = {"ai_usage": 0, "data_processing": 1, "automated_decision": 2, "profiling": 3, "capability_limitation": 4}
 RECIPIENT_TYPE_CODES: Dict[str, int] = {"deployer": 0, "end_user": 1, "data_subject": 2, "authority": 3}
 DETECTION_METHOD_CODES: Dict[str, int] = {"c2pa_verify": 0, "synthid_check": 1, "metadata_scan": 2, "spectral_analysis": 3, "classifier": 4}
@@ -242,6 +243,12 @@ AUTHORIZATION_LEVEL_CODES: Dict[str, int] = {"operator": 0, "supervisor": 1, "si
 FALLBACK_STATE_CODES: Dict[str, int] = {"safe_state": 0, "legacy_controller": 1, "manual_mode": 2, "degraded_operation": 3, "full_shutdown": 4}
 CONSEQUENCE_CATEGORY_CODES: Dict[str, int] = {"safety": 0, "environmental": 1, "financial": 2, "operational": 3, "reputational": 4}
 DRIFT_RESPONSE_CODES: Dict[str, int] = {"notification_only": 0, "increased_monitoring": 1, "throttle": 2, "circuit_breaker": 3, "forced_failover": 4, "emergency_shutdown": 5}
+
+# ── Lifecycle Governance Codes (v0.6.4) ──────────────────────────────
+REACHABILITY_METHOD_CODES: Dict[str, int] = {"manual": 0, "automated": 1, "vendor_attested": 2}
+DISPOSAL_METHOD_CODES: Dict[str, int] = {"archived": 0, "destroyed": 1, "isolated": 2, "transferred": 3}
+RECOMMISSION_TYPE_CODES: Dict[str, int] = {"full_validation": 0, "shadow_mode": 1, "limited_scope": 2}
+LOCK_SCOPE_CODES: Dict[str, int] = {"weights_only": 0, "config_and_params": 1, "full_stack": 2}
 
 # ── Lifecycle Chain Stages (v6.0) ────────────────────────────────────
 LIFECYCLE_CHAIN_STAGES: Dict[str, int] = {
@@ -1076,6 +1083,144 @@ class Witness:
                         access_scope=scope,
                     )
                     self.record(record)
+
+            if asyncio.iscoroutinefunction(func):
+                return async_wrapper  # type: ignore[return-value]
+            return sync_wrapper  # type: ignore[return-value]
+
+        if fn is not None:
+            return decorator(fn)
+        return decorator
+
+    def wrap_vla(
+        self,
+        fn: Optional[F] = None,
+        *,
+        model_id: Optional[str] = None,
+        input_frame_hashes: Optional[List[str]] = None,
+    ) -> Any:
+        """Wrap a VLA inference function as a witnessed call (AI-MOB.7).
+
+        Can be used as a decorator or as a wrapper:
+            @witness.wrap_vla(model_id="alpamayo-2-super")
+            def predict(frames): ...
+
+            # Or:
+            infer = witness.wrap_vla(model.predict, model_id="alpamayo-2-super")
+            trajectory = infer(frames)
+
+        Each call mints an AI-MOB.7 anchor with:
+            factor_a = 1 (inference occurred)
+            factor_b = latency_ms
+            factor_c = 1 if succeeded, 0 if exception raised
+
+        Performance: <0.1ms overhead. Frame data is NOT hashed by default.
+        Pass input_frame_hashes if your pipeline pre-computes frame hashes.
+        """
+        import asyncio
+        import uuid
+
+        def decorator(func: F) -> F:
+            name = model_id or getattr(func, "__name__", "vla-model")
+
+            @functools.wraps(func)
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                # Chain density enforcement
+                enforcer = getattr(self, "_chain_enforcer", None)
+                if enforcer is not None:
+                    violation = enforcer.check(name)
+                    if violation is not None:
+                        if violation.action == "blocked":
+                            self._fire_violation(violation)
+                            raise PolicyViolationError(violation)
+                        self._record_chain_violation(violation)
+                sentinel = getattr(self, "_sentinel", None)
+                if sentinel is not None and sentinel.connected:
+                    try:
+                        sentinel.check(name)
+                    except Exception:
+                        pass
+
+                call_id = uuid.uuid4().hex[:12]
+                start = time.monotonic()
+                succeeded = True
+                result = None
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception:
+                    succeeded = False
+                    raise
+                finally:
+                    elapsed_ms = int((time.monotonic() - start) * 1000)
+                    if input_frame_hashes:
+                        in_hash = sha256_truncated(":".join(input_frame_hashes))
+                    else:
+                        in_hash = sha256_truncated(f"vla:{len(args)}:{elapsed_ms}")
+                    out_hash = sha256_truncated(
+                        str(type(result).__name__) + ":" + str(elapsed_ms)
+                    ) if result is not None else sha256_truncated("ERROR")
+                    record = InferenceRecord(
+                        model_id=name,
+                        model_hash=sha256_truncated(name),
+                        prompt_hash=in_hash,
+                        response_hash=out_hash,
+                        latency_ms=elapsed_ms,
+                        provider="vla",
+                        has_refusal=not succeeded,
+                        tool_name=name,
+                        tool_call_id=call_id,
+                    )
+                    self.record(record, procedures=["AI-MOB.7"])
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                enforcer = getattr(self, "_chain_enforcer", None)
+                if enforcer is not None:
+                    violation = enforcer.check(name)
+                    if violation is not None:
+                        if violation.action == "blocked":
+                            self._fire_violation(violation)
+                            raise PolicyViolationError(violation)
+                        self._record_chain_violation(violation)
+                sentinel = getattr(self, "_sentinel", None)
+                if sentinel is not None and sentinel.connected:
+                    try:
+                        sentinel.check(name)
+                    except Exception:
+                        pass
+
+                call_id = uuid.uuid4().hex[:12]
+                start = time.monotonic()
+                succeeded = True
+                result = None
+                try:
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception:
+                    succeeded = False
+                    raise
+                finally:
+                    elapsed_ms = int((time.monotonic() - start) * 1000)
+                    if input_frame_hashes:
+                        in_hash = sha256_truncated(":".join(input_frame_hashes))
+                    else:
+                        in_hash = sha256_truncated(f"vla:{len(args)}:{elapsed_ms}")
+                    out_hash = sha256_truncated(
+                        str(type(result).__name__) + ":" + str(elapsed_ms)
+                    ) if result is not None else sha256_truncated("ERROR")
+                    record = InferenceRecord(
+                        model_id=name,
+                        model_hash=sha256_truncated(name),
+                        prompt_hash=in_hash,
+                        response_hash=out_hash,
+                        latency_ms=elapsed_ms,
+                        provider="vla",
+                        has_refusal=not succeeded,
+                        tool_name=name,
+                        tool_call_id=call_id,
+                    )
+                    self.record(record, procedures=["AI-MOB.7"])
 
             if asyncio.iscoroutinefunction(func):
                 return async_wrapper  # type: ignore[return-value]
@@ -2996,6 +3141,81 @@ class Witness:
         self._buffer.enqueue_many([payload])
         return payload
 
+    # ── Trajectory Decision Attestation (AI-MOB.6) ─────────────────────
+
+    def witness_trajectory(
+        self,
+        safety_validated: bool,
+        *,
+        waypoint_count: Optional[int] = None,
+        trajectory_hash: Optional[str] = None,
+        coc_trace_hash: Optional[str] = None,
+        coc_node_count: Optional[int] = None,
+        action_class: Optional[str] = None,
+        safety_classification: str = "nominal",
+        sensor_sources: Optional[List[str]] = None,
+        model_id: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness a safety-critical trajectory decision (AI-MOB.6).
+
+        Records that a VLA or autonomous planning model produced a trajectory,
+        whether it passed safety validation, and its classification level.
+        Model-agnostic -- works with any VLA, path planner, or motion model.
+
+        Args:
+            safety_validated: True if trajectory passed safety validation.
+            waypoint_count: Number of waypoints in the planned trajectory.
+            trajectory_hash: SHA-256 hash of the trajectory data (pre-computed).
+            coc_trace_hash: SHA-256 hash of the causal reasoning trace.
+            coc_node_count: Number of nodes in the causal reasoning graph.
+            action_class: Action classification (e.g. "navigate", "stop",
+                "yield", "change_lane", "park", "emergency").
+            safety_classification: Safety level: "nominal", "cautionary",
+                "degraded", "emergency", "abort", or "reserved".
+            sensor_sources: Sensor sources used (e.g. ["camera_front", "lidar"]).
+            model_id: Model that produced the trajectory.
+        """
+        fa = 1.0  # attestation required
+        fb = 1.0 if safety_validated else 0.0
+        fc = float(SAFETY_CLASSIFICATION_CODES.get(safety_classification, 0))
+
+        payload = self._mint_and_sign("AI-MOB.6", fa, fb, fc)
+
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "trajectory-planner"
+            ctx: Dict[str, Any] = {
+                "provider": "trajectory",
+                "safety_validated": safety_validated,
+                "safety_classification": safety_classification,
+            }
+            if waypoint_count is not None:
+                ctx["waypoint_count"] = waypoint_count
+            if trajectory_hash:
+                ctx["trajectory_hash"] = trajectory_hash
+            if coc_trace_hash:
+                ctx["coc_trace_hash"] = coc_trace_hash
+            if coc_node_count is not None:
+                ctx["coc_node_count"] = coc_node_count
+            if action_class:
+                ctx["action_class"] = action_class
+            if sensor_sources:
+                ctx["sensor_count"] = len(sensor_sources)
+                ctx["sensor_sources"] = sensor_sources
+            payload.ai_context = ctx
+        elif self._config.clearing_level == 2:
+            payload.ai_model_id = model_id or "trajectory-planner"
+            ctx2: Dict[str, Any] = {"provider_category": "trajectory"}
+            if sensor_sources:
+                ctx2["sensor_count"] = len(sensor_sources)
+            payload.ai_context = ctx2
+        else:
+            payload.ai_model_id = sha256_truncated(
+                model_id or "trajectory-planner"
+            )
+
+        self._buffer.enqueue_many([payload])
+        return payload
+
     # ── Bias Assessment (AI-FAIR.3) ────────────────────────────────────
 
     def witness_bias_assessment(
@@ -4525,6 +4745,193 @@ class Witness:
                 ctx["last_drill_date"] = last_drill_date
             if mean_response_minutes is not None:
                 ctx["mean_response_minutes"] = mean_response_minutes
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    # ── Lifecycle Governance (v0.6.4) ────────────────────────────────
+
+    def witness_hazard_reachability(
+        self,
+        hazards_assessed: int,
+        hazards_mitigated: int,
+        reachability_method: str = "manual",
+        *,
+        model_id: Optional[str] = None,
+        hazard_catalog_hash: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness hazard reachability assessment (AI-REACH.1).
+
+        Records that known model limitations were assessed for operational
+        reachability and confirms which hazards are mitigated by guardrails,
+        sandboxing, or vendor controls.
+
+        EU AI Act Art. 53 (GPAI transparency), ISO 42001 6.1.2.
+
+        Args:
+            hazards_assessed: Total hazards evaluated.
+            hazards_mitigated: Hazards confirmed mitigated (unreachable).
+            reachability_method: manual, automated, or vendor_attested.
+            model_id: AI model assessed.
+            hazard_catalog_hash: SHA-256 of the hazard catalog document.
+
+        Returns:
+            WitnessPayload for the AI-REACH.1 anchor.
+        """
+        fa = float(hazards_assessed)
+        fb = float(hazards_mitigated)
+        fc = float(REACHABILITY_METHOD_CODES.get(reachability_method, 0))
+        payload = self._mint_and_sign("AI-REACH.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "hazard-reachability"
+            ctx: Dict[str, Any] = {
+                "provider": "hazard-reachability",
+                "reachability_method": reachability_method,
+            }
+            if hazard_catalog_hash:
+                ctx["hazard_catalog_hash"] = hazard_catalog_hash
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    def witness_decommission(
+        self,
+        dependencies_mapped: int,
+        dependencies_resolved: int,
+        disposal_method: str = "archived",
+        *,
+        system_id: Optional[str] = None,
+        decommission_reason: Optional[str] = None,
+        data_disposition: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness AI system decommissioning (AI-DECOM.1).
+
+        Records safe removal of an AI asset with dependency resolution.
+        EU AI Act Art. 9 (lifecycle governance), ISO 42001 8.2.
+
+        Args:
+            dependencies_mapped: Total downstream dependencies identified.
+            dependencies_resolved: Dependencies resolved (migrated/replaced/acknowledged/transferred).
+            disposal_method: archived, destroyed, isolated, or transferred.
+            system_id: Identifier of the AI system being decommissioned.
+            decommission_reason: Reason for decommissioning.
+            data_disposition: How training/inference data was handled.
+
+        Returns:
+            WitnessPayload for the AI-DECOM.1 anchor.
+        """
+        fa = float(dependencies_mapped)
+        fb = float(dependencies_resolved)
+        fc = float(DISPOSAL_METHOD_CODES.get(disposal_method, 0))
+        payload = self._mint_and_sign("AI-DECOM.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = system_id or "decommission"
+            ctx: Dict[str, Any] = {
+                "provider": "decommission-lifecycle",
+                "disposal_method": disposal_method,
+            }
+            if decommission_reason:
+                ctx["decommission_reason"] = decommission_reason
+            if data_disposition:
+                ctx["data_disposition"] = data_disposition
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    def witness_recommission(
+        self,
+        checks_required: int,
+        checks_passed: int,
+        recommission_type: str = "full_validation",
+        *,
+        system_id: Optional[str] = None,
+        incident_ref: Optional[str] = None,
+        outage_duration_hours: Optional[float] = None,
+    ) -> "WitnessPayload":
+        """Witness AI system re-commissioning validation (AI-RECOMM.1).
+
+        Records that an AI system passed safety checks before re-enabling
+        after outage or incident. Distinct from AI-ASSESS.1 (champion-challenger):
+        AI-ASSESS.1 witnesses ongoing model comparison, AI-RECOMM.1 witnesses
+        that the re-commissioning PROCESS included required validation steps.
+
+        EU AI Act Art. 72 (post-market monitoring), ISO 42001 10.2.
+
+        Args:
+            checks_required: Total safety checks required per re-commissioning policy.
+            checks_passed: Number of checks that passed.
+            recommission_type: full_validation, shadow_mode, or limited_scope.
+            system_id: Identifier of the AI system being re-commissioned.
+            incident_ref: Anchor fingerprint of the triggering incident.
+            outage_duration_hours: Duration the system was offline.
+
+        Returns:
+            WitnessPayload for the AI-RECOMM.1 anchor.
+        """
+        fa = float(checks_required)
+        fb = float(checks_passed)
+        fc = float(RECOMMISSION_TYPE_CODES.get(recommission_type, 0))
+        payload = self._mint_and_sign("AI-RECOMM.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = system_id or "recommission"
+            ctx: Dict[str, Any] = {
+                "provider": "recommission-validation",
+                "recommission_type": recommission_type,
+            }
+            if incident_ref:
+                ctx["incident_ref"] = incident_ref
+            if outage_duration_hours is not None:
+                ctx["outage_duration_hours"] = outage_duration_hours
+            payload.ai_context = ctx
+        self._buffer.enqueue_many([payload])
+        return payload
+
+    def witness_parameter_freeze(
+        self,
+        config_items_locked: int,
+        config_items_verified: int,
+        lock_scope: str = "weights_only",
+        *,
+        model_id: Optional[str] = None,
+        config_hash: Optional[str] = None,
+        lock_window_hours: Optional[float] = None,
+    ) -> "WitnessPayload":
+        """Witness model parameter freeze attestation (AI-FREEZE.1).
+
+        Records that model weights, hyperparameters, and/or guardrail configs
+        were frozen and verified unchanged during an operational window.
+        Verification may use file checksums, weight hashes, or configuration
+        management system attestation.
+
+        EU AI Act Art. 9(2)(b) (configuration management), ISO 42001 A.6.2.4.
+
+        Args:
+            config_items_locked: Discrete config items subject to freeze (weight files,
+                hyperparameter entries, boundary logic rules -- not individual neural
+                network parameters).
+            config_items_verified: Config items confirmed unchanged.
+            lock_scope: weights_only, config_and_params, or full_stack.
+            model_id: AI model being attested.
+            config_hash: SHA-256 of the locked configuration.
+            lock_window_hours: Duration of the lock window in hours.
+
+        Returns:
+            WitnessPayload for the AI-FREEZE.1 anchor.
+        """
+        fa = float(config_items_locked)
+        fb = float(config_items_verified)
+        fc = float(LOCK_SCOPE_CODES.get(lock_scope, 0))
+        payload = self._mint_and_sign("AI-FREEZE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or "parameter-freeze"
+            ctx: Dict[str, Any] = {
+                "provider": "parameter-freeze",
+                "lock_scope": lock_scope,
+            }
+            if config_hash:
+                ctx["config_hash"] = config_hash
+            if lock_window_hours is not None:
+                ctx["lock_window_hours"] = lock_window_hours
             payload.ai_context = ctx
         self._buffer.enqueue_many([payload])
         return payload

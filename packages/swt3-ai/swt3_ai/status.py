@@ -168,6 +168,9 @@ PROCEDURE_HINTS: Dict[str, str] = {
     "AI-IMPACT.1": "witness_impact_assessment",
     "AI-LOG.1": "witness_log_completeness",
     "AI-IR.1": "witness_incident_response",
+    # Mobile Edge / Autonomous Vehicle
+    "AI-MOB.6": "witness_trajectory",
+    "AI-MOB.7": "wrap_vla",
 }
 
 

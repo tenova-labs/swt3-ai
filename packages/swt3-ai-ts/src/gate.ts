@@ -359,6 +359,7 @@ const PROCEDURE_HINTS: Record<string, string> = {
   "AI-GOV.5": "witnessGovernanceAccountability", "AI-GOV.6": "witnessRiskScope",
   "AI-IMPACT.1": "witnessImpactAssessment",
   "AI-LOG.1": "witnessLogCompleteness", "AI-IR.1": "witnessIncidentResponse",
+  "AI-MOB.6": "witnessTrajectory", "AI-MOB.7": "wrapVLA",
 };
 
 const ARTICLE_LABELS: Record<string, Record<string, string>> = {

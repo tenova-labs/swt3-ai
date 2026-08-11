@@ -6,9 +6,38 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
-## What's New in v0.6.3
+## What's New in v0.6.4
 
-Five new tools, one prompt template. Before this release, MCP agents could witness inferences but had no way to prove their RAG pipeline sourced the right documents, their guardrails were active, or a human actually reviewed the output. Auditors asked for that evidence and agents had no answer. Now they do.
+10 new compliance tools, 1 prompt template, and the pre-inference gate. The MCP server now exposes 33 tools covering the full AI governance lifecycle: from authorization before inference to incident reporting after.
+
+### 10 New Compliance Tools
+
+| Tool | Procedure | What It Does | Why It Matters |
+|------|-----------|-------------|----------------|
+| `swt3_gate` | AI-ACC.1 | Pre-inference authorization checkpoint | Proves someone approved the AI to run before it acted. EU AI Act Art. 9 requires risk management prior to deployment. |
+| `swt3_guardrail` | AI-GRD.1 | Records guardrail activation status | Proves safety filters were active at inference time, not just configured. |
+| `swt3_hitl` | AI-HITL.1 | Records human review completion | Proves a qualified human reviewed the AI decision. Required by EU AI Act Art. 14. |
+| `swt3_consent` | AI-CONSENT.1 | Records consent collection | Proves user consent was obtained before data processing. GDPR Art. 6/7. |
+| `swt3_data_provenance` | AI-DATA.1 | Records training data governance review | Proves data governance was performed without disclosing the data itself. |
+| `swt3_rag` | AI-RAG.1 | Records RAG retrieval provenance | Proves which sources were retrieved and their relevance scores. |
+| `swt3_output_filter` | AI-GRD.2 | Records output safety classification result | Proves the output passed content safety filters. Distinct from input-side guardrails. |
+| `swt3_incident` | AI-INCIDENT.1 | Records incident documentation | Proves the incident was reported and documented per policy. |
+| `swt3_reconstruct` | AI-CHAIN.1 | Rebuilds forensic chain from anchors | Produces a verifiable timeline for incident response or audit. |
+| `swt3_trajectory` | AI-MOB.6 | Records autonomous trajectory decisions | Proves VLA/path planning models documented their decisions. ISO/PAS 8800. |
+
+### Compliance Check Prompt
+
+New prompt template `compliance-check` guides LLMs through a structured compliance evaluation. The prompt takes a framework ID and returns a step-by-step assessment plan using the available SWT3 tools. Assessors can run it directly in Claude Desktop, Cursor, or any MCP client.
+
+### Why 33 Tools Matters
+
+The original 23 tools covered the witness lifecycle: mint, verify, sign, query. The 10 new tools cover the governance lifecycle: authorize, filter, review, consent, reconstruct. An AI agent using SWT3 via MCP can now handle the complete compliance workflow without leaving the MCP protocol. No separate SDK integration. No separate API calls. One tool call per compliance obligation.
+
+### v0.6.3
+
+Six new tools, one prompt template. The newest closes the autonomous vehicle compliance vacuum: NVIDIA open-sourced a 34B VLA model for robotaxis, the EU AI Act classifies AV as high-risk (Annex III, 3a), and every company fine-tuning open VLA models needs accountability infrastructure that doesn't exist yet.
+
+- **Trajectory Decision Attestation** (AI-MOB.6) -- `witness_trajectory` tool. Every autonomous driving decision produces a planned trajectory and a causal reasoning trace. This tool records that a VLA or path planning model produced a trajectory, whether it passed safety validation, and its classification level (nominal, cautionary, degraded, emergency, abort). Context stores ONLY hashes and counts -- never raw coordinates, waypoints, or proprietary CoC traces. Model-agnostic -- works with any VLA, path planner, or motion model. ISO/PAS 8800, EU AI Act Annex III(3a), UNECE WP.29 R157.
 
 - **RAG Context Witnessing** (AI-RAG.1/RAG.2) -- `witness_rag_context` tool. Every RAG pipeline retrieves chunks, but none can prove which chunks were used, from which corpus, at what relevance score. This tool mints a provenance anchor for every retrieval: chunk count, corpus identity, embedding model. Chunk text is hashed locally and never sent to the server. When similarity scores and a threshold are provided, a second AI-RAG.2 anchor records context relevance -- proving the retrieval met quality thresholds, not just that it happened. EU AI Act Art. 12 (record-keeping) and NIST AI RMF MEASURE 2.6 require this evidence. Without it, a RAG system has no provenance chain.
 
@@ -32,7 +61,7 @@ Five new tools, one prompt template. Before this release, MCP agents could witne
 
 - **Jurisdiction Resolver** -- `resolve_jurisdiction` tool. Pass an ISO 3166-1 country code (e.g., "JP", "DE") or ISO 3166-2 subdivision (e.g., "US-CA") and get back every applicable regulatory framework, grouped by binding status: mandatory (laws with enforcement), advisory (government guidance), and voluntary (industry standards). For subdivisions, returns both local and national frameworks. 34 frameworks mapped across 50+ jurisdiction codes. The answer to "I deploy in Germany -- what frameworks apply to me?" without reading 34 crosswalk tables.
 
-- **32 tools**, 1 prompt, 34 frameworks, 107 procedures, 2 resources.
+- **33 tools**, 1 prompt, 36 frameworks, 113 procedures, 2 resources.
 
 ### v0.6.1
 
@@ -45,7 +74,7 @@ Five new tools, one prompt template. Before this release, MCP agents could witne
 
 ### v0.5.9
 
-- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (27 frameworks, 107 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
+- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (27 frameworks, 113 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
 - Aligned with core SDK v0.5.9 (`resolve()`, `coverage()`, local witness mode).
 
 ## Why This Exists
@@ -245,7 +274,7 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (27)
+## Tools (33)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.
@@ -295,7 +324,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (107 procedures, 56 namespaces).
+`list_procedures` -- browse the UCT procedure registry (113 procedures, 61 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

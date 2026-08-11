@@ -46,7 +46,7 @@ import type {
   WitnessConfig, WitnessPayload, WitnessReceipt, InferenceRecord,
   RagChunk, RagContextOptions, ModelWeightInfo, AdapterInfo, SkillInfo, MemorySource,
 } from "./types.js";
-import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES } from "./types.js";
+import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES, SAFETY_CLASSIFICATION_CODES } from "./types.js";
 import { loadConfig as loadConfigFromFile, loadFullConfig, validatePolicy } from "./config.js";
 import type { TrustMeshConfig, HardwareConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, ChainRule, ChainPolicyViolation, RuntimeProfileConfig } from "./types.js";
 import { MerkleAccumulator } from "./merkle.js";
@@ -65,6 +65,12 @@ export const AUTHORIZATION_LEVEL_CODES: Record<string, number> = { operator: 0, 
 export const FALLBACK_STATE_CODES: Record<string, number> = { safe_state: 0, legacy_controller: 1, manual_mode: 2, degraded_operation: 3, full_shutdown: 4 };
 export const CONSEQUENCE_CATEGORY_CODES: Record<string, number> = { safety: 0, environmental: 1, financial: 2, operational: 3, reputational: 4 };
 export const DRIFT_RESPONSE_CODES: Record<string, number> = { notification_only: 0, increased_monitoring: 1, throttle: 2, circuit_breaker: 3, forced_failover: 4, emergency_shutdown: 5 };
+
+// ── Lifecycle Governance Codes (v0.6.4) ──────────────────────────────
+export const REACHABILITY_METHOD_CODES: Record<string, number> = { manual: 0, automated: 1, vendor_attested: 2 };
+export const DISPOSAL_METHOD_CODES: Record<string, number> = { archived: 0, destroyed: 1, isolated: 2, transferred: 3 };
+export const RECOMMISSION_TYPE_CODES: Record<string, number> = { full_validation: 0, shadow_mode: 1, limited_scope: 2 };
+export const LOCK_SCOPE_CODES: Record<string, number> = { weights_only: 0, config_and_params: 1, full_stack: 2 };
 
 // ── Chain Density Enforcement ──────────────────────────────────────────
 
@@ -934,6 +940,99 @@ export class Witness {
             finish();
             throw err;
           },
+        );
+      }
+
+      finish();
+      return result;
+    };
+
+    return wrapper as unknown as T;
+  }
+
+  /**
+   * Wrap a VLA inference function as a witnessed call (AI-MOB.7).
+   *
+   * Each call mints an AI-MOB.7 anchor with:
+   *   factor_a = 1 (inference occurred)
+   *   factor_b = latency_ms
+   *   factor_c = 1 if succeeded, 0 if exception raised
+   *
+   * Performance: <0.1ms overhead. Frame data is NOT hashed by default.
+   *
+   * @example
+   *   const infer = witness.wrapVLA(model.predict, "alpamayo-2-super");
+   *   const trajectory = await infer(frames);
+   */
+  wrapVLA<T extends (...args: any[]) => any>(
+    fn: T,
+    modelId?: string,
+    inputFrameHashes?: string[],
+  ): T {
+    const name = modelId ?? fn.name ?? "vla-model";
+    const self = this;
+
+    const wrapper = function (this: any, ...args: any[]): any {
+      // Chain density enforcement
+      if (self._chainEnforcer) {
+        const violation = self._chainEnforcer.check(name);
+        if (violation) {
+          if (violation.action === "blocked") {
+            self._fireViolation(violation);
+            throw new PolicyViolationError(violation);
+          }
+          self._recordChainViolation(violation);
+        }
+      }
+      if (self._sentinel?.connected) {
+        self._sentinel.check(name).catch(() => {});
+      }
+
+      const callId = randomUUID().replace(/-/g, "").slice(0, 12);
+      const start = performance.now();
+      let succeeded = true;
+      let result: any;
+
+      const finish = () => {
+        const elapsedMs = Math.round(performance.now() - start);
+        const inputHash = inputFrameHashes
+          ? sha256Truncated(inputFrameHashes.join(":"))
+          : sha256Truncated(`vla:${args.length}:${elapsedMs}`);
+        const outputHash = sha256Truncated(
+          succeeded ? `${typeof result}:${elapsedMs}` : "ERROR",
+        );
+
+        const record: InferenceRecord = {
+          modelId: name,
+          modelHash: sha256Truncated(name),
+          promptHash: inputHash,
+          responseHash: outputHash,
+          latencyMs: elapsedMs,
+          guardrailsActive: 0,
+          guardrailsRequired: 0,
+          guardrailPassed: true,
+          hasRefusal: !succeeded,
+          provider: "vla",
+          guardrailNames: [],
+          toolName: name,
+          toolCallId: callId,
+        };
+
+        self.record(record, ["AI-MOB.7"]);
+      };
+
+      try {
+        result = fn.apply(this, args);
+      } catch (err) {
+        succeeded = false;
+        finish();
+        throw err;
+      }
+
+      if (result && typeof result.then === "function") {
+        return result.then(
+          (v: any) => { result = v; finish(); return v; },
+          (err: any) => { succeeded = false; finish(); throw err; },
         );
       }
 
@@ -2573,6 +2672,71 @@ export class Witness {
       if (options.confidence != null) ctx.confidence = Math.round(options.confidence * 10000) / 10000;
       if (options.outputHash) ctx.output_hash = options.outputHash;
       payload.ai_context = ctx;
+    }
+
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  // ── Trajectory Decision Attestation (AI-MOB.6) ─────────────────
+
+  /**
+   * Witness a safety-critical trajectory decision (AI-MOB.6).
+   *
+   * Records that a VLA or autonomous planning model produced a trajectory,
+   * whether it passed safety validation, and its classification level.
+   * Model-agnostic -- works with any VLA, path planner, or motion model.
+   */
+  witnessTrajectory(options: {
+    safetyValidated: boolean;
+    waypointCount?: number;
+    trajectoryHash?: string;
+    cocTraceHash?: string;
+    cocNodeCount?: number;
+    actionClass?: string;
+    safetyClassification?: string;
+    sensorSources?: string[];
+    modelId?: string;
+  }): WitnessPayload {
+    const safetyClass = options.safetyClassification ?? "nominal";
+    const fa = 1; // attestation required
+    const fb = options.safetyValidated ? 1 : 0;
+    const fc = SAFETY_CLASSIFICATION_CODES[safetyClass] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MOB.6", fa, fb, fc, ts);
+
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MOB.6", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "trajectory-planner";
+      const ctx: Record<string, unknown> = {
+        provider: "trajectory",
+        safety_validated: options.safetyValidated,
+        safety_classification: safetyClass,
+      };
+      if (options.waypointCount != null) ctx.waypoint_count = options.waypointCount;
+      if (options.trajectoryHash) ctx.trajectory_hash = options.trajectoryHash;
+      if (options.cocTraceHash) ctx.coc_trace_hash = options.cocTraceHash;
+      if (options.cocNodeCount != null) ctx.coc_node_count = options.cocNodeCount;
+      if (options.actionClass) ctx.action_class = options.actionClass;
+      if (options.sensorSources) {
+        ctx.sensor_count = options.sensorSources.length;
+        ctx.sensor_sources = options.sensorSources;
+      }
+      payload.ai_context = ctx;
+    } else if (this.config.clearingLevel === 2) {
+      payload.ai_model_id = options.modelId ?? "trajectory-planner";
+      const ctx2: Record<string, unknown> = { provider_category: "trajectory" };
+      if (options.sensorSources) ctx2.sensor_count = options.sensorSources.length;
+      payload.ai_context = ctx2;
+    } else {
+      payload.ai_model_id = sha256Truncated(options.modelId ?? "trajectory-planner");
     }
 
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
@@ -4735,6 +4899,150 @@ export class Witness {
       payload.ai_context = ctx2;
     }
     // clearing_level 3: factors only, no metadata
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  // ── Lifecycle Governance (v0.6.4) ────────────────────────────────
+
+  witnessHazardReachability(options: {
+    hazardsAssessed: number;
+    hazardsMitigated: number;
+    reachabilityMethod?: string;
+    modelId?: string;
+    hazardCatalogHash?: string;
+  }): WitnessPayload {
+    const fa = options.hazardsAssessed;
+    const fb = options.hazardsMitigated;
+    const fc = REACHABILITY_METHOD_CODES[options.reachabilityMethod ?? "manual"] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-REACH.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-REACH.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "hazard-reachability";
+      const ctx: Record<string, unknown> = {
+        provider: "hazard-reachability",
+        reachability_method: options.reachabilityMethod ?? "manual",
+      };
+      if (options.hazardCatalogHash) ctx.hazard_catalog_hash = options.hazardCatalogHash;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  witnessDecommission(options: {
+    dependenciesMapped: number;
+    dependenciesResolved: number;
+    disposalMethod?: string;
+    systemId?: string;
+    decommissionReason?: string;
+    dataDisposition?: string;
+  }): WitnessPayload {
+    const fa = options.dependenciesMapped;
+    const fb = options.dependenciesResolved;
+    const fc = DISPOSAL_METHOD_CODES[options.disposalMethod ?? "archived"] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DECOM.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DECOM.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.systemId ?? "decommission";
+      const ctx: Record<string, unknown> = {
+        provider: "decommission-lifecycle",
+        disposal_method: options.disposalMethod ?? "archived",
+      };
+      if (options.decommissionReason) ctx.decommission_reason = options.decommissionReason;
+      if (options.dataDisposition) ctx.data_disposition = options.dataDisposition;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  witnessRecommission(options: {
+    checksRequired: number;
+    checksPassed: number;
+    recommissionType?: string;
+    systemId?: string;
+    incidentRef?: string;
+    outageDurationHours?: number;
+  }): WitnessPayload {
+    const fa = options.checksRequired;
+    const fb = options.checksPassed;
+    const fc = RECOMMISSION_TYPE_CODES[options.recommissionType ?? "full_validation"] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-RECOMM.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-RECOMM.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.systemId ?? "recommission";
+      const ctx: Record<string, unknown> = {
+        provider: "recommission-validation",
+        recommission_type: options.recommissionType ?? "full_validation",
+      };
+      if (options.incidentRef) ctx.incident_ref = options.incidentRef;
+      if (options.outageDurationHours !== undefined) ctx.outage_duration_hours = options.outageDurationHours;
+      payload.ai_context = ctx;
+    }
+    this._applyOperationalMetadata(payload, policyHash);
+    this.buffer.enqueueMany([payload]);
+    return payload;
+  }
+
+  witnessParameterFreeze(options: {
+    configItemsLocked: number;
+    configItemsVerified: number;
+    lockScope?: string;
+    modelId?: string;
+    configHash?: string;
+    lockWindowHours?: number;
+  }): WitnessPayload {
+    const fa = options.configItemsLocked;
+    const fb = options.configItemsVerified;
+    const fc = LOCK_SCOPE_CODES[options.lockScope ?? "weights_only"] ?? 0;
+    const [ts, ep] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-FREEZE.1", fa, fb, fc, ts);
+    const policyHash = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "AI-FREEZE.1",
+      factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: ep, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? "parameter-freeze";
+      const ctx: Record<string, unknown> = {
+        provider: "parameter-freeze",
+        lock_scope: options.lockScope ?? "weights_only",
+      };
+      if (options.configHash) ctx.config_hash = options.configHash;
+      if (options.lockWindowHours !== undefined) ctx.lock_window_hours = options.lockWindowHours;
+      payload.ai_context = ctx;
+    }
     this._applyOperationalMetadata(payload, policyHash);
     this.buffer.enqueueMany([payload]);
     return payload;

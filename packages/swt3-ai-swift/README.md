@@ -10,7 +10,21 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
-## What's New in v0.6.3
+## What's New in v0.6.4
+
+Version alignment with the full SWT3 SDK ecosystem. The protocol now spans 9 languages (Python, TypeScript, Rust, C#, Ruby, Swift, Kotlin, plus MCP and K8s agent) with 113 procedures across 61 namespaces.
+
+**Why 9 languages matters:** AI systems don't run on one stack. A Python training pipeline feeds a Rust inference engine that serves a Swift mobile app monitored by a TypeScript dashboard. Every handoff is an accountability gap. Cross-language parity means the same fingerprint formula, the same signing algorithm, and the same test vectors produce identical results regardless of where the attestation happens. No translation layer. No format conversion. One protocol, verified across every runtime.
+
+**New in the ecosystem (v0.6.4):**
+- Pre-inference gate module: authorization checkpoint before inference runs
+- Chain reconstruction: forensic timeline rebuilding from witness anchors
+- 10 new MCP compliance tools (33 total): gate, guardrail, HITL, consent, data provenance, RAG, output filter, incident, reconstruct, trajectory
+- Kotlin SDK (v0.1.1): JVM/Android support with full test vector parity
+- 185 compliance guides (5 new regulatory crosswalks)
+- Crosswalk data: 27 frameworks, 339 procedure-framework mappings
+
+### v0.6.3
 
 Four new attestation types for the procedures regulators ask about first. Each maps to regulations enforcing now or within months.
 

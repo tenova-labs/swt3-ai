@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "generated_at": "2026-07-02T01:21:12Z",
   "source": "uct-registry.json",
-  "description": "Bidirectional crosswalk between 107 SWT3 AI procedures and 34 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
+  "description": "Bidirectional crosswalk between 113 SWT3 AI procedures and 36 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "frameworks": {
     "CA-SB-942": {
@@ -1720,6 +1720,62 @@
         "NIST-800-53": "CM-3",
         "NIST-AI-RMF": "GOVERN 1.5"
       }
+    },
+    "AI-REACH.1": {
+      "title": "Hazard Reachability Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.53",
+        "ISO-42001": "6.1.2",
+        "NIST-AI-RMF": "MAP 3.5"
+      }
+    },
+    "AI-DECOM.1": {
+      "title": "AI System Decommissioning Lifecycle Witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "ISO-42001": "8.2",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      }
+    },
+    "AI-RECOMM.1": {
+      "title": "AI System Re-commissioning Validation Witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.72",
+        "ISO-42001": "10.2",
+        "NIST-AI-RMF": "MANAGE 4.1"
+      }
+    },
+    "AI-FREEZE.1": {
+      "title": "Model Parameter Freeze Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(b)",
+        "ISO-42001": "A.6.2.4",
+        "NIST-800-53": "CM-3"
+      }
+    },
+    "AI-MOB.6": {
+      "title": "Trajectory Decision Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Annex III(3a), Art.9(2)(a)",
+        "ISO-PAS-8800": "Cl.6, Cl.7, Cl.8",
+        "NIST-AI-RMF": "MANAGE 4.1, MEASURE 2.6",
+        "UNECE-WP29": "R157"
+      }
+    },
+    "AI-MOB.7": {
+      "title": "VLA Inference Witnessing",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.12(1), Art.15(1), Art.9(4)(b)",
+        "ISO-PAS-8800": "Cl.9, Cl.10",
+        "NIST-AI-RMF": "MEASURE 2.5, MAP 3.2",
+        "UNECE-WP29": "R157"
+      }
     }
   },
   "by_framework": {
@@ -1955,6 +2011,9 @@
         "AI-MARK.1",
         "AI-WATERMARK.1"
       ],
+      "Art.53": [
+        "AI-REACH.1"
+      ],
       "Art.53(1)(d)": [
         "AI-LIC.1"
       ],
@@ -1966,7 +2025,8 @@
         "AI-IR.1"
       ],
       "Art.72": [
-        "AI-PMM.1"
+        "AI-PMM.1",
+        "AI-RECOMM.1"
       ],
       "Art.72(1)": [
         "AI-MDL.3"
@@ -1985,14 +2045,16 @@
         "AI-SKILL.1",
         "AI-TRUST.1",
         "AI-TRUST.2",
-        "AI-VIO.1"
+        "AI-VIO.1",
+        "AI-DECOM.1"
       ],
       "Art.9(2)(a)": [
         "AI-GRD.1"
       ],
       "Art.9(2)(b)": [
         "AI-BASE.1",
-        "AI-DRIFT.1"
+        "AI-DRIFT.1",
+        "AI-FREEZE.1"
       ],
       "Art.9(4)(a)": [
         "AI-FAIR.2",
@@ -2230,13 +2292,17 @@
       "6.1.2": [
         "AI-DPIA.1",
         "AI-IMPACT.1",
-        "AI-LCM.1"
+        "AI-LCM.1",
+        "AI-REACH.1"
       ],
       "7.1": [
         "AI-GOV.7"
       ],
       "7.2": [
         "AI-GOV.2"
+      ],
+      "8.2": [
+        "AI-DECOM.1"
       ],
       "9.1": [
         "AI-INF.3"
@@ -2245,6 +2311,9 @@
         "AI-AUDIT.1",
         "AI-AUDIT.2",
         "AI-LOG.1"
+      ],
+      "10.2": [
+        "AI-RECOMM.1"
       ],
       "A.6.2.2": [
         "AI-CHR.1"
@@ -2262,7 +2331,8 @@
         "AI-MDL.6",
         "AI-MDL.7",
         "AI-SBOM.1",
-        "AI-SKILL.1"
+        "AI-SKILL.1",
+        "AI-FREEZE.1"
       ],
       "A.6.2.5": [
         "AI-DRIFT.1",
@@ -2408,7 +2478,8 @@
       ],
       "CM-3": [
         "AI-AUTO.2",
-        "AI-METAGOV.3"
+        "AI-METAGOV.3",
+        "AI-FREEZE.1"
       ],
       "CM-4": [
         "AI-METAGOV.4"
@@ -2522,7 +2593,8 @@
         "AI-SKILL.1",
         "AI-TOOL.1",
         "AI-TRANS.1",
-        "AI-WATERMARK.1"
+        "AI-WATERMARK.1",
+        "AI-DECOM.1"
       ],
       "GOVERN 2.1": [
         "AI-GOV.2",
@@ -2568,7 +2640,8 @@
       "MANAGE 4.1": [
         "AI-HITL.2",
         "AI-PMM.1",
-        "AI-VIO.1"
+        "AI-VIO.1",
+        "AI-RECOMM.1"
       ],
       "MAP 1.1": [
         "AI-ENG.1",
@@ -2595,7 +2668,8 @@
       ],
       "MAP 3.5": [
         "AI-DATA.1",
-        "AI-DATA.4"
+        "AI-DATA.4",
+        "AI-REACH.1"
       ],
       "MAP 4.1": [
         "AI-DATA.3"
