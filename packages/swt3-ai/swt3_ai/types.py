@@ -36,6 +36,8 @@ class WitnessConfig:
     redis_url: Optional[str] = None  # Redis URL when flush_target="redis" (e.g., redis://localhost:6379)
     redis_stream: Optional[str] = None  # Redis stream name (default: "swt3:anchors")
     digest_algorithm: Optional[str] = None  # Only "sha256" in v0.5.4 (crypto-agility signal)
+    sampling_rate: float = 1.0  # Global sampling rate (0.0-1.0). 1.0 = witness all.
+    sampling_rates: Optional[Dict[str, float]] = None  # Per-procedure overrides (e.g., {"AI-GRD.1": 1.0, "AI-INF.1": 0.01})
 
     def __post_init__(self) -> None:
         if not self.endpoint:
@@ -48,6 +50,12 @@ class WitnessConfig:
             raise ValueError("clearing_level must be 0, 1, 2, or 3")
         if self.agent_id is not None and not self.agent_id.strip():
             raise ValueError("agent_id must be non-empty if provided")
+        if not (0.0 <= self.sampling_rate <= 1.0):
+            raise ValueError("sampling_rate must be between 0.0 and 1.0")
+        if self.sampling_rates:
+            for proc, rate in self.sampling_rates.items():
+                if not (0.0 <= rate <= 1.0):
+                    raise ValueError(f"sampling_rates[{proc!r}] must be between 0.0 and 1.0")
         # Normalize endpoint - strip trailing slash
         self.endpoint = self.endpoint.rstrip("/")
 

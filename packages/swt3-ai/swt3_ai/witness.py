@@ -280,6 +280,37 @@ def _safe_hex_int(s: str, chars: int = 8) -> int:
         return int(hashlib.sha256(s.encode()).hexdigest()[:chars], 16) % 1000000
 
 
+def _merge_governance_metadata(ctx: Dict[str, Any], governance_metadata: Optional[Dict[str, Any]]) -> None:
+    """Merge governance effectiveness metadata into ai_context dict.
+
+    Known keys are validated:
+      - review_duration_minutes: int/float >= 0
+      - participant_count: int >= 1 (warns if < 2)
+    Unknown keys pass through for forward compatibility.
+    """
+    if not governance_metadata:
+        return
+    _KNOWN_KEYS = {"review_duration_minutes", "participant_count"}
+    if "review_duration_minutes" in governance_metadata:
+        v = governance_metadata["review_duration_minutes"]
+        if not isinstance(v, (int, float)) or v < 0:
+            raise ValueError("governance_metadata['review_duration_minutes'] must be >= 0")
+        ctx["review_duration_minutes"] = v
+    if "participant_count" in governance_metadata:
+        v = governance_metadata["participant_count"]
+        if not isinstance(v, int) or v < 1:
+            raise ValueError("governance_metadata['participant_count'] must be int >= 1")
+        if v < 2:
+            logger.warning(
+                "Single-participant governance review may not satisfy "
+                "effective challenge requirements (SR 11-7, EU AI Act Art. 14)"
+            )
+        ctx["participant_count"] = v
+    for k, val in governance_metadata.items():
+        if k not in _KNOWN_KEYS:
+            ctx[k] = val
+
+
 class GatekeeperError(Exception):
     """Raised when strict mode blocks an inference due to insufficient guardrails.
 
@@ -318,6 +349,78 @@ class ChainTrustError(Exception):
         super().__init__(
             f"Chain trust blocked: effective level {effective} below minimum {minimum}"
         )
+
+
+# ---------------------------------------------------------------------------
+# DensityEnforcer -- rate-limited AI-DENSITY.1 attestation on flush
+# ---------------------------------------------------------------------------
+
+_DENSITY_MIN_WINDOW_S = 5 * 60       # 5 minutes cold start
+_DENSITY_MIN_ANCHORS = 10            # minimum anchors before first attestation
+_DENSITY_RATE_LIMIT_S = 60 * 60      # 1 hour between attestations
+
+
+class DensityEnforcer:
+    """Track anchor density and evaluate whether witnessing frequency is sufficient."""
+
+    def __init__(self, policy: Any) -> None:
+        self._policy = policy
+        self._anchor_count = 0
+        self._anchor_count_by_proc: Dict[str, int] = {}
+        self._session_start = time.time()
+        self._last_attestation = 0.0
+        self._total_tokens = 0
+
+    def record_anchor(self, procedure_id: str) -> None:
+        self._anchor_count += 1
+        self._anchor_count_by_proc[procedure_id] = self._anchor_count_by_proc.get(procedure_id, 0) + 1
+
+    def record_tokens(self, count: int) -> None:
+        self._total_tokens += count
+
+    def evaluate(self) -> Optional[Dict[str, Any]]:
+        """Return {expected, actual, status} if conditions met, else None."""
+        now = time.time()
+        elapsed = now - self._session_start
+
+        # Cold start: need at least 5 minutes AND 10 anchors
+        if elapsed < _DENSITY_MIN_WINDOW_S or self._anchor_count < _DENSITY_MIN_ANCHORS:
+            return None
+
+        # Rate limit: at most one attestation per hour
+        if self._last_attestation > 0 and (now - self._last_attestation) < _DENSITY_RATE_LIMIT_S:
+            return None
+
+        # Calculate expected anchors from policy
+        min_per_1k = getattr(self._policy, "min_anchors_per_1000_tokens", 0)
+        max_gap = getattr(self._policy, "max_chain_gap_seconds", 0)
+
+        if self._total_tokens > 0 and min_per_1k > 0:
+            expected = int(min_per_1k * (self._total_tokens / 1000)) + 1
+        elif max_gap > 0:
+            expected = int(elapsed / max_gap) + 1
+        else:
+            return None
+
+        if expected <= 0:
+            return None
+
+        actual = self._anchor_count
+        if actual >= expected:
+            status = "sufficient"
+        elif actual >= expected * 0.5:
+            status = "degraded"
+        else:
+            status = "insufficient"
+
+        # Reset counters
+        self._last_attestation = now
+        self._anchor_count = 0
+        self._anchor_count_by_proc = {}
+        self._total_tokens = 0
+        self._session_start = now
+
+        return {"expected": expected, "actual": actual, "status": status}
 
 
 class Witness:
@@ -376,6 +479,8 @@ class Witness:
         replay_window: Optional[int] = None,
         chain_min_trust_level: Optional[int] = None,
         on_violation: Optional[Callable] = None,
+        sampling_rate: float = 1.0,
+        sampling_rates: Optional[Dict[str, float]] = None,
     ) -> None:
         self._gateway_mode = gateway_mode
 
@@ -414,6 +519,7 @@ class Witness:
             self._on_violation = on_violation
             self._tenant_id = tenant_id or "GATEWAY"
             self._sentinel = None
+            self._sampled_skip_counts: Dict[str, int] = {}
             return
 
         # Local mode: no endpoint, no API key, no account required.
@@ -469,7 +575,11 @@ class Witness:
             flush_target=flush_target,
             redis_url=redis_url,
             redis_stream=redis_stream,
+            sampling_rate=sampling_rate,
+            sampling_rates=sampling_rates,
         )
+        # Sampling counters: track skipped inferences per procedure
+        self._sampled_skip_counts: Dict[str, int] = {}
         # WAL: crash-resilient buffer persistence + replay protection (patent pending)
         self._wal_path = wal_path
         wal = None
@@ -550,6 +660,7 @@ class Witness:
 
         if loaded.density_policy:
             witness._density_policy = loaded.density_policy
+            witness._density_enforcer = DensityEnforcer(loaded.density_policy)
 
         if loaded.mcp_policy:
             witness._mcp_policy = loaded.mcp_policy
@@ -614,10 +725,13 @@ class Witness:
         return getattr(self, "_chain_enforcer", None)
 
     def record_session_tokens(self, count: int) -> None:
-        """Record token usage against the chain enforcer's session budget."""
+        """Record token usage against the chain enforcer's session budget and density enforcer."""
         enforcer = getattr(self, "_chain_enforcer", None)
         if enforcer is not None:
             enforcer.record_tokens(count)
+        de = getattr(self, "_density_enforcer", None)
+        if de is not None:
+            de.record_tokens(count)
         # Mirror to sentinel for cross-process shared budget
         sentinel = getattr(self, "_sentinel", None)
         if sentinel is not None and sentinel.connected:
@@ -717,6 +831,76 @@ class Witness:
             purpose_class=self._config.purpose_class,
         )
         return payload
+
+    # ── Probabilistic Witnessing ─────────────────────────────────────
+
+    def _get_sampling_rate(self, procedure_id: str) -> float:
+        """Get the effective sampling rate for a procedure."""
+        if self._config.sampling_rates and procedure_id in self._config.sampling_rates:
+            return self._config.sampling_rates[procedure_id]
+        return self._config.sampling_rate
+
+    def _should_witness(self, fingerprint_input: str, procedure_id: str) -> bool:
+        """Deterministic hash-based sampling decision.
+
+        Uses SHA-256 of the fingerprint input (already computed) for
+        reproducible, auditable sampling. Same input always produces the
+        same decision.
+        """
+        import hashlib
+        rate = self._get_sampling_rate(procedure_id)
+        if rate >= 1.0:
+            return True
+        if rate <= 0.0:
+            return False
+        threshold = int.from_bytes(
+            hashlib.sha256(fingerprint_input.encode()).digest()[:2], "big"
+        )
+        return threshold < int(rate * 0xFFFF)
+
+    def _emit_sampling_summaries(self) -> List["WitnessPayload"]:
+        """Create AI-SAMPLE.1 summary anchors for all procedures with skipped inferences."""
+        summaries: List[WitnessPayload] = []
+        for proc_id, count in list(self._sampled_skip_counts.items()):
+            if count > 0:
+                payload = self._mint_and_sign("AI-SAMPLE.1", float(count), 0.0, 0.0)
+                if self._config.clearing_level <= 1:
+                    payload.ai_model_id = "sampling-summary"
+                    payload.ai_context = {
+                        "provider": "sampling-summary",
+                        "sampled_procedure": proc_id,
+                        "skipped_count": count,
+                        "sampling_rate": self._get_sampling_rate(proc_id),
+                    }
+                summaries.append(payload)
+        self._sampled_skip_counts.clear()
+        return summaries
+
+    def _enqueue_sampled(self, payload: "WitnessPayload") -> None:
+        """Enqueue a payload with probabilistic sampling gate.
+
+        If sampling is active and the payload is not selected, increments
+        the skip counter instead of enqueuing. Summary anchors are emitted
+        during flush().
+        """
+        proc_id = payload.procedure_id
+        # Never sample AI-SAMPLE.1/AI-DENSITY.1 (prevents infinite recursion)
+        if proc_id in ("AI-SAMPLE.1", "AI-DENSITY.1") or self._config.sampling_rate >= 1.0 and not self._config.sampling_rates:
+            self._buffer.enqueue_many([payload])
+            # Track density (exclude meta-procedures to avoid recursion)
+            if proc_id not in ("AI-SAMPLE.1", "AI-DENSITY.1"):
+                de = getattr(self, "_density_enforcer", None)
+                if de is not None:
+                    de.record_anchor(proc_id)
+            return
+        fp_input = f"WITNESS:{self._tenant_id}:{proc_id}:{payload.factor_a}:{payload.factor_b}:{payload.factor_c}:{payload.fingerprint_timestamp_ms}"
+        if self._should_witness(fp_input, proc_id):
+            self._buffer.enqueue_many([payload])
+            de = getattr(self, "_density_enforcer", None)
+            if de is not None:
+                de.record_anchor(proc_id)
+        else:
+            self._sampled_skip_counts[proc_id] = self._sampled_skip_counts.get(proc_id, 0) + 1
 
     def chain(self, name: str, *, cycle_id: Optional[str] = None) -> "ChainContext":
         """Context manager that auto-injects cycle_id into all anchors.
@@ -1265,7 +1449,7 @@ class Witness:
         if self._config.clearing_level <= 1:
             payload.ai_model_id = "security-scan"
             payload.ai_context = {"provider": "security", "threat_type": threat_type}
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
 
     def witness_input_validation(
         self,
@@ -1295,7 +1479,7 @@ class Witness:
         if self._config.clearing_level <= 1:
             payload.ai_model_id = "input-validation"
             payload.ai_context = {"provider": "security"}
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
 
     def witness_rag_context(
         self,
@@ -1409,7 +1593,8 @@ class Witness:
                 }
             payloads.append(p2)
 
-        self._buffer.enqueue_many(payloads)
+        for p in payloads:
+            self._enqueue_sampled(p)
         logger.info(
             "RAG context witnessed: %d chunks, %d anchors minted (corpus=%s)",
             len(normalized), len(payloads), corpus_id or "anonymous",
@@ -1459,6 +1644,7 @@ class Witness:
         *,
         expected_hash: Optional[str] = None,
         lifecycle_stage: Optional[str] = None,
+        parent_model_fingerprint: Optional[str] = None,
     ) -> WitnessPayload:
         """Witness model weight file integrity (AI-MDL.5).
 
@@ -1497,8 +1683,10 @@ class Witness:
                 ctx["expected_hash"] = expected_hash
             if lifecycle_stage:
                 ctx["lifecycle_stage"] = lifecycle_stage
+            if parent_model_fingerprint:
+                ctx["parent_model_fingerprint"] = parent_model_fingerprint
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_adapter_stack(
@@ -1506,6 +1694,7 @@ class Witness:
         adapters: List[AdapterInfo],
         *,
         base_model_id: Optional[str] = None,
+        parent_model_fingerprint: Optional[str] = None,
     ) -> WitnessPayload:
         """Witness active LoRA/QLoRA/PEFT adapter stack (AI-MDL.6)."""
         all_verified = all(a.adapter_hash for a in adapters) if adapters else True
@@ -1521,7 +1710,9 @@ class Witness:
             }
             if base_model_id:
                 payload.ai_context["base_model_id"] = base_model_id
-        self._buffer.enqueue_many([payload])
+            if parent_model_fingerprint:
+                payload.ai_context["parent_model_fingerprint"] = parent_model_fingerprint
+        self._enqueue_sampled(payload)
         return payload
 
     QUANTIZATION_CODES: Dict[str, int] = {
@@ -1535,6 +1726,7 @@ class Witness:
         *,
         bits: Optional[int] = None,
         group_size: Optional[int] = None,
+        parent_model_fingerprint: Optional[str] = None,
     ) -> WitnessPayload:
         """Witness model quantization method (AI-MDL.7).
 
@@ -1552,8 +1744,10 @@ class Witness:
                 ctx["bits"] = bits
             if group_size is not None:
                 ctx["group_size"] = group_size
+            if parent_model_fingerprint:
+                ctx["parent_model_fingerprint"] = parent_model_fingerprint
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # -- Procedural Knowledge / Skills Methods (AI-SKILL.1/2/3) --
@@ -1597,7 +1791,7 @@ class Witness:
                 ],
                 "manifest_hash": computed_manifest,
             }
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_memory_context(
@@ -1617,7 +1811,7 @@ class Witness:
                 ],
                 "total_sources": len(sources),
             }
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_reward_model(
@@ -1638,7 +1832,7 @@ class Witness:
             if method:
                 ctx["method"] = method
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_hardware(
@@ -1722,7 +1916,7 @@ class Witness:
                 ctx["expected_topology"] = expected_topology
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_tpm_attestation(
@@ -1780,7 +1974,7 @@ class Witness:
                 ]
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Environment (AI-ENV.1 / AI-ENV.2) ──────────────────────────────
@@ -1832,7 +2026,7 @@ class Witness:
                 "hostname_hash": snapshot.hostname_hash,
             }
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_energy_draw(
@@ -1887,7 +2081,7 @@ class Witness:
                 "hostname_hash": snapshot.hostname_hash,
             }
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Runtime Profile Validation ──────────────────────────────────────
@@ -1965,7 +2159,7 @@ class Witness:
                 ctx["standard"] = standard
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Agent Behavioral Baseline (AI-BASE.1) ─────────────────────────
@@ -2024,7 +2218,7 @@ class Witness:
                 ctx["agent_id_hash"] = agent_id_hash
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── License Provenance (AI-LIC.1) ──────────────────────────────────
@@ -2080,7 +2274,7 @@ class Witness:
                 ctx["license_hash"] = license_hash
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── AI Bill of Materials (AI-SBOM.1) ────────────────────────────────
@@ -2139,7 +2333,7 @@ class Witness:
                 ctx["infrastructure_components"] = infrastructure_components
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Adversarial Test Campaign (AI-REDTEAM.1) ──────────────────────
@@ -2203,7 +2397,7 @@ class Witness:
                 ctx["duration_seconds"] = duration_seconds
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Data Subject Consent (AI-CONSENT.1) ───────────────────────────
@@ -2264,7 +2458,7 @@ class Witness:
                 ctx["data_categories"] = data_categories
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Multi-Agent Delegation (AI-MULTI.1) ───────────────────────────
@@ -2324,7 +2518,7 @@ class Witness:
                 ]
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Delegation Tree Witnessing (AI-DEL.1) ────────────────────────────
@@ -2388,7 +2582,7 @@ class Witness:
                 ctx["parent_grant_fingerprint"] = parent_grant_fingerprint
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     @staticmethod
@@ -2417,6 +2611,181 @@ class Witness:
             delegator_id, scope, kwargs.pop("delegation_depth", 1), **kwargs,
         )
 
+    # ── Delegation Boundary Attestation (AI-DEL.2) ─────────────────────
+
+    DELEGATION_BOUNDARY_ACTION_CODES: Dict[str, int] = {"blocked": 0, "warned": 1, "escalated": 2, "allowed": 3}
+
+    def witness_delegation_boundary(
+        self,
+        max_depth: int,
+        actual_depth: int,
+        boundary_action: str,
+        *,
+        delegator_id: Optional[str] = None,
+        parent_grant_fingerprint: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness delegation boundary evaluation (AI-DEL.2).
+
+        Attests that a delegation boundary was evaluated. Does not enforce the
+        boundary. Your code must enforce depth limits; this method records the
+        evidence.
+
+        NIST AI Agent Standards Initiative, Singapore IMDA Agentic Framework,
+        EU AI Act Art. 14 (human oversight).
+        """
+        fa = float(max_depth)
+        fb = float(actual_depth)
+        fc = float(self.DELEGATION_BOUNDARY_ACTION_CODES.get(boundary_action, 3))
+        payload = self._mint_and_sign("AI-DEL.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"delegation-boundary-{boundary_action}"
+            ctx: Dict[str, Any] = {
+                "provider": "delegation-governance",
+                "boundary_action": boundary_action,
+                "depth_exceeded": actual_depth > max_depth,
+            }
+            if delegator_id:
+                ctx["delegator_id"] = delegator_id
+            if parent_grant_fingerprint:
+                ctx["parent_grant_fingerprint"] = parent_grant_fingerprint
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── MCP Security Posture (AI-MCP.1) ──────────────────────────────────
+
+    MCP_SECURITY_CHECKS: List[str] = [
+        "input_validation", "auth_headers", "rate_limiting", "error_masking",
+        "tool_allow_list", "logging_enabled", "schema_validation", "timeout_configured",
+    ]
+
+    def witness_mcp_security(
+        self,
+        checks_passed: int,
+        *,
+        total_checks: int = 8,
+        score: Optional[int] = None,
+        server_name: Optional[str] = None,
+        transport_type: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness MCP security posture evaluation (AI-MCP.1).
+
+        Attests MCP server security posture based on observable checks.
+        NEVER reveals which specific checks failed -- only the count and score.
+        Stdio transport cannot verify TLS; only 8 observable checks are used.
+
+        NSA/CSA MCP Security Best Practices, NIST AI Agent Standards Initiative.
+        """
+        if score is None:
+            score = round((checks_passed / max(total_checks, 1)) * 100)
+        fa = float(total_checks)
+        fb = float(checks_passed)
+        fc = float(score)
+        payload = self._mint_and_sign("AI-MCP.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"mcp-security-{transport_type or 'stdio'}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-security-posture",
+                "checks_total": total_checks,
+                "checks_passed": checks_passed,
+                "posture_score": score,
+            }
+            if server_name:
+                ctx["server_name"] = server_name
+            if transport_type:
+                ctx["transport_type"] = transport_type
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── Model Provenance Chain (AI-PROV.1) ────────────────────────────────
+
+    PROVENANCE_LINK_TYPE_CODES: Dict[str, int] = {
+        "training": 0, "fine_tuning": 1, "deployment": 2, "distillation": 3,
+    }
+
+    def witness_model_provenance(
+        self,
+        chain_length: int,
+        integrity_verified: bool,
+        link_type: str,
+        *,
+        parent_model_fingerprint: Optional[str] = None,
+        model_id: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness model provenance chain (AI-PROV.1).
+
+        Attests the lineage of a model through its lifecycle: training,
+        fine-tuning, distillation, deployment. Links provenance back to
+        parent models via fingerprints.
+
+        NIST AI RMF MAP 1.1, EU AI Act Art. 11 (technical documentation),
+        G7 Hiroshima AI Code of Conduct.
+        """
+        fa = float(chain_length)
+        fb = 1.0 if integrity_verified else 0.0
+        fc = float(self.PROVENANCE_LINK_TYPE_CODES.get(link_type, 0))
+        payload = self._mint_and_sign("AI-PROV.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = model_id or f"provenance-{link_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "model-provenance",
+                "link_type": link_type,
+                "chain_length": chain_length,
+                "integrity_verified": integrity_verified,
+            }
+            if parent_model_fingerprint:
+                ctx["parent_model_fingerprint"] = parent_model_fingerprint
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── Witnessing Density Attestation (AI-DENSITY.1) ────────────────────
+
+    DENSITY_STATUS_CODES: Dict[str, int] = {"sufficient": 0, "insufficient": 1, "degraded": 2}
+
+    def witness_anchor_density(
+        self,
+        expected_anchors: int,
+        actual_anchors: int,
+        *,
+        density_status: Optional[str] = None,
+        evaluation_window_seconds: int = 3600,
+        procedure_filter: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> "WitnessPayload":
+        """Witness anchor density evaluation (AI-DENSITY.1).
+
+        Records whether witnessing frequency is sufficient for the regulatory
+        requirement. EU AI Act Art. 9 (continuous risk management), NIST AI
+        RMF MEASURE 2.6.
+        """
+        if density_status is None:
+            density_status = "sufficient" if actual_anchors >= expected_anchors else "insufficient"
+        fa = float(expected_anchors)
+        fb = float(actual_anchors)
+        fc = float(self.DENSITY_STATUS_CODES.get(density_status, 1))
+        payload = self._mint_and_sign("AI-DENSITY.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"density-{density_status}"
+            ctx: Dict[str, Any] = {
+                "provider": "density-attestation",
+                "density_status": density_status,
+                "evaluation_window_seconds": evaluation_window_seconds,
+            }
+            if procedure_filter:
+                ctx["procedure_filter"] = procedure_filter
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
     # ── Model Drift Detection (AI-DRIFT.1) ──────────────────────────────
 
     def witness_drift(self, metrics_evaluated: int, drifted_count: int, drift_type: str, *, baseline_hash: Optional[str] = None, drift_score: Optional[float] = None, detection_method: Optional[str] = None, window_size: Optional[int] = None, threshold: Optional[float] = None) -> WitnessPayload:
@@ -2432,7 +2801,7 @@ class Witness:
             if window_size is not None: ctx["window_size"] = window_size
             if threshold is not None: ctx["threshold"] = threshold
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Audit Log Integrity (AI-AUDIT.1) ──────────────────────────────
@@ -2449,7 +2818,7 @@ class Witness:
             if period_end: ctx["period_end"] = period_end
             if gaps_detected is not None: ctx["gaps_detected"] = gaps_detected
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Incident Reporting (AI-INCIDENT.1) ────────────────────────────
@@ -2466,7 +2835,7 @@ class Witness:
             if affected_subjects is not None: ctx["affected_subjects"] = affected_subjects
             if remediation_status: ctx["remediation_status"] = remediation_status
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Performance Metrics (AI-PERF.1) ───────────────────────────────
@@ -2484,7 +2853,7 @@ class Witness:
             if score is not None: ctx["score"] = score
             if model_under_test: ctx["model_under_test"] = model_under_test
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Robustness Testing (AI-ROBUST.1) ──────────────────────────────
@@ -2501,7 +2870,7 @@ class Witness:
             if baseline_score is not None: ctx["baseline_score"] = baseline_score
             if perturbed_score is not None: ctx["perturbed_score"] = perturbed_score
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Cybersecurity Attestation (AI-CYBER.1) ────────────────────────
@@ -2518,7 +2887,7 @@ class Witness:
             if findings_count is not None: ctx["findings_count"] = findings_count
             if critical_findings is not None: ctx["critical_findings"] = critical_findings
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Transparency Disclosure (AI-TRANS.1) ──────────────────────────
@@ -2534,7 +2903,7 @@ class Witness:
             if content_hash: ctx["content_hash"] = content_hash
             if channel: ctx["channel"] = channel
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Watermark Verification (AI-WATERMARK.1) ──────────────────────
@@ -2551,7 +2920,7 @@ class Witness:
             if confidence_score is not None: ctx["confidence_score"] = confidence_score
             if stripped_count is not None: ctx["stripped_count"] = stripped_count
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Data Protection Impact Assessment (AI-DPIA.1) ────────────────
@@ -2569,7 +2938,7 @@ class Witness:
             if residual_risk_level: ctx["residual_risk_level"] = residual_risk_level
             if supervisory_authority_consulted is not None: ctx["supervisory_authority_consulted"] = supervisory_authority_consulted
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Automated Decision Notification (AI-AUTO.1) ──────────────────
@@ -2586,7 +2955,7 @@ class Witness:
             if opt_out_available is not None: ctx["opt_out_available"] = opt_out_available
             if human_review_requested is not None: ctx["human_review_requested"] = human_review_requested
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Autonomous Generation Depth (AI-AUTO.2) ──────────────────────
@@ -2602,7 +2971,7 @@ class Witness:
             if source_agent_id: ctx["source_agent_id"] = source_agent_id
             if merge_target: ctx["merge_target"] = merge_target
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── External Timestamp Attestation (AI-AUDIT.2) ──────────────────
@@ -2621,7 +2990,7 @@ class Witness:
             if tsa_url: ctx["tsa_url"] = tsa_url
             if tsa_serial: ctx["tsa_serial"] = tsa_serial
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Dual-Use Model Classification (AI-DUALUSE.1) ─────────────────
@@ -2638,7 +3007,7 @@ class Witness:
             if compute_threshold: ctx["compute_threshold"] = compute_threshold
             if authority_notified: ctx["authority_notified"] = authority_notified
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Supply Chain Risk (AI-SUPPLY.1) ───────────────────────────────
@@ -2655,7 +3024,7 @@ class Witness:
             if last_audit_date: ctx["last_audit_date"] = last_audit_date
             if update_cadence_days is not None: ctx["update_cadence_days"] = update_cadence_days
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Post-Market Monitoring (AI-PMM.1) ─────────────────────────────
@@ -2672,7 +3041,7 @@ class Witness:
             if period_end: ctx["period_end"] = period_end
             if report_generated is not None: ctx["report_generated"] = report_generated
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Chain, Violation, Charter, Registry, Reviewer, Safe State ───────
@@ -2704,7 +3073,7 @@ class Witness:
                 "accepted": accepted,
             }
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_chain_trust_handoff(
@@ -2785,7 +3154,8 @@ class Witness:
                 }
             payloads.append(degradation)
 
-        self._buffer.enqueue_many(payloads)
+        for p in payloads:
+            self._enqueue_sampled(p)
         return payload
 
     @property
@@ -2827,7 +3197,7 @@ class Witness:
                 "auto_detected": auto_detected,
                 "policy_category": policy_category,
             }
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_charter(
@@ -2855,7 +3225,7 @@ class Witness:
             if expected_hash:
                 ctx["expected_hash"] = expected_hash
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_model_registry(
@@ -2887,7 +3257,7 @@ class Witness:
                 "found": found,
                 "status": status,
             }
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_reviewer_identity(
@@ -2921,7 +3291,7 @@ class Witness:
             if reviewer_id_hash:
                 ctx["reviewer_id_hash"] = reviewer_id_hash
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_safe_state(
@@ -2952,7 +3322,7 @@ class Witness:
             if mechanism_type:
                 ctx["mechanism_type"] = mechanism_type
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Training Data (AI-DATA.3 / AI-DATA.4) ─────���────────────────────
@@ -2997,7 +3367,7 @@ class Witness:
             if summary:
                 ctx["summary"] = summary
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_training_pii_lifecycle(
@@ -3036,7 +3406,7 @@ class Witness:
             if scope:
                 ctx["scope"] = scope
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Training Data Provenance (AI-DATA.1) ─────────────────────────
@@ -3086,7 +3456,7 @@ class Witness:
                 ctx["data_sources_count"] = data_sources_count
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Output Safety Filter (AI-GRD.2) ────────────────────────────────
@@ -3138,7 +3508,7 @@ class Witness:
                 ctx["output_hash"] = output_hash
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Trajectory Decision Attestation (AI-MOB.6) ─────────────────────
@@ -3213,7 +3583,7 @@ class Witness:
                 model_id or "trajectory-planner"
             )
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Bias Assessment (AI-FAIR.3) ────────────────────────────────────
@@ -3257,7 +3627,7 @@ class Witness:
             if max_disparity_pct is not None:
                 ctx["max_disparity_pct"] = max_disparity_pct
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Infrastructure Attestation (AI-METAGOV.1) ──────────────
@@ -3268,6 +3638,7 @@ class Witness:
         governance_version: int,
         *,
         operator_id: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance infrastructure configuration (AI-METAGOV.1).
 
@@ -3302,13 +3673,14 @@ class Witness:
             }
             if operator_id:
                 ctx["operator_id"] = operator_id
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Policy Downgrade Detection (AI-METAGOV.3) ──────────────────────
 
-    def check_policy_downgrade(self, policy_version: int, policy_content_hash: str, *, strict: bool = False) -> Optional["WitnessPayload"]:
+    def check_policy_downgrade(self, policy_version: int, policy_content_hash: str, *, strict: bool = False, governance_metadata: Optional[Dict[str, Any]] = None) -> Optional["WitnessPayload"]:
         """Check policy version and witness downgrade if detected (AI-METAGOV.3). Monotonic enforcement."""
         is_downgrade = policy_version < self._last_known_good_version
         if not is_downgrade:
@@ -3320,21 +3692,23 @@ class Witness:
         payload = self._mint_and_sign("AI-METAGOV.3", fa, fb, fc)
         if self._config.clearing_level <= 1:
             payload.ai_model_id = "policy-downgrade"
-            payload.ai_context = {
+            ctx: Dict[str, Any] = {
                 "provider": "policy-monitor",
                 "expected_version": self._last_known_good_version,
                 "loaded_version": policy_version,
                 "content_hash": policy_content_hash,
                 "downgrade": True,
             }
-        self._buffer.enqueue_many([payload])
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
         if strict:
             raise RuntimeError(f"SWT3: Policy downgrade detected: version {policy_version} < {self._last_known_good_version}")
         return payload
 
     # ── Governance Layer Registration (AI-METAGOV.2) ──────────────────────
 
-    def register_governance_layer(self, layer_id: str, config_hash: str, stack_position: int, *, model_id: Optional[str] = None) -> WitnessPayload:
+    def register_governance_layer(self, layer_id: str, config_hash: str, stack_position: int, *, model_id: Optional[str] = None, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Register an AI governance layer with the witness layer (AI-METAGOV.2). Recursion terminator."""
         import hashlib
         stack_input = f"{layer_id}:{config_hash}:{stack_position}"
@@ -3354,11 +3728,12 @@ class Witness:
             }
             if model_id:
                 ctx["model_id"] = model_id
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
-    def witness_governance_output(self, layer_id: str, verdict: str, evidence_hash: str, *, model_id: Optional[str] = None) -> WitnessPayload:
+    def witness_governance_output(self, layer_id: str, verdict: str, evidence_hash: str, *, model_id: Optional[str] = None, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Witness an AI governance layer's output (AI-METAGOV.2). Governance output witnessing."""
         fa = 1.0
         fb = float(_safe_hex_int(evidence_hash))
@@ -3366,18 +3741,20 @@ class Witness:
         payload = self._mint_and_sign("AI-METAGOV.2", fa, fb, fc)
         if self._config.clearing_level <= 1:
             payload.ai_model_id = model_id or layer_id
-            payload.ai_context = {
+            ctx: Dict[str, Any] = {
                 "provider": "governance-output",
                 "layer_id": layer_id,
                 "verdict": verdict,
                 "evidence_hash": evidence_hash,
             }
-        self._buffer.enqueue_many([payload])
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Authorization (AI-METAGOV.5) ──────────────────────
 
-    def authorize_governance_change(self, scope_domain: str, permission_level: str, operator_id: str, change_description: str, operator_credential_hash: str) -> WitnessPayload:
+    def authorize_governance_change(self, scope_domain: str, permission_level: str, operator_id: str, change_description: str, operator_credential_hash: str, *, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Authorize a governance configuration change (AI-METAGOV.5). Authority hierarchy."""
         fa = float(METAGOV_SCOPE_CODES.get(scope_domain, 0))
         fb = float(METAGOV_PERMISSION_CODES.get(permission_level, 0))
@@ -3385,19 +3762,21 @@ class Witness:
         payload = self._mint_and_sign("AI-METAGOV.5", fa, fb, fc)
         if self._config.clearing_level <= 1:
             payload.ai_model_id = f"governance-auth-{scope_domain}"
-            payload.ai_context = {
+            ctx: Dict[str, Any] = {
                 "provider": "governance-authorization",
                 "scope_domain": scope_domain,
                 "permission_level": permission_level,
                 "operator_id": operator_id,
                 "change_description": change_description,
             }
-        self._buffer.enqueue_many([payload])
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Emergency Override Attestation (AI-METAGOV.6) ──────────────────
 
-    def witness_emergency_override(self, override_reason: str, review_window_hours: int, operator_id: str, change_description: str) -> WitnessPayload:
+    def witness_emergency_override(self, override_reason: str, review_window_hours: int, operator_id: str, change_description: str, *, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Witness an emergency governance override (AI-METAGOV.6). Mandatory review."""
         fa = float(METAGOV_OVERRIDE_REASON_CODES.get(override_reason, 0))
         fb = float(review_window_hours)
@@ -3405,7 +3784,7 @@ class Witness:
         payload = self._mint_and_sign("AI-METAGOV.6", fa, fb, fc)
         if self._config.clearing_level <= 1:
             payload.ai_model_id = "emergency-override"
-            payload.ai_context = {
+            ctx: Dict[str, Any] = {
                 "provider": "governance-emergency",
                 "override_reason": override_reason,
                 "review_window_hours": review_window_hours,
@@ -3413,12 +3792,14 @@ class Witness:
                 "change_description": change_description,
                 "review_status": "unreviewed",
             }
-        self._buffer.enqueue_many([payload])
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Sync Verification (AI-METAGOV.7) ──────────────────────
 
-    def witness_governance_sync(self, divergence_type: str, local_policy_hash: str, remote_policy_hash: str, *, remote_tenant_id: Optional[str] = None) -> WitnessPayload:
+    def witness_governance_sync(self, divergence_type: str, local_policy_hash: str, remote_policy_hash: str, *, remote_tenant_id: Optional[str] = None, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Witness governance policy divergence (AI-METAGOV.7). Federation sync."""
         fa = float(METAGOV_DIVERGENCE_CODES.get(divergence_type, 0))
         fb = float(_safe_hex_int(local_policy_hash))
@@ -3434,13 +3815,14 @@ class Witness:
             }
             if remote_tenant_id:
                 ctx["remote_tenant_id"] = remote_tenant_id
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Attestation Purity Verification (AI-METAGOV.8) ──────────────────
 
-    def verify_attestation_purity(self, source_files: List[Dict[str, str]], *, build_hash: Optional[str] = None) -> WitnessPayload:
+    def verify_attestation_purity(self, source_files: List[Dict[str, str]], *, build_hash: Optional[str] = None, governance_metadata: Optional[Dict[str, Any]] = None) -> WitnessPayload:
         """Verify attestation engine is free of AI (AI-METAGOV.8). Anti-AI-washing."""
         import hashlib
         sorted_files = sorted(source_files, key=lambda f: f.get("path", ""))
@@ -3460,8 +3842,9 @@ class Witness:
             }
             if build_hash:
                 ctx["build_hash"] = build_hash
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Physical AI / Large Engineering Model (AI-ENG.1-5) ──────────────
@@ -3476,7 +3859,7 @@ class Witness:
             if design_hash: ctx["design_hash"] = design_hash
             if model_version: ctx["model_version"] = model_version
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_simulation_validation(self, simulations_run: int, simulations_passed: int, simulation_type: str, *, simulation_hash: Optional[str] = None, acceptance_criteria: Optional[str] = None) -> WitnessPayload:
@@ -3489,7 +3872,7 @@ class Witness:
             if simulation_hash: ctx["simulation_hash"] = simulation_hash
             if acceptance_criteria: ctx["acceptance_criteria"] = acceptance_criteria
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_safety_review(self, reviewers_required: int, reviewers_approved: int, approval_type: str, *, review_id: Optional[str] = None, pe_license: Optional[str] = None) -> WitnessPayload:
@@ -3502,7 +3885,7 @@ class Witness:
             if review_id: ctx["review_id"] = review_id
             if pe_license: ctx["pe_license"] = pe_license
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_material_compliance(self, specifications_checked: int, specifications_met: int, standard: str, *, material_id: Optional[str] = None, specification_ref: Optional[str] = None) -> WitnessPayload:
@@ -3515,7 +3898,7 @@ class Witness:
             if material_id: ctx["material_id"] = material_id
             if specification_ref: ctx["specification_ref"] = specification_ref
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_design_chain(self, total_revisions: int, ai_generated_revisions: int, chain_status: str, *, design_id: Optional[str] = None, final_hash: Optional[str] = None) -> WitnessPayload:
@@ -3528,7 +3911,7 @@ class Witness:
             if design_id: ctx["design_id"] = design_id
             if final_hash: ctx["final_hash"] = final_hash
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_fabrication_release(self, design_hash_verified: bool, authorization_count: int, release_type: str, *, production_system_id: Optional[str] = None, approved_design_hash: Optional[str] = None, final_design_hash: Optional[str] = None) -> WitnessPayload:
@@ -3542,7 +3925,7 @@ class Witness:
             if approved_design_hash: ctx["approved_design_hash"] = approved_design_hash
             if final_design_hash: ctx["final_design_hash"] = final_design_hash
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Agent Transaction Witnessing (AI-FIN.1) ──────────────────────
@@ -3608,7 +3991,7 @@ class Witness:
                 ctx["transaction_ref"] = transaction_ref
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Tool Permission Attestation (AI-TOOL.2) ─────────────────────
@@ -3664,7 +4047,7 @@ class Witness:
                 ctx["drift_details"] = drift_details
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Agent Lifecycle Witnessing (AI-LCM.1) ────────────────────────
@@ -3724,7 +4107,7 @@ class Witness:
                 ctx["termination_reason"] = termination_reason
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Cross-Border Inference Routing (AI-JUR.1) ────────────────────
@@ -3791,7 +4174,7 @@ class Witness:
                 ctx["data_residency_required"] = data_residency_required
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Trust Mesh (AI-TRUST.1 / AI-TRUST.2) ────────────────────────────
@@ -3882,7 +4265,7 @@ class Witness:
                 ctx["denial_reason"] = result.denial_reason
             payload.ai_context = ctx
 
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
 
         # Mint AI-TRUST.2 (handshake evidence) with check counts
         t2_fa = float(result.checks_performed)
@@ -3898,7 +4281,7 @@ class Witness:
                 "handshake_result": "granted" if result.granted else "denied",
             }
 
-        self._buffer.enqueue_many([payload2])
+        self._enqueue_sampled(payload2)
 
         return result
 
@@ -4116,7 +4499,9 @@ class Witness:
                 )
                 raise
 
-        self._buffer.enqueue_many(payloads)
+        # Apply probabilistic sampling to each payload
+        for p in payloads:
+            self._enqueue_sampled(p)
         logger.debug(
             "Witnessed %s: %d payloads queued (buffer: %d)",
             inference.model_id, len(payloads), self._buffer.pending,
@@ -4195,20 +4580,74 @@ class Witness:
             result["score"] = round(len(covered) / len(all_procs), 3) if all_procs else 0.0
         return result
 
+    _flush_count: int = 0
+
+    def _emit_countdown_warning(self) -> None:
+        """First-flush-only compliance countdown warning."""
+        if self._flush_count > 0:
+            return
+        self._flush_count += 1
+
+        procs = getattr(self, "_witnessed_procedures", set())
+        count = len(procs)
+        local = getattr(self, "_local_mode", False)
+
+        if local:
+            logger.info(
+                "[swt3-ai] First flush: %d procedure(s) witnessed locally. "
+                "Anchors saved to disk. Connect to sovereign.tenova.io "
+                "to persist anchors and enable verification.",
+                count,
+            )
+        else:
+            logger.info(
+                "[swt3-ai] First flush: %d procedure(s) witnessed this session. "
+                "Coverage is session-scoped -- restart the witness to reset. "
+                "See https://sovereign.tenova.io/docs/ for full procedure catalog.",
+                count,
+            )
+
     def flush(self) -> List[WitnessReceipt]:
-        """Force-flush all buffered payloads. Returns receipts."""
+        """Force-flush all buffered payloads. Returns receipts.
+
+        If density policy is active, evaluates witnessing density and auto-fires
+        AI-DENSITY.1 attestation (rate-limited to once per hour, cold start 5 min).
+        If probabilistic witnessing is active, emits AI-SAMPLE.1 summary
+        anchors for all procedures with skipped inferences before flushing.
+        """
+        self._emit_countdown_warning()
+        de = getattr(self, "_density_enforcer", None)
+        if de is not None:
+            result = de.evaluate()
+            if result:
+                self.witness_anchor_density(
+                    result["expected"], result["actual"],
+                    density_status=result["status"],
+                )
+        summaries = self._emit_sampling_summaries()
+        if summaries:
+            self._buffer.enqueue_many(summaries)
         return self._buffer.flush()
 
     async def flush_async(self) -> List[WitnessReceipt]:
         """Async force-flush. Non-blocking from the caller's event loop."""
+        summaries = self._emit_sampling_summaries()
+        if summaries:
+            self._buffer.enqueue_many(summaries)
         return await self._buffer.flush_async()
 
     def stop(self) -> List[WitnessReceipt]:
         """Stop the witness and flush remaining payloads."""
+        summaries = self._emit_sampling_summaries()
+        if summaries:
+            self._buffer.enqueue_many(summaries)
         return self._buffer.stop()
 
     async def stop_async(self) -> List[WitnessReceipt]:
         """Async stop. Non-blocking from the caller's event loop."""
+        summaries = self._emit_sampling_summaries()
+        if summaries:
+            self._buffer.enqueue_many(summaries)
         return await self._buffer.stop_async()
 
     @property
@@ -4267,7 +4706,7 @@ class Witness:
             if operator_id:
                 ctx["operator_id"] = operator_id
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_drift_consequence(
@@ -4307,7 +4746,7 @@ class Witness:
             if mapping_version:
                 ctx["mapping_version"] = mapping_version
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_champion_challenger(
@@ -4349,7 +4788,7 @@ class Witness:
             if evaluation_period:
                 ctx["evaluation_period"] = evaluation_period
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_resource_consumption(
@@ -4414,7 +4853,7 @@ class Witness:
                 }
             payload.ai_context = ctx2
         # clearing_level 3: factors only, no metadata
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Lifecycle Chain API (v6.0) ──────────────────────────────────
@@ -4454,7 +4893,7 @@ class Witness:
             payload.ai_model_id = model_id
         if context and self._config.clearing_level <= 1:
             payload.ai_context = context
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         logger.info(
             "Lifecycle chain initiated: %s procedure=%s chain=%s",
             payload.anchor_fingerprint, procedure_id, chain_id,
@@ -4518,7 +4957,7 @@ class Witness:
             if reviewer:
                 ctx["reviewer"] = reviewer
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Framework (AI-GOV.1) ──────────────────────────────────
@@ -4530,6 +4969,7 @@ class Witness:
         *,
         framework_version: Optional[str] = None,
         last_review_date: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance framework attestation (AI-GOV.1). EU Art.4, ISO 42001, NIST GOVERN."""
         fa = float(controls_defined)
@@ -4543,8 +4983,9 @@ class Witness:
                 ctx["framework_version"] = framework_version
             if last_review_date:
                 ctx["last_review_date"] = last_review_date
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Review Cadence (AI-GOV.2) ─────────────────────────────
@@ -4556,6 +4997,7 @@ class Witness:
         *,
         review_period_days: int = 90,
         last_review_date: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance review cadence (AI-GOV.2). EU Art.4, NIST GOVERN 1.3."""
         fa = float(reviews_scheduled)
@@ -4567,8 +5009,9 @@ class Witness:
             ctx: Dict[str, Any] = {"provider": "governance", "review_period_days": review_period_days}
             if last_review_date:
                 ctx["last_review_date"] = last_review_date
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Escalation (AI-GOV.3) ─────────────────────────────────
@@ -4580,6 +5023,7 @@ class Witness:
         *,
         last_test_date: Optional[str] = None,
         escalation_target: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance escalation path (AI-GOV.3). EU Art.49, NIST GOVERN 1.4."""
         fa = float(escalation_paths_defined)
@@ -4593,8 +5037,9 @@ class Witness:
                 ctx["last_test_date"] = last_test_date
             if escalation_target:
                 ctx["escalation_target"] = escalation_target
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Update Tracking (AI-GOV.4) ────────────────────────────
@@ -4606,6 +5051,7 @@ class Witness:
         *,
         change_summary: Optional[str] = None,
         approver: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance policy update (AI-GOV.4). EU Art.26, NIST GOVERN 1.5."""
         fa = float(previous_version)
@@ -4619,8 +5065,9 @@ class Witness:
                 ctx["change_summary"] = change_summary
             if approver:
                 ctx["approver"] = approver
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Governance Accountability (AI-GOV.5) ─────────────────────────────
@@ -4632,6 +5079,7 @@ class Witness:
         *,
         responsible_party: Optional[str] = None,
         accountability_matrix_hash: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness governance accountability assignment (AI-GOV.5). EU Art.25, SR 11-7, NIST GOVERN."""
         fa = float(roles_assigned)
@@ -4645,8 +5093,9 @@ class Witness:
                 ctx["responsible_party"] = responsible_party
             if accountability_matrix_hash:
                 ctx["accountability_matrix_hash"] = accountability_matrix_hash
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Risk Scope Definition (AI-GOV.6) ─────────────────────────────────
@@ -4658,6 +5107,7 @@ class Witness:
         *,
         scope_definition_hash: Optional[str] = None,
         exclusion_count: int = 0,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness AI risk management scope definition (AI-GOV.6). EU Art.17, NIST GOVERN 1.1."""
         fa = float(systems_in_scope)
@@ -4669,8 +5119,9 @@ class Witness:
             ctx: Dict[str, Any] = {"provider": "governance", "exclusion_count": exclusion_count}
             if scope_definition_hash:
                 ctx["scope_definition_hash"] = scope_definition_hash
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Impact Assessment (AI-IMPACT.1) ──────────────────────────────────
@@ -4683,6 +5134,7 @@ class Witness:
         assessment_type: str = "fundamental_rights",
         high_risk_findings: int = 0,
         assessment_hash: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness impact assessment completion (AI-IMPACT.1). EU Art.27, GDPR Art.35, NIST MAP."""
         fa = float(affected_population)
@@ -4694,8 +5146,9 @@ class Witness:
             ctx: Dict[str, Any] = {"provider": "impact-assessment", "assessment_type": assessment_type}
             if assessment_hash:
                 ctx["assessment_hash"] = assessment_hash
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Logging Completeness (AI-LOG.1) ──────────────────────────────────
@@ -4707,6 +5160,7 @@ class Witness:
         *,
         log_retention_days: int = 0,
         log_integrity_hash: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness logging completeness (AI-LOG.1). EU Art.12(3), NIST AU-12."""
         fa = float(events_expected)
@@ -4718,8 +5172,9 @@ class Witness:
             ctx: Dict[str, Any] = {"provider": "logging", "retention_days": log_retention_days}
             if log_integrity_hash:
                 ctx["log_integrity_hash"] = log_integrity_hash
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Incident Response Capability (AI-IR.1) ───────────────────────────
@@ -4732,6 +5187,7 @@ class Witness:
         last_drill_date: Optional[str] = None,
         mean_response_minutes: Optional[int] = None,
         contact_list_current: bool = True,
+        governance_metadata: Optional[Dict[str, Any]] = None,
     ) -> "WitnessPayload":
         """Witness incident response capability (AI-IR.1). EU Art.62, NIST IR-1, ISO 42001."""
         fa = float(playbooks_defined)
@@ -4745,8 +5201,9 @@ class Witness:
                 ctx["last_drill_date"] = last_drill_date
             if mean_response_minutes is not None:
                 ctx["mean_response_minutes"] = mean_response_minutes
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     # ── Lifecycle Governance (v0.6.4) ────────────────────────────────
@@ -4791,7 +5248,7 @@ class Witness:
             if hazard_catalog_hash:
                 ctx["hazard_catalog_hash"] = hazard_catalog_hash
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_decommission(
@@ -4835,7 +5292,7 @@ class Witness:
             if data_disposition:
                 ctx["data_disposition"] = data_disposition
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_recommission(
@@ -4883,7 +5340,7 @@ class Witness:
             if outage_duration_hours is not None:
                 ctx["outage_duration_hours"] = outage_duration_hours
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
     def witness_parameter_freeze(
@@ -4933,7 +5390,7 @@ class Witness:
             if lock_window_hours is not None:
                 ctx["lock_window_hours"] = lock_window_hours
             payload.ai_context = ctx
-        self._buffer.enqueue_many([payload])
+        self._enqueue_sampled(payload)
         return payload
 
 

@@ -8,7 +8,7 @@ import json
 import sys
 from typing import Optional, List, Dict
 
-# 113 AI procedures across 61 namespaces
+# 115 AI procedures across 63 namespaces
 PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-INF.1", "name": "Inference Provenance", "namespace": "INF"},
     {"id": "AI-INF.2", "name": "Inference Latency", "namespace": "INF"},
@@ -122,6 +122,11 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     # Mobile Edge Governance (v0.6.3)
     {"id": "AI-MOB.6", "name": "Trajectory Decision Attestation", "namespace": "MOB"},
     {"id": "AI-MOB.7", "name": "VLA Inference Witnessing", "namespace": "MOB"},
+    # Delegation Governance (v0.6.6)
+    {"id": "AI-DEL.2", "name": "Delegation Boundary Attestation", "namespace": "DEL"},
+    {"id": "AI-DENSITY.1", "name": "Witnessing Density Attestation", "namespace": "DENSITY"},
+    {"id": "AI-MCP.1", "name": "MCP Security Posture Attestation", "namespace": "MCP"},
+    {"id": "AI-PROV.1", "name": "Model Provenance Chain", "namespace": "PROV"},
     # Healthcare / Clinical AI (HCF)
     {"id": "HCF-DX.1", "name": "Diagnostic Accountability", "namespace": "HCF"},
     {"id": "HCF-RX.1", "name": "Prescription Safety", "namespace": "HCF"},

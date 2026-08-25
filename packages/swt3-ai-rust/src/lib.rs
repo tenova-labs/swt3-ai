@@ -19,7 +19,7 @@ use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 
 /// SDK version.
-pub const VERSION: &str = "0.5.2";
+pub const VERSION: &str = "0.6.6";
 
 /// Mint an SWT3 fingerprint from the canonical formula.
 ///

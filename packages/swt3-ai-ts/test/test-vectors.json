@@ -567,6 +567,210 @@
       "fingerprint_timestamp_ms": 1774800047000,
       "clearing_level": 1,
       "expected_fingerprint": "4ff83090bfc4"
+    },
+    {
+      "id": 48,
+      "description": "AI-REACH.1 Hazard Reachability - PASS (all 5 hazards mitigated, automated)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-REACH.1",
+      "factor_a": 5,
+      "factor_b": 5,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800020000,
+      "clearing_level": 1,
+      "expected_fingerprint": "84e3c4b4c9df"
+    },
+    {
+      "id": 49,
+      "description": "AI-REACH.1 Hazard Reachability - FAIL (3/8 mitigated, manual)",
+      "tenant_id": "ACME_DEFENSE",
+      "procedure_id": "AI-REACH.1",
+      "factor_a": 8,
+      "factor_b": 3,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800021000,
+      "clearing_level": 2,
+      "expected_fingerprint": "e87e7975d10e"
+    },
+    {
+      "id": 50,
+      "description": "AI-DECOM.1 Decommissioning - PASS (all deps resolved, archived)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DECOM.1",
+      "factor_a": 4,
+      "factor_b": 4,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800022000,
+      "clearing_level": 1,
+      "expected_fingerprint": "7c3a1b7bdcdd"
+    },
+    {
+      "id": 51,
+      "description": "AI-DECOM.1 Decommissioning - FAIL (2/6 deps resolved, transferred)",
+      "tenant_id": "AWS_NITRO_ENCLAVE",
+      "procedure_id": "AI-DECOM.1",
+      "factor_a": 6,
+      "factor_b": 2,
+      "factor_c": 3,
+      "fingerprint_timestamp_ms": 1774800023000,
+      "clearing_level": 0,
+      "expected_fingerprint": "6820dea7fc0c"
+    },
+    {
+      "id": 52,
+      "description": "AI-RECOMM.1 Re-commissioning - PASS (10/10 checks, full validation)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-RECOMM.1",
+      "factor_a": 10,
+      "factor_b": 10,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800024000,
+      "clearing_level": 1,
+      "expected_fingerprint": "2022f26aef5a"
+    },
+    {
+      "id": 53,
+      "description": "AI-RECOMM.1 Re-commissioning - FAIL (5/8 checks, shadow mode)",
+      "tenant_id": "DEMO_ENCLAVE",
+      "procedure_id": "AI-RECOMM.1",
+      "factor_a": 8,
+      "factor_b": 5,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800025000,
+      "clearing_level": 1,
+      "expected_fingerprint": "02eab528668a"
+    },
+    {
+      "id": 54,
+      "description": "AI-FREEZE.1 Parameter Freeze - PASS (12/12 verified, full stack)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-FREEZE.1",
+      "factor_a": 12,
+      "factor_b": 12,
+      "factor_c": 2,
+      "fingerprint_timestamp_ms": 1774800026000,
+      "clearing_level": 1,
+      "expected_fingerprint": "fd2541054cb7"
+    },
+    {
+      "id": 55,
+      "description": "AI-FREEZE.1 Parameter Freeze - FAIL (18/20 verified, weights only)",
+      "tenant_id": "AZURE_TRUSTED_EXEC",
+      "procedure_id": "AI-FREEZE.1",
+      "factor_a": 20,
+      "factor_b": 18,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800027000,
+      "clearing_level": 0,
+      "expected_fingerprint": "934ab9388917"
+    },
+    {
+      "id": 56,
+      "description": "AI-DEL.2 Delegation Boundary - PASS (max_depth=5, actual=3, action=allowed)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DEL.2",
+      "factor_a": 5,
+      "factor_b": 3,
+      "factor_c": 3,
+      "fingerprint_timestamp_ms": 1774800050000,
+      "clearing_level": 1,
+      "expected_fingerprint": "95bd06ef5d25"
+    },
+    {
+      "id": 57,
+      "description": "AI-DEL.2 Delegation Boundary - PASS (max=3, actual=7, action=blocked)",
+      "tenant_id": "ACME_DEFENSE",
+      "procedure_id": "AI-DEL.2",
+      "factor_a": 3,
+      "factor_b": 7,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800051000,
+      "clearing_level": 1,
+      "expected_fingerprint": "8cad06659665"
+    },
+    {
+      "id": 58,
+      "description": "AI-DEL.2 Delegation Boundary - FAIL (max=3, actual=5, action=allowed -- boundary breached)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DEL.2",
+      "factor_a": 3,
+      "factor_b": 5,
+      "factor_c": 3,
+      "fingerprint_timestamp_ms": 1774800052000,
+      "clearing_level": 1,
+      "expected_fingerprint": "475f1c3a36b2"
+    },
+    {
+      "id": 59,
+      "description": "AI-DENSITY.1 Anchor Density - PASS (expected=100, actual=120, sufficient)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DENSITY.1",
+      "factor_a": 100,
+      "factor_b": 120,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800053000,
+      "clearing_level": 1,
+      "expected_fingerprint": "1be61cd2f4a4"
+    },
+    {
+      "id": 60,
+      "description": "AI-DENSITY.1 Anchor Density - FAIL (expected=100, actual=30, insufficient)",
+      "tenant_id": "AWS_NITRO_ENCLAVE",
+      "procedure_id": "AI-DENSITY.1",
+      "factor_a": 100,
+      "factor_b": 30,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800054000,
+      "clearing_level": 2,
+      "expected_fingerprint": "e2834ea60fad"
+    },
+    {
+      "id": 61,
+      "description": "AI-MCP.1 MCP Security Posture - PASS (8/8 checks, score 100)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-MCP.1",
+      "factor_a": 8,
+      "factor_b": 8,
+      "factor_c": 100,
+      "fingerprint_timestamp_ms": 1774800055000,
+      "clearing_level": 1,
+      "expected_fingerprint": "899cfed70e1c"
+    },
+    {
+      "id": 62,
+      "description": "AI-MCP.1 MCP Security Posture - FAIL (5/8 checks, score 62)",
+      "tenant_id": "ACME_DEFENSE",
+      "procedure_id": "AI-MCP.1",
+      "factor_a": 8,
+      "factor_b": 5,
+      "factor_c": 62,
+      "fingerprint_timestamp_ms": 1774800056000,
+      "clearing_level": 1,
+      "expected_fingerprint": "ba060ac484a2"
+    },
+    {
+      "id": 63,
+      "description": "AI-PROV.1 Model Provenance - PASS (4 links, integrity verified, link_type=training)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-PROV.1",
+      "factor_a": 4,
+      "factor_b": 1,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800057000,
+      "clearing_level": 1,
+      "expected_fingerprint": "66a40714c104"
+    },
+    {
+      "id": 64,
+      "description": "AI-PROV.1 Model Provenance - FAIL (3 links, integrity failed, link_type=deployment)",
+      "tenant_id": "AZURE_TRUSTED_EXEC",
+      "procedure_id": "AI-PROV.1",
+      "factor_a": 3,
+      "factor_b": 0,
+      "factor_c": 2,
+      "fingerprint_timestamp_ms": 1774800058000,
+      "clearing_level": 2,
+      "expected_fingerprint": "374583ad4f0e"
     }
   ],
   "signing_vectors": [
@@ -651,6 +855,50 @@
       "agent_id": null,
       "message": "019eaf85fcba",
       "note": "Same seed as vector 1. Verify that keygen from seed produces identical public keys across all implementations."
+    }
+  ],
+  "lifecycle_chain_vectors": [
+    {
+      "id": 1,
+      "description": "Lifecycle chain ID for AI-EMRG.1 emergency override",
+      "formula": "LC-{SHA256('LIFECYCLE:{tenant}:{proc}:{fp}:{ts}').hex()[:16]}",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-EMRG.1",
+      "initiator_fingerprint": "2e16e2fe92dd",
+      "timestamp_ms": 1774800000000,
+      "expected_chain_id": "LC-7a38936db8ecec94"
+    },
+    {
+      "id": 2,
+      "description": "Lifecycle chain ID for AI-DRIFT.2 consequence-mapped drift",
+      "formula": "LC-{SHA256('LIFECYCLE:{tenant}:{proc}:{fp}:{ts}').hex()[:16]}",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-DRIFT.2",
+      "initiator_fingerprint": "4ed784765e6c",
+      "timestamp_ms": 1774800001000,
+      "expected_chain_id": "LC-60c720a257e2d3b9"
+    },
+    {
+      "id": 3,
+      "description": "Lifecycle chain ID for AI-ASSESS.1 champion-challenger (different tenant)",
+      "formula": "LC-{SHA256('LIFECYCLE:{tenant}:{proc}:{fp}:{ts}').hex()[:16]}",
+      "tenant_id": "AWS_NITRO_ENCLAVE",
+      "procedure_id": "AI-ASSESS.1",
+      "initiator_fingerprint": "66209137510b",
+      "timestamp_ms": 1774800010000,
+      "expected_chain_id": "LC-9caadba335ca64cd"
+    },
+    {
+      "id": 4,
+      "description": "Lifecycle stage codes (canonical set)",
+      "stages": {
+        "initiated": 0,
+        "checkpoint": 1,
+        "escalated": 2,
+        "resolved": 3,
+        "abandoned": 4,
+        "superseded": 5
+      }
     }
   ]
 }

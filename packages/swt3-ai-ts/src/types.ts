@@ -30,6 +30,8 @@ export interface WitnessConfig {
   tokenBudget?: number; // Mint anchor every N tokens (undefined = disabled, use bufferSize)
   chainMinTrustLevel?: number; // Minimum effective trust level for chain handoffs (0-4). Enforced in strict mode.
   onFlush?: (payloads: WitnessPayload[], receipts: WitnessReceipt[]) => void;
+  samplingRate?: number; // Global sampling rate (0.0-1.0). Default 1.0 = witness all.
+  samplingRates?: Record<string, number>; // Per-procedure overrides (e.g., {"AI-GRD.1": 1.0, "AI-INF.1": 0.01})
 }
 
 /** A reference to an upstream anchor in a provenance chain. */

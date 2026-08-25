@@ -88,6 +88,34 @@ function safeHexInt(s: string): number {
   return parseInt(sha256Truncated(s, 8), 16) % 1000000;
 }
 
+function mergeGovernanceMetadata(
+  ctx: Record<string, unknown>,
+  metadata?: Record<string, unknown>,
+): void {
+  if (!metadata) return;
+  if (metadata.review_duration_minutes !== undefined) {
+    const v = metadata.review_duration_minutes;
+    if (typeof v !== "number" || v < 0)
+      throw new Error("governance_metadata.review_duration_minutes must be >= 0");
+    ctx.review_duration_minutes = v;
+  }
+  if (metadata.participant_count !== undefined) {
+    const v = metadata.participant_count;
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 1)
+      throw new Error("governance_metadata.participant_count must be int >= 1");
+    if (v < 2) {
+      console.warn(
+        "[swt3-ai] Single-participant governance review may not satisfy effective challenge requirements (SR 11-7, EU AI Act Art. 14)",
+      );
+    }
+    ctx.participant_count = v;
+  }
+  const KNOWN = new Set(["review_duration_minutes", "participant_count"]);
+  for (const [k, val] of Object.entries(metadata)) {
+    if (!KNOWN.has(k)) ctx[k] = val;
+  }
+}
+
 function parseVelocity(spec: string): { limit: number; windowMs: number } {
   const parts = spec.split("/");
   const limit = parseInt(parts[0], 10);
@@ -253,6 +281,85 @@ export class ChainEnforcer {
   }
 }
 
+// ---------------------------------------------------------------------------
+// DensityEnforcer -- rate-limited AI-DENSITY.1 attestation on flush
+// ---------------------------------------------------------------------------
+
+const DENSITY_MIN_WINDOW_MS = 5 * 60 * 1000; // 5 minutes cold start
+const DENSITY_MIN_ANCHORS = 10;               // minimum anchors before first attestation
+const DENSITY_RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour between attestations
+
+export class DensityEnforcer {
+  private _anchorCount = 0;
+  private _anchorCountByProc: Record<string, number> = {};
+  private _sessionStartMs = Date.now();
+  private _lastAttestationMs = 0;
+  private _totalTokens = 0;
+  private _policy: DensityPolicyConfig;
+
+  constructor(policy: DensityPolicyConfig) {
+    this._policy = policy;
+  }
+
+  /** Called by _enqueueSampled for every anchor that enters the buffer. */
+  recordAnchor(procedureId: string): void {
+    this._anchorCount++;
+    this._anchorCountByProc[procedureId] = (this._anchorCountByProc[procedureId] ?? 0) + 1;
+  }
+
+  /** Mirror token count from recordSessionTokens. */
+  recordTokens(count: number): void {
+    this._totalTokens += count;
+  }
+
+  /**
+   * Evaluate density and return attestation params if conditions are met.
+   * Returns null if rate-limited, cold start not met, or no policy configured.
+   */
+  evaluate(): { expected: number; actual: number; status: string } | null {
+    const now = Date.now();
+    const elapsedMs = now - this._sessionStartMs;
+
+    // Cold start: need at least 5 minutes AND 10 anchors
+    if (elapsedMs < DENSITY_MIN_WINDOW_MS || this._anchorCount < DENSITY_MIN_ANCHORS) {
+      return null;
+    }
+
+    // Rate limit: at most one attestation per hour
+    if (this._lastAttestationMs > 0 && (now - this._lastAttestationMs) < DENSITY_RATE_LIMIT_MS) {
+      return null;
+    }
+
+    // Calculate expected anchors from policy
+    let expected: number;
+    if (this._totalTokens > 0 && this._policy.minAnchorsPerThousandTokens > 0) {
+      // Token-based: min_anchors_per_1000_tokens * (totalTokens / 1000)
+      expected = Math.ceil(this._policy.minAnchorsPerThousandTokens * (this._totalTokens / 1000));
+    } else if (this._policy.maxChainGapSeconds > 0) {
+      // Time-based fallback: one anchor per maxChainGapSeconds interval
+      const elapsedSeconds = elapsedMs / 1000;
+      expected = Math.ceil(elapsedSeconds / this._policy.maxChainGapSeconds);
+    } else {
+      // No calculable expectation
+      return null;
+    }
+
+    if (expected <= 0) return null;
+
+    const actual = this._anchorCount;
+    const status = actual >= expected ? "sufficient" : actual >= expected * 0.5 ? "degraded" : "insufficient";
+
+    // Mark attestation time and reset counters
+    this._lastAttestationMs = now;
+    this._anchorCount = 0;
+    this._anchorCountByProc = {};
+    this._totalTokens = 0;
+    this._sessionStartMs = now;
+
+    return { expected, actual, status };
+  }
+}
+
 export interface WitnessOptions {
   endpoint?: string;
   apiKey?: string;
@@ -285,6 +392,8 @@ export interface WitnessOptions {
   walPath?: string;
   replayWindow?: number;
   digestAlgorithm?: string;
+  samplingRate?: number;
+  samplingRates?: Record<string, number>;
 }
 
 /**
@@ -330,6 +439,7 @@ export class Witness {
   private _chainTrustLevels: number[] = [];
   private _onViolation?: (violation: ChainPolicyViolation) => void;
   private _walPath?: string;
+  private _sampledSkipCounts: Record<string, number> = {};
 
   /** True if the SDK is deferring witnessing to an SWT3 Gateway. */
   get gatewayMode(): boolean {
@@ -389,6 +499,7 @@ export class Witness {
 
     if (loaded.densityPolicy) {
       witness._densityPolicy = loaded.densityPolicy;
+      witness._densityEnforcer = new DensityEnforcer(loaded.densityPolicy);
     }
 
     if (loaded.mcpPolicy) {
@@ -426,6 +537,7 @@ export class Witness {
   private _merkleConfig?: MerkleConfig;
   private _merkleAccumulator?: MerkleAccumulator;
   private _chainEnforcer?: ChainEnforcer;
+  private _densityEnforcer?: DensityEnforcer;
   private _sentinel?: import("./sentinel-client.js").SentinelClient;
   private _sentinelDetecting = false;
   private _lastKnownGoodVersion = 0;
@@ -505,6 +617,9 @@ export class Witness {
   recordSessionTokens(count: number): void {
     if (this._chainEnforcer) {
       this._chainEnforcer.recordTokens(count);
+    }
+    if (this._densityEnforcer) {
+      this._densityEnforcer.recordTokens(count);
     }
     // Mirror to sentinel for cross-process shared budget
     if (this._sentinel?.connected) {
@@ -630,6 +745,8 @@ export class Witness {
       tokenBudget: options.tokenBudget,
       chainMinTrustLevel: options.chainMinTrustLevel,
       onFlush: options.onFlush,
+      samplingRate: options.samplingRate,
+      samplingRates: options.samplingRates,
     };
 
     this._strict = options.strict ?? false;
@@ -654,6 +771,78 @@ export class Witness {
         this.buffer.enqueueMany(recovered);
       }
     }
+  }
+
+  // ── Probabilistic Witnessing ─────────────────────────────────────
+
+  private _getSamplingRate(procedureId: string): number {
+    if (this.config.samplingRates?.[procedureId] !== undefined) {
+      return this.config.samplingRates[procedureId];
+    }
+    return this.config.samplingRate ?? 1.0;
+  }
+
+  private _shouldWitness(fingerprintInput: string, procedureId: string): boolean {
+    const rate = this._getSamplingRate(procedureId);
+    if (rate >= 1.0) return true;
+    if (rate <= 0.0) return false;
+    const { createHash } = require("node:crypto") as typeof import("node:crypto");
+    const hash = createHash("sha256").update(fingerprintInput, "utf8").digest();
+    const threshold = (hash[0] << 8) | hash[1];
+    return threshold < Math.floor(rate * 0xFFFF);
+  }
+
+  private _enqueueSampled(payload: WitnessPayload): void {
+    const procId = payload.procedure_id;
+    if (procId === "AI-SAMPLE.1" || procId === "AI-DENSITY.1" || ((this.config.samplingRate ?? 1.0) >= 1.0 && !this.config.samplingRates)) {
+      this.buffer.enqueueMany([payload]);
+      // Track density (exclude meta-procedures to avoid recursion)
+      if (procId !== "AI-SAMPLE.1" && procId !== "AI-DENSITY.1" && this._densityEnforcer) {
+        this._densityEnforcer.recordAnchor(procId);
+      }
+      return;
+    }
+    const fpInput = `WITNESS:${this.config.tenantId}:${procId}:${payload.factor_a}:${payload.factor_b}:${payload.factor_c}:${payload.fingerprint_timestamp_ms}`;
+    if (this._shouldWitness(fpInput, procId)) {
+      this.buffer.enqueueMany([payload]);
+      if (this._densityEnforcer) this._densityEnforcer.recordAnchor(procId);
+    } else {
+      this._sampledSkipCounts[procId] = (this._sampledSkipCounts[procId] ?? 0) + 1;
+    }
+  }
+
+  private _emitSamplingSummaries(): WitnessPayload[] {
+    const summaries: WitnessPayload[] = [];
+    for (const [procId, count] of Object.entries(this._sampledSkipCounts)) {
+      if (count > 0) {
+        const [ts, epoch] = timestampMs();
+        const fp = mintFingerprint(this.config.tenantId, "AI-SAMPLE.1", count, 0, 0, ts);
+        const payload: WitnessPayload = {
+          procedure_id: "AI-SAMPLE.1",
+          factor_a: count,
+          factor_b: 0,
+          factor_c: 0,
+          clearing_level: this.config.clearingLevel,
+          anchor_fingerprint: fp,
+          anchor_epoch: epoch,
+          fingerprint_timestamp_ms: ts,
+        };
+        if (this.config.clearingLevel <= 1) {
+          payload.ai_model_id = "sampling-summary";
+          payload.ai_context = {
+            provider: "sampling-summary",
+            sampled_procedure: procId,
+            skipped_count: count,
+            sampling_rate: this._getSamplingRate(procId),
+          };
+        }
+        const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+        this._applyOperationalMetadata(payload, policyHash);
+        summaries.push(payload);
+      }
+    }
+    this._sampledSkipCounts = {};
+    return summaries;
   }
 
   /**
@@ -1018,7 +1207,7 @@ export class Witness {
           toolCallId: callId,
         };
 
-        self.record(record, ["AI-MOB.7"]);
+        self.record(record, "AI-MOB.7");
       };
 
       try {
@@ -1107,7 +1296,7 @@ export class Witness {
       if (this.config.signingKeyVersion !== undefined) payload.signing_key_version = this.config.signingKeyVersion;
     }
 
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
   }
 
   /**
@@ -1166,7 +1355,7 @@ export class Witness {
       if (this.config.signingKeyVersion !== undefined) payload.signing_key_version = this.config.signingKeyVersion;
     }
 
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
   }
 
   /**
@@ -1282,7 +1471,7 @@ export class Witness {
       payloads.push(p2);
     }
 
-    this.buffer.enqueueMany(payloads);
+    for (const p of payloads) this._enqueueSampled(p);
 
     // Local mode: show framework coverage for witnessed procedures
     if (this._localMode && this._localCtaCount < 3) {
@@ -1345,7 +1534,7 @@ export class Witness {
    */
   witnessModelWeights(
     weights: ModelWeightInfo | string,
-    options?: { expectedHash?: string; lifecycleStage?: string },
+    options?: { expectedHash?: string; lifecycleStage?: string; parentModelFingerprint?: string },
   ): WitnessPayload {
     const info: ModelWeightInfo = typeof weights === "string"
       ? Witness.hashModelFile(weights)
@@ -1370,18 +1559,19 @@ export class Witness {
       if (info.format) ctx.format = info.format;
       if (options?.expectedHash) ctx.expected_hash = options.expectedHash;
       if (options?.lifecycleStage) ctx.lifecycle_stage = options.lifecycleStage;
+      if (options?.parentModelFingerprint) ctx.parent_model_fingerprint = options.parentModelFingerprint;
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
   /**
    * Witness active LoRA/QLoRA/PEFT adapter stack (AI-MDL.6).
    */
-  witnessAdapterStack(adapters: AdapterInfo[], baseModelId?: string): WitnessPayload {
+  witnessAdapterStack(adapters: AdapterInfo[], baseModelId?: string, options?: { parentModelFingerprint?: string }): WitnessPayload {
     const allVerified = adapters.length === 0 || adapters.every((a) => a.adapterHash);
     const [ts, epoch] = timestampMs();
     const fa = adapters.length, fb = allVerified ? 1 : 0, fc = 0;
@@ -1401,10 +1591,11 @@ export class Witness {
       });
       payload.ai_context = { provider: "adapter", adapters: adapterList };
       if (baseModelId) (payload.ai_context as Record<string, unknown>).base_model_id = baseModelId;
+      if (options?.parentModelFingerprint) (payload.ai_context as Record<string, unknown>).parent_model_fingerprint = options.parentModelFingerprint;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1413,7 +1604,7 @@ export class Witness {
    *
    * @param method - fp32, fp16, bf16, int8, int4, gptq, awq, gguf.
    */
-  witnessQuantization(method: string, options?: { bits?: number; groupSize?: number }): WitnessPayload {
+  witnessQuantization(method: string, options?: { bits?: number; groupSize?: number; parentModelFingerprint?: string }): WitnessPayload {
     const code = QUANTIZATION_CODES[method.toLowerCase()] ?? 0;
     const [ts, epoch] = timestampMs();
     const fa = 1, fb = 1, fc = code;
@@ -1429,11 +1620,12 @@ export class Witness {
       const ctx: Record<string, unknown> = { provider: "quantization", method: method.toLowerCase() };
       if (options?.bits != null) ctx.bits = options.bits;
       if (options?.groupSize != null) ctx.group_size = options.groupSize;
+      if (options?.parentModelFingerprint) ctx.parent_model_fingerprint = options.parentModelFingerprint;
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1486,7 +1678,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1519,7 +1711,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1549,7 +1741,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1694,7 +1886,7 @@ export class Witness {
       ? sha256Truncated(this.config.policyVersion, 12)
       : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1758,7 +1950,7 @@ export class Witness {
       ? sha256Truncated(this.config.policyVersion, 12)
       : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1815,7 +2007,7 @@ export class Witness {
       ? sha256Truncated(this.config.policyVersion, 12)
       : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1876,7 +2068,7 @@ export class Witness {
       ? sha256Truncated(this.config.policyVersion, 12)
       : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -1939,7 +2131,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2005,7 +2197,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2064,7 +2256,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2126,7 +2318,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2191,7 +2383,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2254,7 +2446,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2320,7 +2512,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2395,7 +2587,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2494,7 +2686,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2536,7 +2728,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2578,7 +2770,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2627,7 +2819,7 @@ export class Witness {
 
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2676,7 +2868,7 @@ export class Witness {
 
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2741,7 +2933,7 @@ export class Witness {
 
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2785,7 +2977,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2827,7 +3019,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2869,7 +3061,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2909,7 +3101,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2952,7 +3144,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -2996,7 +3188,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3038,7 +3230,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3078,7 +3270,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3119,7 +3311,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3161,7 +3353,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3203,7 +3395,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3245,7 +3437,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3279,7 +3471,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3360,7 +3552,7 @@ export class Witness {
       payloads.push(degradation);
     }
 
-    this.buffer.enqueueMany(payloads);
+    for (const p of payloads) this._enqueueSampled(p);
     return payload;
   }
 
@@ -3403,7 +3595,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3437,7 +3629,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3468,7 +3660,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3500,7 +3692,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3533,7 +3725,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3576,7 +3768,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3617,7 +3809,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3668,7 +3860,7 @@ export class Witness {
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3686,6 +3878,7 @@ export class Witness {
     rules: { id: string; expression: string; version?: string }[];
     governanceVersion: number;
     operatorId?: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     // Canonical serialization: sort rules by id, concat id+expression+version, hash with domain separator
     const sorted = [...options.rules].sort((a, b) => a.id.localeCompare(b.id));
@@ -3710,11 +3903,12 @@ export class Witness {
         governance_version: options.governanceVersion,
       };
       if (options.operatorId) ctx.operator_id = options.operatorId;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3731,6 +3925,7 @@ export class Witness {
     policyVersion: number;
     policyContentHash: string;
     strict?: boolean;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload | null {
     const isDowngrade = options.policyVersion < this._lastKnownGoodVersion;
     if (!isDowngrade) {
@@ -3749,17 +3944,19 @@ export class Witness {
     };
     if (this.config.clearingLevel <= 1) {
       payload.ai_model_id = `policy-downgrade`;
-      payload.ai_context = {
+      const ctx: Record<string, unknown> = {
         provider: "policy-monitor",
         expected_version: this._lastKnownGoodVersion,
         loaded_version: options.policyVersion,
         content_hash: options.policyContentHash,
         downgrade: true,
       };
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     if (options.strict) {
       throw new Error(`SWT3: Policy downgrade detected: version ${options.policyVersion} < ${this._lastKnownGoodVersion}`);
     }
@@ -3780,6 +3977,7 @@ export class Witness {
     modelId?: string;
     configHash: string;
     stackPosition: number;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const stackInput = `${options.layerId}:${options.configHash}:${options.stackPosition}`;
     const regFingerprint = sha256Truncated(`SWT3:GOVSTACK:${stackInput}`, 12);
@@ -3803,11 +4001,12 @@ export class Witness {
         registration_fingerprint: regFingerprint,
       };
       if (options.modelId) ctx.model_id = options.modelId;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3822,6 +4021,7 @@ export class Witness {
     verdict: "PASS" | "FAIL";
     evidenceHash: string;
     modelId?: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const fa = 1;
     const fb = safeHexInt(options.evidenceHash);
@@ -3835,16 +4035,18 @@ export class Witness {
     };
     if (this.config.clearingLevel <= 1) {
       payload.ai_model_id = options.modelId ?? options.layerId;
-      payload.ai_context = {
+      const ctx: Record<string, unknown> = {
         provider: "governance-output",
         layer_id: options.layerId,
         verdict: options.verdict,
         evidence_hash: options.evidenceHash,
       };
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3862,6 +4064,7 @@ export class Witness {
     operatorId: string;
     changeDescription: string;
     operatorCredentialHash: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const fa = METAGOV_SCOPE_CODES[options.scopeDomain] ?? 0;
     const fb = METAGOV_PERMISSION_CODES[options.permissionLevel] ?? 0;
@@ -3875,17 +4078,19 @@ export class Witness {
     };
     if (this.config.clearingLevel <= 1) {
       payload.ai_model_id = `governance-auth-${options.scopeDomain}`;
-      payload.ai_context = {
+      const ctx: Record<string, unknown> = {
         provider: "governance-authorization",
         scope_domain: options.scopeDomain,
         permission_level: options.permissionLevel,
         operator_id: options.operatorId,
         change_description: options.changeDescription,
       };
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3902,6 +4107,7 @@ export class Witness {
     reviewWindowHours: number;
     operatorId: string;
     changeDescription: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const fa = METAGOV_OVERRIDE_REASON_CODES[options.overrideReason] ?? 0;
     const fb = options.reviewWindowHours;
@@ -3915,7 +4121,7 @@ export class Witness {
     };
     if (this.config.clearingLevel <= 1) {
       payload.ai_model_id = `emergency-override`;
-      payload.ai_context = {
+      const ctx: Record<string, unknown> = {
         provider: "governance-emergency",
         override_reason: options.overrideReason,
         review_window_hours: options.reviewWindowHours,
@@ -3923,10 +4129,12 @@ export class Witness {
         change_description: options.changeDescription,
         review_status: "unreviewed",
       };
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3943,6 +4151,7 @@ export class Witness {
     localPolicyHash: string;
     remotePolicyHash: string;
     remoteTenantId?: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const fa = METAGOV_DIVERGENCE_CODES[options.divergenceType] ?? 0;
     const fb = safeHexInt(options.localPolicyHash);
@@ -3963,11 +4172,12 @@ export class Witness {
         remote_policy_hash: options.remotePolicyHash,
       };
       if (options.remoteTenantId) ctx.remote_tenant_id = options.remoteTenantId;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -3982,6 +4192,7 @@ export class Witness {
   verifyAttestationPurity(options: {
     sourceFiles: { path: string; hash: string }[];
     buildHash?: string;
+    governanceMetadata?: Record<string, unknown>;
   }): WitnessPayload {
     const combinedInput = options.sourceFiles
       .sort((a, b) => a.path.localeCompare(b.path))
@@ -4007,11 +4218,601 @@ export class Witness {
         purity_tier: "verified_pure",
       };
       if (options.buildHash) ctx.build_hash = options.buildHash;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Delegation Boundary Attestation (AI-DEL.2) ─────────────────────
+
+  /** Boundary action codes for AI-DEL.2. */
+  static readonly DELEGATION_BOUNDARY_ACTION_CODES: Record<string, number> = {
+    blocked: 0, warned: 1, escalated: 2, allowed: 3,
+  };
+
+  /**
+   * Witness delegation boundary evaluation (AI-DEL.2).
+   *
+   * Attests that a delegation boundary was evaluated. Does not enforce the
+   * boundary. Your code must enforce depth limits; this method records the
+   * evidence.
+   *
+   * NIST AI Agent Standards Initiative, Singapore IMDA, EU AI Act Art. 14.
+   */
+  witnessDelegationBoundary(options: {
+    maxDepth: number;
+    actualDepth: number;
+    boundaryAction: string;
+    delegatorId?: string;
+    parentGrantFingerprint?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.maxDepth;
+    const fb = options.actualDepth;
+    const fc = Witness.DELEGATION_BOUNDARY_ACTION_CODES[options.boundaryAction] ?? 3;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DEL.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DEL.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `delegation-boundary-${options.boundaryAction}`;
+      const ctx: Record<string, unknown> = {
+        provider: "delegation-governance",
+        boundary_action: options.boundaryAction,
+        depth_exceeded: options.actualDepth > options.maxDepth,
+      };
+      if (options.delegatorId) ctx.delegator_id = options.delegatorId;
+      if (options.parentGrantFingerprint) ctx.parent_grant_fingerprint = options.parentGrantFingerprint;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── MCP Security Posture (AI-MCP.1) ────────────────────────────────
+
+  /** Observable MCP security checks (stdio -- no TLS). */
+  static readonly MCP_SECURITY_CHECKS: string[] = [
+    "input_validation", "auth_headers", "rate_limiting", "error_masking",
+    "tool_allow_list", "logging_enabled", "schema_validation", "timeout_configured",
+  ];
+
+  /**
+   * Witness MCP security posture evaluation (AI-MCP.1).
+   *
+   * Attests MCP server security posture based on observable checks.
+   * NEVER reveals which specific checks failed -- only count and score.
+   * Stdio transport cannot verify TLS; only 8 observable checks are used.
+   *
+   * NSA/CSA MCP Security Best Practices, NIST AI Agent Standards Initiative.
+   */
+  witnessMcpSecurity(options: {
+    checksPassed: number;
+    totalChecks?: number;
+    score?: number;
+    serverName?: string;
+    transportType?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const totalChecks = options.totalChecks ?? 8;
+    const checksPassed = options.checksPassed;
+    const score = options.score ?? Math.round((checksPassed / Math.max(totalChecks, 1)) * 100);
+    const fa = totalChecks;
+    const fb = checksPassed;
+    const fc = score;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `mcp-security-${options.transportType ?? "stdio"}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-security-posture",
+        checks_total: totalChecks,
+        checks_passed: checksPassed,
+        posture_score: score,
+      };
+      if (options.serverName) ctx.server_name = options.serverName;
+      if (options.transportType) ctx.transport_type = options.transportType;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Model Provenance Chain (AI-PROV.1) ──────────────────────────────
+
+  /** Provenance link type codes for AI-PROV.1. */
+  static readonly PROVENANCE_LINK_TYPE_CODES: Record<string, number> = {
+    training: 0, fine_tuning: 1, deployment: 2, distillation: 3,
+  };
+
+  /**
+   * Witness model provenance chain (AI-PROV.1).
+   *
+   * Attests the lineage of a model through its lifecycle: training,
+   * fine-tuning, distillation, deployment. Links provenance back to
+   * parent models via fingerprints.
+   *
+   * NIST AI RMF MAP 1.1, EU AI Act Art. 11, G7 Hiroshima AI Code of Conduct.
+   */
+  witnessModelProvenance(options: {
+    chainLength: number;
+    integrityVerified: boolean;
+    linkType: string;
+    parentModelFingerprint?: string;
+    modelId?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.chainLength;
+    const fb = options.integrityVerified ? 1 : 0;
+    const fc = Witness.PROVENANCE_LINK_TYPE_CODES[options.linkType] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-PROV.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-PROV.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = options.modelId ?? `provenance-${options.linkType}`;
+      const ctx: Record<string, unknown> = {
+        provider: "model-provenance",
+        link_type: options.linkType,
+        chain_length: options.chainLength,
+        integrity_verified: options.integrityVerified,
+      };
+      if (options.parentModelFingerprint) ctx.parent_model_fingerprint = options.parentModelFingerprint;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Witnessing Density Attestation (AI-DENSITY.1) ──────────────────
+
+  /** Density status codes for AI-DENSITY.1. */
+  static readonly DENSITY_STATUS_CODES: Record<string, number> = {
+    sufficient: 0, insufficient: 1, degraded: 2,
+  };
+
+  /**
+   * Witness anchor density evaluation (AI-DENSITY.1).
+   *
+   * Records whether witnessing frequency is sufficient for the regulatory
+   * requirement. EU AI Act Art. 9 (continuous risk management), NIST AI
+   * RMF MEASURE 2.6.
+   */
+  witnessAnchorDensity(options: {
+    expectedAnchors: number;
+    actualAnchors: number;
+    densityStatus?: string;
+    evaluationWindowSeconds?: number;
+    procedureFilter?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const status = options.densityStatus ??
+      (options.actualAnchors >= options.expectedAnchors ? "sufficient" : "insufficient");
+    const fa = options.expectedAnchors;
+    const fb = options.actualAnchors;
+    const fc = Witness.DENSITY_STATUS_CODES[status] ?? 1;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DENSITY.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DENSITY.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `density-${status}`;
+      const ctx: Record<string, unknown> = {
+        provider: "density-attestation",
+        density_status: status,
+        evaluation_window_seconds: options.evaluationWindowSeconds ?? 3600,
+      };
+      if (options.procedureFilter) ctx.procedure_filter = options.procedureFilter;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Risk Assessment (AI-RISK.1) ──────────────────────────────────────
+
+  /** Risk level code mapping for AI-RISK.1. */
+  static readonly RISK_LEVEL_CODES: Record<string, number> = {
+    low: 0, medium: 1, high: 2, critical: 3, unacceptable: 4,
+  };
+
+  /**
+   * Witness a risk assessment completion (AI-RISK.1).
+   * EU Art.9, ISO 42001, NIST GOVERN 1.1.
+   */
+  witnessRiskAssessment(options: {
+    risksIdentified: number;
+    risksMitigated: number;
+    riskLevel: string;
+    assessmentId?: string;
+    methodology?: string;
+    residualRiskScore?: number;
+    reviewer?: string;
+  }): WitnessPayload {
+    const fa = options.risksIdentified;
+    const fb = options.risksMitigated;
+    const fc = Witness.RISK_LEVEL_CODES[options.riskLevel] ?? 1;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-RISK.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-RISK.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `risk-assessment-${options.riskLevel}`;
+      const ctx: Record<string, unknown> = { provider: "risk-management", risk_level: options.riskLevel };
+      if (options.assessmentId) ctx.assessment_id = options.assessmentId;
+      if (options.methodology) ctx.methodology = options.methodology;
+      if (options.residualRiskScore !== undefined) ctx.residual_risk_score = options.residualRiskScore;
+      if (options.reviewer) ctx.reviewer = options.reviewer;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Governance Framework (AI-GOV.1) ──────────────────────────────────
+
+  /**
+   * Witness governance framework attestation (AI-GOV.1).
+   * EU Art.4, ISO 42001, NIST GOVERN.
+   */
+  witnessGovernanceFramework(options: {
+    controlsDefined: number;
+    controlsActive: number;
+    frameworkVersion?: string;
+    lastReviewDate?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.controlsDefined;
+    const fb = options.controlsActive;
+    const fc = options.controlsActive >= options.controlsDefined ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "governance-framework";
+      const ctx: Record<string, unknown> = { provider: "governance" };
+      if (options.frameworkVersion) ctx.framework_version = options.frameworkVersion;
+      if (options.lastReviewDate) ctx.last_review_date = options.lastReviewDate;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Governance Review Cadence (AI-GOV.2) ─────────────────────────────
+
+  /**
+   * Witness governance review cadence (AI-GOV.2).
+   * EU Art.4, NIST GOVERN 1.3.
+   */
+  witnessGovernanceReview(options: {
+    reviewsScheduled: number;
+    reviewsCompleted: number;
+    reviewPeriodDays?: number;
+    lastReviewDate?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.reviewsScheduled;
+    const fb = options.reviewsCompleted;
+    const fc = options.reviewPeriodDays ?? 90;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "governance-review";
+      const ctx: Record<string, unknown> = { provider: "governance", review_period_days: fc };
+      if (options.lastReviewDate) ctx.last_review_date = options.lastReviewDate;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Governance Escalation (AI-GOV.3) ─────────────────────────────────
+
+  /**
+   * Witness governance escalation path (AI-GOV.3).
+   * EU Art.49, NIST GOVERN 1.4.
+   */
+  witnessGovernanceEscalation(options: {
+    escalationPathsDefined: number;
+    escalationPathsTested: number;
+    lastTestDate?: string;
+    escalationTarget?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.escalationPathsDefined;
+    const fb = options.escalationPathsTested;
+    const fc = options.escalationPathsTested >= options.escalationPathsDefined ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.3", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.3", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "governance-escalation";
+      const ctx: Record<string, unknown> = { provider: "governance" };
+      if (options.lastTestDate) ctx.last_test_date = options.lastTestDate;
+      if (options.escalationTarget) ctx.escalation_target = options.escalationTarget;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Governance Update Tracking (AI-GOV.4) ────────────────────────────
+
+  /**
+   * Witness governance policy update (AI-GOV.4).
+   * EU Art.26, NIST GOVERN 1.5.
+   */
+  witnessGovernanceUpdate(options: {
+    previousVersion: number;
+    currentVersion: number;
+    changeSummary?: string;
+    approver?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.previousVersion;
+    const fb = options.currentVersion;
+    const fc = options.currentVersion - options.previousVersion;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.4", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.4", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `governance-v${options.currentVersion}`;
+      const ctx: Record<string, unknown> = { provider: "governance", version_delta: fc };
+      if (options.changeSummary) ctx.change_summary = options.changeSummary;
+      if (options.approver) ctx.approver = options.approver;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Governance Accountability (AI-GOV.5) ─────────────────────────────
+
+  /**
+   * Witness governance accountability assignment (AI-GOV.5).
+   * EU Art.25, SR 11-7, NIST GOVERN.
+   */
+  witnessGovernanceAccountability(options: {
+    rolesAssigned: number;
+    rolesAcknowledged: number;
+    responsibleParty?: string;
+    accountabilityMatrixHash?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.rolesAssigned;
+    const fb = options.rolesAcknowledged;
+    const fc = options.rolesAcknowledged >= options.rolesAssigned ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.5", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.5", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "governance-accountability";
+      const ctx: Record<string, unknown> = { provider: "governance" };
+      if (options.responsibleParty) ctx.responsible_party = options.responsibleParty;
+      if (options.accountabilityMatrixHash) ctx.accountability_matrix_hash = options.accountabilityMatrixHash;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Risk Scope Definition (AI-GOV.6) ─────────────────────────────────
+
+  /**
+   * Witness AI risk management scope definition (AI-GOV.6).
+   * EU Art.17, NIST GOVERN 1.1.
+   */
+  witnessRiskScope(options: {
+    systemsInScope: number;
+    systemsAssessed: number;
+    scopeDefinitionHash?: string;
+    exclusionCount?: number;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.systemsInScope;
+    const fb = options.systemsAssessed;
+    const fc = options.exclusionCount ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GOV.6", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GOV.6", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "governance-scope";
+      const ctx: Record<string, unknown> = { provider: "governance", exclusion_count: fc };
+      if (options.scopeDefinitionHash) ctx.scope_definition_hash = options.scopeDefinitionHash;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Impact Assessment (AI-IMPACT.1) ──────────────────────────────────
+
+  /**
+   * Witness impact assessment completion (AI-IMPACT.1).
+   * EU Art.27, GDPR Art.35, NIST MAP.
+   */
+  witnessImpactAssessment(options: {
+    affectedPopulation: number;
+    riskCategoriesAssessed: number;
+    assessmentType?: string;
+    highRiskFindings?: number;
+    assessmentHash?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.affectedPopulation;
+    const fb = options.riskCategoriesAssessed;
+    const fc = options.highRiskFindings ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-IMPACT.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-IMPACT.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      const assessmentType = options.assessmentType ?? "fundamental_rights";
+      payload.ai_model_id = `impact-${assessmentType}`;
+      const ctx: Record<string, unknown> = { provider: "impact-assessment", assessment_type: assessmentType };
+      if (options.assessmentHash) ctx.assessment_hash = options.assessmentHash;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Logging Completeness (AI-LOG.1) ──────────────────────────────────
+
+  /**
+   * Witness logging completeness (AI-LOG.1).
+   * EU Art.12(3), NIST AU-12.
+   */
+  witnessLogCompleteness(options: {
+    eventsExpected: number;
+    eventsLogged: number;
+    logRetentionDays?: number;
+    logIntegrityHash?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.eventsExpected;
+    const fb = options.eventsLogged;
+    const fc = options.logRetentionDays ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-LOG.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-LOG.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "log-completeness";
+      const ctx: Record<string, unknown> = { provider: "logging", retention_days: fc };
+      if (options.logIntegrityHash) ctx.log_integrity_hash = options.logIntegrityHash;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Incident Response Capability (AI-IR.1) ───────────────────────────
+
+  /**
+   * Witness incident response capability (AI-IR.1).
+   * EU Art.62, NIST IR-1, ISO 42001.
+   */
+  witnessIncidentResponse(options: {
+    playbooksDefined: number;
+    playbooksTested: number;
+    lastDrillDate?: string;
+    meanResponseMinutes?: number;
+    contactListCurrent?: boolean;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.playbooksDefined;
+    const fb = options.playbooksTested;
+    const fc = (options.contactListCurrent ?? true) ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-IR.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-IR.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = "incident-response";
+      const ctx: Record<string, unknown> = { provider: "incident-response" };
+      if (options.lastDrillDate) ctx.last_drill_date = options.lastDrillDate;
+      if (options.meanResponseMinutes !== undefined) ctx.mean_response_minutes = options.meanResponseMinutes;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4045,7 +4846,7 @@ export class Witness {
       if (options.modelVersion) ctx.model_version = options.modelVersion;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4077,7 +4878,7 @@ export class Witness {
       if (options.acceptanceCriteria) ctx.acceptance_criteria = options.acceptanceCriteria;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4109,7 +4910,7 @@ export class Witness {
       if (options.peLicense) ctx.pe_license = options.peLicense;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4141,7 +4942,7 @@ export class Witness {
       if (options.specificationRef) ctx.specification_ref = options.specificationRef;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4173,7 +4974,7 @@ export class Witness {
       if (options.finalHash) ctx.final_hash = options.finalHash;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4207,7 +5008,7 @@ export class Witness {
       if (options.finalDesignHash) ctx.final_design_hash = options.finalDesignHash;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4251,7 +5052,7 @@ export class Witness {
       if (options.transactionRef) ctx.transaction_ref = options.transactionRef;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4291,7 +5092,7 @@ export class Witness {
       if (options.driftDetails) ctx.drift_details = options.driftDetails;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4333,7 +5134,7 @@ export class Witness {
       if (options.terminationReason) ctx.termination_reason = options.terminationReason;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4380,7 +5181,7 @@ export class Witness {
       if (options.dataResidencyRequired !== undefined) ctx.data_residency_required = options.dataResidencyRequired;
       payload.ai_context = ctx;
     }
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4451,7 +5252,7 @@ export class Witness {
     const policyHash = this.config.policyVersion
       ? sha256Truncated(this.config.policyVersion, 12) : undefined;
     this._applyOperationalMetadata(p1, policyHash);
-    this.buffer.enqueueMany([p1]);
+    this._enqueueSampled(p1);
 
     // Mint AI-TRUST.2
     const [ts2, ep2] = timestampMs();
@@ -4475,7 +5276,7 @@ export class Witness {
     }
 
     this._applyOperationalMetadata(p2, policyHash);
-    this.buffer.enqueueMany([p2]);
+    this._enqueueSampled(p2);
 
     return result;
   }
@@ -4616,7 +5417,7 @@ export class Witness {
       }
     }
 
-    this.buffer.enqueueMany(payloads);
+    for (const p of payloads) this._enqueueSampled(p);
   }
 
   /**
@@ -4692,12 +5493,52 @@ export class Witness {
   }
 
   /** Force-flush all buffered payloads. */
+  private _flushCount = 0;
+
+  private _emitCountdownWarning(): void {
+    if (this._flushCount > 0) return;
+    this._flushCount++;
+
+    const count = this._witnessedProcedures?.size ?? 0;
+    const local = this._localMode;
+
+    if (local) {
+      console.info(
+        `[swt3-ai] First flush: ${count} procedure(s) witnessed locally. ` +
+        `Anchors saved to disk. Connect to sovereign.tenova.io ` +
+        `to persist anchors and enable verification.`,
+      );
+    } else {
+      console.info(
+        `[swt3-ai] First flush: ${count} procedure(s) witnessed this session. ` +
+        `Coverage is session-scoped -- restart the witness to reset. ` +
+        `See https://sovereign.tenova.io/docs/ for full procedure catalog.`,
+      );
+    }
+  }
+
   async flush(): Promise<WitnessReceipt[]> {
+    this._emitCountdownWarning();
+    // Density attestation (auto-fires if policy configured, rate limit met, cold start passed)
+    if (this._densityEnforcer) {
+      const result = this._densityEnforcer.evaluate();
+      if (result) {
+        this.witnessAnchorDensity({
+          expectedAnchors: result.expected,
+          actualAnchors: result.actual,
+          densityStatus: result.status,
+        });
+      }
+    }
+    const summaries = this._emitSamplingSummaries();
+    if (summaries.length > 0) this.buffer.enqueueMany(summaries);
     return this.buffer.flush();
   }
 
   /** Stop the witness and flush remaining payloads. */
   async stop(): Promise<WitnessReceipt[]> {
+    const summaries = this._emitSamplingSummaries();
+    if (summaries.length > 0) this.buffer.enqueueMany(summaries);
     return this.buffer.stop();
   }
 
@@ -4753,7 +5594,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4794,7 +5635,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4836,7 +5677,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4900,7 +5741,7 @@ export class Witness {
     }
     // clearing_level 3: factors only, no metadata
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4936,7 +5777,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -4972,7 +5813,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -5008,7 +5849,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -5044,7 +5885,7 @@ export class Witness {
       payload.ai_context = ctx;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return payload;
   }
 
@@ -5090,7 +5931,7 @@ export class Witness {
       payload.ai_context = options.context;
     }
     this._applyOperationalMetadata(payload, policyHash);
-    this.buffer.enqueueMany([payload]);
+    this._enqueueSampled(payload);
     return new LifecycleChain(this, procedureId, chainId, fp);
   }
 

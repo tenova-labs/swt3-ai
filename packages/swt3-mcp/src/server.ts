@@ -28,6 +28,10 @@ import { handleVerifyAgentTrust, handlePresentCredential } from "./tools/trust.j
 import { handleResolveCrosswalk, handleCoverageReport, handleResolveJurisdiction } from "./tools/crosswalk.js";
 import { handleWitnessResourceConsumption } from "./tools/cost.js";
 import { handleWitnessDelegationTree } from "./tools/delegation.js";
+import { handleWitnessDelegationBoundary } from "./tools/delegation-boundary.js";
+import { handleWitnessAnchorDensity } from "./tools/density.js";
+import { handleWitnessMcpSecurity } from "./tools/mcp-security.js";
+import { handleWitnessModelProvenance } from "./tools/model-provenance.js";
 import { handleWitnessRagContext } from "./tools/rag.js";
 import { handleWitnessGuardrail } from "./tools/guardrail.js";
 import { handleWitnessHumanReview } from "./tools/hitl.js";
@@ -824,6 +828,160 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
         args as any, config, client,
       );
       trackProcedure(sessionState, "AI-DEL.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Delegation Boundary Tool ---
+
+  server.registerTool("witness_delegation_boundary", {
+    description:
+      "Witness delegation boundary evaluation (AI-DEL.2). " +
+      "Attests that a delegation depth limit was evaluated. Does not enforce " +
+      "the boundary -- your code must enforce depth limits, this tool records " +
+      "the evidence. PASS if depth is within bounds or boundary was enforced " +
+      "(blocked/warned/escalated). FAIL only when depth exceeds max and action " +
+      "is allowed. NIST AI Agent Standards, Singapore IMDA, EU AI Act Art. 14." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      max_depth: z.number().describe("Maximum permitted delegation depth from root human authorization"),
+      actual_depth: z.number().describe("Observed delegation depth at evaluation time"),
+      boundary_action: z.string().describe("Action taken: 'blocked', 'warned', 'escalated', or 'allowed'"),
+      delegator_id: z.string().optional().describe("Identity of the delegating agent or human"),
+      parent_grant_fingerprint: z.string().optional().describe("Fingerprint of parent delegation grant anchor"),
+      agent_id: z.string().optional().describe("Agent identity (AI-ID.1)"),
+      cycle_id: z.string().optional().describe("Cycle ID for chain correlation"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessDelegationBoundary(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-DEL.2");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Anchor Density Tool ---
+
+  server.registerTool("witness_anchor_density", {
+    description:
+      "Witness anchor density evaluation (AI-DENSITY.1). " +
+      "Records whether witnessing frequency is sufficient for the regulatory " +
+      "requirement. PASS when density is sufficient, FAIL when insufficient or " +
+      "degraded. EU AI Act Art. 9, NIST AI RMF MEASURE 2.6." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      expected_anchors: z.number().describe("Expected number of witness anchors for the evaluation period"),
+      actual_anchors: z.number().describe("Actual number of witness anchors observed"),
+      density_status: z.string().optional().describe("Override status: 'sufficient', 'insufficient', or 'degraded' (auto-derived if omitted)"),
+      evaluation_window_seconds: z.number().optional().describe("Evaluation window in seconds (default: 3600)"),
+      procedure_filter: z.string().optional().describe("Procedure ID to scope density evaluation (e.g., 'AI-INF.1')"),
+      agent_id: z.string().optional().describe("Agent identity (AI-ID.1)"),
+      cycle_id: z.string().optional().describe("Cycle ID for chain correlation"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessAnchorDensity(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-DENSITY.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- MCP Security Posture Tool ---
+
+  server.registerTool("witness_mcp_security", {
+    description:
+      "Witness MCP security posture evaluation (AI-MCP.1). " +
+      "Attests observable security checks on the MCP server. Never reveals " +
+      "which checks failed -- only the count and score. PASS when score >= 75, " +
+      "FAIL otherwise. NSA/CSA MCP Security Best Practices." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      checks_passed: z.number().describe("Number of security checks that passed"),
+      total_checks: z.number().optional().describe("Total security checks evaluated (default: 8)"),
+      score: z.number().optional().describe("Posture score 0-100 (auto-derived if omitted)"),
+      server_name: z.string().optional().describe("MCP server name"),
+      transport_type: z.string().optional().describe("Transport type: 'stdio', 'sse', 'streamable-http'"),
+      agent_id: z.string().optional().describe("Agent identity (AI-ID.1)"),
+      cycle_id: z.string().optional().describe("Cycle ID for chain correlation"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessMcpSecurity(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-MCP.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }],
+        isError: true,
+      };
+    }
+  });
+
+  // --- Model Provenance Chain Tool ---
+
+  server.registerTool("witness_model_provenance", {
+    description:
+      "Witness model provenance chain (AI-PROV.1). " +
+      "Attests model lineage through training, fine-tuning, distillation, " +
+      "deployment. Links to parent models via fingerprints. PASS when " +
+      "integrity verified, FAIL otherwise. NIST AI RMF MAP 1.1, EU AI Act Art. 11." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      chain_length: z.number().describe("Number of provenance links in the model lineage"),
+      integrity_verified: z.boolean().describe("Whether provenance chain integrity was verified"),
+      link_type: z.string().describe("Provenance link type: 'training', 'fine_tuning', 'deployment', 'distillation'"),
+      parent_model_fingerprint: z.string().optional().describe("Fingerprint of the parent model in the provenance chain"),
+      model_id: z.string().optional().describe("Model identifier for the current model"),
+      agent_id: z.string().optional().describe("Agent identity (AI-ID.1)"),
+      cycle_id: z.string().optional().describe("Cycle ID for chain correlation"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional()
+        .describe("Data clearing level (0=analytics, 1=standard, 2=sensitive, 3=classified)"),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessModelProvenance(
+        args as any, config, client,
+      );
+      trackProcedure(sessionState, "AI-PROV.1");
       return { content: [{ type: "text" as const, text }] };
     } catch (err) {
       return {

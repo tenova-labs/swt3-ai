@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-VERSION = "0.6.1"
+VERSION = "0.6.6"
 
 PROFILES = {
     "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",

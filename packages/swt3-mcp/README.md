@@ -6,9 +6,64 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
-## What's New in v0.6.4
+## What's New in v0.6.6
 
-10 new compliance tools, 1 prompt template, and the pre-inference gate. The MCP server now exposes 33 tools covering the full AI governance lifecycle: from authorization before inference to incident reporting after.
+Supply chain accountability: 4 new tools (37 total), TypeScript SDK governance parity, OTel GenAI conventions, and a CI/CD gate action. The theme: proving your AI's supply chain is known, bounded, and monitored -- not just that individual inferences behaved.
+
+### 4 New MCP Tools (37 total)
+
+| Tool | Procedure | What It Does | Why It Matters |
+|------|-----------|-------------|----------------|
+| `witness_model_provenance` | AI-PROV.1 | Records model lineage: base model, training pipeline, fine-tuning ancestry, parent model fingerprint | G7 Hiroshima AI SBOM and EU AI Act Art. 53 require provenance documentation. Links derivative models to their ancestors with cryptographic fingerprints. |
+| `witness_delegation_boundary` | AI-DEL.2 | Records what an agent is NOT permitted to do: blocked tools, restricted scopes, escalation triggers | EU AI Act Art. 14 requires documented AI limitations. Proves constraints were declared before the agent acted. |
+| `witness_anchor_density` | AI-DENSITY.1 | Records the ratio of witnessed events to total events over a time window | Catches coverage drift from 100% to 2% before the assessor does. Proves monitoring was consistent, not just configured. |
+| `witness_mcp_security` | AI-MCP.1 | Evaluates 8 security properties of an MCP server connection. Records checks passed vs. total -- never which specific checks failed | NSA/CISA flagged 200K+ vulnerable MCP deployments. Creates security evaluation evidence without becoming an attack map. |
+
+### Why These 4 Tools Matter Together
+
+The original 33 tools covered the witness lifecycle (mint, verify, sign) and the governance lifecycle (authorize, filter, review, consent). These 4 new tools cover the supply chain lifecycle: where the model came from, what the agent cannot do, whether monitoring stayed consistent, and whether the MCP connection was secured. An agent using SWT3 via MCP now has end-to-end coverage -- from model provenance through runtime behavior to monitoring fidelity. One tool call per compliance obligation. 37 tools total.
+
+### TypeScript SDK Governance Parity
+
+The TypeScript SDK now has full parity with Python for governance witnessing: 10 new methods including `witnessGovernanceReview()`, `witnessGovernanceConfig()`, `witnessGovernanceException()`, and `witnessPolicyEnforcement()`. TypeScript teams building MCP-enabled agents are no longer second-class citizens for governance evidence.
+
+### OTel GenAI Semantic Conventions
+
+The Python and TypeScript OTel exporters now emit `gen_ai.system`, `gen_ai.request.model`, and token usage attributes following OpenTelemetry GenAI semantic conventions. Witness anchors exported via OTel are now natively compatible with AI observability platforms that consume GenAI spans.
+
+### GitHub Action
+
+`tenova-labs/swt3-gate-action@v1` evaluates `.swt3-gate.yml` policies in CI/CD pipelines. 7 inputs, 3 outputs. Fails the build when compliance coverage drops below the declared threshold. MCP servers can be gated in CI -- if the server does not meet the declared compliance policy, the pipeline fails before deployment.
+
+```yaml
+- uses: tenova-labs/swt3-gate-action@v1
+  with:
+    api-key: ${{ secrets.SWT3_API_KEY }}
+    tenant-id: MY_TENANT
+    framework: EU-AI-ACT
+```
+
+## What's New in v0.6.5
+
+Scale governance for MCP ecosystems. The middleware layer, probabilistic witnessing support, and 4 hardening features make SWT3 production-ready for GPAI-scale agent deployments.
+
+### Witness Middleware
+
+**What it does:** `withSWT3(transport)` wraps any MCP transport to auto-witness every tool call as an AI-TOOL.1 anchor. Zero code changes to tool handlers. Response is already sent before the witness fires -- cannot block, cannot fail your tools. Works with any MCP server, not just ours. Supports batching, sampling, multi-tenant resolution, and retry with bounded queues. See [Witness Middleware](#witness-middleware) below.
+
+**Why it matters:** MCP adoption is accelerating, but most MCP servers ship without any compliance evidence. The middleware pattern means existing servers gain cryptographic attestation by adding one line. No refactoring, no tool handler changes, no performance impact. The response is already on the wire before the witness fires. For platform teams operating multiple MCP servers, the multi-tenant callback resolves which tenant each tool call belongs to -- a single middleware instance covers the entire fleet.
+
+### Probabilistic Witnessing Compatibility
+
+The Python and TypeScript SDKs now support `sampling_rate` for billion-inference GPAI deployments. AI-SAMPLE.1 summary anchors record exactly how many inferences were skipped. The MCP server's `list_procedures` and `resolve_crosswalk` tools now include AI-SAMPLE.1 in the registry. Anchors from sampled inferences verify identically through the MCP `verify_anchor` tool.
+
+### Go SDK (v0.1.0)
+
+The 10th language in the SWT3 ecosystem. Go covers the infrastructure layer -- Kubernetes operators, API gateways, inference orchestrators. Fingerprints minted by Go services verify identically through MCP's `verify_anchor` tool. Same formula, same output, same audit trail.
+
+### v0.6.4
+
+10 new compliance tools, 1 prompt template, and the pre-inference gate. The MCP server now exposes 37 tools covering the full AI governance lifecycle: from authorization before inference to incident reporting after.
 
 ### 10 New Compliance Tools
 
@@ -61,7 +116,7 @@ Six new tools, one prompt template. The newest closes the autonomous vehicle com
 
 - **Jurisdiction Resolver** -- `resolve_jurisdiction` tool. Pass an ISO 3166-1 country code (e.g., "JP", "DE") or ISO 3166-2 subdivision (e.g., "US-CA") and get back every applicable regulatory framework, grouped by binding status: mandatory (laws with enforcement), advisory (government guidance), and voluntary (industry standards). For subdivisions, returns both local and national frameworks. 34 frameworks mapped across 50+ jurisdiction codes. The answer to "I deploy in Germany -- what frameworks apply to me?" without reading 34 crosswalk tables.
 
-- **33 tools**, 1 prompt, 36 frameworks, 113 procedures, 2 resources.
+- **33 tools**, 1 prompt, 36 frameworks, 114 procedures, 2 resources.
 
 ### v0.6.1
 
@@ -74,8 +129,56 @@ Six new tools, one prompt template. The newest closes the autonomous vehicle com
 
 ### v0.5.9
 
-- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (27 frameworks, 113 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
+- **Compliance Intelligence** -- `resolve_crosswalk` maps any procedure to every framework control it satisfies (36 frameworks, 118 procedures, offline). `coverage_report` shows which procedures your audit session has covered for a given framework, with a score and remaining gaps.
 - Aligned with core SDK v0.5.9 (`resolve()`, `coverage()`, local witness mode).
+
+## Witness Middleware
+
+Zero-integration compliance witnessing for any MCP server. Wrap your transport and every tool call automatically mints an AI-TOOL.1 witness anchor. No code changes to your tool handlers. No SDK integration. One line.
+
+```typescript
+import { withSWT3 } from "@tenova/swt3-mcp/middleware";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const transport = withSWT3(new StdioServerTransport(), {
+  apiKey: process.env.SWT3_API_KEY,
+});
+await server.connect(transport);
+// Every tool call now auto-witnesses AI-TOOL.1 anchors
+```
+
+**How it works:** The middleware wraps the transport's `send()` and `onmessage` to observe `tools/call` request/response pairs. After the response is already committed to the wire, it fires a witness POST. The tool handler never knows SWT3 exists. Failures never propagate. Your tool calls cannot be blocked, delayed, or affected in any way.
+
+**Works with any transport:** Stdio, SSE, HTTP, WebSocket, custom. The middleware duck-types the MCP Transport interface -- no dependency on `@modelcontextprotocol/sdk`.
+
+**Demo mode:** Omit the `apiKey` and anchors are logged to stderr instead of POSTed. Useful for local development.
+
+### Configuration
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `endpoint` | `https://sovereign.tenova.io` | Axiom API endpoint |
+| `apiKey` | demo mode | API key (`axm_...`) |
+| `tenantId` | auto-resolved | Tenant ID |
+| `clearingLevel` | `1` | Data clearing level (0-3) |
+| `agentId` | | Agent identity (AI-ID.1) |
+| `signingKey` | | HMAC signing key |
+| `maxBuffer` | `100` | Max pending calls tracked before drop-oldest eviction |
+| `onWitness` | | Callback fired after each witness attempt |
+
+### Callback
+
+```typescript
+withSWT3(transport, {
+  apiKey: process.env.SWT3_API_KEY,
+  onWitness: (receipt) => {
+    console.log(`${receipt.toolName} -> ${receipt.fingerprint} (${receipt.latencyMs}ms)`);
+    if (receipt.error) console.warn(`Witness failed: ${receipt.error}`);
+  },
+});
+```
+
+The callback fires for every tool call regardless of witness success or failure. The `error` field is set only when the witness POST failed -- the tool call itself was never affected.
 
 ## Why This Exists
 
@@ -274,7 +377,7 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (33)
+## Tools (37)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.
@@ -324,7 +427,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (113 procedures, 61 namespaces).
+`list_procedures` -- browse the UCT procedure registry (118 procedures, 64 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

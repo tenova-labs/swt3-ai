@@ -9,19 +9,72 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
-## What's New in v0.6.4
+## What's New in v0.6.6
 
-Version alignment with the full SWT3 SDK ecosystem. The protocol now spans 9 languages (Python, TypeScript, Rust, C#, Ruby, Swift, Kotlin, plus MCP and K8s agent) with 113 procedures across 61 namespaces.
+Supply chain accountability. Four new procedures, a CI/CD gate action, and OTel GenAI conventions across the ecosystem. Every improvement flows through to Rust because fingerprints are identical across all 10 languages.
 
-**Why 9 languages matters:** AI systems don't run on one stack. A Python training pipeline feeds a Rust inference engine that serves a Swift mobile app monitored by a TypeScript dashboard. Every handoff is an accountability gap. Cross-language parity means the same fingerprint formula, the same signing algorithm, and the same test vectors produce identical results regardless of where the attestation happens. No translation layer. No format conversion. One protocol, verified across every runtime.
+### 4 New Procedures
 
-**New in the ecosystem (v0.6.4):**
-- Pre-inference gate module: authorization checkpoint before inference runs
-- Chain reconstruction: forensic timeline rebuilding from witness anchors
-- 10 new MCP compliance tools (33 total): gate, guardrail, HITL, consent, data provenance, RAG, output filter, incident, reconstruct, trajectory
-- Kotlin SDK (v0.1.1): JVM/Android support with full test vector parity
-- 185 compliance guides (5 new regulatory crosswalks)
-- Crosswalk data: 27 frameworks, 339 procedure-framework mappings
+**AI-PROV.1 (Model Provenance Chain):** Records model lineage -- base model, training pipeline, fine-tuning ancestry. The G7 Hiroshima AI SBOM framework requires provenance documentation. A `parent_model_fingerprint` parameter on model weight/adapter/quantization methods links derivative models to their ancestors. Provenance anchors verify with `mint_fingerprint` like any other anchor.
+
+**AI-DEL.2 (Delegation Boundary):** Records what an agent is NOT permitted to do -- blocked tools, restricted scopes, escalation triggers. EU AI Act Art. 14 requires documented AI system limitations. Where AI-DEL.1 tracks permissions, AI-DEL.2 tracks constraints.
+
+**AI-DENSITY.1 (Anchor Density):** Records the ratio of witnessed events to total events over a time window. Catches the slow coverage drift from 100% to 2% that nobody notices until the audit. A DensityEnforcer class in Python and TypeScript auto-fires density anchors when coverage drops.
+
+**AI-MCP.1 (MCP Security Posture):** Evaluates 8 security properties of an MCP server connection. Records checks passed vs. total -- never which specific checks failed. NSA and CISA flagged 200,000+ vulnerable MCP deployments in 2026. This creates evidence that security was evaluated at connection time without becoming an attack map.
+
+**Why it matters for Rust:** All four procedures produce anchors with the same fingerprint formula. Your Rust code can verify any of these new anchor types with the existing `mint_fingerprint` function -- no crate update required for verification. If your Rust inference engine is fine-tuned from an open-weight base model, the provenance chain links your production binary back to its training lineage. The density anchors let your monitoring layer verify that the Python witness pipeline maintained consistent coverage.
+
+### GitHub Action
+
+`tenova-labs/swt3-gate-action@v1` evaluates `.swt3-gate.yml` in CI/CD. Fails the build when coverage drops. Works with any language -- the gate checks anchors on the server, not the SDK in your repo.
+
+### OTel GenAI Conventions (Python + TypeScript)
+
+The OpenTelemetry exporters now emit `gen_ai.system`, `gen_ai.request.model`, and token usage attributes following the OTel GenAI semantic conventions. If your Rust service consumes OTel spans from the Python or TypeScript witness pipeline, these new attributes appear automatically.
+
+### Updated Coverage
+
+- 118 procedures across 64 namespaces (+AI-PROV.1, AI-DEL.2, AI-DENSITY.1, AI-MCP.1)
+- 37 MCP tools (+witness_delegation_boundary, witness_anchor_density, witness_mcp_security, witness_model_provenance)
+- 10 SDK languages with byte-identical output
+- 36 framework crosswalks, 222 compliance guides
+- 2,825 tests passing across 5 languages
+
+## What's New in v0.6.5
+
+Scale governance. The protocol grew features that matter at GPAI scale, and every improvement flows through to Rust because fingerprints are identical across all 10 languages.
+
+### Probabilistic Witnessing (Python + TypeScript)
+
+**What it does:** A new sampling rate parameter lets the full-pipeline SDKs witness a statistical sample of inferences instead of every single one. Non-witnessed inferences are counted and summarized in periodic AI-SAMPLE.1 anchors on flush.
+
+**Why it matters for Rust:** When your Rust inference engine processes millions of requests per second, the Python or TypeScript witness layer can sample at 0.1% for volume procedures and 100% for safety checks. The AI-SAMPLE.1 summary anchors use the same fingerprint formula this crate provides -- your Rust code can independently verify any sampled anchor or summary anchor with `mint_fingerprint`. Deterministic hash-based sampling means any verifier can reproduce the sampling decision for any given inference.
+
+### Governance Effectiveness Metadata (Python + TypeScript)
+
+**What it does:** Governance witness methods now accept metadata recording review duration and participant count. Assessors use this to distinguish substantive governance from governance theater.
+
+**Why it matters for Rust:** If your Rust service verifies governance anchors, the metadata lives in the `ai_context` field at clearing levels 0-1. The data structure is forward-compatible -- unknown keys pass through. No crate changes needed to process anchors containing governance metadata.
+
+### Go SDK (v0.1.0)
+
+The 10th language in the SWT3 ecosystem. Zero dependencies. All 65 test vectors pass. Go covers the infrastructure layer -- Kubernetes operators, API gateways, data pipelines. Between Go for orchestration and Rust for performance-critical inference, the two lowest-level languages in the stack now have native SWT3 primitives.
+
+### MCP Witness Middleware
+
+`withSWT3(transport)` wraps any MCP transport to auto-witness every tool call. If your Rust service embeds or calls MCP-enabled agents, every tool call now has a cryptographic anchor verifiable with this crate.
+
+### Updated Coverage
+
+- 114 procedures across 62 namespaces (AI-SAMPLE.1 added)
+- 10 SDK languages with byte-identical output
+- 36 framework crosswalks, 215 compliance guides
+- 2,515 tests passing across 5 languages
+
+### v0.6.4
+
+Pre-inference gate, chain reconstruction, 10 new MCP tools (33 total), Kotlin SDK (v0.1.1), 185 guides, 27 frameworks.
 
 ### v0.6.3
 
@@ -39,7 +92,7 @@ Version alignment with the full SWT3 SDK ecosystem. The protocol now spans 9 lan
 - **`timestamp_ms`** -- millisecond-precision timestamps matching the protocol clock
 - **Types** -- `WitnessPayload`, `WitnessReceipt`, `WitnessConfig`, `RevocationReason` structs ready for serialization
 
-All output is byte-identical to the Python, TypeScript, Swift, C#, Ruby, and MCP SDKs. 9 languages, one audit trail. Verified by shared test vectors at build time.
+All output is byte-identical to the Python, TypeScript, Swift, C#, Ruby, Go, Kotlin, and MCP SDKs. 10 languages, one audit trail. Verified by shared test vectors at build time.
 
 ## Quick Start
 
@@ -87,6 +140,7 @@ All SWT3 SDKs produce identical fingerprints from the same inputs. A unified aud
 | Rust | swt3-ai (this package) | crates.io |
 | C# / .NET | [swt3-ai](https://www.nuget.org/packages/swt3-ai) | NuGet |
 | Ruby | [swt3-ai](https://rubygems.org/gems/swt3-ai) | RubyGems |
+| Go | [swt3-ai](https://github.com/tenova-labs/swt3-ai-go) | Go modules |
 | MCP Server | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | npm + MCP Registry |
 | K8s Witness Agent | [swt3-witness](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-witness) | GHCR + Helm |
 

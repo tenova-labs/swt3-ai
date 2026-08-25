@@ -11,6 +11,150 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
+## What's New in v0.6.6
+
+Supply chain accountability: model provenance, delegation boundaries, anchor density monitoring, and MCP security posture. The theme: proving your AI's supply chain is known, bounded, and monitored -- not just that individual inferences behaved.
+
+### Model Provenance Chain (AI-PROV.1)
+
+**What it does:** `witness_model_provenance()` records the lineage of a model: who trained it, what base model it descends from, which training pipeline produced it, and whether the weights were modified post-training. A new `parent_model_fingerprint` parameter on `witness_model_weights()`, `witness_adapter_stack()`, and `witness_quantization()` links derivative models back to their parent's witness anchor.
+
+**Why it matters:** The G7 Hiroshima AI SBOM framework (May 2026) requires model provenance documentation. EU AI Act Art. 53 requires GPAI providers to document training processes. When a fine-tuned model misbehaves, the first question is "what was it fine-tuned from?" Without provenance chains, you can prove the current model was witnessed but not where it came from. The parent fingerprint creates an unbroken lineage from base model to production deployment -- every fork, every fine-tune, every quantization step has a cryptographic link to its ancestor.
+
+```python
+witness.witness_model_provenance(
+    model_id="credit-scorer-v3",
+    provenance={
+        "base_model": "llama-3.1-70b",
+        "training_pipeline": "sagemaker-ft-2026-08",
+        "fine_tuned_by": "ml-team-alpha",
+        "parent_model_fingerprint": "a8f3c7d91e02",
+    }
+)
+```
+
+### Delegation Boundary (AI-DEL.2)
+
+**What it does:** `witness_delegation_boundary()` records what an AI agent is NOT permitted to do. Where AI-DEL.1 (delegation tree) records the permissions an agent has, AI-DEL.2 records the explicit boundaries: which tools are blocked, which data scopes are excluded, which actions require escalation.
+
+**Why it matters:** EU AI Act Art. 14 requires "appropriate human-machine interface tools" that let humans "understand the capacities and limitations" of the AI system. NIST AI RMF GOVERN 1.1 calls for documented constraints on AI system behavior. Regulators ask two questions: "what can it do?" and "what can't it do?" Most systems can only answer the first. Delegation boundaries answer the second -- with cryptographic proof that the boundary was declared before the agent acted, not documented after an incident.
+
+```python
+witness.witness_delegation_boundary(
+    agent_id="loan-processor",
+    boundary={
+        "blocked_tools": ["shell_exec", "database_drop"],
+        "max_delegation_depth": 2,
+        "restricted_scopes": ["PII", "financial_records"],
+        "escalation_required": ["approval_over_10k"],
+    }
+)
+```
+
+### Anchor Density Monitoring (AI-DENSITY.1)
+
+**What it does:** `witness_anchor_density()` records the ratio of witnessed events to total events over a time window. The `DensityEnforcer` class monitors density in real-time and auto-fires AI-DENSITY.1 anchors when coverage drops below a threshold. Rate-limited to prevent anchor storms.
+
+**Why it matters:** Witnessing 100% of inferences on day one and 2% by month three is a compliance drift that nobody catches until the audit. Density monitoring makes coverage gaps visible and provable. When an assessor asks "were you consistently monitoring?", a density anchor chain shows the monitoring ratio over time -- not just a snapshot, but a trend. The DensityEnforcer runs in-process and catches gaps before the assessor does.
+
+```python
+from swt3_ai import Witness, DensityEnforcer
+
+witness = Witness(...)
+enforcer = DensityEnforcer(
+    witness=witness,
+    threshold=0.95,          # Alert below 95% coverage
+    window_seconds=3600,     # 1-hour windows
+)
+# enforcer auto-fires AI-DENSITY.1 anchors when coverage drops
+```
+
+### MCP Security Posture (AI-MCP.1)
+
+**What it does:** `witness_mcp_security()` evaluates 8 observable security properties of an MCP server connection and records the posture as a single anchor. Checks include transport encryption, authentication presence, tool allowlisting, input validation, rate limiting, logging, error handling, and scope restriction. The anchor records the count of checks passed and failed -- never which specific checks failed.
+
+**Why it matters:** NSA and CISA flagged MCP as a security risk in 2026, with 200,000+ vulnerable MCP deployments identified. But the problem is not MCP itself -- it is MCP servers deployed without security controls. This procedure creates a cryptographic record that security controls were evaluated at connection time. The deliberate opacity (count only, not which checks failed) prevents the anchor from becoming an attack map. An assessor sees "7 of 8 checks passed" -- enough to verify due diligence without revealing the two gaps to an attacker.
+
+```python
+witness.witness_mcp_security(
+    server_name="data-retrieval-mcp",
+    checks_passed=7,
+    checks_total=8,
+    transport_type="stdio",
+)
+```
+
+### OTel GenAI Semantic Conventions
+
+The OpenTelemetry exporter now emits `gen_ai.system`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, and `gen_ai.usage.output_tokens` attributes following the OpenTelemetry GenAI semantic conventions. The `gen_ai.system` attribute maps 17 provider prefixes (openai, anthropic, bedrock, vertex, etc.) to their canonical OTel values. Token usage attributes are emitted at clearing levels 0-1 and cleared at levels 2-3, consistent with the clearing engine's data minimization rules.
+
+### GitHub Action
+
+`tenova-labs/swt3-gate-action@v1` evaluates `.swt3-gate.yml` policies in CI/CD pipelines. 7 inputs, 3 outputs. Fails the build when compliance coverage drops below the declared threshold. The assessor reads the same gate file your pipeline enforces -- one source of truth from commit to production.
+
+```yaml
+- uses: tenova-labs/swt3-gate-action@v1
+  with:
+    api-key: ${{ secrets.SWT3_API_KEY }}
+    tenant-id: MY_TENANT
+    framework: EU-AI-ACT
+```
+
+## What's New in v0.6.5
+
+Scale governance: probabilistic witnessing for billion-inference providers, governance effectiveness metadata for assessors, and the Go SDK. The theme: making compliance witnessing work at GPAI scale without losing audit fidelity.
+
+### Probabilistic Witnessing
+
+**What it does:** A new `sampling_rate` parameter (0.0-1.0) that lets you witness a statistical sample of inferences instead of every single one. Non-witnessed inferences are counted and summarized in periodic AI-SAMPLE.1 anchors on flush. Per-procedure overrides let you keep safety-critical procedures at 100% while sampling high-volume inference calls.
+
+**Why it matters:** A GPAI provider processing a billion inferences per day cannot witness every single one. But regulators still need evidence the system was monitored. Probabilistic witnessing solves both: you set `sampling_rate=0.01` for volume procedures and `1.0` for guardrails and safety checks. The sampling is deterministic (hash-based, not random) so any verifier can reproduce the sampling decision for any given inference. The summary anchors record exactly how many inferences were skipped, preserving audit completeness.
+
+```python
+witness = Witness(
+    endpoint="https://sovereign.tenova.io/api/v1/witness",
+    api_key="axm_live_...",
+    tenant_id="GPAI_PROD",
+    sampling_rate=0.01,           # 1% of inferences witnessed
+    sampling_rates={
+        "AI-GRD.1": 1.0,         # 100% guardrail witnessing
+        "AI-SEC.1": 1.0,         # 100% security events
+        "AI-INF.1": 0.001,       # 0.1% inference volume
+    },
+)
+```
+
+### Governance Effectiveness Metadata
+
+**What it does:** All 17 governance witness methods now accept an optional `governance_metadata` dictionary. Pass `review_duration_minutes` and `participant_count` to record how long governance reviews took and how many people participated. Unknown keys pass through for forward compatibility.
+
+**Why it matters:** Assessors need to distinguish substantive governance from governance theater. A 3-minute review by one person is not the same as a 90-minute review by five. This metadata goes into the existing `ai_context` JSONB field at clearing levels 0-1 (stripped at levels 2-3). The SDK validates known keys and warns when `participant_count < 2`, which may not satisfy effective challenge requirements under SR 11-7 or EU AI Act Art. 14.
+
+```python
+witness.witness_governance_review(
+    reviews_scheduled=4,
+    reviews_completed=4,
+    governance_metadata={
+        "review_duration_minutes": 90,
+        "participant_count": 5,
+        "quorum_met": True,
+    }
+)
+```
+
+### Go SDK (v0.1.0)
+
+**What it does:** Core SWT3 primitives for Go: fingerprint minting, HMAC-SHA256 signing, lifecycle chain IDs, and type definitions. Zero external dependencies (standard library only). All 65 test vectors pass with byte-identical output to the other 9 SDKs in the ecosystem.
+
+**Why it matters:** Go is the dominant language for backend infrastructure at scale. Kubernetes operators, API gateways, data pipelines, and inference orchestrators are overwhelmingly written in Go. Without a Go SDK, GPAI infrastructure teams had to shell out to Python or use HTTP directly. Now they can witness inferences in-process with zero dependency overhead.
+
+```go
+import swt3 "github.com/tenova-labs/swt3-ai-go"
+
+fp := swt3.MintFingerprint("MY_TENANT", "AI-INF.1", 1, 1, 0, ts)
+sig := swt3.SignPayload("my-key", fp, "agent-1")
+```
+
 ## What's New in v0.6.4
 
 Pre-inference authorization, chain reconstruction, 10 new MCP compliance tools, and the Kotlin SDK. The theme: proving you checked BEFORE the AI acted, not just after.
@@ -54,7 +198,7 @@ These tools matter because MCP is becoming the standard integration layer for AI
 
 ### Crosswalk Data Expansion
 
-27 frameworks, 113 procedures, 339 procedure-framework mappings, 16 compliance profiles. Jurisdiction resolver covers 50+ jurisdiction codes with enforcement dates and binding status. Five new regulatory guides published: EU AI Act Digital Omnibus, Oregon SB 1546, Georgia AI Laws 2026, Washington HB 1170, NIST COSAiS.
+36 frameworks, 114 procedures, 339+ procedure-framework mappings, 16 compliance profiles. Jurisdiction resolver covers 50+ jurisdiction codes with enforcement dates and binding status.
 
 ### 185 Compliance Guides
 
@@ -267,14 +411,14 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
 - **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 34 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 27 frameworks and 113 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Bundled Crosswalks** -- 36 frameworks and 118 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
 ### v0.5.8
 
 - K8s DaemonSet, Cross-Silicon Hardware Attestation, AGT + LangGraph adapters
-- 21 adapters, 113 procedures, 56 namespaces, 27 frameworks, 18 profiles
+- 21 adapters, 118 procedures, 64 namespaces, 36 frameworks, 18 profiles
 
 ### K8s Hardware Attestation -- One Command
 
@@ -347,6 +491,22 @@ Open source (Apache-2.0). Source, Dockerfile, and Helm chart: [github.com/tenova
 
 Every tool call your agent makes is witnessed, Merkle-accumulated, and trust-evaluated. No code changes required. [Quick Start](https://www.npmjs.com/package/@tenova/swt3-mcp)
 
+### Witness Middleware
+
+Already have an MCP server? Wrap its transport for zero-code witnessing without installing the full 37-tool server:
+
+```typescript
+import { withSWT3 } from "@tenova/swt3-mcp/middleware";
+
+const transport = withSWT3(new StdioServerTransport(), {
+  apiKey: process.env.SWT3_API_KEY,
+});
+await server.connect(transport);
+// Every tool call now auto-witnesses AI-TOOL.1 anchors
+```
+
+The middleware observes tool call request/response pairs at the transport layer. The response is already sent before the witness fires. Your tool handlers are never modified, blocked, or delayed.
+
 ## Secure Agent-to-Agent Communication
 
 The SWT3 Trust Mesh enables mutual cryptographic verification between AI agents before they exchange data, invoke tools, or share context. When you adopt SWT3, every partner, vendor, and downstream agent that wants to interact with yours must adopt it too. Compliance becomes the connection protocol. Every agent in the mesh strengthens the network.
@@ -397,7 +557,7 @@ All verification is local. Zero cloud overhead. No data exchanged until both age
 
 ## Offline Verification
 
-Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 9 SDK languages -- recompute it anywhere in microseconds.
+Verify any witness anchor without network calls. The fingerprint formula is deterministic and identical across all 10 SDK languages -- recompute it anywhere in microseconds.
 
 ```python
 from swt3_ai import verify_anchor
@@ -412,7 +572,7 @@ result = verify_anchor(
 # result.status: "CERTIFIED TRUTH" | "TAMPERED"
 ```
 
-Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Swift, Rust, C#, Ruby, and MCP with identical output for identical inputs.
+Zero vendor dependency. Zero network calls. Works air-gapped. The same formula runs in Python, TypeScript, Swift, Rust, C#, Ruby, Go, Kotlin, and MCP with identical output for identical inputs.
 
 ## See It Work (No Account Needed)
 
@@ -991,7 +1151,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (113 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (118 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -1008,7 +1168,7 @@ SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapp
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 108 are available in production with real inference data. 226 cross-language test vectors ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 118 are available in production with real inference data. 2,825 cross-language tests ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, Go, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -1135,7 +1295,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-27 frameworks bundled. 113 procedures mapped. Updated with each SDK release.
+36 frameworks bundled. 118 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1415,7 +1575,7 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 ## Cross-Language Parity
 
-This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, and Ruby SDKs. 7 languages, one audit trail. 226 cross-language test vectors verified at build time.
+This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, Ruby, Go, Kotlin, and MCP SDKs. 10 languages, one audit trail. 2,825 cross-language tests verified at build time.
 
 ## Privacy
 
@@ -1478,7 +1638,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
 - [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 34 frameworks
-- [All 150 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [All 222 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

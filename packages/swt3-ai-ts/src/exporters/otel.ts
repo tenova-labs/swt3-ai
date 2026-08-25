@@ -19,6 +19,39 @@
 
 import type { WitnessPayload, WitnessReceipt } from "../types.js";
 
+// GenAI semantic conventions: known provider prefixes -> gen_ai.system value
+const GENAI_SYSTEM_MAP: Record<string, string> = {
+  openai: "openai",
+  gpt: "openai",
+  anthropic: "anthropic",
+  claude: "anthropic",
+  bedrock: "aws.bedrock",
+  aws: "aws.bedrock",
+  azure: "az.ai.inference",
+  gemini: "google.gemini",
+  google: "google.gemini",
+  vertex: "google.vertex_ai",
+  ollama: "ollama",
+  vllm: "vllm",
+  litellm: "litellm",
+  mistral: "mistral_ai",
+  cohere: "cohere",
+  replicate: "replicate",
+  huggingface: "huggingface",
+};
+
+function inferGenaiSystem(provider?: string, modelId?: string): string | undefined {
+  for (const source of [provider, modelId]) {
+    if (source) {
+      const lower = source.toLowerCase();
+      for (const [prefix, system] of Object.entries(GENAI_SYSTEM_MAP)) {
+        if (lower.startsWith(prefix)) return system;
+      }
+    }
+  }
+  return undefined;
+}
+
 export interface OTelExporterOptions {
   tracerName?: string;
   serviceName?: string;
@@ -97,6 +130,27 @@ export class OTelExporter {
     if (receipt) {
       if (receipt.verdict) attrs["swt3.verdict"] = receipt.verdict;
       if (receipt.swt3_anchor) attrs["swt3.anchor"] = receipt.swt3_anchor;
+    }
+
+    // GenAI semantic conventions (gen_ai.*)
+    // Maps SWT3 witness data to OTel GenAI attributes for observability
+    // pipeline compatibility (Datadog, Grafana, Honeycomb GenAI views).
+    const ctx = payload.ai_context as Record<string, any> | undefined;
+    const provider = ctx?.provider as string | undefined;
+    const modelId = payload.ai_model_id;
+    const clearing = payload.clearing_level;
+
+    const system = inferGenaiSystem(provider, modelId);
+    if (system) attrs["gen_ai.system"] = system;
+
+    if (modelId) attrs["gen_ai.request.model"] = modelId;
+
+    // Token data only at CL0-1 (cleared at CL2+)
+    if (clearing != null && clearing <= 1 && ctx) {
+      const inputTokens = ctx.input_tokens ?? ctx.tokens_in;
+      const outputTokens = ctx.output_tokens ?? ctx.tokens_out;
+      if (inputTokens != null) attrs["gen_ai.usage.input_tokens"] = inputTokens;
+      if (outputTokens != null) attrs["gen_ai.usage.output_tokens"] = outputTokens;
     }
 
     return attrs;

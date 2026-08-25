@@ -1,0 +1,108 @@
+name: "SWT3 Governance Gate"
+description: "Evaluate AI governance compliance gate using SWT3 witness anchors. Fails the pipeline when required procedures are missing or stale."
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  api-key:
+    description: "SWT3 API key (axm_*). Store as a GitHub secret."
+    required: true
+  endpoint:
+    description: "SWT3 endpoint URL (default: https://sovereign.tenova.io)"
+    required: false
+    default: "https://sovereign.tenova.io"
+  config-path:
+    description: "Path to .swt3-gate.yml config file (default: auto-detect)"
+    required: false
+    default: ""
+  framework:
+    description: "Framework to evaluate (e.g., EU-AI-ACT, NIST-800-53, CMMC). Uses config if omitted."
+    required: false
+    default: ""
+  strict:
+    description: "Strict mode: exit 1 on warnings (default: false)"
+    required: false
+    default: "false"
+  sdk-version:
+    description: "Pinned @tenova/swt3-ai version (supply chain safety)"
+    required: false
+    default: "0.6.5"
+  doctor:
+    description: "Run swt3 doctor before gate evaluation (default: true)"
+    required: false
+    default: "true"
+
+outputs:
+  result:
+    description: "Gate result: PASS or FAIL"
+    value: ${{ steps.gate.outputs.result }}
+  procedures-checked:
+    description: "Number of procedures evaluated"
+    value: ${{ steps.gate.outputs.procedures_checked }}
+  summary:
+    description: "Human-readable gate summary"
+    value: ${{ steps.gate.outputs.summary }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install SWT3 SDK
+      shell: bash
+      run: npm install --no-save @tenova/swt3-ai@${{ inputs.sdk-version }}
+
+    - name: Run doctor (config health check)
+      if: inputs.doctor == 'true'
+      shell: bash
+      env:
+        SWT3_API_KEY: ${{ inputs.api-key }}
+        SWT3_ENDPOINT: ${{ inputs.endpoint }}
+      run: |
+        CONFIG_FLAG=""
+        if [ -n "${{ inputs.config-path }}" ]; then
+          CONFIG_FLAG="--config ${{ inputs.config-path }}"
+        fi
+        npx swt3 doctor --ci $CONFIG_FLAG || true
+
+    - name: Evaluate governance gate
+      id: gate
+      shell: bash
+      env:
+        SWT3_API_KEY: ${{ inputs.api-key }}
+        SWT3_ENDPOINT: ${{ inputs.endpoint }}
+      run: |
+        CONFIG_FLAG=""
+        if [ -n "${{ inputs.config-path }}" ]; then
+          CONFIG_FLAG="--config ${{ inputs.config-path }}"
+        fi
+
+        FRAMEWORK_FLAG=""
+        if [ -n "${{ inputs.framework }}" ]; then
+          FRAMEWORK_FLAG="--framework ${{ inputs.framework }}"
+        fi
+
+        STRICT_FLAG=""
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          STRICT_FLAG="--strict"
+        fi
+
+        # Validate config first (offline, no API calls)
+        npx swt3 gate --validate $CONFIG_FLAG
+
+        # Evaluate gate (requires API)
+        OUTPUT=$(npx swt3 gate $CONFIG_FLAG $FRAMEWORK_FLAG $STRICT_FLAG 2>&1) || {
+          echo "result=FAIL" >> "$GITHUB_OUTPUT"
+          echo "summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT"
+          exit 1
+        }
+
+        echo "result=PASS" >> "$GITHUB_OUTPUT"
+        PROC_COUNT=$(echo "$OUTPUT" | grep -c "PASS\|FAIL" || echo "0")
+        echo "procedures_checked=$PROC_COUNT" >> "$GITHUB_OUTPUT"
+        echo "summary<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$OUTPUT" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        echo "$OUTPUT"

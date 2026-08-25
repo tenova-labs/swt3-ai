@@ -983,6 +983,8 @@ Conforming displays MUST use the following semantic color mapping:
 
 The exact shade within each family is implementation-defined. Implementations MUST NOT use identical colors for PASS and FAIL. Implementations MUST NOT render verdicts without visual differentiation.
 
+Implementations targeting markets where red and green carry inverted cultural semantics (e.g., East Asian financial conventions) MAY swap hue ranges provided the text label requirement below is satisfied and PASS/FAIL remain visually distinguishable.
+
 For print media and accessibility: conforming displays MUST include a text indicator ("PASS"/"FAIL" label, checkmark/cross symbol, or equivalent) in addition to color. Color MUST NOT be the sole differentiator.
 
 ### 23.3 Fingerprint Display Rules
@@ -1024,14 +1026,14 @@ This command uses only standard POSIX utilities. The assessor substitutes the te
 
 ### 23.6 Tabular Display of Multiple Anchors
 
-When rendering multiple anchors in a table or list view, the following column order is REQUIRED for the first four columns:
+When rendering multiple anchors in a table or list view, the following column order is REQUIRED for columns 1-2 and RECOMMENDED for columns 3-4:
 
-1. Procedure ID
-2. Verdict (with semantic color per Section 23.2)
-3. Witnessed (timestamp per Section 23.5)
-4. Fingerprint (monospace per Section 23.3)
+1. Procedure ID -- MUST be first column
+2. Verdict (with semantic color per Section 23.2) -- MUST be second column
+3. Witnessed (timestamp per Section 23.5) -- SHOULD be third column
+4. Fingerprint (monospace per Section 23.3) -- SHOULD be fourth column
 
-These four columns MUST NOT be reordered or omitted. Additional columns MAY be appended after column 4. Implementations SHOULD provide filtering by verdict (at minimum: ALL, PASS, FAIL). Implementations SHOULD provide sorting by timestamp.
+Columns 1 and 2 MUST NOT be reordered or omitted. Columns 3 and 4 MUST NOT be omitted but MAY appear in either order. Additional columns MAY be appended after column 4. Implementations SHOULD provide filtering by verdict (at minimum: ALL, PASS, FAIL). Implementations SHOULD provide sorting by timestamp.
 
 ### 23.7 Evidence Provenance Watermark
 

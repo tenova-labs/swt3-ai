@@ -1,8 +1,8 @@
 [package]
 name = "swt3-ai"
-version = "0.6.4"
+version = "0.6.6"
 edition = "2021"
-description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 113 procedures, 61 namespaces, 9 languages, 18 profiles, 21 integrations. EU AI Act, NIST AI RMF, CMMC, SR 11-7."
+description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference. 118 procedures, 64 namespaces, 10 languages, 18 profiles, 21 integrations. EU AI Act, NIST AI RMF, CMMC, SR 11-7."
 license = "Apache-2.0"
 repository = "https://github.com/tenova-labs/swt3-ai"
 homepage = "https://tenova.io"

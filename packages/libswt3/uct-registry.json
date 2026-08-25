@@ -8548,10 +8548,189 @@
         "NIST-800-53": "CM-3"
       },
       "namespace": "AI"
+    },
+    "AI-SAMPLE.1": {
+      "procedure_id": "AI-SAMPLE.1",
+      "parent_control": "AI-SAMPLE",
+      "title": "Probabilistic Witnessing Summary",
+      "category": "AI",
+      "scope": "ai_infrastructure",
+      "check_type": "AI_SAMPLE_SUMMARY",
+      "factors": {
+        "factor_a": {
+          "label": "skipped_count",
+          "description": "Number of inferences not individually witnessed during the sampling window.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.6"
+        },
+        "factor_b": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "regulatory_ref": "N/A"
+        },
+        "factor_c": {
+          "label": "reserved",
+          "description": "Reserved for future use. Always 0.",
+          "regulatory_ref": "N/A"
+        }
+      },
+      "evaluation": {
+        "expression": "true",
+        "description": "Summary anchors always PASS. They record the count of non-witnessed inferences for audit completeness."
+      },
+      "frameworks": {
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "EU-AI-ACT": "Art.12"
+      },
+      "namespace": "AI"
+    },
+    "AI-DENSITY.1": {
+      "procedure_id": "AI-DENSITY.1",
+      "parent_control": "AI-DENSITY",
+      "title": "Witnessing Density Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DENSITY_ATTESTATION",
+      "factors": {
+        "factor_a": {
+          "label": "expected_anchors",
+          "description": "Expected number of witness anchors for the evaluation period based on density policy.",
+          "regulatory_ref": "EU AI Act Art. 9 (continuous risk management)"
+        },
+        "factor_b": {
+          "label": "actual_anchors",
+          "description": "Actual number of witness anchors observed during the evaluation period.",
+          "regulatory_ref": "NIST AI RMF MEASURE"
+        },
+        "factor_c": {
+          "label": "density_status",
+          "description": "Density evaluation result: 0=sufficient, 1=insufficient, 2=degraded.",
+          "regulatory_ref": "EU AI Act Art. 9; NIST AI RMF MEASURE 2.6"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 0",
+        "description": "PASS when witnessing density is sufficient for the regulatory requirement. FAIL when insufficient or degraded."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "ISO-42001": "A.6.2.6"
+      },
+      "namespace": "AI"
+    },
+    "AI-DEL.2": {
+      "procedure_id": "AI-DEL.2",
+      "parent_control": "AI-DEL",
+      "title": "Delegation Boundary Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DEL_BOUNDARY",
+      "factors": {
+        "factor_a": {
+          "label": "max_depth",
+          "description": "Maximum permitted delegation depth from root human authorization.",
+          "regulatory_ref": "NIST AI Agent Standards Initiative; Singapore IMDA Agentic Framework"
+        },
+        "factor_b": {
+          "label": "actual_depth",
+          "description": "Observed delegation depth at evaluation time.",
+          "regulatory_ref": "EU AI Act Art. 14 (human oversight)"
+        },
+        "factor_c": {
+          "label": "boundary_action",
+          "description": "Action taken at boundary: 0=blocked, 1=warned, 2=escalated, 3=allowed.",
+          "regulatory_ref": "NIST AI Agent Standards Initiative"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c != 3 || factor_b <= factor_a",
+        "description": "PASS if depth within bounds (allowed) or boundary was enforced (blocked/warned/escalated when exceeded). FAIL only when depth exceeds max AND action is allowed."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.14",
+        "NIST-AI-RMF": "GOVERN 1.4",
+        "SINGAPORE-IMDA": "Agentic Framework",
+        "ISO-42001": "A.4.3"
+      },
+      "namespace": "AI"
+    },
+    "AI-MCP.1": {
+      "procedure_id": "AI-MCP.1",
+      "parent_control": "AI-MCP",
+      "title": "MCP Security Posture Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MCP_SECURITY",
+      "factors": {
+        "factor_a": {
+          "label": "total_checks",
+          "description": "Total number of observable security checks evaluated.",
+          "regulatory_ref": "NSA/CSA MCP Security Best Practices"
+        },
+        "factor_b": {
+          "label": "checks_passed",
+          "description": "Number of security checks that passed. Never reveals which checks failed.",
+          "regulatory_ref": "NIST AI Agent Standards Initiative"
+        },
+        "factor_c": {
+          "label": "posture_score",
+          "description": "Security posture score 0-100 derived from checks_passed/total_checks.",
+          "regulatory_ref": "NSA/CSA MCP Security Best Practices; OWASP Agentic Top 10"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c >= 75",
+        "description": "PASS when posture score is 75 or higher. FAIL when score is below 75. Only attests observable checks -- stdio transport cannot verify TLS."
+      },
+      "frameworks": {
+        "NSA-CSA-MCP": "MCP Security Best Practices",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "OWASP-AGENTIC": "A01-A10",
+        "EU-AI-ACT": "Art.15",
+        "ISO-42001": "A.8.1"
+      },
+      "namespace": "AI"
+    }
+  },
+    "AI-PROV.1": {
+      "procedure_id": "AI-PROV.1",
+      "parent_control": "AI-PROV",
+      "title": "Model Provenance Chain",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_PROV_CHAIN",
+      "factors": {
+        "factor_a": {
+          "label": "chain_length",
+          "description": "Number of provenance links in the model lineage (training, fine-tuning, distillation, deployment).",
+          "regulatory_ref": "NIST AI RMF MAP 1.1; G7 Hiroshima AI Code of Conduct"
+        },
+        "factor_b": {
+          "label": "integrity_verified",
+          "description": "Whether provenance chain integrity was verified: 1=verified, 0=unverified.",
+          "regulatory_ref": "EU AI Act Art. 11 (technical documentation)"
+        },
+        "factor_c": {
+          "label": "link_type",
+          "description": "Type of provenance link: 0=training, 1=fine_tuning, 2=deployment, 3=distillation.",
+          "regulatory_ref": "NIST AI RMF MAP 1.1"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "PASS when provenance chain integrity is verified. FAIL when unverified."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.11",
+        "NIST-AI-RMF": "MAP 1.1",
+        "G7-HIROSHIMA": "AI Code of Conduct",
+        "ISO-42001": "A.7.3"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (113 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (118 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",

@@ -10,19 +10,72 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
-## What's New in v0.6.4
+## What's New in v0.6.6
 
-Version alignment with the full SWT3 SDK ecosystem. The protocol now spans 9 languages (Python, TypeScript, Rust, C#, Ruby, Swift, Kotlin, plus MCP and K8s agent) with 113 procedures across 61 namespaces.
+Supply chain accountability. Four new procedures, a CI/CD gate action, and OTel GenAI conventions across the ecosystem. Every improvement flows through to Swift because fingerprints are identical across all 10 languages.
 
-**Why 9 languages matters:** AI systems don't run on one stack. A Python training pipeline feeds a Rust inference engine that serves a Swift mobile app monitored by a TypeScript dashboard. Every handoff is an accountability gap. Cross-language parity means the same fingerprint formula, the same signing algorithm, and the same test vectors produce identical results regardless of where the attestation happens. No translation layer. No format conversion. One protocol, verified across every runtime.
+### 4 New Procedures
 
-**New in the ecosystem (v0.6.4):**
-- Pre-inference gate module: authorization checkpoint before inference runs
-- Chain reconstruction: forensic timeline rebuilding from witness anchors
-- 10 new MCP compliance tools (33 total): gate, guardrail, HITL, consent, data provenance, RAG, output filter, incident, reconstruct, trajectory
-- Kotlin SDK (v0.1.1): JVM/Android support with full test vector parity
-- 185 compliance guides (5 new regulatory crosswalks)
-- Crosswalk data: 27 frameworks, 339 procedure-framework mappings
+**AI-PROV.1 (Model Provenance Chain):** Records model lineage -- base model, training pipeline, fine-tuning ancestry. The G7 Hiroshima AI SBOM framework requires provenance documentation. A `parent_model_fingerprint` parameter on model weight/adapter/quantization methods links derivative models to their ancestors. Provenance anchors verify with `SWT3.mintFingerprint` like any other anchor.
+
+**AI-DEL.2 (Delegation Boundary):** Records what an agent is NOT permitted to do -- blocked tools, restricted scopes, escalation triggers. EU AI Act Art. 14 requires documented AI system limitations. Where AI-DEL.1 tracks permissions, AI-DEL.2 tracks constraints.
+
+**AI-DENSITY.1 (Anchor Density):** Records the ratio of witnessed events to total events over a time window. Catches the slow coverage drift from 100% to 2% that nobody notices until the audit. A DensityEnforcer class in Python and TypeScript auto-fires density anchors when coverage drops.
+
+**AI-MCP.1 (MCP Security Posture):** Evaluates 8 security properties of an MCP server connection. Records checks passed vs. total -- never which specific checks failed. NSA and CISA flagged 200,000+ vulnerable MCP deployments in 2026. This creates evidence that security was evaluated at connection time without becoming an attack map.
+
+**Why it matters for Swift:** All four procedures produce anchors with the same fingerprint formula. Your Swift app can verify any of these new anchor types with the existing `SWT3.mintFingerprint` function -- no package update required for verification. On-device Core ML models fine-tuned from open-weight base models now have a provenance chain linking edge inference back to the training lineage. The delegation boundary procedure is particularly relevant for iOS agents that need to prove their constraints before operating in restricted environments like healthcare or financial services.
+
+### GitHub Action
+
+`tenova-labs/swt3-gate-action@v1` evaluates `.swt3-gate.yml` in CI/CD. Fails the build when coverage drops. Works with Xcode Cloud and any CI system -- the gate checks anchors on the server, not the SDK in your repo.
+
+### OTel GenAI Conventions (Python + TypeScript)
+
+The OpenTelemetry exporters now emit `gen_ai.system`, `gen_ai.request.model`, and token usage attributes following the OTel GenAI semantic conventions. If your Swift app's backend consumes OTel spans from the Python or TypeScript witness pipeline, these new attributes appear automatically.
+
+### Updated Coverage
+
+- 118 procedures across 64 namespaces (+AI-PROV.1, AI-DEL.2, AI-DENSITY.1, AI-MCP.1)
+- 37 MCP tools (+witness_delegation_boundary, witness_anchor_density, witness_mcp_security, witness_model_provenance)
+- 10 SDK languages with byte-identical output
+- 36 framework crosswalks, 222 compliance guides
+- 2,825 tests passing across 5 languages
+
+## What's New in v0.6.5
+
+Scale governance. The protocol grew features that matter at GPAI scale, and every improvement flows through to Swift because fingerprints are identical across all 10 languages.
+
+### Probabilistic Witnessing (Python + TypeScript)
+
+**What it does:** A new sampling rate parameter lets the full-pipeline SDKs witness a statistical sample of inferences instead of every single one. Non-witnessed inferences are counted and summarized in periodic AI-SAMPLE.1 anchors on flush.
+
+**Why it matters for Swift:** On-device Core ML inference on iPhone and Vision Pro is inherently high-volume. When a server-side Python pipeline samples at 1% and your Swift app witnesses every on-device prediction at 100%, both produce anchors with the same fingerprint formula. The AI-SAMPLE.1 summary anchors are verifiable with `SWT3.mintFingerprint` -- your app can independently confirm that the server-side sampling was deterministic and nothing was selectively excluded.
+
+### Governance Effectiveness Metadata (Python + TypeScript)
+
+**What it does:** Governance witness methods now accept metadata recording review duration and participant count. Assessors use this to distinguish substantive governance from governance theater.
+
+**Why it matters for Swift:** If your iOS app displays compliance status from governance anchors, the metadata lives in the `ai_context` field at clearing levels 0-1. The data structure is forward-compatible. Your app can surface review quality indicators (duration, participant count) without any SDK changes.
+
+### Go SDK (v0.1.0)
+
+The 10th language in the SWT3 ecosystem. Zero dependencies. All 65 test vectors pass. Go covers the infrastructure layer -- Kubernetes operators, API gateways, inference orchestrators. Your Swift app talks to Go-based backend services; now both ends of the chain produce identical cryptographic evidence.
+
+### MCP Witness Middleware
+
+`withSWT3(transport)` wraps any MCP transport to auto-witness every tool call. If your Swift app interacts with MCP-enabled agents via server-side proxies, every tool call now has a cryptographic anchor verifiable with this package.
+
+### Updated Coverage
+
+- 114 procedures across 62 namespaces (AI-SAMPLE.1 added)
+- 10 SDK languages with byte-identical output
+- 36 framework crosswalks, 215 compliance guides
+- 2,515 tests passing across 5 languages
+
+### v0.6.4
+
+Pre-inference gate, chain reconstruction, 10 new MCP tools (33 total), Kotlin SDK (v0.1.1), 185 guides, 27 frameworks.
 
 ### v0.6.3
 
@@ -64,7 +117,7 @@ Available on iOS, macOS, and visionOS via `#if canImport`:
 - **`SWT3.witnessModelIntegrity`** -- witness Core ML model integrity (AI-MDL.1). Hashes the compiled `.mlmodelc` bundle for tamper detection and drift monitoring.
 - **`SWT3.witnessSpatialInference`** -- witness an AI decision with spatial context. Captures a 4x4 world transform matrix and hashes it into the anchor. For AI systems making decisions in physical space (navigation, object recognition, spatial reasoning on Vision Pro), this proves WHERE the decision was made, not just WHAT was decided.
 
-All output is byte-identical to the Python, TypeScript, Rust, C#, Ruby, and MCP SDKs. 9 languages, one audit trail. Verified by 74 tests covering 47 fingerprint vectors, 2 signing vectors, and 5 hash vectors.
+All output is byte-identical to the Python, TypeScript, Rust, C#, Ruby, Go, Kotlin, and MCP SDKs. 10 languages, one audit trail. Verified by 74 tests covering 47 fingerprint vectors, 2 signing vectors, and 5 hash vectors.
 
 ## Quick Start
 
@@ -181,6 +234,7 @@ All SWT3 SDKs produce identical fingerprints from the same inputs. A unified aud
 | Rust | [swt3-ai](https://crates.io/crates/swt3-ai) | crates.io |
 | C# / .NET | [swt3-ai](https://www.nuget.org/packages/swt3-ai) | NuGet |
 | Ruby | [swt3-ai](https://rubygems.org/gems/swt3-ai) | RubyGems |
+| Go | [swt3-ai](https://github.com/tenova-labs/swt3-ai-go) | Go modules |
 | MCP Server | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | npm + MCP Registry |
 | K8s Witness Agent | [swt3-witness](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-witness) | GHCR + Helm |
 
