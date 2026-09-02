@@ -13,6 +13,7 @@
 !.gitignore
 !README.md
 !LICENSE
+!glama.json
 !CONTRIBUTING.md
 
 # --- ALLOW: GitHub community templates ---
