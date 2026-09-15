@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.tenova/swt3-witness",
   "title": "SWT3 AI Witness",
-  "description": "Cryptographic AI governance + audit. 37 tools, 36 frameworks. EU AI Act, NIST, OWASP, CMMC, SR 11-7",
+  "description": "Cryptographic AI governance + audit. 68 tools, 77 frameworks. EU AI Act, NIST, OWASP MCP Top 10, CMMC, SR 11-7. Full OWASP MCP Top 10 coverage.",
   "websiteUrl": "https://tenova.io",
   "repository": {
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "0.6.6",
+  "version": "0.7.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "0.6.6",
+      "version": "0.7.2",
       "transport": {
         "type": "stdio"
       },
@@ -69,12 +69,14 @@
         "audit",
         "governance",
         "compliance",
-        "observability"
+        "observability",
+        "security"
       ],
       "keywords": [
         "eu-ai-act",
         "nist-ai-rmf",
         "owasp-agentic-top10",
+        "owasp-mcp-top10",
         "cmmc",
         "nist-800-53",
         "sr-11-7",
@@ -93,12 +95,17 @@
         "tool-policy-gate",
         "inference-witnessing",
         "agent-accountability",
-        "clearing-levels"
+        "clearing-levels",
+        "mcp-security",
+        "tool-integrity",
+        "server-authentication",
+        "shadow-server-detection"
       ],
       "frameworks": [
         "EU AI Act",
         "NIST AI RMF",
         "OWASP Agentic Top 10",
+        "OWASP MCP Top 10",
         "CMMC",
         "NIST 800-53",
         "NIST 800-171",

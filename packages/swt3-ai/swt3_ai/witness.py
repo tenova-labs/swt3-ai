@@ -250,6 +250,26 @@ DISPOSAL_METHOD_CODES: Dict[str, int] = {"archived": 0, "destroyed": 1, "isolate
 RECOMMISSION_TYPE_CODES: Dict[str, int] = {"full_validation": 0, "shadow_mode": 1, "limited_scope": 2}
 LOCK_SCOPE_CODES: Dict[str, int] = {"weights_only": 0, "config_and_params": 1, "full_stack": 2}
 
+# ── NHI Governance Codes (v0.7.0) ────────────────────────────────────
+NHI_LIFECYCLE_EVENT_CODES: Dict[str, int] = {"issued": 1, "activated": 2, "suspended": 3, "expired": 4, "revoked": 5}
+NHI_ROTATION_REASON_CODES: Dict[str, int] = {"scheduled": 1, "compromise": 2, "policy": 3, "manual": 4}
+NHI_REVOCATION_REASON_CODES: Dict[str, int] = {"unspecified": 0, "model_recall": 1, "policy_violation": 2, "data_contamination": 3, "consent_withdrawal": 4, "regulatory_order": 5, "error_correction": 6}
+
+# ── HBOM Governance Codes (v0.7.0) ───────────────────────────────────
+HBOM_LIFECYCLE_EVENT_CODES: Dict[str, int] = {"installed": 1, "commissioned": 2, "maintained": 3, "degraded": 4, "decommissioned": 5, "recycled": 6}
+HBOM_WATER_SOURCE_CODES: Dict[str, int] = {"municipal": 1, "recycled": 2, "rainwater": 3, "groundwell": 4, "mixed": 5}
+
+# ── DPP Governance Codes (v0.7.0) ────────────────────────────────────
+DPP_CHARGE_EVENT_CODES: Dict[str, int] = {"charge_start": 1, "charge_complete": 2, "discharge_start": 3, "discharge_complete": 4}
+DPP_DEGRADATION_TYPE_CODES: Dict[str, int] = {"calendar_aging": 1, "thermal_stress": 2, "overcharge": 3, "deep_discharge": 4, "mechanical": 5, "unknown": 6}
+DPP_DISPOSITION_CODES: Dict[str, int] = {"recycling": 1, "repurpose": 2, "refurbishment": 3, "landfill": 4, "hazmat_disposal": 5}
+
+# ── ADR Governance Codes (v0.7.0) ────────────────────────────────────
+ADR_EVENT_PHASE_CODES: Dict[str, int] = {"signal_received": 1, "curtailment_start": 2, "curtailment_end": 3, "restoration": 4}
+ADR_BASELINE_METHOD_CODES: Dict[str, int] = {"metered_10day_avg": 1, "regression": 2, "real_time_meter": 3, "deemed_savings": 4}
+ADR_CREDIT_TYPE_CODES: Dict[str, int] = {"rec": 1, "carbon_offset": 2, "eac": 3, "guarantee_of_origin": 4}
+ADR_SIGNAL_TYPE_CODES: Dict[str, int] = {"emergency": 1, "economic": 2, "capacity": 3, "frequency_regulation": 4, "voltage_support": 5}
+
 # ── Lifecycle Chain Stages (v6.0) ────────────────────────────────────
 LIFECYCLE_CHAIN_STAGES: Dict[str, int] = {
     "initiated": 0, "checkpoint": 1, "escalated": 2,
@@ -469,6 +489,8 @@ class Witness:
         jurisdiction: Optional[str] = None,
         legal_basis: Optional[str] = None,
         purpose_class: Optional[str] = None,
+        authorization_expires: Optional[int] = None,
+        authorization_scope: Optional[str] = None,
         on_flush: Optional[Callable] = None,
         gateway_mode: bool = False,
         token_budget: Optional[int] = None,
@@ -506,6 +528,8 @@ class Witness:
                 jurisdiction=jurisdiction,
                 legal_basis=legal_basis,
                 purpose_class=purpose_class,
+                authorization_expires=authorization_expires,
+                authorization_scope=authorization_scope,
             )
             # Initialize a real buffer (thread starts but never fires since
             # record() returns early and flush_interval is 24h)
@@ -570,6 +594,8 @@ class Witness:
             jurisdiction=jurisdiction,
             legal_basis=legal_basis,
             purpose_class=purpose_class,
+            authorization_expires=authorization_expires,
+            authorization_scope=authorization_scope,
             token_budget=token_budget,
             chain_min_trust_level=chain_min_trust_level,
             flush_target=flush_target,
@@ -829,6 +855,8 @@ class Witness:
             policy_version_hash=policy_hash,
             jurisdiction=self._config.jurisdiction, legal_basis=self._config.legal_basis,
             purpose_class=self._config.purpose_class,
+            authorization_expires=self._config.authorization_expires,
+            authorization_scope=self._config.authorization_scope,
         )
         return payload
 
@@ -2702,6 +2730,129 @@ class Witness:
         self._enqueue_sampled(payload)
         return payload
 
+    # ── MCP Tool Integrity (AI-MCP.2) ───────────────────────────────────
+
+    def witness_tool_integrity(
+        self,
+        tool_name: str,
+        tool_schema: str,
+        invocation_seq: int,
+        *,
+        previous_schema_hash: Optional[str] = None,
+        server_name: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness MCP tool integrity attestation (AI-MCP.2).
+
+        Hashes the tool definition/schema at invocation time to detect
+        tool poisoning (OWASP MCP-03) and schema rug pulls.
+
+        OWASP Agentic Top 10 MCP-03, NIST 800-53 SI-7, EU AI Act Art. 15(4).
+        """
+        from hashlib import sha256
+        import json as _json
+        schema_str = tool_schema if isinstance(tool_schema, str) else _json.dumps(tool_schema, sort_keys=True)
+        schema_hash = sha256(schema_str.encode()).hexdigest()[:16]
+        fa = float(int(schema_hash, 16) % 2**32)
+        fb = float(invocation_seq)
+        drift = 0
+        if previous_schema_hash is not None and previous_schema_hash != schema_hash:
+            drift = 1
+        fc = float(drift)
+        payload = self._mint_and_sign("AI-MCP.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"mcp-tool-{tool_name}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-tool-integrity",
+                "tool_name": tool_name,
+                "schema_hash": schema_hash,
+                "invocation_seq": invocation_seq,
+                "schema_drift": drift == 1,
+            }
+            if server_name:
+                ctx["server_name"] = server_name
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── MCP Server Authentication (AI-MCP.3) ──────────────────────────────
+
+    def witness_server_auth(
+        self,
+        auth_method: int,
+        *,
+        credential_validity_seconds: int = 0,
+        mutual_auth: bool = False,
+        server_name: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness MCP server authentication attestation (AI-MCP.3).
+
+        Records the authentication method used before tool invocation.
+        PASS when auth is configured. FAIL when no auth (method=0) is
+        a valid compliance finding per IA-9.
+
+        OWASP Agentic Top 10 MCP-07, NIST 800-53 IA-9, EU AI Act Art. 15(3).
+        """
+        fa = float(auth_method)
+        fb = float(credential_validity_seconds)
+        fc = 1.0 if mutual_auth else 0.0
+        payload = self._mint_and_sign("AI-MCP.3", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            method_labels = {0: "none", 1: "api_key", 2: "oauth", 3: "mtls", 4: "did"}
+            label = method_labels.get(auth_method, f"unknown-{auth_method}")
+            payload.ai_model_id = f"mcp-auth-{label}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-server-auth",
+                "auth_method": auth_method,
+                "credential_validity_seconds": credential_validity_seconds,
+                "mutual_auth": mutual_auth,
+            }
+            if server_name:
+                ctx["server_name"] = server_name
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── MCP Server Discovery (AI-MCP.4) ───────────────────────────────────
+
+    def witness_server_discovery(
+        self,
+        discovery_method: int,
+        servers_found: int,
+        *,
+        unauthorized_count: int = 0,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness MCP server discovery attestation (AI-MCP.4).
+
+        Records MCP server inventory and unauthorized server detection.
+        PASS when at least one server discovered. Unauthorized count
+        provides shadow server visibility.
+
+        OWASP Agentic Top 10 MCP-09, NIST 800-53 CM-8, EU AI Act Art. 15(1).
+        """
+        fa = float(discovery_method)
+        fb = float(servers_found)
+        fc = float(unauthorized_count)
+        payload = self._mint_and_sign("AI-MCP.4", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            method_labels = {0: "manual", 1: "dns-sd", 2: "mdns", 3: "registry", 4: "network"}
+            label = method_labels.get(discovery_method, f"method-{discovery_method}")
+            payload.ai_model_id = f"mcp-discovery-{label}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-server-discovery",
+                "discovery_method": discovery_method,
+                "servers_found": servers_found,
+                "unauthorized_count": unauthorized_count,
+            }
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
     # ── Model Provenance Chain (AI-PROV.1) ────────────────────────────────
 
     PROVENANCE_LINK_TYPE_CODES: Dict[str, int] = {
@@ -3041,6 +3192,406 @@ class Witness:
             if period_end: ctx["period_end"] = period_end
             if report_generated is not None: ctx["report_generated"] = report_generated
             payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── NHI: Non-Human Identity Governance (v0.7.0) ────────────────────
+
+    def witness_nhi_scope(self, credential_id: str, scope: str, ttl_seconds: int = 0) -> WitnessPayload:
+        """Witness credential scope attestation (NHI-SCOPE.1). IA-4, Art. 9(4)(c)."""
+        from hashlib import sha256
+        cred_hash = sha256(credential_id.encode()).hexdigest()[:16]
+        scope_hash = sha256(scope.lower().encode()).hexdigest()[:16]
+        fa, fb, fc = float(int(cred_hash, 16) % 2**32), float(int(scope_hash, 16) % 2**32), float(ttl_seconds)
+        payload = self._mint_and_sign("NHI-SCOPE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-scope-{cred_hash[:8]}"
+            payload.ai_context = {"provider": "nhi-governance", "credential_id_hash": cred_hash, "scope_hash": scope_hash, "ttl_seconds": ttl_seconds}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_lifecycle(self, event_type: str, credential_id: str, issuer: str) -> WitnessPayload:
+        """Witness credential lifecycle event (NHI-CYCLE.1). IA-5, Art. 12(1)."""
+        from hashlib import sha256
+        cred_hash = sha256(credential_id.encode()).hexdigest()[:16]
+        issuer_hash = sha256(issuer.encode()).hexdigest()[:16]
+        fa = float(NHI_LIFECYCLE_EVENT_CODES.get(event_type, 0))
+        fb, fc = float(int(cred_hash, 16) % 2**32), float(int(issuer_hash, 16) % 2**32)
+        payload = self._mint_and_sign("NHI-CYCLE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-lifecycle-{event_type}"
+            payload.ai_context = {"provider": "nhi-governance", "event_type": event_type, "credential_id_hash": cred_hash, "issuer_hash": issuer_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_privilege_change(self, credential_id: str, previous_scope: str, new_scope: str) -> WitnessPayload:
+        """Witness privilege change (NHI-PRIV.1). AC-6, Art. 9(4)(c)."""
+        from hashlib import sha256
+        cred_hash = sha256(credential_id.encode()).hexdigest()[:16]
+        prev_hash = sha256(previous_scope.lower().encode()).hexdigest()[:16] if previous_scope else "0"
+        new_hash = sha256(new_scope.lower().encode()).hexdigest()[:16]
+        fa = float(int(cred_hash, 16) % 2**32)
+        fb = float(int(prev_hash, 16) % 2**32) if prev_hash != "0" else 0.0
+        fc = float(int(new_hash, 16) % 2**32)
+        payload = self._mint_and_sign("NHI-PRIV.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-priv-{cred_hash[:8]}"
+            payload.ai_context = {"provider": "nhi-governance", "credential_id_hash": cred_hash, "previous_scope_hash": prev_hash, "new_scope_hash": new_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_rotation(self, old_credential_id: str, new_credential_id: str, reason: str = "scheduled") -> WitnessPayload:
+        """Witness credential rotation (NHI-ROTATE.1). IA-5(1), Art. 9(9)."""
+        from hashlib import sha256
+        old_hash = sha256(old_credential_id.encode()).hexdigest()[:16]
+        new_hash = sha256(new_credential_id.encode()).hexdigest()[:16]
+        fa = float(int(old_hash, 16) % 2**32)
+        fb = float(int(new_hash, 16) % 2**32)
+        fc = float(NHI_ROTATION_REASON_CODES.get(reason, 1))
+        payload = self._mint_and_sign("NHI-ROTATE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-rotate-{reason}"
+            payload.ai_context = {"provider": "nhi-governance", "old_credential_hash": old_hash, "new_credential_hash": new_hash, "rotation_reason": reason}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_delegation(self, delegator_credential_id: str, delegatee_credential_id: str, delegation_depth: int = 1) -> WitnessPayload:
+        """Witness agent-to-agent credential delegation (NHI-AGENT.1). AC-2(7), Art. 14(4)."""
+        from hashlib import sha256
+        delegator_hash = sha256(delegator_credential_id.encode()).hexdigest()[:16]
+        delegatee_hash = sha256(delegatee_credential_id.encode()).hexdigest()[:16]
+        fa = float(int(delegator_hash, 16) % 2**32)
+        fb = float(int(delegatee_hash, 16) % 2**32)
+        fc = float(max(1, delegation_depth))
+        payload = self._mint_and_sign("NHI-AGENT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-delegation-depth{delegation_depth}"
+            payload.ai_context = {"provider": "nhi-governance", "delegator_hash": delegator_hash, "delegatee_hash": delegatee_hash, "delegation_depth": delegation_depth}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_revocation(self, credential_id: str, reason: str = "unspecified", cascade: bool = False) -> WitnessPayload:
+        """Witness credential revocation (NHI-REVOKE.1). IA-5(2), Art. 16(i)."""
+        from hashlib import sha256
+        cred_hash = sha256(credential_id.encode()).hexdigest()[:16]
+        fa = float(int(cred_hash, 16) % 2**32)
+        fb = float(NHI_REVOCATION_REASON_CODES.get(reason, 0))
+        fc = 1.0 if cascade else 0.0
+        payload = self._mint_and_sign("NHI-REVOKE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"nhi-revoke-{reason}"
+            payload.ai_context = {"provider": "nhi-governance", "revoked_credential_hash": cred_hash, "reason_code": reason, "cascade": cascade}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_nhi_expiration(self, credential_id: str, expires_epoch_ms: int, renewal_possible: bool = False, grace_period_seconds: int = 0) -> WitnessPayload:
+        """Witness credential expiration event (NHI-EXPIRE.1). IA-5(13), Art. 9(2)."""
+        from hashlib import sha256
+        cred_hash = sha256(credential_id.encode()).hexdigest()[:16]
+        fa = float(int(cred_hash, 16) % 2**32)
+        fb = float(expires_epoch_ms // 1000)
+        fc = float((1 if renewal_possible else 0) | ((min(grace_period_seconds, 0xFFFFFF) << 8)))
+        payload = self._mint_and_sign("NHI-EXPIRE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            label = "renewable" if renewal_possible else "permanent"
+            payload.ai_model_id = f"nhi-expire-{label}"
+            payload.ai_context = {"provider": "nhi-governance", "credential_hash": cred_hash, "expires_epoch_ms": expires_epoch_ms, "renewal_possible": renewal_possible, "grace_period_seconds": grace_period_seconds}
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── HBOM: Hardware Bill of Materials (v0.7.0) ────────────────────
+
+    def witness_hardware_inventory(self, component_count: int, manifest_hash: str, delta_from_baseline: int = 0) -> WitnessPayload:
+        """Witness hardware inventory attestation (HBOM-INV.1). EU CRA Art. 10(9), CM-8."""
+        fa, fb = float(component_count), float(int(manifest_hash[:16], 16) % 2**32) if len(manifest_hash) >= 16 else float(hash(manifest_hash) % 2**32)
+        fc = float(delta_from_baseline)
+        payload = self._mint_and_sign("HBOM-INV.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-inv-{component_count}"
+            payload.ai_context = {"provider": "hbom-governance", "component_count": component_count, "manifest_hash": manifest_hash[:16], "delta_from_baseline": delta_from_baseline}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_component_lifecycle(self, event_type: str, component_id: str, age_days: int = 0) -> WitnessPayload:
+        """Witness component lifecycle event (HBOM-LIFE.1). EU Battery Reg Art. 77, SA-22."""
+        from hashlib import sha256
+        comp_hash = sha256(component_id.encode()).hexdigest()[:16]
+        fa = float(HBOM_LIFECYCLE_EVENT_CODES.get(event_type, 0))
+        fb = float(int(comp_hash, 16) % 2**32)
+        fc = float(age_days)
+        payload = self._mint_and_sign("HBOM-LIFE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-lifecycle-{event_type}"
+            payload.ai_context = {"provider": "hbom-governance", "event_type": event_type, "component_hash": comp_hash, "age_days": age_days}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_thermal_profile(self, ambient_temp_c: float, component_temp_c: float, threshold_exceeded: bool = False) -> WitnessPayload:
+        """Witness thermal profile attestation (HBOM-THERM.1). EU Battery Reg Art. 14, PE-14."""
+        fa, fb, fc = float(ambient_temp_c), float(component_temp_c), 1.0 if threshold_exceeded else 0.0
+        payload = self._mint_and_sign("HBOM-THERM.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-thermal-{'alarm' if threshold_exceeded else 'normal'}"
+            payload.ai_context = {"provider": "hbom-governance", "ambient_temp_c": ambient_temp_c, "component_temp_c": component_temp_c, "threshold_exceeded": threshold_exceeded}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_water_consumption(self, liters_consumed: float, wue_ratio_x1000: int, source_type: str = "municipal") -> WitnessPayload:
+        """Witness water consumption (HBOM-WATER.1). CSRD ESRS-E3, EU EED Art. 12."""
+        fa, fb = float(liters_consumed), float(wue_ratio_x1000)
+        fc = float(HBOM_WATER_SOURCE_CODES.get(source_type, 1))
+        payload = self._mint_and_sign("HBOM-WATER.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-water-{source_type}"
+            payload.ai_context = {"provider": "hbom-governance", "liters_consumed": liters_consumed, "wue_ratio_x1000": wue_ratio_x1000, "source_type": source_type}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_power_usage(self, total_facility_kw: float, it_load_kw: float, pue_x1000: int) -> WitnessPayload:
+        """Witness PUE attestation (HBOM-PUE.1). EU EED Art. 12, ISO 30134-2."""
+        fa, fb, fc = float(total_facility_kw), float(it_load_kw), float(pue_x1000)
+        payload = self._mint_and_sign("HBOM-PUE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-pue-{pue_x1000}"
+            payload.ai_context = {"provider": "hbom-governance", "total_facility_kw": total_facility_kw, "it_load_kw": it_load_kw, "pue_x1000": pue_x1000}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_supply_chain_provenance(self, supplier_id: str, provenance_verified: bool, country_of_origin: str) -> WitnessPayload:
+        """Witness hardware supply chain provenance (HBOM-SUPPLY.1). EU CRA Art. 10(9), SA-12."""
+        from hashlib import sha256
+        supplier_hash = sha256(supplier_id.encode()).hexdigest()[:16]
+        country_hash = sha256(country_of_origin.upper().encode()).hexdigest()[:16]
+        fa = float(int(supplier_hash, 16) % 2**32)
+        fb = 1.0 if provenance_verified else 0.0
+        fc = float(int(country_hash, 16) % 2**32)
+        payload = self._mint_and_sign("HBOM-SUPPLY.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"hbom-supply-{'verified' if provenance_verified else 'unverified'}"
+            payload.ai_context = {"provider": "hbom-governance", "supplier_hash": supplier_hash, "provenance_verified": provenance_verified, "country_hash": country_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── DPP: Digital Product Passport (v0.7.0) ───────────────────────
+
+    def witness_battery_soh(self, soh_percent: float, cycle_count: int, capacity_kwh: float) -> WitnessPayload:
+        """Witness battery state of health (DPP-SOH.1). EU Battery Reg Art. 14(1)."""
+        fa = float(int(soh_percent * 100))
+        fb = float(cycle_count)
+        fc = float(int(capacity_kwh * 100))
+        payload = self._mint_and_sign("DPP-SOH.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"dpp-soh-{int(soh_percent)}pct"
+            payload.ai_context = {"provider": "dpp-governance", "soh_percent": soh_percent, "cycle_count": cycle_count, "capacity_kwh": capacity_kwh}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_charge_cycle(self, event_type: str, energy_kwh: float, peak_temp_c: float) -> WitnessPayload:
+        """Witness charge/discharge cycle (DPP-CHRG.1). EU Battery Reg Art. 14(1)."""
+        fa = float(DPP_CHARGE_EVENT_CODES.get(event_type, 0))
+        fb = float(int(energy_kwh * 100))
+        fc = float(peak_temp_c)
+        payload = self._mint_and_sign("DPP-CHRG.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"dpp-chrg-{event_type}"
+            payload.ai_context = {"provider": "dpp-governance", "event_type": event_type, "energy_kwh": energy_kwh, "peak_temp_c": peak_temp_c}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_degradation_event(self, degradation_type: str, soh_delta_percent: float, ambient_temp_c: float) -> WitnessPayload:
+        """Witness battery degradation event (DPP-DEGRAD.1). EU Battery Reg Art. 14(1)."""
+        fa = float(DPP_DEGRADATION_TYPE_CODES.get(degradation_type, 6))
+        fb = float(int(soh_delta_percent * 100))
+        fc = float(ambient_temp_c)
+        payload = self._mint_and_sign("DPP-DEGRAD.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"dpp-degrad-{degradation_type}"
+            payload.ai_context = {"provider": "dpp-governance", "degradation_type": degradation_type, "soh_delta_percent": soh_delta_percent, "ambient_temp_c": ambient_temp_c}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_end_of_life(self, disposition_type: str, handler_id: str, final_soh_percent: float) -> WitnessPayload:
+        """Witness end-of-life / recycling handoff (DPP-EOL.1). EU Battery Reg Art. 59."""
+        from hashlib import sha256
+        handler_hash = sha256(handler_id.encode()).hexdigest()[:16]
+        fa = float(DPP_DISPOSITION_CODES.get(disposition_type, 1))
+        fb = float(int(handler_hash, 16) % 2**32)
+        fc = float(int(final_soh_percent * 100))
+        payload = self._mint_and_sign("DPP-EOL.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"dpp-eol-{disposition_type}"
+            payload.ai_context = {"provider": "dpp-governance", "disposition_type": disposition_type, "handler_hash": handler_hash, "final_soh_percent": final_soh_percent}
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── ADR: Automated Demand Response (v0.7.0) ──────────────────────
+
+    def witness_demand_response(self, event_phase: str, committed_kw: float, signal_source: str) -> WitnessPayload:
+        """Witness demand response event (ADR-EVENT.1). FERC Order 2222, EU CEP Art. 17."""
+        from hashlib import sha256
+        signal_hash = sha256(signal_source.encode()).hexdigest()[:16]
+        fa = float(ADR_EVENT_PHASE_CODES.get(event_phase, 0))
+        fb = float(committed_kw)
+        fc = float(int(signal_hash, 16) % 2**32)
+        payload = self._mint_and_sign("ADR-EVENT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-event-{event_phase}"
+            payload.ai_context = {"provider": "adr-governance", "event_phase": event_phase, "committed_kw": committed_kw, "signal_source_hash": signal_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_baseline_consumption(self, baseline_kw: float, measurement_method: str, confidence_x1000: int = 950) -> WitnessPayload:
+        """Witness baseline consumption attestation (ADR-BASE.1). FERC Order 2222."""
+        fa = float(baseline_kw)
+        fb = float(ADR_BASELINE_METHOD_CODES.get(measurement_method, 1))
+        fc = float(confidence_x1000)
+        payload = self._mint_and_sign("ADR-BASE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-baseline-{measurement_method}"
+            payload.ai_context = {"provider": "adr-governance", "baseline_kw": baseline_kw, "measurement_method": measurement_method, "confidence_x1000": confidence_x1000}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_curtailment(self, actual_reduction_kw: float, committed_kw: float, compliance_ratio_x1000: int) -> WitnessPayload:
+        """Witness curtailment verification (ADR-CURT.1). FERC Order 2222, EU CEP Art. 17."""
+        fa, fb, fc = float(actual_reduction_kw), float(committed_kw), float(compliance_ratio_x1000)
+        payload = self._mint_and_sign("ADR-CURT.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-curtailment-{compliance_ratio_x1000}"
+            payload.ai_context = {"provider": "adr-governance", "actual_reduction_kw": actual_reduction_kw, "committed_kw": committed_kw, "compliance_ratio_x1000": compliance_ratio_x1000}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_settlement(self, settlement_kwh: float, price_usd_per_mwh: float, event_count: int) -> WitnessPayload:
+        """Witness settlement data attestation (ADR-SETTLE.1). FERC Order 2222."""
+        fa = float(int(settlement_kwh * 100))
+        fb = float(int(price_usd_per_mwh * 100))
+        fc = float(event_count)
+        payload = self._mint_and_sign("ADR-SETTLE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-settlement-{event_count}events"
+            payload.ai_context = {"provider": "adr-governance", "settlement_kwh": settlement_kwh, "price_usd_per_mwh": price_usd_per_mwh, "event_count": event_count}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_carbon_credit(self, credit_type: str, quantity_mwh: float, registry_id: str) -> WitnessPayload:
+        """Witness carbon credit / REC attestation (ADR-CARBON.1). EU CBAM, EU RED III."""
+        from hashlib import sha256
+        registry_hash = sha256(registry_id.encode()).hexdigest()[:16]
+        fa = float(ADR_CREDIT_TYPE_CODES.get(credit_type, 1))
+        fb = float(int(quantity_mwh * 100))
+        fc = float(int(registry_hash, 16) % 2**32)
+        payload = self._mint_and_sign("ADR-CARBON.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-carbon-{credit_type}"
+            payload.ai_context = {"provider": "adr-governance", "credit_type": credit_type, "quantity_mwh": quantity_mwh, "registry_hash": registry_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_grid_signal(self, signal_type: str, response_latency_ms: int, grid_operator: str) -> WitnessPayload:
+        """Witness grid signal correlation (ADR-GRID.1). FERC Order 2222, NERC BAL-001."""
+        from hashlib import sha256
+        operator_hash = sha256(grid_operator.encode()).hexdigest()[:16]
+        fa = float(ADR_SIGNAL_TYPE_CODES.get(signal_type, 1))
+        fb = float(response_latency_ms)
+        fc = float(int(operator_hash, 16) % 2**32)
+        payload = self._mint_and_sign("ADR-GRID.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"adr-grid-{signal_type}"
+            payload.ai_context = {"provider": "adr-governance", "signal_type": signal_type, "response_latency_ms": response_latency_ms, "grid_operator_hash": operator_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── Harness Governance (v0.7.2) ─────────────────────────────────────
+
+    def witness_orchestration_topology(self, topology: str, agent_count: int, dependency_depth: int = 0) -> WitnessPayload:
+        """Witness orchestration topology selection (AI-ORCH.1).
+
+        Records the routing pattern chosen by an agent harness for a
+        multi-agent task. NIST AI RMF GOVERN 1.3, EU AI Act Art. 9.
+        """
+        from .types import ORCHESTRATION_TOPOLOGY_CODES
+        fa = float(ORCHESTRATION_TOPOLOGY_CODES.get(topology, 0))
+        fb = float(max(agent_count, 0))
+        fc = float(max(dependency_depth, 0))
+        payload = self._mint_and_sign("AI-ORCH.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"orch-topology-{topology}"
+            payload.ai_context = {"provider": "harness-governance", "topology": topology, "agent_count": agent_count, "dependency_depth": dependency_depth}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_agent_handoff(self, delegator_id: str, delegate_id: str, permission_delta: int = 0) -> WitnessPayload:
+        """Witness inter-agent handoff (AI-ORCH.2).
+
+        Records identity linkage when one agent delegates work to another,
+        including whether the handoff escalates, restricts, or maintains
+        permissions. NIST AI RMF GOVERN 1.3, EU AI Act Art. 9.
+        """
+        from hashlib import sha256
+        d1_hash = sha256(delegator_id.encode()).hexdigest()[:16]
+        d2_hash = sha256(delegate_id.encode()).hexdigest()[:16]
+        fa = float(int(d1_hash, 16) % 2**32)
+        fb = float(int(d2_hash, 16) % 2**32)
+        fc = float(max(-1, min(1, permission_delta)))
+        payload = self._mint_and_sign("AI-ORCH.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            delta_label = "escalation" if permission_delta > 0 else ("restriction" if permission_delta < 0 else "lateral")
+            payload.ai_model_id = f"orch-handoff-{delta_label}"
+            payload.ai_context = {"provider": "harness-governance", "delegator_hash": d1_hash, "delegate_hash": d2_hash, "permission_delta": int(fc)}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_context_window(self, tokens_before: int, tokens_after: int, eviction_method: str = "none") -> WitnessPayload:
+        """Witness context window management event (AI-CTX.1).
+
+        Records when a harness truncates, summarizes, or evicts context.
+        NIST AI RMF MEASURE 2.6, EU AI Act Art. 13.
+        """
+        from .types import EVICTION_METHOD_CODES
+        fa = float(max(tokens_before, 0))
+        fb = float(max(tokens_after, 0))
+        fc = float(EVICTION_METHOD_CODES.get(eviction_method, 0))
+        payload = self._mint_and_sign("AI-CTX.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"ctx-window-{eviction_method}"
+            payload.ai_context = {"provider": "harness-governance", "tokens_before": tokens_before, "tokens_after": tokens_after, "eviction_method": eviction_method}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_sandbox_enforcement(self, tools_declared: int, tools_invoked: int, violations: int = 0) -> WitnessPayload:
+        """Witness sandbox enforcement attestation (AI-SAND.1).
+
+        Records the harness's own report of tool restriction compliance.
+        Independent verification requires cross-referencing AI-TOOL.1 anchors.
+        NIST 800-53 SA-11(8), EU AI Act Art. 15, OWASP Agentic A03.
+        """
+        fa = float(max(tools_declared, 0))
+        fb = float(max(tools_invoked, 0))
+        fc = float(max(violations, 0))
+        payload = self._mint_and_sign("AI-SAND.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"sandbox-{'clean' if violations == 0 else 'violation'}"
+            payload.ai_context = {"provider": "harness-governance", "tools_declared": tools_declared, "tools_invoked": tools_invoked, "violations": violations}
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_eval_gate(self, total_evals: int, evals_passed: int, *, gate_score: Optional[int] = None) -> WitnessPayload:
+        """Witness eval gate decision (AI-GATE.1).
+
+        Records pass/fail deployment gating based on eval results.
+        Auto-computes gate_score from evals_passed/total_evals when not provided.
+        NIST AI RMF MEASURE 2.5, EU AI Act Art. 9(7).
+        """
+        fa = float(max(total_evals, 0))
+        fb = float(max(evals_passed, 0))
+        if gate_score is None:
+            gate_score = round((evals_passed / max(total_evals, 1)) * 100)
+        fc = float(max(0, min(100, gate_score)))
+        payload = self._mint_and_sign("AI-GATE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"eval-gate-{'pass' if fc >= 70 else 'fail'}"
+            payload.ai_context = {"provider": "harness-governance", "total_evals": total_evals, "evals_passed": evals_passed, "gate_score": int(fc)}
         self._enqueue_sampled(payload)
         return payload
 
@@ -4423,6 +4974,8 @@ class Witness:
         *,
         procedures: Optional[List[str]] = None,
         authorization_id: Optional[str] = None,
+        authorization_expires: Optional[int] = None,
+        authorization_scope: Optional[str] = None,
     ) -> None:
         """Record a witnessed inference. Extracts factors, applies clearing,
         and enqueues payloads for background flush.
@@ -4468,6 +5021,8 @@ class Witness:
             legal_basis=self._config.legal_basis,
             purpose_class=self._config.purpose_class,
             authorization_id=authorization_id,
+            authorization_expires=authorization_expires or self._config.authorization_expires,
+            authorization_scope=authorization_scope or self._config.authorization_scope,
         )
 
         # Factor handoff: write full (uncleared) data to custody destination
@@ -4485,11 +5040,13 @@ class Witness:
                     self._handoff_warned = True
                     if self._local_mode:
                         print(f"\n  [SWT3] Local mode -- anchors saved to {self._config.factor_handoff_path}/")
+                        print(f"  [SWT3] Local anchors cannot be verified by auditors or included in compliance exports.")
+                        print(f"  [SWT3] Connect for free: https://sovereign.tenova.io/signup?ref=sdk_local\n")
                     else:
                         print(
                             f"\n  [SWT3] {len(payloads)} anchors saved locally to {self._config.factor_handoff_path}"
-                            f"\n  [SWT3] Local anchors are not persisted to the ledger."
-                            f"\n  [SWT3] Connect to persist: https://sovereign.tenova.io/signup?ref=sdk (free)\n"
+                            f"\n  [SWT3] Local anchors cannot be verified by auditors or included in compliance exports."
+                            f"\n  [SWT3] Connect to persist (free): https://sovereign.tenova.io/signup?ref=sdk\n"
                         )
             except OSError as e:
                 logger.error(
@@ -4526,7 +5083,7 @@ class Witness:
                     if _lcc == 0:
                         print(f"  [SWT3] Run witness.coverage(\"EU-AI-ACT\") to see your coverage score")
                         print(f"  [SWT3] Add swt3-local/ to .gitignore")
-                        print(f"  [SWT3] Connect to persist & audit: https://sovereign.tenova.io/signup?ref=sdk_local\n")
+                        print(f"  [SWT3] Connect to make anchors auditor-verifiable: https://sovereign.tenova.io/signup?ref=sdk_local\n")
                 except Exception:
                     pass
 

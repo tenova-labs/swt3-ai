@@ -11,6 +11,217 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
+## What's New in v0.7.2
+
+Two categories of AI infrastructure have no compliance evidence today: harness-layer governance and MCP server operations. The harness decides which agent runs, what context it sees, and whether the output ships -- but those decisions are invisible to auditors. MCP servers process thousands of tool calls with zero attestation. v0.7.2 closes both gaps: five new procedures for harness governance, and a Witness Middleware that adds cryptographic attestation to any MCP server with one function call.
+
+### Witness Middleware for MCP Servers
+
+The companion MCP package (`@tenova/swt3-mcp`) now exports `withSWT3(transport)` -- a transport-layer wrapper that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server. No code changes to tool handlers. The response is already on the wire before the witness fires, so it cannot block, fail, or slow down your tools.
+
+**Why this matters:** MCP adoption is accelerating, but retrofitting compliance into existing servers means touching every tool handler -- impractical for servers with dozens of tools or servers you do not control. The middleware pattern eliminates that barrier entirely. One import, one wrap, and every tool call in the fleet has a cryptographic audit trail. Supports batching, deterministic per-tool sampling for high-volume servers, multi-tenant resolution, and retry with bounded queues.
+
+```python
+# Python SDK users: your anchors and middleware anchors verify identically
+# The middleware mints AI-TOOL.1 anchors with the same fingerprint formula
+from swt3_ai import Witness
+w = Witness(api_key="axm_...", tenant_id="ACME")
+# Anchors from your Python pipeline and from the MCP middleware
+# are indistinguishable in the ledger -- same format, same verification
+```
+
+### Harness-Layer Governance (5 New Procedures)
+
+The AI harness layer -- orchestration, delegation, context management, sandboxing, eval gates -- is the hottest infrastructure category in AI. 40% of enterprise apps will include AI agents by end of 2026, yet nobody does cryptographic attestation at the harness layer. These five procedures make harness-level governance decisions auditable for the first time.
+
+**Orchestration Topology (AI-ORCH.1) and Agent Handoff (AI-ORCH.2).** When a harness picks parallel vs sequential vs hierarchical routing, or when one agent delegates to another with different permissions, those are governance decisions with no audit trail. `witness_orchestration_topology()` records the routing pattern and agent count. `witness_agent_handoff()` records the identity linkage with permission delta direction (escalation, lateral, or restriction). When an auditor asks "how do you control which agent handles which task?", these anchors are the evidence.
+
+```python
+witness.witness_orchestration_topology("parallel", agent_count=3, dependency_depth=2)
+witness.witness_agent_handoff("planner-agent", "executor-agent", permission_delta=1)  # escalation
+```
+
+**Context Window Management (AI-CTX.1).** When a harness truncates, summarizes, or evicts context, the model loses information -- and nobody records what was lost. This is not a minor detail: a financial model that lost 96K tokens of context before making a recommendation has a materially different evidence basis than one that saw the full context. `witness_context_window()` records token counts before/after and the eviction method.
+
+```python
+witness.witness_context_window(tokens_before=128000, tokens_after=32000, eviction_method="summarization")
+```
+
+**Sandbox Enforcement (AI-SAND.1).** Records the harness's own report of tool restriction compliance. Cross-reference with AI-TOOL.1 anchors for independent verification. When the harness says "I restricted this agent to 5 of 10 tools," and the AI-TOOL.1 trail confirms only those 5 were called, you have two independent attestations agreeing.
+
+```python
+witness.witness_sandbox_enforcement(tools_declared=10, tools_invoked=5, violations=0)
+```
+
+**Eval Gate Decision (AI-GATE.1).** Records pass/fail deployment gating based on eval results. Auto-computes gate score when not provided. This is the evidence that a model was evaluated before it shipped -- not just that an eval suite exists, but that it ran and what the result was.
+
+```python
+witness.witness_eval_gate(total_evals=100, evals_passed=85)  # gate_score auto-computed: 85
+```
+
+### By the Numbers
+
+- 280 procedures (was 275)
+- 68 MCP tools (was 63)
+- 9 namespaces, 77 frameworks
+- 265 compliance guides (was 250)
+- ~3,000 tests passing across 10 languages
+
+## What's New in v0.7.1
+
+MCP is the fastest-growing integration layer in AI. It is also the least governed. OWASP published the MCP Top 10 in 2026, and the findings are brutal: 30-82% of MCP servers are vulnerable to tool poisoning, insufficient authentication, and shadow server proliferation. Meanwhile, IETF is drafting agent audit trail standards that describe exactly what SWT3 already does -- but those drafts expire in weeks and have no deployed reference implementation. v0.7.1 closes both gaps with three new procedures that make SWT3 the first SDK to cover all 10 OWASP MCP risks with cryptographic evidence.
+
+### MCP Tool Integrity Attestation (AI-MCP.2)
+
+**The problem:** OWASP MCP-03 (Tool Poisoning) describes attacks where tool schemas silently change between calls -- a parameter gains a new allowed value, a description subtly shifts to manipulate the agent, or a tool version changes without notice. The MCP protocol has no built-in mechanism to detect schema drift.
+
+**What v0.7.1 adds:** `witness_mcp_tool_integrity()` hashes the tool schema at connection time and again at invocation time. If the schema changed between those two moments, the anchor records a FAIL verdict with the drift detected. No raw schemas are transmitted -- only SHA-256 hashes.
+
+```python
+witness.witness_mcp_tool_integrity(
+    server_name="data-retrieval-mcp",
+    tool_name="query_database",
+    schema_hash_at_connect="a8f3c7d91e02",
+    schema_hash_at_invoke="a8f3c7d91e02",  # match = PASS, mismatch = FAIL
+)
+```
+
+**Why this matters:** Tool poisoning is the supply chain attack vector for agents. An attacker who compromises an MCP server does not need to breach your model -- they just need to change what a tool does. Without schema integrity checking, the agent trusts whatever the server declares. With it, every tool invocation has a cryptographic record of whether the schema was stable. When OWASP MCP-03 appears in your assessment scope, this is the evidence.
+
+### MCP Server Authentication Attestation (AI-MCP.3)
+
+**The problem:** OWASP MCP-07 (Insufficient Authentication) flags that most MCP servers accept connections without any authentication. No mTLS. No API keys. No OAuth. The server just trusts whoever connects. When an auditor asks "how do you verify the identity of your MCP servers?", most teams have no answer.
+
+**What v0.7.1 adds:** `witness_mcp_server_auth()` records whether authentication was present at connection time, what method was used, and whether it was verified. A connection with no authentication produces a FAIL verdict -- which maps directly to an IA-9 finding under NIST 800-53.
+
+```python
+witness.witness_mcp_server_auth(
+    server_name="data-retrieval-mcp",
+    auth_method="mtls",
+    auth_verified=True,
+)
+```
+
+**Why this matters:** NIST 800-53 IA-9 requires identification and authentication of services. EU NIS-2 Art. 21(2)(d) requires supply chain security. An MCP server is a service your agent depends on. If that service accepts anonymous connections, your agent's entire output is built on an unverified foundation. This procedure makes that gap visible and auditable.
+
+### MCP Server Discovery Attestation (AI-MCP.4)
+
+**The problem:** OWASP MCP-09 (Shadow MCP Servers) describes the risk of unauthorized MCP servers appearing in an agent's configuration. A developer adds a community server for testing and forgets to remove it. A compromised config file injects a malicious server. The agent connects to both the legitimate and shadow servers without distinction.
+
+**What v0.7.1 adds:** `witness_mcp_server_discovery()` records the discovery method (manual config, DNS, registry lookup) and whether the server was on the approved allowlist. Servers discovered through uncontrolled channels or missing from the allowlist produce a FAIL verdict.
+
+```python
+witness.witness_mcp_server_discovery(
+    server_name="unknown-community-server",
+    discovery_method="config_file",
+    on_allowlist=False,  # FAIL -- shadow server detected
+)
+```
+
+**Why this matters:** Shadow IT is the oldest problem in enterprise security. Shadow MCP servers are the same problem at the agent layer. Without discovery attestation, you cannot prove that your agent only connected to approved servers. With it, every connection attempt is recorded -- including the ones that should not have happened.
+
+### OWASP MCP Top 10: Full Coverage
+
+With AI-MCP.1 (v0.6.6) plus AI-MCP.2/3/4 (v0.7.1), SWT3 now maps to all 10 OWASP MCP risks:
+
+| OWASP MCP Risk | SWT3 Procedure(s) |
+|----------------|-------------------|
+| MCP-01 Token Mismanagement | NHI-ROTATE.1, NHI-EXPIRE.1 |
+| MCP-02 Privilege Escalation | NHI-SCOPE.1, NHI-PRIV.1, AI-ACC.1 |
+| MCP-03 Tool Poisoning | **AI-MCP.2** (NEW) |
+| MCP-04 Supply Chain Tampering | AI-SBOM.1, AI-SUPPLY.1 |
+| MCP-05 Command Injection | AI-GRD.1/2/3 |
+| MCP-06 Intent Flow Subversion | AI-CHAIN.1/2 |
+| MCP-07 Insufficient Auth | **AI-MCP.3** (NEW) |
+| MCP-08 Lack of Audit/Telemetry | SWT3 protocol (entire SDK) |
+| MCP-09 Shadow MCP Servers | **AI-MCP.4** (NEW) |
+| MCP-10 Context Injection | AI-GRD.3, clearing levels |
+
+### By the Numbers
+
+- 275 procedures across 77 namespaces (was 266/75)
+- 63 MCP tools (was 59)
+- ~2,950 tests passing across Python, TypeScript, Go, and MCP
+- 250 compliance guides (was 237)
+- 4 new guides: CISA SBOM crosswalk, IETF Agent Audit Trail alignment, Anthropic RSP crosswalk, OpenAI Preparedness Framework crosswalk
+
+## What's New in v0.7.0
+
+AI does not run in a vacuum. It authenticates with service accounts, runs on hardware with supply chains, and consumes enough electricity to reshape power grids. Until now, the witness layer stopped at the model. v0.7.0 extends it down the full AI infrastructure stack -- from the credentials your agents use, to the hardware they run on, to the energy they consume. One SDK. One fingerprint formula. One verification endpoint.
+
+This is a major release because it crosses a boundary: SWT3 now witnesses the infrastructure that AI depends on, not just the AI itself. Three new procedure families. 22 new witness methods. 22 new MCP tools. The same protocol that proves your model followed the rules now proves your service accounts are governed, your hardware supply chain is documented, and your demand response events are independently attested.
+
+### Credential Governance for AI Agents (NHI)
+
+**The problem:** The biggest AI security breaches in 2025-2026 did not start with prompt injection. They started with a stolen service account. AI agents authenticate to APIs, databases, and other agents using machine credentials -- API keys, service accounts, OAuth tokens, certificates. These non-human identities (NHIs) outnumber human users 45-to-1 in a typical enterprise, and most organizations cannot answer the basic question auditors ask first: "How many service accounts does your AI system use, and what can each one access?"
+
+**What v0.7.0 adds:** Six witness methods that create an independent audit trail for every credential your AI agents use, without replacing your identity provider. The protocol records scope, lifecycle, privilege changes, rotation, delegation, and revocation -- the six events that matter when an incident investigator asks "what could this credential do, and when did that change?"
+
+```python
+# Record what a service account is authorized to access
+witness.witness_nhi_scope("svc-inference-prod", scope="read:models,invoke:gpt4o", ttl_seconds=86400)
+
+# Record credential rotation (proves rotation happened, not just that policy exists)
+witness.witness_nhi_rotation("old-key-abc", "new-key-def", reason="scheduled")
+
+# Record delegation chain (Agent A delegates to Agent B)
+witness.witness_nhi_delegation("orchestrator-cred", "worker-agent-cred", delegation_depth=2)
+```
+
+**Why this matters:** Identity governance is moving from "nice to have" to "table stakes." NIST 800-207 (Zero Trust) requires continuous authentication verification. EU NIS-2 Art. 21 requires access control management including machine identities. CISA's 2026 guidance on agentic AI specifically calls out credential sprawl as a top-5 risk. Without independent witnessing, your only evidence is the identity provider's own logs -- which is like asking the bank to audit itself.
+
+### Hardware and Battery Passport (HBOM / DPP)
+
+**The problem:** The EU Battery Regulation (effective February 2027) requires digital passports for every battery above 2 kWh -- including the thousands of UPS batteries in AI data centers. The Cyber Resilience Act requires hardware bills of materials for connected devices. The Energy Efficiency Directive requires PUE reporting for data centers above 500 kW. Three regulations, three compliance gaps, and no existing protocol that covers hardware supply chains with the same rigor applied to software.
+
+**What v0.7.0 adds:** Ten witness methods across two namespaces. HBOM (Hardware Bill of Materials) covers inventory attestation, component lifecycle, thermal profiles, water consumption, PUE reporting, and supply chain provenance. DPP (Digital Product Passport) covers battery state-of-health, charge cycles, degradation events, and end-of-life disposition.
+
+```python
+# PUE reporting -- proves the number, not just that you reported it
+witness.witness_power_usage(total_facility_kw=2400, it_load_kw=1800, pue_x1000=1333)
+
+# Battery passport -- state of health for every UPS in the facility
+witness.witness_battery_soh(soh_percent=94.2, cycle_count=847, capacity_kwh=100.0)
+
+# Hardware supply chain -- proves provenance was verified per-supplier
+witness.witness_supply_chain_provenance("dell-server-batch-q3", provenance_verified=True, country_of_origin="US")
+```
+
+**Why this matters:** A single hyperscale data center contains 50,000+ UPS batteries. Each one will need a digital passport. The operators who can produce that evidence programmatically -- with independent verification -- will spend weeks on compliance instead of months. More importantly, when a battery catches fire or a supplier is sanctioned, the provenance chain tells you exactly which facilities are affected, which components came from that supplier, and when the last health check passed.
+
+### Energy and Demand Response (ADR)
+
+**The problem:** AI training runs consume as much power as small cities. When the grid operator sends a curtailment signal, the data center is supposed to reduce load. But settlement disputes run six figures because there is no independent attestation of what actually happened -- how much was the baseline, how much was actually curtailed, and does the measurement match what was billed? The utility's meters say one thing. The facility's meters say another. Nobody has a neutral witness.
+
+**What v0.7.0 adds:** Six witness methods that create an independent record of every demand response event, from the grid signal through baseline measurement, actual curtailment, settlement, carbon credit issuance, and grid signal correlation.
+
+```python
+# Record baseline before the curtailment event
+witness.witness_baseline_consumption(baseline_kw=2400, measurement_method="10_of_10")
+
+# Record what actually happened during the event
+witness.witness_curtailment(actual_reduction_kw=800, committed_kw=1000, compliance_ratio_x1000=800)
+
+# Record the settlement -- financial attestation of the DR event
+witness.witness_settlement(settlement_kwh=4800, price_usd_per_mwh=85.0, event_count=6)
+```
+
+**Why this matters:** FERC Order 2222 opened wholesale energy markets to distributed resources -- including data centers. The EU Clean Energy Package Art. 17 requires demand response participation rights. Carbon credit registries like Verra and Gold Standard require measurement and verification evidence. Without independent attestation, every settlement is a negotiation. With it, the evidence speaks for itself.
+
+### SWT3 Spec v2.0.0
+
+The protocol specification now covers all four namespace families: AI (inference and governance), NHI (credential governance), HBOM (hardware and facilities), and DPP (digital product passports). The same fingerprint formula, the same clearing engine, the same verification endpoint. A credential rotation anchor and an inference anchor verify identically -- `echo -n "WITNESS:TENANT:NHI-SCOPE.1:1:1:0:TIMESTAMP" | sha256sum | cut -c1-12`.
+
+### By the Numbers
+
+- 266 procedures across 75 namespaces (was 118/64)
+- 59 MCP tools (was 37)
+- ~2,950 tests passing across Python, TypeScript, Go, and MCP
+- 237 compliance guides (was 222)
+- 22 new witness methods in Python, TypeScript, and Go simultaneously
+- 22 new MCP tools with full parameter parity
+- 4 new implementation guides (NHI, HBOM/Battery Passport, ADR, Data Center convergence)
+
 ## What's New in v0.6.6
 
 Supply chain accountability: model provenance, delegation boundaries, anchor density monitoring, and MCP security posture. The theme: proving your AI's supply chain is known, bounded, and monitored -- not just that individual inferences behaved.
@@ -410,8 +621,8 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 ### v0.5.9
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
-- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 34 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 36 frameworks and 118 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 77 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 77 frameworks and 275 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
@@ -1151,7 +1362,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (118 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (275 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -1168,7 +1379,7 @@ SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapp
 | AI-EXPL.1 | Art. 13(1) | Transparency & Explainability | -| ✓ |
 | AI-EXPL.2 | Art. 13(3b) | Confidence Calibration | -| ✓ |
 
-The demo demonstrates 5 procedures using simulated data. All 118 are available in production with real inference data. 2,825 cross-language tests ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, Go, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
+The demo demonstrates 5 procedures using simulated data. All 275 are available in production with real inference data. ~2,950 cross-language tests ensure fingerprint parity across Python, TypeScript, Swift, Rust, C#, Ruby, Go, and MCP. [See live conformity →](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ## How Verdicts Work
 
@@ -1295,7 +1506,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-36 frameworks bundled. 118 procedures mapped. Updated with each SDK release.
+77 frameworks bundled. 275 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1575,7 +1786,7 @@ Remove the `witness.wrap()` call. Your code works exactly as before. Anchors alr
 
 ## Cross-Language Parity
 
-This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, Ruby, Go, Kotlin, and MCP SDKs. 10 languages, one audit trail. 2,825 cross-language tests verified at build time.
+This SDK produces identical fingerprints to the TypeScript, Swift, Rust, C#, Ruby, Go, Kotlin, and MCP SDKs. 10 languages, one audit trail. ~2,950 cross-language tests verified at build time.
 
 ## Privacy
 
@@ -1637,8 +1848,8 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 34 frameworks
-- [All 222 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 77 frameworks
+- [All 250 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

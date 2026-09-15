@@ -3,8 +3,8 @@
 ## Sovereign Witness Traceability Protocol
 
 **Status:** Proposed Standard
-**Version:** 1.5.0
-**Date:** 2026-05-23
+**Version:** 2.0.0
+**Date:** 2026-08-30
 **Authors:** Tenable Nova LLC (DBA TeNova)
 **License:** Apache 2.0
 
@@ -761,6 +761,66 @@ AI procedures use the `AI` UCT code and follow the naming convention
 | `AI-DUALUSE.1` | Dual-Use Model Classification | Witness classification and reporting of dual-use foundation models | EO 14110 Sec 4(a), NIST AI RMF GOVERN 1.1 |
 | `AI-SUPPLY.1` | Supply Chain Risk | Witness third-party AI supply chain risk assessment | NIST AI RMF MEASURE 3.1, G7/CISA SBOM-AI, EO 14028 |
 | `AI-PMM.1` | Post-Market Monitoring | Witness execution of post-market monitoring plans | EU AI Act Art. 72, NIST AI RMF MANAGE 4.1 |
+| `AI-METAGOV.1` | Governance Self-Witnessing | Witness governance infrastructure configuration changes | NIST AI RMF GOVERN 1.1, EU AI Act Art. 9 |
+| `AI-DEL.1` | Delegation Witnessing | Witness scope-bounded authority delegation between agents | EU AI Act Art. 14(4), NIST AI RMF GOVERN 1.3 |
+| `AI-CAP.1` | Capability Attestation | Witness runtime capability manifest with drift detection | EU AI Act Art. 12(2)(b), NIST AI RMF MAP 1.5 |
+| `AI-COST.1` | Resource Consumption | Witness resource consumption (tokens, API calls, compute) as compliance evidence | NIST AI RMF MANAGE 2.4, EU AI Act Art. 9 |
+| `AI-AUTO.3` | Autonomy Transition | Witness promotion or demotion of agent autonomy levels | EU AI Act Art. 14, NIST AI RMF GOVERN 1.4 |
+| `AI-MOB.1` | Offline SIM Attestation | Witness offline attestation buffer with SIM integrity verification on reconnection | EU AI Act Art. 12, NIST AI RMF MANAGE 1.3 |
+| `AI-EMRG.1` | Emergency Override | Witness human-initiated override lifecycle with continuous checkpoints | EU AI Act Art. 14(4)(e), NIST AI RMF MANAGE 4.1 |
+| `AI-DRIFT.2` | Consequence-Mapped Drift | Witness statistical drift mapped to consequence severity categories | EU AI Act Art. 9(2)(b), NIST AI RMF MEASURE 2.6 |
+| `AI-ASSESS.1` | Champion-Challenger Assessment | Witness parallel-run model comparison with divergence tracking | OCC SR 26-2, NIST AI RMF MEASURE 2.5 |
+| `AI-SAMPLE.1` | Probabilistic Sampling | Witness sampling decisions for high-volume attestation pipelines | EU AI Act Art. 12, NIST AI RMF MANAGE 2.2 |
+
+#### 9.1.1 Non-Human Identity (NHI) Namespace
+
+NHI procedures witness credential lifecycle events for non-human identities (service accounts, API keys, machine credentials) as an independent, out-of-band audit trail. SWT3 does NOT issue, validate, or enforce credentials. It records reported lifecycle events.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `NHI-SCOPE.1` | Credential Scope | Witness reported credential scope with canonical scope hashing and TTL | NIST IA-4, EU AI Act Art. 9(4)(c), NIS-2 Art. 21(2)(i) |
+| `NHI-CYCLE.1` | Credential Lifecycle | Witness credential lifecycle events (issued, activated, suspended, expired, revoked) | NIST IA-5, EU AI Act Art. 12(1), NIS-2 Art. 21(2)(i) |
+| `NHI-PRIV.1` | Privilege Change | Witness credential privilege changes with scope delta tracking | NIST AC-6, EU AI Act Art. 9(4)(c), NIS-2 Art. 21(2)(d) |
+| `NHI-ROTATE.1` | Credential Rotation | Witness credential rotation with old/new hash linking and reason tracking | NIST IA-5(1), EU AI Act Art. 9(9), NIS-2 Art. 21(2)(i) |
+| `NHI-AGENT.1` | Credential Delegation | Witness agent-to-agent credential delegation with depth tracking | NIST AC-2(7), EU AI Act Art. 14(4), OWASP Agentic MCP-07 |
+| `NHI-REVOKE.1` | Credential Revocation | Witness credential revocation with cascade flag for delegation tree propagation | NIST IA-5(2), EU AI Act Art. 16(i), NIS-2 Art. 21(2)(i) |
+
+#### 9.1.2 Hardware Bill of Materials (HBOM) Namespace
+
+HBOM procedures witness hardware component inventory, lifecycle, and environmental metrics. SWT3 records reported values; it does NOT measure temperature, power, or water consumption.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `HBOM-INV.1` | Hardware Inventory | Witness hardware component inventory with manifest hashing and baseline delta | EU CRA Art. 10(9), NIST CM-8 |
+| `HBOM-LIFE.1` | Component Lifecycle | Witness component lifecycle events (installed through recycled) | EU Battery Reg Art. 77, NIST SA-22 |
+| `HBOM-THERM.1` | Thermal Profile | Witness reported thermal measurements with threshold alerting | EU Battery Reg Art. 14, NIST PE-14 |
+| `HBOM-WATER.1` | Water Consumption | Witness reported water consumption with WUE ratio and source classification | CSRD ESRS-E3, EU EED Art. 12 |
+| `HBOM-PUE.1` | Power Usage Effectiveness | Witness reported PUE with facility and IT load measurements | EU EED Art. 12, ISO 30134-2 |
+| `HBOM-SUPPLY.1` | Supply Chain Provenance | Witness hardware supply chain provenance with country of origin hashing | EU Battery Reg Art. 39, EU CRA Art. 10(9), EU Conflict Minerals 2017/821 |
+
+#### 9.1.3 Digital Product Passport (DPP) Namespace
+
+DPP procedures witness battery and product lifecycle data for EU Battery Regulation and ESPR Digital Product Passport compliance.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `DPP-SOH.1` | Battery State of Health | Witness reported battery SoH percentage, cycle count, and remaining capacity | EU Battery Reg Art. 14(1) |
+| `DPP-CHRG.1` | Charge/Discharge Cycle | Witness charge and discharge cycle events with energy transfer and peak temperature | EU Battery Reg Art. 14(1), IEC 62619 |
+| `DPP-DEGRAD.1` | Degradation Event | Witness battery degradation events with cause classification and SoH impact | EU Battery Reg Art. 14(1) |
+| `DPP-EOL.1` | End-of-Life Handoff | Witness end-of-life disposition with handler identification and final SoH | EU Battery Reg Art. 59, EU WEEE 2012/19 |
+
+#### 9.1.4 Automated Demand Response (ADR) Namespace
+
+ADR procedures witness energy grid demand response event lifecycles. SWT3 does NOT control grid operations, measure power, or dispatch curtailment. It records reported values from participants.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `ADR-EVENT.1` | DR Event Lifecycle | Witness demand response event phases (signal received through restoration) | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-BASE.1` | Baseline Consumption | Witness reported baseline power consumption with measurement methodology | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-CURT.1` | Curtailment Verification | Witness actual curtailment against committed values with compliance ratio | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-SETTLE.1` | Settlement Data | Witness settlement quantities and prices with event count | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-CARBON.1` | Carbon Credit / REC | Witness carbon credit and REC issuance with registry identification | EU CBAM 2023/956, EU RED III, SEC Climate S-K Item 1504 |
+| `ADR-GRID.1` | Grid Signal Correlation | Witness grid signal type, response latency, and operator identification | FERC Order 2222, NERC BAL-001 |
 
 ### 9.2 Factor Matrix Semantics for AI
 
@@ -837,6 +897,32 @@ factor semantics. Implementations MUST use these semantics for interoperability.
 | `AI-DUALUSE.1` | Classification code (0-2) | Reporting status code (0-3) | Days since classification |
 | `AI-SUPPLY.1` | Suppliers assessed (count) | Suppliers compliant (count) | Risk level code (0-3) |
 | `AI-PMM.1` | Monitoring checks run (count) | Anomalies detected (count) | Monitoring type code (0-4) |
+| `AI-EMRG.1` | Override trigger type (1=emergency_stop, 2=operator_command, 3=escalation, 4=external) | Authorization level (1=operator, 2=supervisor, 3=site_manager, 4=emergency_responder) | Fallback state (1=safe_state, 2=legacy_controller, 3=manual_mode, 4=degraded, 5=shutdown) |
+| `AI-DRIFT.2` | Consequence severity (1=safety, 2=environmental, 3=financial, 4=operational, 5=reputational) | Drift metric value (x1000) | Threshold value (x1000) |
+| `AI-ASSESS.1` | Divergence metric value (x1000) | Challenger model hash (first 10 digits) | Assessment decision (0=pending, 1=promote, 2=reject, 3=extend) |
+| `AI-SAMPLE.1` | Total events in window | Sampled events in window | Sampling rate (x1000) |
+| `NHI-SCOPE.1` | Credential ID hash (SHA-256[:16] as integer) | Scope hash (SHA-256[:16] of canonical scope as integer) | TTL in seconds (0=non-expiring) |
+| `NHI-CYCLE.1` | Event type (1=issued, 2=activated, 3=suspended, 4=expired, 5=revoked) | Credential ID hash (SHA-256[:16] as integer) | Issuer hash (SHA-256[:16] as integer) |
+| `NHI-PRIV.1` | Credential ID hash (SHA-256[:16] as integer) | Previous scope hash (SHA-256[:16] as integer, 0 if new) | New scope hash (SHA-256[:16] as integer) |
+| `NHI-ROTATE.1` | Old credential hash (SHA-256[:16] as integer) | New credential hash (SHA-256[:16] as integer) | Rotation reason (1=scheduled, 2=compromise, 3=policy, 4=manual) |
+| `NHI-AGENT.1` | Delegator credential hash (SHA-256[:16] as integer) | Delegatee credential hash (SHA-256[:16] as integer) | Delegation depth (1=direct, 2+=chained) |
+| `NHI-REVOKE.1` | Revoked credential hash (SHA-256[:16] as integer) | Reason code (0-6, same as AI-REV.1) | Cascade flag (1=cascade to delegated, 0=single) |
+| `HBOM-INV.1` | Component count (total in inventory) | Manifest hash (SHA-256[:16] as integer) | Delta from baseline (added/removed count) |
+| `HBOM-LIFE.1` | Event type (1=installed, 2=commissioned, 3=maintained, 4=degraded, 5=decommissioned, 6=recycled) | Component hash (SHA-256[:16] as integer) | Age in days since installation |
+| `HBOM-THERM.1` | Ambient temperature (Celsius) | Component temperature (Celsius) | Threshold exceeded (1=alarm, 0=normal) |
+| `HBOM-WATER.1` | Liters consumed | WUE ratio (x1000) | Source type (1=municipal, 2=recycled, 3=rainwater, 4=groundwell, 5=mixed) |
+| `HBOM-PUE.1` | Total facility power (kW) | IT load power (kW) | PUE ratio (x1000, e.g., 1200=PUE 1.2) |
+| `HBOM-SUPPLY.1` | Supplier hash (SHA-256[:16] as integer) | Provenance verified (1=yes, 0=no) | Country of origin hash (SHA-256[:16] as integer) |
+| `DPP-SOH.1` | SoH percentage (x100, e.g., 9230=92.30%) | Cycle count | Remaining capacity kWh (x100) |
+| `DPP-CHRG.1` | Event type (1=charge_start, 2=charge_complete, 3=discharge_start, 4=discharge_complete) | Energy kWh (x100) | Peak temperature (Celsius) |
+| `DPP-DEGRAD.1` | Degradation type (1=calendar_aging, 2=thermal_stress, 3=overcharge, 4=deep_discharge, 5=mechanical, 6=unknown) | SoH drop (percentage points x100) | Ambient temperature (Celsius) |
+| `DPP-EOL.1` | Disposition (1=recycling, 2=repurpose, 3=refurbishment, 4=landfill, 5=hazmat) | Handler hash (SHA-256[:16] as integer) | Final SoH (x100) |
+| `ADR-EVENT.1` | Event phase (1=signal_received, 2=curtailment_start, 3=curtailment_end, 4=restoration) | Committed curtailment (kW) | Signal source hash (SHA-256[:16] as integer) |
+| `ADR-BASE.1` | Baseline consumption (kW) | Measurement method (1=metered_10day_avg, 2=regression, 3=real_time_meter, 4=deemed_savings) | Confidence level (x1000) |
+| `ADR-CURT.1` | Actual reduction (kW) | Committed curtailment (kW) | Compliance ratio (x1000, 1000=100%) |
+| `ADR-SETTLE.1` | Settlement quantity kWh (x100) | Price USD/MWh (x100) | Event count in settlement period |
+| `ADR-CARBON.1` | Credit type (1=REC, 2=carbon_offset, 3=EAC, 4=guarantee_of_origin) | Quantity MWh (x100) or tonnes CO2e (x100) | Registry hash (SHA-256[:16] as integer) |
+| `ADR-GRID.1` | Signal type (1=emergency, 2=economic, 3=capacity, 4=frequency_regulation, 5=voltage_support) | Response latency (ms) | Grid operator hash (SHA-256[:16] as integer) |
 
 ### 9.3 Clearing Protocol for AI Systems
 
@@ -1078,6 +1164,11 @@ SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Pate
 | 1.6.0 | 2026-05-28 | AI-LIC.1 (License Provenance). 48 total AI procedures, 24 namespaces. |
 | 1.7.0 | 2026-05-29 | AI-SBOM.1 (AI Bill of Materials), AI-REDTEAM.1 (Adversarial Test Campaign), AI-CONSENT.1 (Data Subject Consent), AI-MULTI.1 (Multi-Agent Delegation). 52 total AI procedures, 28 namespaces. |
 | 1.8.0 | 2026-05-29 | AI-DRIFT.1, AI-AUDIT.1, AI-INCIDENT.1, AI-PERF.1, AI-ROBUST.1, AI-CYBER.1, AI-TRANS.1, AI-WATERMARK.1, AI-DPIA.1, AI-AUTO.1, AI-DUALUSE.1, AI-SUPPLY.1, AI-PMM.1. Full EU AI Act Art. 15 coverage (accuracy, robustness, cybersecurity), GDPR Art. 22/35, EO 14110, NIST MEASURE 3.1. 65 total AI procedures, 41 namespaces. |
+| 1.9.0 | 2026-06-11 | AI-METAGOV.1 through AI-METAGOV.8 (Recursive Governance). AI-DEL.1 (Delegation), AI-CAP.1 (Capability), AI-COST.1 (Resource Consumption), AI-AUTO.3 (Autonomy Transition), AI-CLR.2 (Regulatory Transparency). 80 total AI procedures, 50 namespaces. |
+| 1.10.0 | 2026-06-19 | AI-MOB.1 through AI-MOB.5 (Mobile Edge Governance). Platform-native witnessing for iOS, Android, visionOS. 85 total AI procedures, 51 namespaces. |
+| 1.11.0 | 2026-07-10 | AI-EMRG.1 (Emergency Override Lifecycle), AI-DRIFT.2 (Consequence-Mapped Drift), AI-ASSESS.1 (Champion-Challenger Assessment). Lifecycle chain infrastructure with shared cycle_id linking. 88 total AI procedures, 53 namespaces. |
+| 1.12.0 | 2026-07-14 | v6.0.0 "Operational Governance". AI-MOB.6 (Spatial Provenance), AI-MOB.7 (Compile-Time Detection), AI-SAMPLE.1 (Probabilistic Sampling). 111 total AI procedures across 61 namespaces. Lifecycle chain infrastructure finalized. |
+| 2.0.0 | 2026-08-30 | Four new namespace clusters: NHI (Non-Human Identity, 6 procedures), HBOM (Hardware Bill of Materials, 6 procedures), DPP (Digital Product Passport, 4 procedures), ADR (Automated Demand Response, 6 procedures). Protocol extends beyond AI governance to infrastructure identity, physical product lifecycle, and energy grid compliance. 266 total procedures across 9 top-level namespaces. 36 frameworks. SDKs in 10 languages. |
 
 ## Appendix B: Intellectual Property
 

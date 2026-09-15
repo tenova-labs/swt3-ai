@@ -43,9 +43,9 @@ export async function main() {
   console.log(`${B}SWT3 AI Witness SDK — Live Demo${R}`);
   console.log(`${D}No API keys. No account. No network calls.${R}`);
   console.log(`${D}${"─".repeat(56)}${R}`);
-  console.log(`  ${G}New in v0.5.6:${R} METAGOV namespace, Japan crosswalk,`);
-  console.log(`  Model Trust Profiles, coverage scoring, 94 procedures.`);
-  console.log(`  ${D}License guide: sovereign.tenova.io/guides/openmdw-license-provenance.html${R}`);
+  console.log(`  ${G}New in v0.7.2:${R} Harness governance (orchestration, delegation,`);
+  console.log(`  context window, sandbox, eval gate). 280 procs/77 ns.`);
+  console.log(`  ${D}Guides: sovereign.tenova.io/guides/${R}`);
   console.log(`${D}${"─".repeat(56)}${R}`);
   console.log();
 
@@ -135,6 +135,21 @@ export async function main() {
   console.log(`     ${D}${licAnchor}${R}`);
   console.log();
 
+  // ── NHI Credential Expiration (NHI-EXPIRE.1) ──
+  console.log(`${C}8. Witnessing credential expiration (NHI-EXPIRE.1)...${R}`);
+  const nhiCredHash = createHash("sha256").update("api-key-prod-001").digest("hex").slice(0, 16);
+  const nhiFa = parseInt(nhiCredHash.slice(0, 8), 16);
+  const nhiFb = Math.floor(Date.now() / 1000) + 86400 * 30;
+  const nhiFc = 1 | (3600 << 8);
+  const nhiFp = mintFingerprint(tenant, "NHI-EXPIRE.1", nhiFa, nhiFb, nhiFc, tsMs);
+  const nhiAnchor = `SWT3-E-${provider}-NHI-NHI-EXPIRE.1-PASS-${epoch}-${nhiFp}`;
+  anchors.push(nhiAnchor);
+  console.log(`   ${D}Credential:  api-key-prod-001 (hashed)${R}`);
+  console.log(`   ${D}Expires:     30 days | Renewable: yes | Grace: 1h${R}`);
+  console.log(`   ${G}■ PASS${R}  ${W}NHI-EXPIRE.1${R}  ${D}Credential expiration witnessed${R}`);
+  console.log(`     ${D}${nhiAnchor}${R}`);
+  console.log();
+
   // ── Summary Table ──
   console.log(`  ${D}${"─".repeat(56)}${R}`);
   console.log(`  ${B}WITNESS SUMMARY${R}`);
@@ -143,7 +158,7 @@ export async function main() {
   console.log(`  ${D}${"─".repeat(56)}${R}`);
   const summaryItems: [string, string][] = [
     ["AI-INF.1", "PASS"], ["AI-MDL.1", "PASS"], ["AI-GRD.1", "PASS"],
-    ["AI-LIC.1", "PASS"],
+    ["AI-LIC.1", "PASS"], ["NHI-EXPIRE.1", "PASS"],
   ];
   for (let i = 0; i < summaryItems.length; i++) {
     const [proc, verdict] = summaryItems[i];
@@ -207,7 +222,8 @@ export async function main() {
   console.log(`  ${D}Preview a live auditor view (no account required):${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public${R}`);
   console.log();
-  console.log(`  ${D}Full conformity requires all 48 AI procedures. Connect to close the gap:${R}`);
+  console.log(`  ${A}These anchors are local-only and cannot be verified by auditors.${R}`);
+  console.log(`  ${D}Connect for free (30 seconds) to make them verifiable:${R}`);
   console.log(`  ${C}https://sovereign.tenova.io/signup?ref=sdk_demo${R}`);
   console.log();
   console.log(`  ${D}SDK docs:     ${C}https://sovereign.tenova.io/docs${R}`);

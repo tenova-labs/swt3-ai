@@ -87,6 +87,11 @@ AI_PROCEDURES = [
     "AI-DRIFT.2",     # Consequence-Mapped Drift (v6.0)
     "AI-ASSESS.1",    # Champion-Challenger Assessment (v6.0)
     "AI-COST.1",      # Resource Consumption Witnessing (v6.1)
+    "AI-ORCH.1",      # Orchestration Topology Attestation (v0.7.2)
+    "AI-ORCH.2",      # Inter-Agent Handoff Attestation (v0.7.2)
+    "AI-CTX.1",       # Context Window Management Attestation (v0.7.2)
+    "AI-SAND.1",      # Sandbox Enforcement Attestation (v0.7.2)
+    "AI-GATE.1",      # Eval Gate Decision Attestation (v0.7.2)
 ]
 
 # Revocation reason code mapping
@@ -128,6 +133,8 @@ def extract_payloads(
     legal_basis: Optional[str] = None,
     purpose_class: Optional[str] = None,
     authorization_id: Optional[str] = None,
+    authorization_expires: Optional[int] = None,
+    authorization_scope: Optional[str] = None,
     references: Optional[List[Dict[str, str]]] = None,
 ) -> List[WitnessPayload]:
     """Extract witness payloads from an inference record.
@@ -352,7 +359,9 @@ def extract_payloads(
             signing_key_version=signing_key_version, signing_algorithm=signing_algorithm,
             policy_version_hash=policy_version_hash,
             jurisdiction=jurisdiction, legal_basis=legal_basis, purpose_class=purpose_class,
-            authorization_id=authorization_id, references=references,
+            authorization_id=authorization_id,
+            authorization_expires=authorization_expires, authorization_scope=authorization_scope,
+            references=references,
         )
 
         payloads.append(payload)
@@ -389,6 +398,8 @@ def _apply_operational_metadata(
     legal_basis: Optional[str] = None,
     purpose_class: Optional[str] = None,
     authorization_id: Optional[str] = None,
+    authorization_expires: Optional[int] = None,
+    authorization_scope: Optional[str] = None,
     references: Optional[List[Dict[str, str]]] = None,
 ) -> None:
     """Apply operational metadata that survives all clearing levels."""
@@ -406,6 +417,10 @@ def _apply_operational_metadata(
         payload.purpose_class = purpose_class
     if authorization_id:
         payload.authorization_id = authorization_id
+    if authorization_expires is not None:
+        payload.authorization_expires = authorization_expires
+    if authorization_scope:
+        payload.authorization_scope = authorization_scope
     if references:
         payload.references = references
     if signing_key:

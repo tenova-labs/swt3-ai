@@ -6,6 +6,136 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
+## What's New in v0.7.2
+
+Every MCP server in production today ships without compliance evidence. Tool calls flow through with no attestation, no audit trail, no proof of what happened. v0.7.2 changes that with one function call: `withSWT3(transport)`. The Witness Middleware wraps any MCP transport -- Stdio, SSE, HTTP, custom -- and auto-mints AI-TOOL.1 anchors for every tool call. No code changes to tool handlers. The response is already on the wire before the witness fires -- it cannot block, cannot fail your tools, cannot add latency to the critical path. For platform teams running fleets of MCP servers, this is the difference between "we should add compliance" and "compliance is already there."
+
+### Witness Middleware
+
+```typescript
+import { withSWT3 } from "@tenova/swt3-mcp/middleware";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const transport = withSWT3(new StdioServerTransport(), {
+  apiKey: process.env.SWT3_API_KEY,
+  batchSize: 10,
+  flushIntervalMs: 5000,
+});
+await server.connect(transport);
+```
+
+One line. Every tool call witnessed. Works with any MCP server, not just ours.
+
+**Why this is significant:** MCP adoption is accelerating but compliance evidence is an afterthought. Retrofitting witnessing into existing MCP servers means touching every tool handler -- impractical for servers with dozens of tools or servers you do not own. The middleware pattern eliminates that barrier. It observes the JSON-RPC layer, extracts tool name and timing, mints the anchor, and flushes in the background. Existing servers gain cryptographic attestation without refactoring. The middleware also supports:
+
+- **Batching** -- buffers payloads, flushes on size threshold, time interval, or transport close
+- **Sampling** -- deterministic hash-based per-tool sampling rates for high-volume servers. Skipped calls are counted and summarized in AI-SAMPLE.1 anchors
+- **Multi-tenant resolution** -- callback to resolve which tenant each tool call belongs to. One middleware instance covers the entire fleet
+- **Retry** -- in-memory bounded queue with exponential backoff for failed batches
+- **Demo mode** -- logs to stderr when no API key is configured, so you can see anchors without a backend
+
+### 5 New Harness Governance Procedures
+
+The AI harness layer -- orchestration, delegation, context management, sandboxing, eval gates -- is the hottest infrastructure category in AI. 40% of enterprise apps will include AI agents by end of 2026, yet nobody does cryptographic attestation at the harness layer. v0.7.2 adds five procedures that make harness-level governance decisions auditable.
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_orchestration_topology` | AI-ORCH.1 | Routing pattern (parallel/sequential/hierarchical), agent count, dependency depth |
+| `witness_agent_handoff` | AI-ORCH.2 | Delegator-to-delegate identity link, permission delta direction |
+| `witness_context_window` | AI-CTX.1 | Token count before/after eviction, eviction method |
+| `witness_sandbox_enforcement` | AI-SAND.1 | Tools declared vs. invoked, violation count |
+| `witness_eval_gate` | AI-GATE.1 | Eval pass/fail counts, auto-computed gate score |
+
+### By the Numbers
+
+- 68 MCP tools (was 63)
+- 280 procedures across 77 namespaces (was 275)
+- ~3,000 tests passing
+- 265 compliance guides (was 250)
+
+## What's New in v0.7.1
+
+MCP is the fastest-growing integration layer in AI. It is also the least governed. OWASP published the MCP Top 10 in 2026 -- 30-82% of MCP servers are vulnerable to tool poisoning, insufficient authentication, and shadow server proliferation. v0.7.1 adds 3 new tools that close the remaining OWASP gaps. SWT3 is now the first MCP server to cover all 10 OWASP MCP risks with cryptographic evidence.
+
+### 3 New MCP Tools (68 total)
+
+| Tool | Procedure | What It Records | OWASP MCP Risk |
+|------|-----------|-----------------|----------------|
+| `witness_mcp_tool_integrity` | AI-MCP.2 | Schema hash at connect vs. invocation time. FAIL on drift. | MCP-03 Tool Poisoning |
+| `witness_mcp_server_auth` | AI-MCP.3 | Auth method, verification status. FAIL when no auth = IA-9 finding. | MCP-07 Insufficient Auth |
+| `witness_mcp_server_discovery` | AI-MCP.4 | Discovery method, allowlist check. FAIL on shadow servers. | MCP-09 Shadow Servers |
+
+### OWASP MCP Top 10: Full Coverage
+
+| OWASP MCP Risk | SWT3 Tool(s) |
+|----------------|-------------|
+| MCP-01 Token Mismanagement | `witness_nhi_rotation`, `witness_nhi_expiration` |
+| MCP-02 Privilege Escalation | `witness_nhi_scope`, `witness_nhi_privilege_change`, `witness_access` |
+| MCP-03 Tool Poisoning | **`witness_mcp_tool_integrity`** (NEW) |
+| MCP-04 Supply Chain Tampering | `witness_sbom`, `witness_model_provenance` |
+| MCP-05 Command Injection | `witness_guardrail`, `witness_output_filter` |
+| MCP-06 Intent Flow Subversion | `witness_chain_handoff`, `witness_trajectory` |
+| MCP-07 Insufficient Auth | **`witness_mcp_server_auth`** (NEW) |
+| MCP-08 Lack of Audit/Telemetry | SWT3 protocol (all 68 tools) |
+| MCP-09 Shadow MCP Servers | **`witness_mcp_server_discovery`** (NEW) |
+| MCP-10 Context Injection | `witness_guardrail`, clearing levels |
+
+## What's New in v0.7.0
+
+AI does not run in a vacuum. It authenticates with service accounts, runs on hardware with supply chains, and consumes enough electricity to reshape power grids. v0.7.0 adds 22 new MCP tools that extend witnessing down the full AI infrastructure stack. 59 tools total.
+
+### 22 New MCP Tools (59 total)
+
+Three new tool families cover the infrastructure AI depends on:
+
+**Credential Governance (NHI) -- 6 tools.** AI agents authenticate to APIs with service accounts, OAuth tokens, and API keys. These non-human identities outnumber human users 45-to-1 in a typical enterprise. When the auditor asks "how many service accounts does your AI use?", most organizations have no answer. These tools create an independent audit trail for credential scope, lifecycle, privilege changes, rotation, delegation, and revocation -- without replacing your identity provider.
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_nhi_scope` | NHI-SCOPE.1 | What a service account is authorized to access |
+| `witness_nhi_lifecycle` | NHI-LIFE.1 | Credential provisioning, activation, suspension, deprovisioning |
+| `witness_nhi_privilege_change` | NHI-PRIV.1 | Scope modifications on a credential |
+| `witness_nhi_rotation` | NHI-ROT.1 | Credential rotation events (proves rotation happened) |
+| `witness_nhi_delegation` | NHI-DEL.1 | Agent-to-agent credential delegation with depth tracking |
+| `witness_nhi_revocation` | NHI-REV.1 | Credential revocation with cascade support |
+
+**Hardware and Battery Passport (HBOM/DPP) -- 10 tools.** The EU Battery Regulation requires digital passports for every battery above 2 kWh. The Cyber Resilience Act requires hardware bills of materials. The Energy Efficiency Directive requires PUE reporting. A single hyperscale data center contains 50,000+ UPS batteries -- each one will need a digital passport by February 2027.
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_hardware_inventory` | HBOM-INV.1 | Component count, manifest hash, baseline delta |
+| `witness_component_lifecycle` | HBOM-LIFE.1 | Component provisioning, maintenance, decommission |
+| `witness_thermal_profile` | HBOM-THERM.1 | Ambient and component temperatures, threshold alerts |
+| `witness_water_consumption` | HBOM-WATER.1 | Water usage and WUE ratio |
+| `witness_power_usage` | HBOM-PUE.1 | Facility power, IT load, PUE |
+| `witness_supply_chain_provenance` | HBOM-SUPPLY.1 | Supplier verification and country of origin |
+| `witness_battery_soh` | DPP-SOH.1 | Battery state of health, cycle count, capacity |
+| `witness_charge_cycle` | DPP-CHRG.1 | Charge/discharge events with peak temperature |
+| `witness_degradation_event` | DPP-DEGRAD.1 | Battery degradation events |
+| `witness_end_of_life` | DPP-EOL.1 | End-of-life disposition and recycler handoff |
+
+**Energy and Demand Response (ADR) -- 6 tools.** AI training consumes as much power as small cities. Settlement disputes over demand response events run six figures because there is no independent attestation of what actually happened. These tools cover the full lifecycle: grid signal, baseline, curtailment, settlement, carbon credits, and grid correlation.
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_demand_response` | ADR-EVENT.1 | Demand response event phases and committed load |
+| `witness_baseline_consumption` | ADR-BASE.1 | Pre-event baseline with measurement method |
+| `witness_curtailment` | ADR-CURT.1 | Actual vs. committed reduction |
+| `witness_settlement` | ADR-SETTLE.1 | Financial settlement data |
+| `witness_carbon_credit` | ADR-CARBON.1 | Carbon credit and REC attestation |
+| `witness_grid_signal` | ADR-GRID.1 | Grid signal correlation and response latency |
+
+### Why These Tools Matter Together
+
+The original 37 tools covered the AI lifecycle: inference, governance, authorization, trust. These 22 new tools cover the infrastructure lifecycle: who the agent authenticates as, what hardware it runs on, and how much energy it consumes. An AI agent using SWT3 via MCP now has coverage from the credential it uses to authenticate, through the inference it produces, down to the power consumed to produce it. 59 tools total.
+
+### By the Numbers
+
+- 59 MCP tools (was 37)
+- 266 procedures across 75 namespaces (was 118/64)
+- ~2,950 tests passing
+- 237 compliance guides (was 222)
+
 ## What's New in v0.6.6
 
 Supply chain accountability: 4 new tools (37 total), TypeScript SDK governance parity, OTel GenAI conventions, and a CI/CD gate action. The theme: proving your AI's supply chain is known, bounded, and monitored -- not just that individual inferences behaved.
@@ -377,7 +507,7 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (37)
+## Tools (68)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.

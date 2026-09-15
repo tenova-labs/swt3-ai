@@ -9,6 +9,18 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
+## Ecosystem: v0.7.2
+
+Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. The SWT3 ecosystem now includes five new procedures for orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), and eval gating (AI-GATE.1) -- the decisions AI harnesses make before inference that have no audit trail today. The companion MCP package also ships a Witness Middleware (`withSWT3(transport)`) that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server with zero code changes. 280 procedures across 77 namespaces, 68 MCP tools, 265 compliance guides. All new anchor types verify with the existing `Fingerprint.mint()` method -- no library update required. Kotlin code stays at v0.1.1.
+
+## Ecosystem: v0.7.1
+
+OWASP published the MCP Top 10 in 2026 -- 30-82% of MCP servers are vulnerable. The SWT3 ecosystem now covers all 10 OWASP MCP risks with three new procedures: AI-MCP.2 (tool integrity attestation), AI-MCP.3 (server auth attestation), AI-MCP.4 (server discovery attestation). All new anchor types verify with `Fingerprint.mint()` -- no library update required.
+
+## Ecosystem: v0.7.0
+
+The SWT3 ecosystem now covers 266 procedures across 75 namespaces, including three new infrastructure families: NHI (credential governance), HBOM/DPP (hardware + battery passport), and ADR (demand response). All new anchor types verify with the existing `Fingerprint.mint()` method -- no library update required for verification. Kotlin code stays at v0.1.1. Full new procedure support available via the Python, TypeScript, and Go SDKs.
+
 ## What's New in v0.6.3
 
 Four new attestation types and code objects for the procedures regulators ask about first. Each maps to regulations enforcing now or within months.

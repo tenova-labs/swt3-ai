@@ -6,20 +6,42 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 (NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi) and
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
-## What's New in v0.5.9
+## What's New in v0.7.2
 
-- **Compliance Intelligence** available in Python, TypeScript, and MCP SDKs -- offline crosswalk resolution across 34 frameworks. DaemonSet and Helm chart unchanged.
-- Container image rebuilt with latest Alpine base (CVE fixes).
-- 2,746 tests passing across all 9 SDK languages.
+- Aligned agent, container image, and Helm chart with SDK v0.7.2 "Harness Governance" release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.2 with 280 procedures across 77 namespaces.
+- 5 new harness governance procedures: orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), eval gate (AI-GATE.1). The witness agent can now attest orchestration decisions for multi-agent Kubernetes workloads -- which agent ran on which node, whether context was truncated, and whether the eval gate passed before deployment.
+- Witness Middleware (`withSWT3(transport)`) available in the companion MCP package. Any MCP server running as a sidecar or service in your cluster gains cryptographic attestation by wrapping its transport -- no tool handler changes.
+- 68 MCP tools, 265 compliance guides, ~3,000 tests passing across 10 languages.
+
+## What's New in v0.7.1
+
+- Aligned agent, container image, and Helm chart with SDK v0.7.1 "MCP Security" release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.1 with 275 procedures across 77 namespaces.
+- 3 new MCP security procedures: tool integrity attestation (AI-MCP.2), server auth attestation (AI-MCP.3), server discovery attestation (AI-MCP.4). Full OWASP MCP Top 10 coverage with cryptographic evidence.
+- 68 MCP tools, ~3,000 tests passing across 10 languages.
+
+## What's New in v0.7.0
+
+- Aligned agent, container image, and Helm chart with SDK v0.7.0 "Infrastructure" release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.0 with 266 procedures across 75 namespaces.
+- New procedure families: NHI (credential governance), HBOM/DPP (hardware + battery passport), ADR (demand response). The witness agent can now attest hardware inventory (HBOM-INV.1) and thermal profiles (HBOM-THERM.1) alongside existing GPU attestation (AI-HW.1).
+- ~2,950 tests passing across all 10 SDK languages.
+
+## What's New in v0.6.6
+
+- Aligned agent, container image, and Helm chart with SDK v0.6.6 "Supply Chain" release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.6.6 with 118 procedures across 64 namespaces.
+- 2,825 tests passing across all 10 SDK languages.
 
 ## Quick Start
 
 ```bash
 # Local mode -- anchors emit as structured JSON to stdout
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2
 
 # Cloud mode -- anchors flush to the SWT3 clearing house
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.9 \
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT
@@ -77,7 +99,7 @@ Returns:
 ```json
 {
   "status": "ok",
-  "version": "0.5.9",
+  "version": "0.7.2",
   "mode": "local",
   "silicon_vendor": "nvidia",
   "topology": "single",
@@ -97,7 +119,7 @@ Returns:
 ## Container Image
 
 ```bash
-docker pull ghcr.io/tenova-labs/swt3-witness:0.5.9
+docker pull ghcr.io/tenova-labs/swt3-witness:0.7.2
 ```
 
 ## License

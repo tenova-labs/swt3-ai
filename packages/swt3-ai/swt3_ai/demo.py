@@ -149,9 +149,9 @@ def main() -> None:
     print(f"{BOLD}SWT3 AI Witness SDK — Live Demo{RESET}")
     print(f"{DIM}No API keys. No account. No network calls.{RESET}")
     print(f"{DIM}{'─' * 56}{RESET}")
-    print(f"  {GREEN}New in v0.5.6:{RESET} METAGOV namespace, Japan crosswalk,")
-    print(f"  Model Trust Profiles, coverage scoring, 94 procedures.")
-    print(f"  {DIM}License guide: sovereign.tenova.io/guides/openmdw-license-provenance.html{RESET}")
+    print(f"  {GREEN}New in v0.7.2:{RESET} Harness governance (orchestration, delegation,")
+    print(f"  context window, sandbox, eval gate). 280 procs/77 ns.")
+    print(f"  {DIM}Guides: sovereign.tenova.io/guides/{RESET}")
     print(f"{DIM}{'─' * 56}{RESET}")
     print()
 
@@ -293,6 +293,20 @@ def main() -> None:
     print(f"     {DIM}{lic_anchor}{RESET}")
     print()
 
+    # ── NHI Credential Expiration ──
+    print(f"{CYAN}8. Witnessing credential expiration (NHI-EXPIRE.1)...{RESET}")
+    nhi_fa = float(int(_sha256("api-key-prod-001", 16), 16) % 2**32)
+    nhi_fb = float(int(time.time()) + 86400 * 30)  # 30 days from now
+    nhi_fc = float(1 | (3600 << 8))  # renewable, 1h grace period
+    nhi_fp = _mint_fingerprint(tenant, "NHI-EXPIRE.1", nhi_fa, nhi_fb, nhi_fc, ts_ms)
+    nhi_anchor = _mint_anchor(tenant, provider, "NHI-EXPIRE.1", "PASS", epoch, nhi_fp)
+    anchors_list.append(nhi_anchor)
+    print(f"   {DIM}Credential:  api-key-prod-001 (hashed){RESET}")
+    print(f"   {DIM}Expires:     30 days | Renewable: yes | Grace: 1h{RESET}")
+    print(f"   {GREEN}■ PASS{RESET}  {WHITE}NHI-EXPIRE.1{RESET}  {DIM}Credential expiration witnessed{RESET}")
+    print(f"     {DIM}{nhi_anchor}{RESET}")
+    print()
+
     # ── Summary Table ──
     print(f"  {DIM}{'─' * 56}{RESET}")
     print(f"  {BOLD}WITNESS SUMMARY{RESET}")
@@ -302,6 +316,7 @@ def main() -> None:
     summary_items = [
         ("AI-INF.1", "PASS"), ("AI-MDL.1", "PASS"), ("AI-GRD.1", "PASS"),
         ("AI-RAG.1", "PASS"), ("AI-RAG.2", "PASS"), ("AI-LIC.1", "PASS"),
+        ("NHI-EXPIRE.1", "PASS"),
     ]
     for i, (proc, verdict) in enumerate(summary_items):
         fp_val = anchors_list[i].split("-")[-1] if i < len(anchors_list) else "?"
@@ -327,6 +342,7 @@ def main() -> None:
         ("AI-RAG.1",  "Art. 12(2)(a)", "Reference Database Logging",        "DEMONSTRATED"),
         ("AI-RAG.2",  "Art. 10(2)",    "Data Quality & Relevance",          "DEMONSTRATED"),
         ("AI-LIC.1",  "Art. 53(1d)",   "Training Data Licensing (GPAI)",     "DEMONSTRATED"),
+        ("NHI-EXPIRE.1", "Art. 9(2a)", "Credential Temporal Authority",      "DEMONSTRATED"),
     ]
     for proc, article, desc, verdict in coverage_map:
         print(f"  {GREEN}✓{RESET} {WHITE}{proc}{RESET} → {article}: {desc} {GREEN}[{verdict}]{RESET}")
@@ -363,7 +379,8 @@ def main() -> None:
     print(f"  {DIM}Preview a live auditor view (no account required):{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public{RESET}")
     print()
-    print(f"  {DIM}Full conformity requires all 48 AI procedures. Connect to close the gap:{RESET}")
+    print(f"  {AMBER}These anchors are local-only and cannot be verified by auditors.{RESET}")
+    print(f"  {DIM}Connect for free (30 seconds) to make them verifiable:{RESET}")
     print(f"  {CYAN}https://sovereign.tenova.io/signup?ref=sdk_demo{RESET}")
     print()
     print(f"  {DIM}SDK docs:     {CYAN}https://sovereign.tenova.io/docs/{RESET}")

@@ -25,7 +25,7 @@ Usage:
 Copyright (c) 2026 Tenable Nova LLC. Apache 2.0. Patent pending.
 """
 
-__version__ = "0.6.6"
+__version__ = "0.7.2"
 
 from .witness import Witness, GatekeeperError, ChainEnforcer, PolicyViolationError, validate_governance_graph, LifecycleChain, ChainContext, LIFECYCLE_CHAIN_STAGES
 from .gate import GateConfig, GateProcedure, GateGroup, FrameworkGate, GateDefaults, GateModel, load_gate_config, parse_gate_dict, parse_max_age, find_gate_file, validate_procedures, all_procedures
@@ -61,7 +61,11 @@ from .witness import (OVERRIDE_TRIGGER_CODES, AUTHORIZATION_LEVEL_CODES, FALLBAC
     METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS,
     DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES,
     MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES,
-    REACHABILITY_METHOD_CODES, DISPOSAL_METHOD_CODES, RECOMMISSION_TYPE_CODES, LOCK_SCOPE_CODES)
+    REACHABILITY_METHOD_CODES, DISPOSAL_METHOD_CODES, RECOMMISSION_TYPE_CODES, LOCK_SCOPE_CODES,
+    NHI_LIFECYCLE_EVENT_CODES, NHI_ROTATION_REASON_CODES, NHI_REVOCATION_REASON_CODES,
+    HBOM_LIFECYCLE_EVENT_CODES, HBOM_WATER_SOURCE_CODES,
+    DPP_CHARGE_EVENT_CODES, DPP_DEGRADATION_TYPE_CODES, DPP_DISPOSITION_CODES,
+    ADR_EVENT_PHASE_CODES, ADR_BASELINE_METHOD_CODES, ADR_CREDIT_TYPE_CODES, ADR_SIGNAL_TYPE_CODES)
 from .schema import validate_schema, ValidationResult, ValidationError as SchemaValidationError
 from .wal import WriteAheadLog
 from .merkle import (

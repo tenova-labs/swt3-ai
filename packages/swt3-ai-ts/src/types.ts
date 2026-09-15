@@ -27,6 +27,8 @@ export interface WitnessConfig {
   jurisdiction?: string;
   legalBasis?: string;
   purposeClass?: string;
+  authorizationExpires?: number; // CJT authorization expiry epoch ms
+  authorizationScope?: string; // CJT authorization scope descriptor
   tokenBudget?: number; // Mint anchor every N tokens (undefined = disabled, use bufferSize)
   chainMinTrustLevel?: number; // Minimum effective trust level for chain handoffs (0-4). Enforced in strict mode.
   onFlush?: (payloads: WitnessPayload[], receipts: WitnessReceipt[]) => void;
@@ -116,6 +118,8 @@ export interface WitnessPayload {
   legal_basis?: string;
   purpose_class?: string;
   authorization_id?: string;
+  authorization_expires?: number;
+  authorization_scope?: string;
   references?: AnchorReference[];
   revocation_target?: string;
   revocation_reason?: string;
@@ -251,7 +255,30 @@ export const AI_PROCEDURES = new Set([
   "AI-DRIFT.2",
   "AI-ASSESS.1",
   "AI-COST.1",
+  "AI-ORCH.1",
+  "AI-ORCH.2",
+  "AI-CTX.1",
+  "AI-SAND.1",
+  "AI-GATE.1",
 ]);
+
+/** Orchestration topology codes for AI-ORCH.1. */
+export const ORCHESTRATION_TOPOLOGY_CODES: Record<string, number> = {
+  sequential: 0,
+  parallel: 1,
+  hierarchical: 2,
+  hybrid: 3,
+  mesh: 4,
+};
+
+/** Context eviction method codes for AI-CTX.1. */
+export const EVICTION_METHOD_CODES: Record<string, number> = {
+  none: 0,
+  truncation: 1,
+  summarization: 2,
+  sliding_window: 3,
+  priority_eviction: 4,
+};
 
 /** A single retrieved context chunk for RAG witnessing. */
 export interface RagChunk {
@@ -513,6 +540,26 @@ export const CHAIN_STATUS_CODES: Record<string, number> = {
 export const RELEASE_TYPE_CODES: Record<string, number> = {
   prototype: 0, limited_run: 1, mass_production: 2, field_modification: 3, emergency: 4,
 };
+
+// NHI Governance Codes (v0.7.0)
+export const NHI_LIFECYCLE_EVENT_CODES: Record<string, number> = { issued: 1, activated: 2, suspended: 3, expired: 4, revoked: 5 };
+export const NHI_ROTATION_REASON_CODES: Record<string, number> = { scheduled: 1, compromise: 2, policy: 3, manual: 4 };
+export const NHI_REVOCATION_REASON_CODES: Record<string, number> = { unspecified: 0, model_recall: 1, policy_violation: 2, data_contamination: 3, consent_withdrawal: 4, regulatory_order: 5, error_correction: 6 };
+
+// HBOM Governance Codes (v0.7.0)
+export const HBOM_LIFECYCLE_EVENT_CODES: Record<string, number> = { installed: 1, commissioned: 2, maintained: 3, degraded: 4, decommissioned: 5, recycled: 6 };
+export const HBOM_WATER_SOURCE_CODES: Record<string, number> = { municipal: 1, recycled: 2, rainwater: 3, groundwell: 4, mixed: 5 };
+
+// DPP Governance Codes (v0.7.0)
+export const DPP_CHARGE_EVENT_CODES: Record<string, number> = { charge_start: 1, charge_complete: 2, discharge_start: 3, discharge_complete: 4 };
+export const DPP_DEGRADATION_TYPE_CODES: Record<string, number> = { calendar_aging: 1, thermal_stress: 2, overcharge: 3, deep_discharge: 4, mechanical: 5, unknown: 6 };
+export const DPP_DISPOSITION_CODES: Record<string, number> = { recycling: 1, repurpose: 2, refurbishment: 3, landfill: 4, hazmat_disposal: 5 };
+
+// ADR Governance Codes (v0.7.0)
+export const ADR_EVENT_PHASE_CODES: Record<string, number> = { signal_received: 1, curtailment_start: 2, curtailment_end: 3, restoration: 4 };
+export const ADR_BASELINE_METHOD_CODES: Record<string, number> = { metered_10day_avg: 1, regression: 2, real_time_meter: 3, deemed_savings: 4 };
+export const ADR_CREDIT_TYPE_CODES: Record<string, number> = { rec: 1, carbon_offset: 2, eac: 3, guarantee_of_origin: 4 };
+export const ADR_SIGNAL_TYPE_CODES: Record<string, number> = { emergency: 1, economic: 2, capacity: 3, frequency_regulation: 4, voltage_support: 5 };
 
 // ── Declarative Governance Config Types ────────────────────────────────
 

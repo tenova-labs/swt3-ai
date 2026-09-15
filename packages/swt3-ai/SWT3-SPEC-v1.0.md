@@ -1,1295 +1,1179 @@
-# SWT3 Protocol Specification
+# SWT3 Protocol Specification v1.0
 
-**Version 1.0.1 | August 2026**
+## Sovereign Witness Traceability Protocol
 
-**Sovereign Witness Traceability (SWT3)**
-
-Cryptographic Witness Anchors for AI Systems and Regulated Infrastructure
-
----
-
-## Table of Contents
-
-1. [Scope](#1-scope)
-2. [Normative References](#2-normative-references)
-3. [Terms and Definitions](#3-terms-and-definitions)
-4. [Status of This Document](#4-status-of-this-document)
-5. [Protocol Overview](#5-protocol-overview)
-6. [Anchor Format](#6-anchor-format)
-7. [Fingerprint Algorithm](#7-fingerprint-algorithm)
-8. [Factor Schema](#8-factor-schema)
-9. [Clearing Protocol](#9-clearing-protocol)
-10. [Signing Protocol](#10-signing-protocol)
-11. [Verification Algorithm](#11-verification-algorithm)
-12. [Witness Payload Schema](#12-witness-payload-schema)
-13. [Lifecycle Chains](#13-lifecycle-chains)
-14. [Provider-Deployer Evidence Chains](#14-provider-deployer-evidence-chains)
-15. [Universal Control Taxonomy](#15-universal-control-taxonomy)
-16. [Conformity Requirements](#16-conformity-requirements)
-17. [Security Considerations](#17-security-considerations)
-18. [Test Vectors](#18-test-vectors)
-19. [Registry Considerations](#19-registry-considerations)
-20. [Protocol Adoption Rationale](#20-protocol-adoption-rationale)
-21. [Reference Implementations](#21-reference-implementations)
-22. [Bibliography](#22-bibliography)
-23. [Auditor Display Requirements](#23-auditor-display-requirements)
-24. [Conformity Evidence Package](#24-conformity-evidence-package)
+**Status:** Proposed Standard
+**Version:** 2.0.0
+**Date:** 2026-08-30
+**Authors:** Tenable Nova LLC (DBA TeNova)
+**License:** Apache 2.0
 
 ---
 
-## 1. Scope
+### Notation Conventions
 
-This specification defines the SWT3 (Sovereign Witness Traceability) protocol for generating, signing, and verifying cryptographic witness anchors. A witness anchor is a deterministic, independently verifiable attestation record computed from observed operational facts.
-
-This specification covers:
-
-- The anchor token format and its constituent fields
-- The fingerprint computation algorithm
-- The three-factor evidence schema
-- Clearing levels that control information density on the wire
-- Signing and verification algorithms
-- The witness payload JSON schema
-- Lifecycle chain identifiers for multi-stage operations
-- Provider-deployer evidence chain delegation
-- Conformity requirements for implementations
-
-This specification does NOT cover:
-
-- Policy frameworks, risk assessment methodologies, or organizational governance structures
-- Verdict evaluation logic (procedure-specific; defined by the implementing platform)
-- Platform infrastructure (ingestion endpoints, storage, analytics, dashboards)
-- Compliance passport generation or OSCAL export
-- Trust mesh credential exchange protocol (specified separately)
-
-The SWT3 protocol is industry-agnostic, framework-neutral, and designed for cross-language interoperability. It operates independently of any specific AI provider, cloud platform, or regulatory regime.
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
+interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt)
+and [RFC 8174](https://www.ietf.org/rfc/rfc8174.txt).
 
 ---
 
-## 2. Normative References
+## 1. Abstract
 
-The following documents are referenced normatively in this specification. For dated references, only the edition cited applies. For undated references, the latest edition applies.
+SWT3 (Sovereign Witness Traceability) is an open protocol for cryptographically
+anchoring evidence to immutable witness records while preserving data sovereignty.
+The "3" in SWT3 represents the three phases of the evidence lifecycle:
 
-- **RFC 2119** -- Key words for use in RFCs to Indicate Requirement Levels (Bradner, 1997)
-- **RFC 6234** -- US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF) (Eastlake & Hansen, 2011)
-- **RFC 2104** -- HMAC: Keyed-Hashing for Message Authentication (Krawczyk, Bellare & Canetti, 1997)
-- **FIPS 204** -- Module-Lattice-Based Digital Signature Standard (ML-DSA) (NIST, 2024)
-- **ISO 8601:2019** -- Date and time format
-- **RFC 4648** -- The Base16, Base32, and Base64 Data Encodings (Josefsson, 2006)
+1. **Provenance**  --  Evidence collection and factor capture at the point of observation.
+   Raw telemetry is decomposed into a structured Factor Matrix and cryptographically
+   bound to a sub-second hardware epoch, establishing an immutable record of what was
+   observed, when, and under what conditions.
 
----
+2. **Verification**  --  SHA-256 fingerprint computation binding factors to a self-describing,
+   portable anchor token. Any party can independently re-derive the fingerprint from
+   the original factors and confirm that evidence has not been altered  --  without network
+   access, without database connectivity, and without trust in the issuing system.
 
-## 3. Terms and Definitions
+3. **Clearing**  --  Controlled purging of raw evidence after anchoring, ensuring that
+   sensitive telemetry (command outputs, configuration files, API responses, log entries)
+   does not persist beyond its operational usefulness. The cryptographic proof survives;
+   the underlying data does not. This achieves 100% integrity verification and 100%
+   data sovereignty simultaneously  --  not as a tradeoff, but as complementary guarantees.
 
-For the purposes of this specification, the following terms and definitions apply. The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119.
+SWT3 enables any party  --  auditor, assessor, or automated system  --  to independently
+verify that a piece of evidence has not been altered since the moment it was
+witnessed, even after the raw source data has been cleared.
 
-**Witness Anchor** -- A deterministic, cryptographically verifiable attestation record encoding observed operational facts as a structured token string.
+SWT3 does not prescribe how evidence is collected (Provenance). It defines how
+evidence is **fingerprinted and anchored** (Verification), and how raw evidence
+can be **sovereignly purged while preserving cryptographic proof** (Clearing).
+This separation allows any evidence collection tool to produce SWT3-compatible
+anchors, while any platform can consume and verify them without vendor lock-in.
 
-**Fingerprint** -- A 12-character hexadecimal string derived from the SHA-256 hash of a domain-separated input containing tenant identity, procedure identifier, factors, and timestamp.
+## 2. Terminology
 
-**Factor** -- A numeric value (integer) encoding an observed operational measurement. Each witness anchor contains exactly three factors: factor_a, factor_b, and factor_c.
+| Term | Definition |
+|------|-----------|
+| **Witness** | The act of observing a state and recording its factors at the point of origin |
+| **Factor** | A measurable input to a determination (e.g., open port count, patch age, sensor reading) |
+| **Factor Matrix** | The structured triple (factor_a, factor_b, factor_c) captured during Provenance |
+| **Anchor** | A self-describing cryptographic receipt binding factors to a verdict at a specific point in time |
+| **Fingerprint** | The truncated SHA-256 digest that seals the anchor |
+| **Verdict** | The determination outcome: PASS, FAIL, INHERITED, LAPSED, or UNKNOWN |
+| **Enclave** | A trust boundary within which anchors share a common verification chain |
+| **Clearing** | The controlled purging of raw evidence after anchoring, preserving the cryptographic proof while destroying the source telemetry to maintain data sovereignty |
+| **Administrative Trust** | The legacy trust model where data integrity depends on trusting the custodian (database admin, cloud provider, agency) rather than independent mathematical verification |
 
-**Clearing Level** -- An integer (0-3) specifying the information density permitted in a witness payload. Higher clearing levels progressively remove metadata before transmission.
+## 3. Anchor Format
 
-**Procedure** -- A named operation in the Universal Control Taxonomy (UCT) that a witness anchor attests to. Identified by a dotted-namespace format (e.g., AI-INF.1).
-
-**UCT (Universal Control Taxonomy)** -- The namespace registry that defines all valid procedure identifiers, organized by domain.
-
-**Tenant** -- An organizational entity whose identity is bound into the fingerprint computation. Tenants are isolated; cross-tenant fingerprint collision is computationally infeasible.
-
-**Enclave** -- A deployment environment containing one or more witnessed systems. Enclave integrity is computed from the collective fingerprints of all anchors within it.
-
-**Lifecycle Chain** -- A sequence of related witness anchors linked by a shared chain identifier, representing a multi-stage operation (e.g., emergency override initiation through resolution).
-
-**CJT Fields (Compliance Jurisdiction and Traceability)** -- Metadata fields that survive all clearing levels: jurisdiction, legal_basis, purpose_class, agent_id, and cycle_id.
-
-**Verdict** -- The binary outcome of a witnessed operation: PASS or FAIL. Verdict evaluation logic is procedure-specific and defined by the implementing platform, not by this specification.
-
----
-
-## 4. Status of This Document
-
-This is version 1.0 of the SWT3 Protocol Specification, published August 2026 by Tenable Nova LLC.
-
-Normative sections of this specification are versioned. Breaking changes to normative sections increment the major version number. Additive extensions that do not alter existing normative requirements increment the minor version number. The UCT Registry governance process is documented in Section 19.
-
-The fingerprint algorithm (Section 7), anchor format (Section 6), and clearing level definitions (Section 9) are locked as of this version. Implementations conforming to version 1.0 will remain compatible with all future 1.x versions of this specification.
-
-This specification is published by Tenable Nova LLC as the protocol's originating organization. As multi-stakeholder adoption progresses, governance of the SWT3 protocol, UCT Registry, and test vector suite is expected to transition to a multi-stakeholder body. Organizations contributing to the protocol's development, implementation, or adoption are invited to participate in shaping its governance structure.
-
-Patent pending.
-
----
-
-## 5. Protocol Overview
-
-*This section is informative.*
-
-The SWT3 protocol operates in three phases:
-
-**Phase 1: Witness.** An observed operational fact (e.g., an AI inference, a guardrail evaluation, a model integrity check) is captured as three numeric factors with associated metadata.
-
-**Phase 2: Mint.** A witness anchor is deterministically computed from the factors, tenant identity, procedure identifier, and timestamp. The anchor is optionally signed with HMAC-SHA256 or ML-DSA-65. Clearing is applied to remove metadata according to the specified level before transmission.
-
-**Phase 3: Verify.** Any party with knowledge of the input components can independently recompute the fingerprint using standard SHA-256 and compare it to the anchor's claimed fingerprint. No proprietary tooling, API access, or platform account is required for verification.
-
-The protocol is architecturally neutral. It does not prescribe how evidence is collected, where anchors are stored, or how verdicts are evaluated. These concerns are delegated to the implementing platform.
-
----
-
-## 6. Anchor Format
-
-*This section is normative.*
-
-A witness anchor token is a hyphen-delimited string with the following structure:
+An SWT3 anchor is a structured string token with the following format:
 
 ```
 SWT3-{TIER}-{PROVIDER}-{UCT}-{PROCEDURE}-{VERDICT}-{EPOCH}-{FINGERPRINT}
 ```
 
-### 6.1 Field Definitions
+### 3.1 Field Definitions
 
-| Field | Description | Type | Constraints |
-|-------|-------------|------|-------------|
-| `SWT3` | Protocol identifier | Literal | Always the string `SWT3` |
-| `TIER` | Deployment tier | Char(1) | `E` (Enclave), `S` (SaaS), `H` (Hybrid) |
-| `PROVIDER` | Infrastructure provider | String | `VULTR`, `AWS`, `AZURE`, `GCP`, `HYBRID`, `ON-PREM`, or other registered provider codes |
-| `UCT` | Universal Control Taxonomy domain | String | 2-4 uppercase alphanumeric characters (e.g., `ACC`, `NET`, `AI`) |
-| `PROCEDURE` | Procedure identifier (normalized) | String | Hyphens and periods removed from the full procedure ID, including namespace prefix (e.g., `AI-INF.1` becomes `AIINF1`, `SC-7.6` becomes `SC76`) |
-| `VERDICT` | Binary outcome | Literal | `PASS` or `FAIL` |
-| `EPOCH` | Timestamp | Integer | Unix epoch in seconds |
-| `FINGERPRINT` | Evidence fingerprint | Hex(12) | First 12 characters of the SHA-256 fingerprint (Section 7) |
+| Field | Width | Values | Description |
+|-------|-------|--------|-------------|
+| Protocol | 4 | `SWT3` | Fixed protocol identifier |
+| Tier | 1 | `E`, `S`, `H` | Deployment tier: Enclave, SaaS, Hybrid |
+| Provider | 2-6 | `VULTR`, `AWS`, `AZURE`, `GCP`, `HYBRID`, `ON-PREM` | Infrastructure provider |
+| UCT | 2-3 | See Section 3.2 | Universal Control Taxonomy category (UCT Registry v1.0) |
+| Procedure | 2-6 | e.g. `SC76`, `AC21` | Procedure identifier (alphanumeric, no hyphens) |
+| Verdict | 4-9 | `PASS`, `FAIL`, `INHERITED`, `LAPSED`, `UNKNOWN` | Compliance determination |
+| Epoch | 10 | Unix timestamp | Seconds since Unix epoch at witness time |
+| Fingerprint | 12 | Hex string | First 12 characters of SHA-256 digest |
 
-### 6.2 Normalization Rules
+### 3.2 UCT Registry (v1.0)
 
-- The PROCEDURE field MUST be normalized by removing all hyphens (`-`) and periods (`.`) from the full procedure identifier. The namespace prefix is retained. For example, `AI-INF.1` becomes `AIINF1`; `AI-METAGOV.8` becomes `AIMETAGOV8`.
-- Provider codes MUST be uppercase alphanumeric.
-- UCT domain codes MUST be uppercase alphanumeric, 2-4 characters.
+The Universal Control Taxonomy (UCT) is a framework-agnostic classification
+system that categorizes every witnessed control into a domain. UCT codes are
+the bridge that allows SWT3 anchors to be meaningful across compliance
+frameworks  --  a `CRY` anchor carries the same semantic meaning whether it
+originated from a NIST SC-13 check, a PCI-DSS Requirement 4 assessment, or
+a HIPAA §164.312(a)(2)(iv) encryption review.
 
-### 6.3 Example
+The UCT Registry is **additive-only**: codes are never removed or redefined
+once published. New codes may be added in future registry versions. Anchors
+minted under any registry version remain valid under all subsequent versions.
 
-```
-SWT3-E-VULTR-AI-AIINF1-PASS-1774800000-2e16e2fe92dd
-```
+#### 3.2.1 Core Codes
 
-Decomposition:
+Core codes represent the fundamental security domains present in every major
+compliance framework. All SWT3 implementations MUST recognize core codes.
 
-| Segment | Value | Meaning |
-|---------|-------|---------|
-| `SWT3` | Protocol | SWT3 protocol anchor |
-| `E` | Tier | Enclave deployment |
-| `VULTR` | Provider | Vultr infrastructure |
-| `AI` | UCT | AI/ML governance domain |
-| `AIINF1` | Procedure | AI-INF.1 (Inference Provenance) |
-| `PASS` | Verdict | Operation passed |
-| `1774800000` | Epoch | Unix timestamp (seconds) |
-| `2e16e2fe92dd` | Fingerprint | SHA-256 derived, 12 hex chars |
+| Code | Domain | Description |
+|------|--------|-------------|
+| `ACC` | Access Control | Authorization, privileges, least privilege, account management  --  who can get in and what they can do |
+| `AUD` | Audit & Accountability | Logging, log retention, audit review, event correlation  --  proving who did what |
+| `CFG` | Configuration Management | Baselines, hardening, change control, inventory  --  how systems are set |
+| `CRY` | Cryptography | Encryption at rest, encryption in transit, key management, certificate lifecycle |
+| `IDN` | Identity & Authentication | Authentication mechanisms, MFA, credential management  --  proving who you are |
+| `INT` | System Integrity | Patching, file integrity monitoring, malware defense, code signing  --  tamper evidence |
+| `NET` | Network Security | Firewalls, segmentation, boundary protection, traffic filtering  --  network boundaries |
+| `BCP` | Business Continuity | Backup, disaster recovery, contingency planning, availability  --  surviving failure |
+| `GOV` | Governance & Policy | Security policy, planning, system security plans, authorization  --  the policy layer |
+| `IRP` | Incident Response | Detection, response, recovery, lessons learned  --  handling the breach |
+| `PHY` | Physical Security | Facility access, media protection, environmental controls  --  the physical layer |
 
----
+#### 3.2.2 Extended Codes
 
-## 7. Fingerprint Algorithm
+Extended codes represent specialized domains that apply in specific regulatory
+contexts or industry verticals. Implementations SHOULD recognize extended codes
+relevant to their compliance scope. Unrecognized extended codes MUST NOT cause
+verification failure  --  the anchor remains valid; only the domain classification
+is opaque to that implementation.
 
-*This section is normative.*
+| Code | Domain | Description |
+|------|--------|-------------|
+| `ACQ` | Supply Chain & Acquisition | Vendor risk, third-party assessment, supply chain integrity |
+| `AI`  | AI / ML Governance | Model integrity, algorithmic fairness, AI risk management (NIST AI RMF) |
+| `CHG` | Change Management | Change approval, maintenance windows, controlled modification |
+| `DEV` | Secure Development | SDLC, code review, application security testing |
+| `EVI` | Evidence & Artifacts | Ingested proof artifacts, external evidence anchoring |
+| `HRS` | Personnel Security | Screening, termination, role-based access tied to employment status |
+| `MON` | Continuous Monitoring | Ongoing surveillance, posture dashboards, trend analysis (CA-7) |
+| `OT`  | Operational Technology | ICS/SCADA, industrial control systems, NERC CIP |
+| `PRI` | Privacy | PII protection, consent management, data subject rights (GDPR, HIPAA Privacy Rule) |
+| `RSK` | Risk Management | Risk assessments, POA&Ms, risk acceptance, vulnerability prioritization |
+| `TRN` | Training & Awareness | Security training, phishing exercises, role-based training requirements |
+| `VUL` | Vulnerability Management | Scanning, patching cadence, CISA KEV, remediation tracking |
 
-### 7.1 Canonical Formula
+#### 3.2.3 NIST 800-53 Family Mapping
 
-The fingerprint MUST be computed as follows:
+The following table defines the canonical mapping from NIST 800-53 control
+families to UCT codes. This mapping is normative for NIST-derived frameworks
+(FedRAMP, CMMC, 800-171, DoD RMF) and informative for all others.
 
-```
-fingerprint = SHA256("WITNESS:{tenant_id}:{procedure_id}:{factor_a}:{factor_b}:{factor_c}:{timestamp_ms}").hex()[:12]
-```
+| NIST Family | UCT Code | Notes |
+|-------------|----------|-------|
+| AC (Access Control) | `ACC` | |
+| AU (Audit & Accountability) | `AUD` | |
+| CM (Configuration Management) | `CFG` | |
+| IA (Identification & Authentication) | `IDN` | |
+| SC (System & Communications) | `NET` | Default for SC family |
+| SC-8, SC-8.x (Transmission Confidentiality) | `CRY` | Encryption in transit |
+| SC-13 (Cryptographic Protection) | `CRY` | Cryptographic mechanisms |
+| SC-28, SC-28.x (Protection of Information at Rest) | `CRY` | Encryption at rest |
+| SI (System & Information Integrity) | `INT` | Default for SI family |
+| SI-2 (Flaw Remediation) | `VUL` | Patching and remediation |
+| SI-5 (Security Alerts & Advisories) | `VUL` | Advisory monitoring |
+| AT (Awareness & Training) | `TRN` | |
+| CP (Contingency Planning) | `BCP` | |
+| IR (Incident Response) | `IRP` | |
+| MA (Maintenance) | `CHG` | |
+| MP (Media Protection) | `PHY` | |
+| PE (Physical & Environmental) | `PHY` | |
+| PL (Planning) | `GOV` | |
+| PS (Personnel Security) | `HRS` | |
+| RA (Risk Assessment) | `RSK` | |
+| SA (System & Services Acquisition) | `ACQ` | |
+| CA (Assessment, Authorization & Monitoring) | `MON` | CA-7 specifically maps to MON |
 
-Where:
+#### 3.2.4 Cross-Framework Reference
 
-| Component | Type | Description |
-|-----------|------|-------------|
-| `WITNESS` | Literal string | Domain separation prefix. REQUIRED. |
-| `tenant_id` | String | Tenant identifier (e.g., `ENCLAVE_PROD`) |
-| `procedure_id` | String | Original procedure ID with full punctuation (e.g., `AI-INF.1`) |
-| `factor_a` | Integer | First factor, rendered as a decimal string (e.g., `1`, `5000`) |
-| `factor_b` | Integer | Second factor, rendered as a decimal string |
-| `factor_c` | Integer | Third factor, rendered as a decimal string |
-| `timestamp_ms` | Integer | Millisecond-precision Unix epoch, rendered as a decimal string |
+UCT codes map consistently across major compliance frameworks:
 
-### 7.2 Computation Steps
+| UCT | NIST 800-53 | SOC 2 (TSC) | HIPAA | PCI-DSS 4.0 | ISO 27001:2022 |
+|-----|-------------|-------------|-------|-------------|----------------|
+| `ACC` | AC | CC6.1, CC6.3 | §164.312(a)(1) | Req 7, 8 | A.5.15, A.8.3 |
+| `AUD` | AU | CC7.2 | §164.312(b) | Req 10 | A.8.15 |
+| `CFG` | CM | CC8.1 | §164.310(d)(2)(iii) | Req 2 | A.8.9 |
+| `CRY` | SC-8, SC-13, SC-28 | CC6.1 (enc.) | §164.312(a)(2)(iv), §164.312(e)(2)(ii) | Req 3, 4 | A.8.24 |
+| `IDN` | IA | CC6.1 (auth.) | §164.312(d) | Req 8 | A.8.5 |
+| `INT` | SI | CC7.1 | §164.312(c)(1) | Req 5, 6, 11 | A.8.7 |
+| `NET` | SC (network) | CC6.6 | §164.312(e)(1) | Req 1 | A.8.20, A.8.21 |
+| `BCP` | CP | A1.2 | §164.308(a)(7) | Req 12.10.1 | A.5.29, A.5.30 |
+| `GOV` | PL | CC1.1-CC1.5 | §164.308(a)(1) | Req 12 | A.5.1 |
+| `IRP` | IR | CC7.3, CC7.4 | §164.308(a)(6) | Req 12.10 | A.5.24-A.5.28 |
+| `PHY` | PE, MP | CC6.4 | §164.310(a), §164.310(d) | Req 9 | A.7.1-A.7.14 |
 
-1. Construct the input string by concatenating all components with colon (`:`, U+003A) separators.
-2. Encode the input string as UTF-8.
-3. Compute the SHA-256 digest (per RFC 6234).
-4. Encode the digest as lowercase hexadecimal.
-5. Truncate to the first 12 characters.
-6. The result is the anchor fingerprint.
+#### 3.2.5 Registry Governance
 
-### 7.3 Encoding Rules
+- **Maintainer:** Tenable Nova LLC (DBA TeNova)
+- **Versioning:** UCT Registry follows semantic versioning independent of the SWT3 spec version
+- **Additions:** New codes require (a) demonstrated need across two or more compliance frameworks, (b) clear semantic distinction from existing codes, and (c) a 3-letter uppercase alphabetic identifier
+- **Immutability:** Published codes are never removed, renamed, or redefined
+- **Deprecation:** A code may be marked DEPRECATED with a recommended successor, but MUST remain valid for parsing and verification indefinitely
+- **Reserved codes:** `SWT`, `UCT`, `NIL`, `ERR`, `RAW`, `TBD` are reserved and MUST NOT be assigned
+- **Legacy code  --  `POL`:** Pre-v1.0 implementations used `POL` (Policy) as a catch-all for governance, personnel, incident response, training, physical security, risk, and acquisition domains. Anchors minted with `POL` remain valid and MUST be accepted by all implementations. New anchors SHOULD use the specific code from the registry. Implementations MAY reclassify historical `POL` anchors using the procedure ID prefix and the NIST Family Mapping (Section 3.2.3).
 
-- Integer factors MUST be rendered without leading zeros, decimal points, or thousands separators. The integer `0` is rendered as `"0"`. The integer `5000` is rendered as `"5000"`.
-- The timestamp MUST be in milliseconds. Seconds-precision timestamps MUST be multiplied by 1000.
-- The domain separation prefix `WITNESS` MUST be uppercase.
-- The procedure_id MUST preserve its original punctuation (hyphens, periods). Normalization (Section 6.2) applies only to the anchor token string, not to the fingerprint input.
-
-### 7.4 Legacy Formula
-
-Implementations MUST also support verification against the legacy formula for backward compatibility with anchors minted before version 1.0:
-
-```
-fingerprint_legacy = SHA256("{procedure_id}:{tenant_id}:{factor_a}:{factor_b}:{factor_c}:{timestamp_ms}").hex()[:12]
-```
-
-The legacy formula differs from the canonical formula in two ways: (1) the `WITNESS:` domain separation prefix is absent, and (2) the `procedure_id` and `tenant_id` fields are in reversed order.
-
-When verifying an anchor, implementations MUST attempt the canonical formula first. If verification fails, implementations MUST attempt the legacy formula before reporting a verification failure.
-
-When minting new anchors, implementations MUST use the canonical formula exclusively.
-
-### 7.5 Determinism
-
-The fingerprint algorithm is fully deterministic. Given identical inputs, any conforming implementation in any programming language MUST produce an identical fingerprint. This property is verified by the test vectors in Section 18.
-
----
-
-## 8. Factor Schema
-
-*This section is normative.*
-
-### 8.1 Structure
-
-Every witness anchor contains exactly three factors:
-
-| Factor | Field Name | Type | Description |
-|--------|-----------|------|-------------|
-| A | `factor_a` | Integer | First measurement dimension |
-| B | `factor_b` | Integer | Second measurement dimension |
-| C | `factor_c` | Integer | Third measurement dimension (context, delta, or method code) |
-
-### 8.2 Semantics
-
-Factor semantics are procedure-specific. This specification defines the factor structure but does not prescribe procedure-level semantics. Procedure-specific factor definitions are maintained in the UCT Registry (Section 15).
-
-The following common evaluation patterns are observed across procedures:
-
-**Pattern 1: Threshold Comparison**
-- `factor_a` = required/expected value
-- `factor_b` = measured/observed value
-- `factor_c` = additional context (delta, method code, or boolean flag)
-- Typical verdict rule: `factor_b >= factor_a` implies PASS
-
-**Pattern 2: Presence/Verification**
-- `factor_a` = count of items (e.g., adapters, chunks, guardrails)
-- `factor_b` = verification status (1 = verified, 0 = not verified)
-- `factor_c` = method or context code
-- Typical verdict rule: `factor_b >= 1` implies PASS
-
-**Pattern 3: Inverse Threshold**
-- `factor_a` = maximum allowed value (e.g., latency threshold)
-- `factor_b` = observed value
-- `factor_c` = context
-- Typical verdict rule: `factor_b <= factor_a` implies PASS
-
-### 8.3 Constraints
-
-- All factors MUST be integers. Floating-point values MUST be scaled to integers before anchoring (e.g., a relevance score of 0.82 is encoded as `820` with a documented scale factor of 1000).
-- Negative integers are permitted.
-- There is no upper bound on factor values.
-- A factor value of `0` is semantically valid and distinct from absent.
-
----
-
-## 9. Clearing Protocol
-
-*This section is normative.*
-
-### 9.1 Clearing Levels
-
-The clearing protocol defines four levels of information density control. Higher levels progressively remove metadata from the witness payload before transmission.
-
-| Level | Name | Description |
-|-------|------|-------------|
-| 0 | Analytics | All metadata retained. Full forensic capability. |
-| 1 | Standard | Raw evidence purged after factor extraction. Hashes, model identity, and context retained. **Default level.** |
-| 2 | Sensitive | Hashes and model identity retained. All contextual metadata removed. |
-| 3 | Classified | Factors only. Model identity hashed. All other metadata destroyed. |
-
-### 9.2 Field Survival Matrix
-
-The following table specifies which payload fields survive each clearing level. "Y" = retained, "N" = destroyed before transmission.
-
-| Field | Level 0 | Level 1 | Level 2 | Level 3 |
-|-------|---------|---------|---------|---------|
-| `procedure_id` | Y | Y | Y | Y |
-| `factor_a`, `factor_b`, `factor_c` | Y | Y | Y | Y |
-| `clearing_level` | Y | Y | Y | Y |
-| `anchor_fingerprint` | Y | Y | Y | Y |
-| `anchor_epoch` | Y | Y | Y | Y |
-| `fingerprint_timestamp_ms` | Y | Y | Y | Y |
-| `ai_prompt_hash` | Y | Y | Y | N |
-| `ai_response_hash` | Y | Y | Y | N |
-| `ai_system_prompt_hash` | Y | Y | Y | N |
-| `ai_model_id` | Y | Y | Y | N (hashed) |
-| `ai_latency_ms` | Y | Y | N | N |
-| `ai_input_tokens` | Y | Y | N | N |
-| `ai_output_tokens` | Y | Y | N | N |
-| `ai_context` | Y | Y | N | N |
-| `payload_signature` | Y | Y | Y | Y |
-| `signing_key_id` | Y | Y | Y | Y |
-| `jurisdiction` | Y | Y | Y | Y |
-| `legal_basis` | Y | Y | Y | Y |
-| `purpose_class` | Y | Y | Y | Y |
-| `agent_id` | Y | Y | Y | Y |
-| `cycle_id` | Y | Y | Y | Y |
-| `lifecycle_chain_id` | Y | Y | Y | Y |
-| `lifecycle_stage` | Y | Y | Y | Y |
-
-### 9.3 CJT Field Guarantee
-
-The following Compliance Jurisdiction and Traceability (CJT) fields MUST survive all clearing levels (0 through 3):
-
-- `jurisdiction` (ISO 3166-1 alpha-2 country code)
-- `legal_basis` (e.g., GDPR legal basis reference)
-- `purpose_class` (processing purpose classification)
-- `agent_id` (AI agent identity string)
-- `cycle_id` (multi-agent interaction chain link)
-
-Implementations MUST NOT clear CJT fields regardless of clearing level. These fields are required for regulatory traceability across jurisdictions.
-
-### 9.4 Hash Formulas
-
-When hashing prompt, response, or system prompt content for inclusion in the witness payload:
+### 3.3 Examples
 
 ```
-hash = SHA256(text).hex()[:16]
+SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245
+SWT3-S-AWS-ACC-AC21-FAIL-1773400000-a3f7c2e91b04
+SWT3-H-AZURE-CFG-CM61-INHERITED-1773500000-d2620f999950
+SWT3-E-ON-PREM-CRY-SC28-PASS-1773600000-b1a9c3d4e5f6
+SWT3-S-AWS-IRP-IR41-PASS-1773700000-7f8e9d0c1b2a
+SWT3-E-VULTR-VUL-SI21-FAIL-1773800000-4d5e6f7a8b9c
 ```
 
-The hash MUST be the first 16 characters of the lowercase hexadecimal SHA-256 digest of the UTF-8 encoded text.
+### 3.4 Parsing Rules
 
-When hashing `ai_model_id` at clearing level 3:
+- Fields are separated by hyphens (`-`)
+- The fingerprint is always the **last** segment
+- The epoch is always the **second-to-last** segment
+- Minimum 8 segments required for a valid anchor
+- Protocol field MUST be `SWT3`
 
-```
-hashed_model_id = SHA256(ai_model_id).hex()[:16]
-```
+### 3.5 ABNF Grammar (RFC 5234)
 
-### 9.5 Irreversibility
+```abnf
+swt3-anchor   = protocol "-" tier "-" provider "-" uct "-" procedure "-"
+                verdict "-" epoch "-" fingerprint
 
-Clearing is irreversible. Once metadata is destroyed at the source, it cannot be recovered, reconstructed, or reverse-engineered from the remaining fields. This property is by design and provides a sovereignty guarantee: raw evidence (prompts, responses, operational data) never leaves the developer's infrastructure at clearing level 1 or above.
-
----
-
-## 10. Signing Protocol
-
-*This section is normative.*
-
-### 10.1 HMAC-SHA256 (Default)
-
-The default signing algorithm is HMAC-SHA256 (per RFC 2104).
-
-**Without agent identity binding:**
-
-```
-signature = HMAC-SHA256(signing_key, anchor_fingerprint)
+protocol      = %s"SWT3"                         ; case-sensitive
+tier          = %x45 / %x53 / %x48               ; "E" / "S" / "H"
+provider      = 2*6ALPHA                          ; e.g., VULTR, AWS, GCP
+uct           = 2*3ALPHA                          ; UCT Registry code
+procedure     = 1*(ALPHA / DIGIT)                 ; normalized ID, no hyphens
+verdict       = %s"PASS" / %s"FAIL"               ; normative verdicts
+epoch         = 10DIGIT                           ; Unix seconds
+fingerprint   = 12HEXDIG                          ; truncated SHA-256
 ```
 
-**With agent identity binding:**
+Implementations MUST accept the above grammar for well-formed anchors.
+Implementations SHOULD additionally accept `INHERITED`, `LAPSED`, and
+`UNKNOWN` as informative verdict values in contexts where these verdicts
+originate from platform-level adjudication (not protocol-level witnessing).
+
+## 4. Fingerprint Algorithm
+
+The fingerprint is the cryptographic core of SWT3. It binds the evidence factors
+to the anchor in a deterministic, reproducible way.
+
+### 4.1 Input Construction (Canonical Formula)
+
+The fingerprint input is a colon-separated string with a `WITNESS:` domain
+separator prefix, followed by exactly six fields:
 
 ```
-signature = HMAC-SHA256(signing_key, anchor_fingerprint + ":" + agent_id)
+WITNESS:{tenant_id}:{procedure_id}:{factor_a}:{factor_b}:{factor_c}:{timestamp_ms}
 ```
-
-Where `+` denotes string concatenation and `":"` is the literal colon character (U+003A).
-
-The `signing_key` is a shared secret known to the minting party. It MUST NOT be transmitted in the witness payload.
-
-The `signing_key_id` field in the payload identifies which key was used, enabling key rotation without invalidating existing anchors.
-
-### 10.2 ML-DSA-65 (Post-Quantum)
-
-Implementations MAY support ML-DSA-65 (FIPS 204) as an alternative signing algorithm for post-quantum resistance.
-
-- Algorithm identifier: `ml-dsa-65`
-- Key derivation: Deterministic from a 32-byte seed
-- Public key size: 1952 bytes (3904 hexadecimal characters)
-- Signatures are non-deterministic (randomized per FIPS 204)
-
-When `signing_algorithm` is `ml-dsa-65`:
-
-```
-signature = ML-DSA-65-Sign(private_key, message)
-```
-
-Where `message` follows the same construction rules as HMAC-SHA256 (fingerprint alone, or fingerprint:agent_id).
-
-Verification is performed using the public key derived from the same seed:
-
-```
-valid = ML-DSA-65-Verify(public_key, message, signature)
-```
-
-Because ML-DSA-65 signatures are non-deterministic, cross-implementation parity is verified by round-trip testing (sign with implementation A, verify with implementation B) rather than exact signature comparison.
-
-### 10.3 Profile Signing
-
-Model trust profiles MUST be signed using the following canonical message format:
-
-```
-message = "PROFILE:{model_id}:{model_hash}:{generated_at}:{valid_until}:{sorted_procedures}:{coverage_score_3dp}"
-```
-
-Where:
-- `sorted_procedures` is a comma-separated list of procedure IDs sorted lexicographically
-- `coverage_score_3dp` is the coverage score rounded to 3 decimal places (e.g., `0.667`)
-
-### 10.4 Key Management
-
-- Signing keys MUST be stored securely and MUST NOT appear in witness payloads, logs, or error messages.
-- Key rotation SHOULD be performed periodically. The `signing_key_id` and `signing_key_version` fields enable rotation without invalidating existing anchors.
-- Implementations SHOULD support at least two concurrent active keys during rotation periods.
-
----
-
-## 11. Verification Algorithm
-
-*This section is normative.*
-
-### 11.1 Single Anchor Verification
-
-To verify a single witness anchor:
-
-1. Obtain the anchor's claimed fingerprint (the last segment of the anchor token).
-2. Obtain the original input components: `tenant_id`, `procedure_id`, `factor_a`, `factor_b`, `factor_c`, `fingerprint_timestamp_ms`.
-3. Compute the fingerprint using the canonical formula (Section 7.1).
-4. If the computed fingerprint matches the claimed fingerprint, the anchor is **VERIFIED**.
-5. If not, compute the fingerprint using the legacy formula (Section 7.4).
-6. If the legacy-computed fingerprint matches, the anchor is **VERIFIED (legacy)**.
-7. If neither formula produces a match, the anchor is **TAMPERED**.
-
-No API access, platform account, or proprietary tooling is required for verification. Any party with knowledge of the input components can perform verification using standard SHA-256.
-
-### 11.2 Enclave Integrity Verification
-
-To verify the integrity of an entire enclave (collection of anchors):
-
-1. Collect all anchor fingerprints in the enclave.
-2. Sort the fingerprints lexicographically (ascending).
-3. Join the sorted fingerprints with colon separators: `"fp1:fp2:fp3:..."`.
-4. Compute `SHA256(joined_string).hex()` (full 64-character hexadecimal digest).
-5. The result is the enclave integrity signature.
-
-The enclave integrity signature has the following property: identical anchors in an identical state always produce an identical signature. Any addition, removal, or modification of any anchor changes the signature.
-
-### 11.3 Signature Verification
-
-If the witness payload includes a `payload_signature`:
-
-1. Determine the signing algorithm from the `signing_algorithm` field (default: `hmac-sha256`).
-2. Construct the message: `anchor_fingerprint` (or `anchor_fingerprint:agent_id` if `agent_id` is present).
-3. Verify the signature using the appropriate algorithm and the signing key identified by `signing_key_id`.
-4. If verification succeeds, the anchor's provenance is **AUTHENTICATED**.
-5. If verification fails, the anchor's provenance is **UNAUTHENTICATED**.
-
-Signature verification is independent of fingerprint verification. An anchor can be VERIFIED (fingerprint matches) but UNAUTHENTICATED (signature does not match), or vice versa.
-
----
-
-## 12. Witness Payload Schema
-
-*This section is normative.*
-
-### 12.1 Required Fields
-
-The following fields MUST be present in every witness payload:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `procedure_id` | String | UCT procedure identifier (e.g., `AI-INF.1`) |
-| `factor_a` | Integer | First factor |
-| `factor_b` | Integer | Second factor |
-| `factor_c` | Integer | Third factor |
-| `clearing_level` | Integer | 0, 1, 2, or 3 |
-| `anchor_fingerprint` | String(12) | Computed fingerprint (Section 7) |
-| `anchor_epoch` | Integer | Unix epoch in seconds |
-| `fingerprint_timestamp_ms` | Integer | Millisecond timestamp used in fingerprint computation |
+| `WITNESS` | literal | Domain separator prefix (REQUIRED since v1.1.0) |
+| `tenant_id` | string | The organization/tenant identifier |
+| `procedure_id` | string | The procedure identifier (e.g., `SC-7.6`)  --  original format, NOT normalized |
+| `factor_a` | integer | Baseline/threshold factor (string representation of decimal integer) |
+| `factor_b` | integer | Measured/observed factor |
+| `factor_c` | integer | Delta factor (typically `factor_b - factor_a`) |
+| `timestamp_ms` | integer | Millisecond-precision Unix timestamp at witness time |
 
-### 12.2 Optional Fields
+**IMPORTANT:** The `procedure_id` in the fingerprint input retains its original
+format (e.g., `SC-7.6`), while the anchor token uses the normalized form (e.g.,
+`SC76`). This distinction is intentional  --  the anchor is human-readable; the
+fingerprint is cryptographic.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ai_model_id` | String | Model identifier (e.g., `gpt-4o`) |
-| `ai_prompt_hash` | String(16) | SHA-256[:16] of the prompt text |
-| `ai_response_hash` | String(16) | SHA-256[:16] of the response text |
-| `ai_system_prompt_hash` | String(16) | SHA-256[:16] of the system prompt |
-| `ai_latency_ms` | Integer | Inference latency in milliseconds |
-| `ai_input_tokens` | Integer | Input token count |
-| `ai_output_tokens` | Integer | Output token count |
-| `ai_context` | String | Freeform context (cleared at level 2+) |
-| `agent_id` | String | AI agent identity |
-| `cycle_id` | String | Multi-agent interaction chain identifier |
-| `payload_signature` | String(64) | HMAC-SHA256 signature (hex) |
-| `signing_algorithm` | String | `hmac-sha256` (default) or `ml-dsa-65` |
-| `signing_key_id` | String | Key identifier for rotation support |
-| `signing_key_version` | Integer | Key version number |
-| `policy_version_hash` | String | Hash of the governance policy version |
-| `jurisdiction` | String | ISO 3166-1 alpha-2 country code |
-| `legal_basis` | String | Legal processing basis (e.g., `Art. 6(1)(f)`) |
-| `purpose_class` | String | Processing purpose classification |
-| `authorization_id` | String | Pre-inference gate authorization identifier |
-| `references` | Array | Related anchor fingerprints |
-| `revocation_target` | String | Fingerprint of the anchor being revoked |
-| `revocation_reason` | Integer | Revocation reason code (0-6) |
-| `lifecycle_chain_id` | String | Lifecycle chain identifier (Section 13) |
-| `lifecycle_parent` | String | Parent anchor fingerprint in the chain |
-| `lifecycle_stage` | String | Current lifecycle stage |
-| `escalation_chain_id` | String | Cross-chain escalation link |
+#### 4.1.1 Legacy Formula (Pre-v1.1.0)
 
-### 12.3 Revocation Reason Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | unspecified |
-| 1 | model_recall |
-| 2 | policy_violation |
-| 3 | data_contamination |
-| 4 | consent_withdrawal |
-| 5 | regulatory_order |
-| 6 | error_correction |
-
-### 12.4 Validation Rules
-
-- `procedure_id` MUST be a valid UCT procedure identifier.
-- `clearing_level` MUST be an integer in the range [0, 3].
-- `anchor_fingerprint` MUST be exactly 12 lowercase hexadecimal characters.
-- `anchor_epoch` MUST be a positive integer.
-- `fingerprint_timestamp_ms` MUST be a positive integer.
-- `lifecycle_chain_id`, if present, MUST match the pattern `^LC-[0-9a-f]{16}$`.
-
----
-
-## 13. Lifecycle Chains
-
-*This section is normative.*
-
-### 13.1 Chain Identifier Formula
-
-A lifecycle chain identifier links multiple witness anchors into a single operational sequence. The chain ID is computed as:
+Anchors minted before v1.1.0 used the formula without the `WITNESS:` prefix
+and with reversed tenant/procedure order:
 
 ```
-chain_id = "LC-" + SHA256("LIFECYCLE:{tenant_id}:{procedure_id}:{initiator_fingerprint}:{timestamp_ms}").hex()[:16]
+{procedure_id}:{tenant_id}:{factor_a}:{factor_b}:{factor_c}:{timestamp_ms}
 ```
 
-Where:
-- `tenant_id` is the tenant that initiates the chain
-- `procedure_id` is the procedure of the initiating anchor
-- `initiator_fingerprint` is the fingerprint of the first anchor in the chain
-- `timestamp_ms` is the millisecond timestamp of the initiating anchor
+Verifiers SHOULD attempt the canonical formula first, then fall back to the
+legacy formula if verification fails. This supports backward compatibility
+with pre-v1.1.0 anchors without ambiguity (the `WITNESS:` prefix is
+unambiguous).
 
-The chain ID is a fixed-length string: the literal prefix `LC-` followed by 16 lowercase hexadecimal characters.
+### 4.2 Hash Computation
 
-### 13.2 Lifecycle Stages
+```
+fingerprint = SHA-256(input_string)[0:12]
+```
 
-The following canonical stage codes are defined:
+1. Encode the input string as UTF-8 bytes
+2. Compute the SHA-256 digest
+3. Convert to lowercase hexadecimal
+4. Truncate to the first **12 characters**
 
-| Stage | Code | Terminal |
+### 4.3 Determinism Guarantee
+
+Given identical inputs, the fingerprint MUST always produce the identical output.
+This property enables cross-platform verification: an anchor minted in Python
+can be verified in TypeScript, Go, Rust, or any language with SHA-256 support.
+
+### 4.4 Reference Computation
+
+```
+Input:  "WITNESS:DEMO_ENCLAVE:SC-7.6:4:3:-1:1773316622000"
+SHA-256: 96b7d56c0245... (64 hex chars)
+Fingerprint: 96b7d56c0245 (first 12 hex chars)
+```
+
+### 4.5 Why 12 Characters?
+
+Twelve hexadecimal characters provide 48 bits of entropy (2^48 = ~281 trillion
+combinations). This provides collision resistance sufficient for compliance
+ledgers while keeping anchors human-readable and auditor-friendly. The full
+64-character digest SHOULD be stored alongside the anchor for maximum
+verification fidelity.
+
+## 5. Witness Requirements
+
+A valid SWT3 witness MUST satisfy all of the following:
+
+### 5.1 Factor Integrity
+
+All three factors (`factor_a`, `factor_b`, `factor_c`) MUST be recorded at the
+moment of observation. Factors MUST be integer values. Implementations SHOULD
+use signed 32-bit integers minimum.
+
+### 5.2 Temporal Binding
+
+The `timestamp_ms` MUST be captured at the moment of witnessing, not at a later
+processing stage. Millisecond precision is REQUIRED. The `epoch` field in the
+anchor token uses second precision (floor of `timestamp_ms / 1000`).
+
+### 5.3 Clearing Protocol (Phase 3)
+
+The Clearing phase is the third pillar of SWT3 and the mechanism by which data
+sovereignty is achieved without sacrificing integrity.
+
+After an anchor is minted and its fingerprint is sealed, the **raw evidence**
+used during Provenance  --  command outputs, file contents, API responses, log
+entries, sensor readings, and any other source telemetry  --  SHOULD be purged
+from the witness system. Only the **Factor Matrix** (factor_a, factor_b,
+factor_c), the **timestamp**, and the **anchor token** should persist.
+
+The cryptographic proof survives the data. The fingerprint remains independently
+verifiable even after the raw evidence that produced the factors has been
+destroyed. This is the core insight of SWT3: **integrity does not require
+data retention**.
+
+#### 5.3.1 Clearing Levels
+
+Implementations SHOULD support one or more of the following clearing levels:
+
+| Level | Name | Behavior |
 |-------|------|----------|
-| `initiated` | 0 | No |
-| `checkpoint` | 1 | No |
-| `escalated` | 2 | No |
-| `resolved` | 3 | Yes |
-| `abandoned` | 4 | Yes |
-| `superseded` | 5 | Yes |
+| 0 | **RETAIN** | Raw evidence retained alongside factors. Maximum forensic capability, maximum attack surface. |
+| 1 | **FACTOR-ONLY** | Raw evidence purged after factor extraction. Factors and anchor persist. RECOMMENDED default. |
+| 2 | **ANCHOR-ONLY** | Factors purged after fingerprint computation. Only the anchor token persists. Verification requires the verifier to have obtained factors through a separate channel. |
+| 3 | **SOVEREIGN** | All local evidence destroyed after anchor is transmitted to the verifier. The minting system retains nothing. Maximum data sovereignty. |
 
-- The first anchor in a lifecycle chain MUST have `lifecycle_stage` set to `initiated`.
-- Subsequent anchors in the chain MUST reference the `lifecycle_chain_id` of the initiating anchor.
-- The `lifecycle_parent` field SHOULD contain the fingerprint of the immediately preceding anchor in the chain.
-- A chain is considered closed when any anchor in the chain has a terminal stage.
-- No further non-terminal anchors SHOULD be minted for a closed chain.
+The clearing level SHOULD be configurable per enclave or per sensitivity
+classification. Implementations MUST document their clearing level in their
+security posture.
 
-### 13.3 Cross-Chain Escalation
+#### 5.3.2 Clearing and Verification Compatibility
 
-When an event in one lifecycle chain triggers a new chain (e.g., a drift detection escalates to an emergency override), the new chain's initiating anchor SHOULD include the `escalation_chain_id` field referencing the originating chain.
+Clearing levels 0 and 1 support full self-contained verification (the verifier
+has both the anchor and the factors). Clearing levels 2 and 3 require
+out-of-band factor exchange  --  the factors must be transmitted to the verifier
+before or at the time of clearing. This is appropriate for classified or
+air-gapped environments where the minting system cannot retain any data.
 
----
+#### 5.3.3 Irreversibility
 
-## 14. Provider-Deployer Evidence Chains
+Clearing MUST be irreversible. Once raw evidence is purged, it MUST NOT be
+recoverable from the witness system. The purpose of clearing is to ensure
+that sensitive telemetry cannot be exfiltrated, subpoenaed, or reverse-engineered
+from the witness ledger. Implementations that offer a "soft delete" or
+"recoverable purge" MUST NOT claim SWT3 Clearing compliance.
 
-*This section is normative.*
+### 5.4 Non-Repudiation
 
-### 14.1 Problem Statement
+Once an anchor is minted, the factors used to compute its fingerprint MUST be
+immutable. Any system that stores anchors MUST prevent modification of:
+- `factor_a`, `factor_b`, `factor_c`
+- `fingerprint_timestamp_ms`
+- `swt_token`
 
-Organizations that provide AI models to third parties (whether through open-weight distribution, API access, cloud platform hosting, or embedded integration) face a common challenge: demonstrating that downstream deployers are operating the model with appropriate controls, without accessing the deployer's infrastructure or proprietary data.
+Modification of any of these fields will cause verification to return `TAMPERED`.
 
-### 14.2 Delegation Anchors
+## 6. Verification
 
-A model provider MAY mint delegation anchors (procedure AI-DEL.1) to formally record the relationship between the provider's tenant and one or more deployer tenants.
+### 6.1 Single Anchor Verification
 
-The delegation anchor encodes:
-- `factor_a`: Number of deployer tenants in the delegation scope
-- `factor_b`: Number of required procedures in the delegation policy
-- `factor_c`: Delegation type code (0 = open-weight, 1 = API, 2 = cloud platform, 3 = embedded)
+To verify an anchor, a verifier needs:
+1. The SWT3 anchor token (to extract the claimed fingerprint)
+2. The original factors: `procedure_id`, `tenant_id`, `factor_a`, `factor_b`, `factor_c`, `timestamp_ms`
 
-### 14.3 Deployer Attestation Flow
-
-1. The deployer integrates the SWT3 SDK and witnesses operations under their own tenant identity.
-2. Anchors flow to the deployer's own tenant, maintaining tenant isolation.
-3. The provider queries aggregated coverage metrics across deployer tenants via the platform API.
-4. The provider sees anchor fingerprints, procedure coverage percentages, verdict distributions, and clearing levels. The provider never sees raw deployer data.
-
-### 14.4 Evidence Aggregation Without Data Access
-
-The evidence aggregation model preserves deployer sovereignty:
-
-- Providers see: procedure coverage percentage, verdict distribution (PASS/FAIL counts), clearing level distribution, anchor count, most recent anchor timestamp.
-- Providers do not see: raw factors, prompt/response hashes, model identifiers, agent identifiers, contextual metadata, or any field subject to clearing.
-- Deployers control: their own clearing level, which procedures they witness, and whether they participate in provider-aggregated reporting.
-
-### 14.5 Cross-Provider Interoperability
-
-A deployer building applications on models from multiple providers uses a single SWT3 integration. The same anchors, minted under the deployer's tenant, can be referenced by any provider with an established delegation relationship. This eliminates the need for deployers to maintain separate compliance systems per provider.
-
-### 14.6 Distribution Model Neutrality
-
-The delegation mechanism is identical regardless of how the model reaches the deployer:
-
-| Distribution Model | Example | Delegation Type Code |
-|---|---|---|
-| Open-weight | Model weights distributed for local deployment | 0 |
-| API access | Model served via inference API | 1 |
-| Cloud platform | Model hosted on provider's cloud infrastructure | 2 |
-| Embedded | Model integrated into provider's application | 3 |
-
----
-
-## 15. Universal Control Taxonomy
-
-*This section is informative.*
-
-### 15.1 Overview
-
-The Universal Control Taxonomy (UCT) defines the namespace for all valid procedure identifiers. As of version 1.0, the taxonomy contains 113 AI-specific procedures organized across 61 namespaces.
-
-### 15.2 Namespace Registry
-
-Procedure identifiers follow the format `AI-{NAMESPACE}.{NUMBER}` for AI-specific procedures. The following namespaces are defined:
-
-INF, MDL, GRD, SEC, RAG, SKILL, TOOL, ID, ACC, REV, FAIR, DATA, HITL, EXPL, CHAIN, VIO, CHR, SAFE, HW, TRUST, FIN, GOV, ENV, MARK, BASE, LIC, SBOM, REDTEAM, CONSENT, MULTI, DRIFT, AUDIT, INCIDENT, PMM, PERF, ROBUST, CYBER, TRANS, WATERMARK, DPIA, AUTO, DUALUSE, SUPPLY, METAGOV, DEL, CAP, COST, JUR, LCM, LOG, IMPACT, MOB, EMRG, ASSESS, ENG, REACH, DECOM, RECOMM, FREEZE
-
-Non-AI procedures use domain-specific prefixes (e.g., `SC-7.6` for network security, `AC-2.1` for access control).
-
-### 15.3 Namespace Governance
-
-Published namespace codes are never removed, renamed, or redefined. New namespace codes require demonstrated need across two or more regulatory frameworks. The UCT Registry is the authoritative source for all procedure definitions and is publicly available.
-
-### 15.4 Framework Crosswalks
-
-Each procedure in the UCT Registry is mapped to one or more regulatory framework requirements through bidirectional crosswalks. As of version 1.0, crosswalks are maintained for 36 regulatory frameworks across 12 jurisdictions.
-
----
-
-## 16. Conformity Requirements
-
-*This section is normative.*
-
-### 16.1 Conformance Levels
-
-This specification defines three conformance levels:
-
-**Level 1: Minimal**
-
-An implementation at Level 1 MUST:
-- Compute fingerprints using the canonical formula (Section 7.1)
-- Support verification against both canonical and legacy formulas (Section 7.4)
-- Implement HMAC-SHA256 signing (Section 10.1)
-- Support all four clearing levels (Section 9.1)
-- Preserve CJT fields at all clearing levels (Section 9.3)
-- Pass all fingerprint, signing, and hash test vectors (Section 18)
-
-**Level 2: Standard**
-
-An implementation at Level 2 MUST satisfy all Level 1 requirements and additionally:
-- Support lifecycle chain identifiers (Section 13)
-- Support CJT fields (jurisdiction, legal_basis, purpose_class)
-- Support revocation anchors (procedure AI-REV.1, revocation reason codes per Section 12.3)
-- Support the full witness payload schema (Section 12)
-
-**Level 3: Full**
-
-An implementation at Level 3 MUST satisfy all Level 2 requirements and additionally:
-- Support ML-DSA-65 signing (Section 10.2)
-- Support profile signing (Section 10.3)
-- Support provider-deployer delegation anchors (Section 14)
-- Support lifecycle chain test vectors (Section 18)
-
-### 16.2 Conformity Statement
-
-An implementation conforms to this specification at a given level if and only if it satisfies all MUST-level requirements for that level and all levels below it. Conformance is independently verifiable via the test vectors in Section 18.
-
-### 16.3 Partial Conformance
-
-An implementation that satisfies some but not all requirements of a given level MUST NOT claim conformance at that level. It MAY claim conformance at the highest level for which all requirements are satisfied.
-
----
-
-## 17. Security Considerations
-
-*This section is informative.*
-
-### 17.1 Fingerprint Properties
-
-Fingerprints are 12 hexadecimal characters (48 bits of entropy from the SHA-256 output). This truncation is intentional: fingerprints serve as evidence identifiers, not as security tokens. The full SHA-256 digest is not needed because:
-
-- Fingerprints are not secrets. They appear in anchor tokens, payloads, and verification interfaces.
-- Collision resistance at 48 bits is sufficient for evidence identification within a single tenant's anchor population.
-- The full SHA-256 is recoverable by any party with knowledge of the inputs.
-
-### 17.2 Signing Key Security
-
-- HMAC-SHA256 signing keys provide payload authentication but not non-repudiation. A party with the signing key can mint anchors indistinguishable from the original.
-- ML-DSA-65 keys provide both authentication and non-repudiation.
-- Ed25519 keys used for W3C Verifiable Credential signing are higher sensitivity than HMAC keys. Compromise of an Ed25519 private key enables universal forgery of verifiable credentials that will pass any external verifier.
-
-### 17.3 Clearing as Privacy Mechanism
-
-Clearing levels provide information density control, not encryption. Clearing at level 1+ ensures that raw prompts, responses, and operational data never leave the developer's infrastructure. However, the metadata that does survive (hashes, factors, model identifiers at levels 0-2) could be correlated with external data sources by a sufficiently motivated adversary.
-
-Organizations processing highly sensitive data SHOULD use clearing level 2 or 3.
-
-### 17.4 Domain Separation
-
-The `WITNESS:` prefix in the fingerprint formula provides domain separation, preventing cross-protocol collision. The following domain separation prefixes are reserved by this specification:
-
-- `WITNESS:` -- Fingerprint computation
-- `LIFECYCLE:` -- Lifecycle chain ID computation
-- `PROFILE:` -- Model trust profile signing
-- `SWT3:LEAF:` -- Merkle tree leaf hashing
-- `SWT3:NODE:` -- Merkle tree node hashing
-
-Implementations MUST NOT use these prefixes for other purposes.
-
----
-
-## 18. Test Vectors
-
-*This section is normative.*
-
-All conforming implementations MUST produce identical outputs for the following test vectors. The complete test vector suite is available at `test-vectors.json` in the reference implementation repository.
-
-### 18.1 Fingerprint Vectors
-
-Formula: `SHA256("WITNESS:{tenant}:{proc}:{fa}:{fb}:{fc}:{ts_ms}").hex()[:12]`
-
-| ID | Tenant | Procedure | fa | fb | fc | Timestamp (ms) | Expected |
-|----|--------|-----------|----|----|----|----|----------|
-| 1 | ENCLAVE_PROD | AI-INF.1 | 1 | 1 | 0 | 1774800000000 | `2e16e2fe92dd` |
-| 2 | AWS_NITRO_ENCLAVE | AI-INF.2 | 5000 | 8000 | 1 | 1774800001000 | `4ed784765e6c` |
-| 3 | ENCLAVE_PROD | AI-GRD.1 | 2 | 3 | 0 | 1774800002000 | `a0aa7669ae6f` |
-| 4 | AZURE_TRUSTED_EXEC | AI-MDL.1 | 1 | 0 | 1 | 1774800003000 | `c36d477b3c2d` |
-| 5 | ACME_DEFENSE | AI-FAIR.1 | 15 | 15 | 0 | 1774800004000 | `53180f5ae221` |
-| 6 | SAAS_TENANT_42 | AI-MDL.2 | 1 | 1 | 0 | 1774800005000 | `c7e61c16ee94` |
-| 7 | AWS_NITRO_ENCLAVE | AI-EXPL.2 | 85 | 92 | 0 | 1774800006000 | `2f2b989bb5c6` |
-| 8 | ENCLAVE_PROD | AI-HITL.1 | 1 | 1 | 0 | 1774800007000 | `afbab8c9e098` |
-| 9 | DEMO_ENCLAVE | AI-INF.3 | 10000 | 9500 | 0 | 1774800008000 | `05010820e5a4` |
-| 10 | AZURE_TRUSTED_EXEC | AI-DATA.1 | 0 | 0 | 0 | 1774800009000 | `289eb7452237` |
-
-The complete test vector suite contains 55 fingerprint vectors covering edge cases (all-zero factors, large values, multiple tenant types, all clearing levels). See `test-vectors.json` for the full set.
-
-### 18.2 Signing Vectors
-
-Algorithm: HMAC-SHA256. Key: `test-signing-key`
-
-| ID | Fingerprint | Agent ID | Expected Signature |
-|----|-------------|----------|--------------------|
-| 1 | `019eaf85fcba` | `agent-007` | `00ff82da1659e2e6a7fa875c781ed4635976c8136b8dc2c24672adb8673cb112` |
-| 2 | `019eaf85fcba` | *(none)* | `d844102f40fb5dad449a2f57922f5b23f73ffb3a026b5bd5fd537ebe5c6c44d0` |
-
-Vector 1 message: `019eaf85fcba:agent-007`
-Vector 2 message: `019eaf85fcba`
-
-### 18.3 Hash Vectors
-
-Formula: `SHA256(input).hex()[:16]`
-
-| Input | Expected |
-|-------|----------|
-| `Hello, world!` | `315f5bdb76d078c4` |
-| *(empty string)* | `e3b0c44298fc1c14` |
-| `What is the meaning of life?` | `318f903a83b4d30d` |
-| `gpt-4o-2024-11-20:fp_abc123` | `0f6b04241d237297` |
-| `You are a helpful fraud detection assistant. Flag any transaction over $10,000.` | `479eaa1ee804f844` |
-
-### 18.4 Profile Signing Vectors
-
-| Model | Hash | Procedures | Score | Generated At | Valid Until | Expected Message |
-|-------|------|-----------|-------|-------------|------------|-----------------|
-| `gpt-4o` | `abc123` | AI-GRD.1, AI-INF.1, AI-MDL.1 | 0.667 | 1700000000000 | 1700086400000 | `PROFILE:gpt-4o:abc123:1700000000000:1700086400000:AI-GRD.1,AI-INF.1,AI-MDL.1:0.667` |
-
-Signing key: `test-key-123`
-Expected HMAC-SHA256: `bdce7111c3a6e9968a5de1973f3a977aadb42c2d7327f38de79729019c7baa42`
-
-Note: Procedures in the message MUST be sorted lexicographically.
-
-### 18.5 ML-DSA-65 Vectors
-
-ML-DSA-65 signatures are non-deterministic. Conformance is verified by round-trip testing:
-
-1. Generate a keypair from seed `60ef3bf0e31e764953cf67c6806d0c6512ce54a6e83a9328b7042b3896cf8f40` (32 bytes, hex).
-2. The derived public key MUST be 1952 bytes (3904 hex characters).
-3. Sign message `019eaf85fcba:agent-007`. The signature will differ on each invocation.
-4. Verify the signature using the derived public key. Verification MUST succeed.
-5. Sign message `019eaf85fcba` (without agent_id). Verification MUST succeed.
-6. Verify that the public key derived from the same seed is identical across implementations.
-
-### 18.6 Lifecycle Chain Vectors
-
-Formula: `"LC-" + SHA256("LIFECYCLE:{tenant}:{proc}:{fp}:{ts_ms}").hex()[:16]`
-
-| ID | Tenant | Procedure | Initiator FP | Timestamp (ms) | Expected Chain ID |
-|----|--------|-----------|-------------|---------|-------------------|
-| 1 | ENCLAVE_PROD | AI-EMRG.1 | 2e16e2fe92dd | 1774800000000 | `LC-7a38936db8ecec94` |
-| 2 | ENCLAVE_PROD | AI-DRIFT.2 | 4ed784765e6c | 1774800001000 | `LC-60c720a257e2d3b9` |
-| 3 | AWS_NITRO_ENCLAVE | AI-ASSESS.1 | 66209137510b | 1774800010000 | `LC-9caadba335ca64cd` |
-
----
-
-## 19. Registry Considerations
-
-*This section is informative.*
-
-### 19.1 Reserved Prefixes
-
-The following domain separation prefixes are reserved by this specification and MUST NOT be used by implementations for other purposes:
-
-| Prefix | Usage | Section |
-|--------|-------|---------|
-| `WITNESS:` | Fingerprint computation | 7 |
-| `LIFECYCLE:` | Lifecycle chain ID computation | 13 |
-| `PROFILE:` | Profile signing messages | 10.3 |
-| `SWT3:LEAF:` | Merkle tree leaf hashing | N/A (separate specification) |
-| `SWT3:NODE:` | Merkle tree node hashing | N/A (separate specification) |
-
-### 19.2 UCT Registry Governance
-
-The UCT Registry is maintained as a public JSON document (`uct-registry.json`) in the reference implementation repository. Changes to the registry follow these rules:
-
-- Published procedure identifiers are never removed, renamed, or redefined.
-- New procedures require demonstrated need across two or more regulatory frameworks.
-- New namespaces require review and approval through the governance process described in Section 4.
-- Registry versions are tagged and immutable once published.
-
-### 19.3 Provider Code Registration
-
-Provider codes (Section 6.1) are not centrally registered. Implementations MAY use any uppercase alphanumeric string as a provider code. The following codes are in common use: `VULTR`, `AWS`, `AZURE`, `GCP`, `HYBRID`, `ON-PREM`.
-
----
-
-## 20. Protocol Adoption Rationale
-
-*This section is informative.*
-
-This section describes the considerations that motivate adoption of an open, standardized witness protocol rather than proprietary alternatives.
-
-**Assessor portability.** When multiple assessment bodies (Notified Bodies, C3PAOs, auditors) understand a common evidence format, conformity assessments are faster and less expensive. A proprietary evidence format requires each assessment body to learn and maintain custom verification tooling per provider.
-
-**Deployer interoperability.** A deployer building applications on models from multiple providers needs one compliance system, not N proprietary formats. SWT3 is provider-neutral and distribution-model-neutral. A single SDK integration produces evidence that is valid across all provider relationships.
-
-**Verification independence.** Any party can recompute a fingerprint using standard SHA-256 with no proprietary SDK, API access, or platform account. Verification requires only the input components and a conforming SHA-256 implementation, both of which are universally available.
-
-**Cross-provider network effects.** Each new provider that adopts SWT3 reduces compliance cost for every deployer already using it, and each new deployer reduces the marginal cost of the next provider's adoption. This creates a positive-sum dynamic where early adoption yields compounding returns.
-
-**Governance participation.** Organizations implementing and deploying SWT3 are positioned to participate in the governance of the protocol as it matures. Early adopters of open protocols shape the standards that follow.
-
-Historical precedent supports this pattern. TLS (formerly SSL) began as a single-vendor protocol and became the universal transport security layer. SWIFT began as a cooperative of 239 banks and became the global financial messaging standard. XBRL began at a single accounting body and became the international standard for regulatory financial reporting. In each case, the protocol's value derived from its neutrality and universal adoption, not from any single vendor's implementation.
-
----
-
-## 21. Reference Implementations
-
-*This section is informative.*
-
-Conforming reference implementations are available in seven programming languages. All implementations achieve 100% parity on the test vectors in Section 18.
-
-| Language | Package | Registry |
-|----------|---------|----------|
-| Python | `swt3-ai` | PyPI |
-| TypeScript | `@tenova/swt3-ai` | npm |
-| Rust | `swt3-ai` | crates.io |
-| C# | `swt3-ai` | NuGet |
-| Ruby | `swt3-ai` | RubyGems |
-| Swift | `swt3-ai` | Swift Package Index |
-| Kotlin | `swt3-ai` | Maven Central |
-
-A Model Context Protocol (MCP) server implementation is also available:
-
-| Type | Package | Registry |
-|------|---------|----------|
-| MCP Server | `@tenova/swt3-mcp` | npm |
-
----
-
-## 22. Bibliography
-
-*This section is informative.*
-
-The following documents are referenced informatively in this specification:
-
-- **Regulation (EU) 2024/1689** -- Artificial Intelligence Act (European Parliament and Council, 2024)
-- **NIST AI 100-1** -- Artificial Intelligence Risk Management Framework (NIST, 2023)
-- **ISO/IEC 42001:2023** -- Artificial intelligence management system (ISO/IEC, 2023)
-- **ISO/IEC 23894:2023** -- Guidance on AI risk management (ISO/IEC, 2023)
-- **W3C Verifiable Credentials Data Model v2.0** -- (W3C, 2024)
-- **NIST SP 800-53 Rev. 5** -- Security and Privacy Controls for Information Systems and Organizations (NIST, 2020)
-- **CMMC Model 2.0** -- Cybersecurity Maturity Model Certification (DoD, 2021)
-
----
-
-## 23. Auditor Display Requirements
-
-*This section is normative.*
-
-This section defines minimum display requirements for tools that render SWT3 Witness Anchors to human assessors. Compliance with this section is OPTIONAL for implementations that do not render anchors to humans (e.g., machine-to-machine pipelines). Compliance is REQUIRED for any tool that claims "SWT3 Verified Display" conformity.
-
-When multiple tools present SWT3 anchors in different formats, assessors must learn each tool's layout before they can evaluate evidence. This increases assessment time and cost, and introduces the risk that a non-standard display obscures critical information (e.g., a truncated fingerprint that cannot be independently verified, or a missing timestamp that prevents timeline reconstruction). A uniform display standard ensures that assessors who learn to read SWT3 evidence in one tool can immediately read it in any other, reducing assessment friction and increasing confidence in the evidence chain. This is the same principle that drives standardized formats in financial messaging (SWIFT MT), transport security indicators (TLS certificate displays), and regulatory filings (XBRL).
-
-### 23.1 Anchor Decomposition Display
-
-When rendering a single witness anchor to a human assessor, a conforming display MUST present the following fields, in this order:
-
-| # | Field | Display Label | Format | Requirement |
-|---|-------|--------------|--------|-------------|
-| 1 | Full anchor token | "Witness Anchor" | Monospace, untruncated | MUST |
-| 2 | Protocol identifier | "Protocol" | Literal "SWT3" | MUST |
-| 3 | Deployment tier | "Tier" | Full label: Enclave, SaaS, or Hybrid | MUST |
-| 4 | Provider | "Provider" | Uppercase alphanumeric | MUST |
-| 5 | UCT domain | "Domain" | Uppercase | MUST |
-| 6 | Procedure ID | "Procedure" | Original punctuated form (e.g., AI-INF.1) | MUST |
-| 7 | Verdict | "Verdict" | PASS or FAIL with semantic color per Section 23.2 | MUST |
-| 8 | Timestamp | "Witnessed" | Per Section 23.5 | MUST |
-| 9 | Fingerprint | "Fingerprint" | Per Section 23.3 | MUST |
-
-Implementations SHOULD also display the following when available in the witness payload:
-
-| Field | Display Label | Source |
-|-------|--------------|--------|
-| Factor values | "Evidence Factors" | factor_a, factor_b, factor_c from payload |
-| Signing status | "Signature" | "Verified", "Unsigned", or "Invalid" |
-| Clearing level | "Clearing Level" | Integer 0-3 with label (Analytics, Standard, Sensitive, Classified) |
-| Merkle inclusion | "Merkle Proof" | "Available" or "Unavailable" |
-| Lifecycle chain | "Chain ID" | lifecycle_chain_id if present |
-| Agent identity | "Agent" | agent_id if present |
-
-### 23.2 Verdict Color Semantics
-
-Conforming displays MUST use the following semantic color mapping:
-
-| Verdict | Required Color Family | HSL Hue Range | Reference Hex | Prohibited Colors |
-|---------|----------------------|---------------|---------------|-------------------|
-| PASS | Green | 100-160 | `#16a34a` | Red, amber, gray |
-| FAIL | Red | 340-20 | `#dc2626` | Green, blue, gray |
-| INHERITED | Blue | 190-230 | `#2563eb` | Red, green |
-
-The exact shade within each family is implementation-defined. Implementations MUST NOT use identical colors for PASS and FAIL. Implementations MUST NOT render verdicts without visual differentiation.
-
-Implementations targeting markets where red and green carry inverted cultural semantics (e.g., East Asian financial conventions) MAY swap hue ranges provided the text label requirement below is satisfied and PASS/FAIL remain visually distinguishable.
-
-For print media and accessibility: conforming displays MUST include a text indicator ("PASS"/"FAIL" label, checkmark/cross symbol, or equivalent) in addition to color. Color MUST NOT be the sole differentiator.
-
-### 23.3 Fingerprint Display Rules
-
-- Fingerprints MUST be rendered in a monospace typeface.
-- Fingerprints MUST NOT be truncated; all 12 hexadecimal characters MUST be visible without user interaction.
-- Fingerprints MUST be rendered in lowercase hexadecimal.
-- Implementations SHOULD provide a copy-to-clipboard affordance.
-- Implementations MUST NOT apply word-wrap, hyphenation, or line-breaking within a fingerprint string.
-
-Example of a correctly rendered fingerprint: `2e16e2fe92dd`
-
-### 23.4 Verification Affordance
-
-A conforming display MUST include at least one of the following verification mechanisms:
-
-(a) A hyperlink to a public verification endpoint where the assessor can independently recompute the fingerprint from its input components.
-
-(b) An inline verification command using standard tools (e.g., a shell one-liner using SHA-256 utilities available on any POSIX system).
-
-(c) An embedded client-side verification function that recomputes the fingerprint in the assessor's browser or local environment with no network requests required.
-
-The verification affordance MUST NOT require the assessor to create an account, install proprietary software, pay a fee, or authenticate with any service. Verification independence is a core protocol guarantee (Section 11).
-
-**Example inline verification command** (option b):
-
+**Algorithm:**
 ```
-echo -n "WITNESS:my_tenant:AI-INF.1:1:0:2500:1774800000000" | sha256sum | cut -c1-12
-# Expected output: 2e16e2fe92dd
+1. Extract claimed_fingerprint from anchor token (last segment)
+2. Construct input: "{procedure_id}:{tenant_id}:{factor_a}:{factor_b}:{factor_c}:{timestamp_ms}"
+3. Compute SHA-256 of UTF-8 encoded input
+4. Truncate to 12 hex characters
+5. Compare: recomputed == claimed_fingerprint
+6. Return VERIFIED if match, TAMPERED if mismatch
 ```
 
-This command uses only standard POSIX utilities. The assessor substitutes the tenant ID, procedure ID, factor values, and timestamp from the anchor's witness payload. If the output matches the anchor's fingerprint, the anchor is verified.
+### 6.2 Verification Results
 
-### 23.5 Timestamp Display
+| Status | Meaning |
+|--------|---------|
+| `CERTIFIED TRUTH` | Fingerprints match. Evidence integrity confirmed. |
+| `TAMPERED` | Fingerprints do not match. Evidence or factors have been modified. |
+| `INVALID TOKEN` | Anchor does not conform to SWT3 format. |
+| `LEGACY ANCHOR` | Anchor predates timestamp-based fingerprinting. Cannot verify. |
 
-- Timestamps MUST be rendered in ISO 8601 format with an explicit UTC indicator (e.g., `2026-08-11T14:30:00Z`).
-- Implementations MAY additionally show a relative time (e.g., "2 hours ago") but MUST NOT use relative time as the sole representation.
-- Raw epoch integers MUST NOT be displayed without an accompanying human-readable conversion.
+### 6.3 Enclave Integrity Verification
 
-### 23.6 Tabular Display of Multiple Anchors
+An enclave is a collection of anchors sharing a trust boundary (typically a
+single tenant or organization). Enclave integrity is computed as:
 
-When rendering multiple anchors in a table or list view, the following column order is REQUIRED for columns 1-2 and RECOMMENDED for columns 3-4:
+```
+1. Collect all anchor fingerprints in the enclave
+2. Sort fingerprints lexicographically
+3. Join with colons: "fp1:fp2:fp3:..."
+4. Compute SHA-256 of the joined string
+5. The full 64-character hex digest is the Enclave Integrity Signature
+```
 
-1. Procedure ID -- MUST be first column
-2. Verdict (with semantic color per Section 23.2) -- MUST be second column
-3. Witnessed (timestamp per Section 23.5) -- SHOULD be third column
-4. Fingerprint (monospace per Section 23.3) -- SHOULD be fourth column
+**Property:** The same set of anchors in the same state always produces the same
+signature. Any addition, removal, or modification of an anchor changes the
+signature. This enables point-in-time integrity snapshots.
 
-Columns 1 and 2 MUST NOT be reordered or omitted. Columns 3 and 4 MUST NOT be omitted but MAY appear in either order. Additional columns MAY be appended after column 4. Implementations SHOULD provide filtering by verdict (at minimum: ALL, PASS, FAIL). Implementations SHOULD provide sorting by timestamp.
+## 7. OSCAL Integration
 
-### 23.7 Evidence Provenance Watermark
+SWT3 anchors are designed to embed naturally into NIST OSCAL (Open Security
+Controls Assessment Language) documents.
 
-Evidence bundles carry a provenance tier indicating how the evidence was collected and verified. This is not a commercial designation; it describes the strength of the evidence chain. Displays that render evidence bundles SHOULD display the provenance tier when present in the bundle metadata:
+### 7.1 Assessment Results Mapping
 
-| Provenance | Display Label | Meaning | Visual Treatment |
-|------------|--------------|---------|-----------------|
-| demo | "LOCAL ONLY" | Evidence generated offline, not transmitted to any verification service | Amber or warning background |
-| connected | "CLOUD VERIFIED" | Evidence transmitted to and recorded by a verification service | Green or success background |
-| sovereign | "HARDWARE ATTESTED" | Evidence cryptographically bound to a hardware root of trust | Gold or distinguished background |
-
-When displayed, the provenance indicator SHOULD be visible without scrolling on initial render. Implementations MUST NOT misrepresent the provenance tier (e.g., displaying "HARDWARE ATTESTED" for evidence that was not hardware-attested).
-
-### 23.8 Conformity Evidence Package Display
-
-When rendering a Conformity Evidence Package (Section 24), a conforming display MUST present:
-
-- Package metadata: generator name and version, generation timestamp, framework identifier, tenant name
-- Anchor summary: total count, verdict distribution (PASS, FAIL, INHERITED counts), compliance rate
-- Gate decision: PASS, FAIL, or CONDITIONAL with semantic color
-- Merkle root and rollup date (if present), with proof verification status
-- Package integrity: the packageHash value and its verification status (valid/invalid)
-- Individual anchor decomposition per Section 23.1 for each anchor in the package
-
-### 23.9 Extensibility
-
-Conforming implementations MAY add fields, columns, visualizations, or interactive features beyond those specified in this section. Extensions MUST NOT alter the order, format, or semantics of required fields. Extensions MUST NOT replace required fields with alternative representations.
-
-### 23.10 Conformity Statement
-
-A display that satisfies all MUST-level requirements in this section MAY include the following conformity statement:
-
-> Conforms to SWT3-SPEC Section 23 (Auditor Display Standard)
-
-A display that does not satisfy all MUST-level requirements MUST NOT display this conformity statement or any variation that implies conformity with this section.
-
----
-
-## 24. Conformity Evidence Package
-
-*This section is normative.*
-
-A Conformity Evidence Package (CEP) is a self-contained, portable JSON document containing all witness evidence required for a conformity or compliance assessment. Any tool MAY produce a CEP. Any assessor tool that can parse JSON can consume one. The CEP format enables interoperability between evidence producers (SDKs, platforms, agents) and evidence consumers (assessor tools, GRC platforms, regulatory portals).
-
-### 24.1 Package Schema
-
-A conforming CEP MUST contain the following top-level structure:
+An SWT3 anchor maps to an OSCAL Assessment Result as follows:
 
 ```json
 {
-  "_meta": { },
-  "summary": { },
-  "anchors": [ ],
-  "merkle": null,
-  "packageHash": ""
+  "results": [{
+    "uuid": "<generated>",
+    "title": "SWT3 Automated Assessment",
+    "start": "<witnessed_at ISO-8601>",
+    "observations": [{
+      "uuid": "<generated>",
+      "title": "<procedure_id> Evidence Observation",
+      "description": "Automated evidence collection for <procedure_id>",
+      "methods": ["TEST"],
+      "subjects": [{
+        "subject-uuid": "<control-uuid>",
+        "type": "component"
+      }],
+      "relevant-evidence": [{
+        "description": "SWT3 Witness Anchor: <swt_token>",
+        "links": [{
+          "href": "#swt3-protocol",
+          "rel": "evidence-source"
+        }]
+      }],
+      "props": [
+        { "name": "swt3-anchor", "value": "<full SWT3 token>" },
+        { "name": "swt3-fingerprint", "value": "<12-char fingerprint>" },
+        { "name": "swt3-factor-a", "value": "<factor_a>" },
+        { "name": "swt3-factor-b", "value": "<factor_b>" },
+        { "name": "swt3-factor-c", "value": "<factor_c>" },
+        { "name": "swt3-timestamp-ms", "value": "<timestamp_ms>" }
+      ]
+    }],
+    "findings": [{
+      "uuid": "<generated>",
+      "title": "<procedure_id> Finding",
+      "target": {
+        "type": "objective-id",
+        "target-id": "<control-id>",
+        "status": {
+          "state": "<satisfied|not-satisfied>"
+        }
+      },
+      "related-observations": [{
+        "observation-uuid": "<observation-uuid-above>"
+      }]
+    }]
+  }]
 }
 ```
 
-### 24.2 Metadata Object
+### 7.2 Back-Matter Reference
 
-The `_meta` object MUST contain the following fields:
-
-| Field | Type | Description | Requirement |
-|-------|------|-------------|-------------|
-| format | string | Literal: `swt3-conformity-evidence-package` | MUST |
-| version | string | Semantic version of this format (currently "1.0") | MUST |
-| framework | string | Primary framework identifier (e.g., "NIST-800-53") | MUST |
-| generatedAt | string | ISO 8601 UTC timestamp of package generation | MUST |
-| generator | string | Name and version of the producing tool | MUST |
-| tenantId | string | Tenant identifier | MUST |
-| tenantName | string | Human-readable organization name | MUST |
-
-Additional fields MAY be included in `_meta`. Consumers MUST ignore unrecognized fields.
-
-### 24.3 Summary Object
-
-The `summary` object MUST contain the following fields:
-
-| Field | Type | Description | Requirement |
-|-------|------|-------------|-------------|
-| totalProcedures | integer | Total number of procedures assessed | MUST |
-| passing | integer | Count of PASS verdicts | MUST |
-| failing | integer | Count of FAIL verdicts | MUST |
-| inherited | integer | Count of INHERITED verdicts | MUST |
-| complianceRate | number | Percentage (0-100), passing / totalProcedures * 100 | MUST |
-| gateDecision | string | "PASS", "FAIL", or "CONDITIONAL" | MUST |
-
-### 24.4 Anchor Array
-
-The `anchors` array MUST contain one object per witness anchor. Each anchor object MUST contain:
-
-| Field | Type | Description | Requirement |
-|-------|------|-------------|-------------|
-| token | string | Full SWT3 anchor token string | MUST |
-| procedureId | string | Procedure identifier (e.g., "AI-INF.1") | MUST |
-| verdict | string | "PASS" or "FAIL" | MUST |
-| epoch | integer | Unix epoch seconds | MUST |
-| fingerprint | string | 12-character lowercase hex fingerprint | MUST |
-| factorA | number | First evidence factor | MUST |
-| factorB | number | Second evidence factor | MUST |
-| factorC | number | Third evidence factor | MUST |
-
-Each anchor object MAY also contain:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| clearingLevel | integer | 0-3 |
-| signature | string | HMAC-SHA256 hex signature |
-| agentId | string | Agent identity |
-| chainId | string | Lifecycle chain identifier |
-| jurisdictionCode | string | ISO 3166-1 jurisdiction |
-| legalBasis | string | Lawful processing basis |
-
-Anchors MUST be ordered by epoch ascending (oldest first). Consumers MUST NOT assume any other ordering.
-
-### 24.5 Merkle Object
-
-The `merkle` object contains Merkle rollup information. If no rollup data is available, the value MUST be `null`.
-
-When present, the `merkle` object MUST contain:
-
-| Field | Type | Description | Requirement |
-|-------|------|-------------|-------------|
-| root | string | SHA-256 Merkle root (hex) | MUST |
-| rollupDate | string | ISO 8601 date (YYYY-MM-DD) of the rollup | MUST |
-| anchorCount | integer | Number of anchors included in the rollup | MUST |
-| algorithm | string | Literal: `SWT3-DOMAIN-SEPARATED-SHA256` | MUST |
-
-The `merkle` object MAY also contain:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| tsaTimestamp | string | RFC 3161 TSA timestamp (ISO 8601) |
-| tsaUrl | string | TSA service URL |
-| proofAvailable | boolean | Whether inclusion proofs can be requested |
-
-### 24.6 Package Integrity
-
-The `packageHash` field MUST contain the SHA-256 hex digest of the canonical JSON serialization of the package with `packageHash` set to the empty string `""`. Canonical serialization is defined as: keys sorted lexicographically at all nesting levels, no whitespace outside quoted strings, UTF-8 encoding.
-
-Consumers SHOULD verify `packageHash` before trusting package contents. A mismatched hash indicates the package has been modified after generation.
-
-**Verification example** (using standard command-line tools):
-
-```
-# 1. Extract the package JSON and set packageHash to ""
-cat package.json | jq '.packageHash = ""' | jq -S -c '.' > canonical.json
-
-# 2. Compute SHA-256 of the canonical form
-sha256sum canonical.json | cut -d' ' -f1
-
-# 3. Compare output to the packageHash value in the original file
-```
-
-If the computed hash matches `packageHash`, the package has not been modified since generation.
-
-### 24.7 Framework-Specific Extensions
-
-Implementations MAY include a `frameworkExtensions` object at the top level containing framework-specific metadata (e.g., CMMC level, FedRAMP baseline, EU AI Act risk classification). The schema of `frameworkExtensions` is not defined by this specification. Consumers MUST ignore unrecognized extension fields.
-
-### 24.8 Versioning
-
-The `_meta.version` field follows semantic versioning. Minor version increments (e.g., 1.0 to 1.1) add optional fields only. Major version increments (e.g., 1.0 to 2.0) may change required fields or remove existing fields. Consumers SHOULD accept any package whose major version matches the consumer's supported major version.
-
-### 24.9 Complete Example
-
-*This subsection is informative.*
-
-The following is a complete, minimal Conformity Evidence Package containing three anchors (PASS, FAIL, and INHERITED) with a Merkle rollup:
+SWT3-enabled OSCAL documents SHOULD include a back-matter resource identifying
+the protocol:
 
 ```json
 {
-  "_meta": {
-    "format": "swt3-conformity-evidence-package",
-    "version": "1.0",
-    "framework": "NIST-800-53",
-    "generatedAt": "2026-08-11T14:30:00Z",
-    "generator": "axiom-sovereign-engine/5.42.0",
-    "tenantId": "acme-defense-001",
-    "tenantName": "ACME Defense Corp"
+  "back-matter": {
+    "resources": [{
+      "uuid": "<generated>",
+      "title": "SWT3 Protocol Specification v1.0",
+      "description": "Sovereign Witness Traceability Protocol for evidence integrity",
+      "props": [
+        { "name": "type", "value": "protocol-specification" },
+        { "name": "version", "value": "1.0.0" }
+      ],
+      "rlinks": [{
+        "href": "https://github.com/tenova-ai/libswt3/blob/main/SWT3-SPEC-v1.0.md"
+      }]
+    }]
+  }
+}
+```
+
+### 7.3 Verdict-to-OSCAL Status Mapping
+
+| SWT3 Verdict | OSCAL Finding Status |
+|-------------|---------------------|
+| `PASS` | `satisfied` |
+| `FAIL` | `not-satisfied` |
+| `INHERITED` | `satisfied` (with prop `inheritance-source`) |
+| `LAPSED` | `not-satisfied` (with prop `lapse-reason`) |
+| `UNKNOWN` | `not-satisfied` (with prop `assessment-pending: true`) |
+
+## 8. Transport
+
+### 8.1 JSON Evidence Factor
+
+The canonical transport format for SWT3 evidence is a JSON object:
+
+```json
+{
+  "swt3_version": "1.0",
+  "anchor": "SWT3-E-VULTR-NET-SC76-PASS-1773316622-96b7d56c0245",
+  "factors": {
+    "procedure_id": "SC-7.6",
+    "tenant_id": "DEMO_ENCLAVE",
+    "factor_a": 4,
+    "factor_b": 3,
+    "factor_c": -1,
+    "timestamp_ms": 1773316622000
   },
-  "summary": {
-    "totalProcedures": 3,
-    "passing": 1,
-    "failing": 1,
-    "inherited": 1,
-    "complianceRate": 33.3,
-    "gateDecision": "FAIL"
-  },
+  "verdict": "PASS",
+  "witnessed_at": "2026-03-18T12:00:00Z",
+  "metadata": {
+    "source": "example-collector-v1.0",
+    "check_type": "command",
+    "control_family": "SC"
+  }
+}
+```
+
+### 8.2 Batch Transport
+
+Multiple evidence factors MAY be transported as a JSON array:
+
+```json
+{
+  "swt3_version": "1.0",
+  "enclave_id": "DEMO_ENCLAVE",
   "anchors": [
-    {
-      "token": "SWT3-E-VULTR-AI-AIINF1-PASS-1774800000-2e16e2fe92dd",
-      "procedureId": "AI-INF.1",
-      "verdict": "PASS",
-      "epoch": 1774800000,
-      "fingerprint": "2e16e2fe92dd",
-      "factorA": 1,
-      "factorB": 0,
-      "factorC": 2500
-    },
-    {
-      "token": "SWT3-E-VULTR-AI-AIFAIR1-FAIL-1774800060-cb06b911a3c3",
-      "procedureId": "AI-FAIR.1",
-      "verdict": "FAIL",
-      "epoch": 1774800060,
-      "fingerprint": "cb06b911a3c3",
-      "factorA": 0,
-      "factorB": 3,
-      "factorC": 0
-    },
-    {
-      "token": "SWT3-E-VULTR-NET-SC76-PASS-1774800120-f0ed4dd73cc2",
-      "procedureId": "SC-7.6",
-      "verdict": "PASS",
-      "epoch": 1774800120,
-      "fingerprint": "f0ed4dd73cc2",
-      "factorA": 1,
-      "factorB": 0,
-      "factorC": 443,
-      "clearingLevel": 1,
-      "signature": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
-    }
+    { "anchor": "SWT3-...", "factors": {...} },
+    { "anchor": "SWT3-...", "factors": {...} }
   ],
-  "merkle": {
-    "root": "c22dcec3e8aa9a684f1b2e3d4c5a6b7890abcdef1234567890abcdef12345678",
-    "rollupDate": "2026-08-11",
-    "anchorCount": 390,
-    "algorithm": "SWT3-DOMAIN-SEPARATED-SHA256",
-    "tsaTimestamp": "2026-08-12T00:01:05Z",
-    "proofAvailable": true
-  },
-  "packageHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  "enclave_signature": "<64-char SHA-256 of sorted fingerprints>"
 }
 ```
 
-### 24.10 Assessor Validation Walkthrough
+### 8.3 Payload Signing and Server-Side Validation
 
-*This subsection is informative.*
+SDKs MAY sign witness payloads using HMAC-SHA256 to enable server-side
+authenticity verification. This provides a second layer of security beyond
+API key authentication: the API key authenticates transport, while the
+signing key authenticates payload origin.
 
-When an assessor receives a Conformity Evidence Package, the following three-step validation confirms the package has not been tampered with and the evidence is independently verifiable:
-
-**Step 1: Verify package integrity.** Set `packageHash` to `""`, serialize the JSON canonically (keys sorted, no whitespace), and compute SHA-256. Compare the result to the original `packageHash`. If they match, the package has not been modified since generation.
-
-**Step 2: Spot-check a fingerprint.** Select any anchor from the `anchors` array. Using the fingerprint formula from Section 7, recompute the fingerprint from the anchor's input components (tenant ID, procedure ID, factors, timestamp in milliseconds). If the recomputed fingerprint matches, the anchor is authentic.
-
+**Signature Formula (LOCKED):**
 ```
-echo -n "WITNESS:acme-defense-001:AI-INF.1:1:0:2500:1774800000000" | sha256sum | cut -c1-12
-# Expected: 2e16e2fe92dd
+message = agent_id ? "{fingerprint}:{agent_id}" : "{fingerprint}"
+signature = HMAC-SHA256(signing_key, message)  // 64-char lowercase hex
 ```
 
-**Step 3: Verify Merkle inclusion (if available).** If `merkle.proofAvailable` is `true`, request an inclusion proof for the spot-checked fingerprint from the verification service. Walk the proof from leaf to root using the domain-separated algorithm (Section 7). If the computed root matches `merkle.root`, the anchor was included in the daily rollup and has not been altered since the rollup was timestamped.
+Cross-language parity is required. All SDK implementations MUST produce
+identical signatures for the same inputs. Test vectors are provided in
+`test-vectors.json` (signing_vectors).
 
-If all three steps pass, the assessor has independent, cryptographic assurance that the evidence package is authentic and unmodified.
+**Server-Side Validation:**
+
+Compliant servers MUST implement progressive enforcement:
+
+1. If the payload carries no `payload_signature`, accept it (status: "unsigned").
+2. If the payload carries a `payload_signature` but the tenant has no
+   registered signing keys, accept it (status: "unverified").
+3. If the payload carries a `payload_signature` and the tenant has registered
+   signing keys, re-compute the HMAC for each active key. If any key produces
+   a matching signature, accept it (status: "verified"). If no key matches,
+   reject the payload with HTTP 422 (status: "failed").
+
+Signature comparison MUST use constant-time comparison to prevent timing
+side-channel attacks.
+
+Signing keys MUST be stored encrypted at rest. Implementations SHOULD use
+envelope encryption (e.g., AES-256-GCM with a server-side master key).
+
+The `payload_signature` field survives all clearing levels (0-3). It is
+classified as operational metadata, not evidence content.
+
+### 8.3.1 Key Identification Fields
+
+SDKs MAY include optional key identification metadata alongside the signature
+to enable efficient server-side validation and rotation auditing:
+
+- `signing_key_id` (string, optional) -- Identifies which registered key
+  produced the signature. When present, the server SHOULD look up that
+  specific key for O(1) validation rather than iterating all active keys.
+  If the key_id is not found or inactive, the server MUST fall back to
+  iterating all active keys before rejecting.
+
+- `signing_key_version` (integer, optional) -- Monotonically increasing
+  version counter for the same logical key. Set by the operator during key
+  rotation. Enables audit queries like "which key generation signed this
+  anchor?" without decrypting key material.
+
+These fields are NOT part of the HMAC message. The signing formula remains
+locked. They are routing and auditing metadata only.
+
+### 8.3.2 Signing Security Tiers
+
+Implementations SHOULD classify signing key posture into one of four tiers.
+This classification is informational -- servers MUST NOT reject payloads
+based on tier alone, but SHOULD record the tier in observations for audit.
+
+| Tier | Name | Key Storage | Rotation | Use Case |
+|------|------|-------------|----------|----------|
+| 0 | Development | Plaintext env var or config file | Manual, ad-hoc | Local development, CI test suites |
+| 1 | Standard | Encrypted at rest (AES-256-GCM or equivalent) | Manual with key_version tracking | Production SaaS deployments |
+| 2 | Enterprise | KMS-managed (AWS KMS, GCP CMEK, Azure Key Vault) | Automatic, policy-driven (30-90 day cycle) | Regulated enterprise, SOC 2 |
+| 3 | Sovereign | HSM-backed (FIPS 140-2 Level 3+) or OIDC ephemeral | Per-session or per-deployment | FedRAMP, defense, air-gapped enclaves |
+
+**Tier Requirements:**
+
+- **Tier 0**: No encryption requirement. Key MAY be stored in plaintext.
+  Suitable only for development and testing.
+
+- **Tier 1**: Key MUST be encrypted at rest using authenticated encryption
+  (AES-256-GCM or equivalent). Key material MUST NOT appear in logs,
+  environment variable dumps, or error messages. The Axiom reference
+  implementation uses AES-256-GCM with a server-side master key.
+
+- **Tier 2**: Key MUST be managed by a dedicated key management service.
+  Rotation MUST be automated with configurable policy (recommended: 90 days
+  maximum). Key material MUST never leave the KMS boundary in plaintext
+  except for the signing operation itself.
+
+- **Tier 3**: Key MUST be backed by a hardware security module (HSM)
+  certified to FIPS 140-2 Level 3 or higher, OR generated ephemerally via
+  OIDC identity binding (Sigstore/Fulcio model) where the key exists only
+  for the duration of the signing session. Air-gapped deployments MUST use
+  HSM-backed keys; cloud-native deployments MAY use OIDC ephemeral signing.
+
+**Compliance Mapping:**
+
+- NIST 800-53 SC-12 (Cryptographic Key Establishment): Tier 1+ satisfies.
+- CMMC L2 SC.L2-3.13.10 (Key Management): Tier 1+ satisfies.
+- FedRAMP Moderate SC-12: Tier 2+ recommended, Tier 3 for High.
+- EU AI Act Art. 15 (Cybersecurity): Tier 1+ for standard risk, Tier 2+
+  for high-risk AI systems.
+
+**Server Reporting:**
+
+When a server can determine the signing tier (e.g., from key metadata or
+tenant configuration), it SHOULD include `signing_tier` in the observations
+JSONB alongside `signature_status`.
+
+## 9. AI Witnessing Profile
+
+This section defines the application of SWT3 to artificial intelligence and
+machine learning systems. The AI Witnessing Profile enables cryptographic
+attestation of model behavior, safety controls, and operational integrity
+throughout the AI lifecycle.
+
+The AI Witnessing Profile is designed to satisfy requirements from:
+- **NIST AI RMF** (AI 100-1): MAP, MEASURE, MANAGE, GOVERN functions
+- **EU AI Act** (Regulation 2024/1689): Articles 9, 12, 13, 14, 72
+- **ISO/IEC 42001**: AI Management System controls
+- **NIST 800-53 AI family**: Controls prefixed AI- in the Axiom taxonomy
+
+### 9.1 AI Procedure Registry
+
+AI procedures use the `AI` UCT code and follow the naming convention
+`AI-{DOMAIN}.{SEQUENCE}`, where DOMAIN identifies the witnessing category.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `AI-INF.1` | Inference Provenance | Witness that a specific model produced a specific output | EU AI Act Art. 12 (Record-keeping), NIST AI RMF MEASURE 2.6 |
+| `AI-INF.2` | Inference Latency | Witness response time against SLA thresholds | NIST AI RMF MANAGE 2.2 |
+| `AI-INF.3` | Inference Volume | Witness request throughput for capacity governance | NIST AI RMF MANAGE 2.4 |
+| `AI-MDL.1` | Model Integrity | Witness that deployed weights match the approved registry hash | EU AI Act Art. 9(4)(b), NIST AI RMF MANAGE 1.3 |
+| `AI-MDL.2` | Model Version | Witness which model version served production traffic | EU AI Act Art. 12(2)(a) |
+| `AI-MDL.3` | Model Drift | Witness accuracy/performance degradation against baseline | NIST AI RMF MEASURE 1.1 |
+| `AI-GRD.1` | Guardrail Enforcement | Witness that required safety filters were active | EU AI Act Art. 9(4)(a), NIST AI RMF GOVERN 1.5 |
+| `AI-GRD.2` | Content Safety | Witness content filter activation and block rate | EU AI Act Art. 9(8) |
+| `AI-GRD.3` | PII Redaction | Witness PII detection and scrubbing before/after inference | GDPR Art. 25, NIST AI RMF GOVERN 1.7 |
+| `AI-FAIR.1` | Bias Measurement | Witness demographic parity or equalized odds metrics | EU AI Act Art. 10(2)(f), NIST AI RMF MEASURE 2.11 |
+| `AI-FAIR.2` | Fairness Threshold | Witness pass/fail against defined fairness bounds | NIST AI RMF MAP 2.3 |
+| `AI-DATA.1` | Training Data Provenance | Witness dataset hash at training time | EU AI Act Art. 10, NIST AI RMF MAP 4.1 |
+| `AI-DATA.2` | Training Data License | Witness that training data provenance includes license verification | EU AI Act Art. 53(1)(d) |
+| `AI-DATA.3` | Training Data Statistics | Witness summary statistics of training dataset (row count, feature count, class balance) | EU AI Act Art. 10(3), NIST AI RMF MAP 4.1 |
+| `AI-DATA.4` | Training Data PII Lifecycle | Witness pseudonymization, access restriction, or deletion of personal data used in training | EU AI Act Art. 10(5), GDPR Art. 25 |
+| `AI-HITL.1` | Human Review | Witness that a human reviewed an AI-generated decision | EU AI Act Art. 14, NIST AI RMF GOVERN 1.4 |
+| `AI-HITL.2` | Override Decision | Witness that a human overrode the AI recommendation | EU AI Act Art. 14(4)(a) |
+| `AI-EXPL.1` | Explainability | Witness that an explanation was generated alongside output | EU AI Act Art. 13, NIST AI RMF GOVERN 1.5 |
+| `AI-EXPL.2` | Confidence Score | Witness model confidence against minimum threshold | NIST AI RMF MEASURE 2.9 |
+| `AI-TOOL.1` | Tool Call | Witness an AI agent's tool/function call with outcome | EU AI Act Art. 14(4), NIST AI RMF MANAGE 4.2 |
+| `AI-ID.1` | Agent Identity | Witness that an AI agent's cryptographic identity was asserted | EU AI Act Art. 50(2), NIST AI RMF GOVERN 1.2 |
+| `AI-ACC.1` | Access Control | Witness an AI agent's access to external resources with scope | EU AI Act Art. 9(4)(c), NIST AI RMF MANAGE 2.3 |
+| `AI-REV.1` | Anchor Revocation | Witness the revocation of a previously-issued anchor with reason | EU AI Act Art. 12(3), GDPR Art. 17 |
+| `AI-SEC.1` | Adversarial Detection | Witness that adversarial threat detection was performed on an inference (prompt injection, data poisoning, model extraction) | EU AI Act Art. 15(4), NIST AI RMF MANAGE 3.2 |
+| `AI-SEC.2` | Input Validation | Witness that input was validated and sanitized before inference | EU AI Act Art. 15(3), NIST AI RMF MEASURE 2.7 |
+| `AI-RAG.1` | Context Retrieval Provenance | Witness what context chunks were retrieved and from which corpus in a RAG pipeline | EU AI Act Art. 12(2)(a), NIST AI RMF MAP 3.5 |
+| `AI-RAG.2` | Context Relevance | Witness similarity scoring and relevance thresholds for retrieved context chunks | EU AI Act Art. 10(2), NIST AI RMF MEASURE 2.6 |
+| `AI-MDL.5` | Weight File Integrity | Witness SHA-256 hash of actual model weight files for tamper detection | EU AI Act Art. 15(4), NIST AI RMF MANAGE 1.3 |
+| `AI-MDL.6` | Adapter Stack Attestation | Witness which LoRA/QLoRA/PEFT adapters are active on a base model | EU AI Act Art. 12(2)(b), NIST AI RMF MAP 2.3 |
+| `AI-MDL.7` | Quantization Attestation | Witness the quantization method applied to model weights | EU AI Act Art. 15(3), NIST AI RMF MEASURE 2.5 |
+| `AI-SKILL.1` | Skill Manifest Attestation | Witness which skills, tools, and plugins are loaded in an AI agent | EU AI Act Art. 12(2)(b), NIST AI RMF GOVERN 1.7 |
+| `AI-SKILL.2` | Memory Context Binding | Witness what persistent memory sources influenced an AI decision | EU AI Act Art. 12(2)(a), NIST AI RMF MAP 3.5 |
+| `AI-SKILL.3` | Reward Model Binding | Witness which RLHF/DPO reward model scored or filtered the output | EU AI Act Art. 9(4)(a), NIST AI RMF MEASURE 2.6 |
+| `AI-CHAIN.1` | Multi-Agent Chain Witnessing | Witness a handoff between agents in a multi-agent chain with cycle tracking | EU AI Act Art. 12(2)(a), NIST AI RMF MANAGE 4.1 |
+| `AI-VIO.1` | Violation Reporting | Witness a policy violation detected during or after inference | EU AI Act Art. 9(4)(a), NIST AI RMF MANAGE 3.2 |
+| `AI-CHR.1` | Agent Charter Attestation | Witness the charter or system prompt hash governing an agent's behavior | EU AI Act Art. 13, NIST AI RMF GOVERN 1.2 |
+| `AI-MDL.8` | Model Registry Check | Witness that a model was verified against an approved registry before deployment | EU AI Act Art. 51, NIST AI RMF MANAGE 1.3 |
+| `AI-HITL.3` | Reviewer Identity Binding | Witness the identity of the natural person who performed a human review or override | EU AI Act Art. 12(3)(d), Art. 14(5) |
+| `AI-SAFE.1` | Safe State Attestation | Witness that a stop or interrupt mechanism exists and the system reached safe state | EU AI Act Art. 14(4)(e), NIST AI RMF MANAGE 4.1 |
+| `AI-HW.1` | Hardware Attestation | Witness accelerator hardware inventory (GPU count, topology, interconnect) at service startup | EU AI Act Art. 15(4), NIST AI RMF MANAGE 1.3 |
+| `AI-HW.3` | TPM Platform Attestation | Witness TPM 2.0 PCR register state proving host firmware integrity and hardware root of trust | NIST 800-53 SC-12, EU AI Act Art. 15(4) |
+| `AI-TRUST.1` | Trust Verification | Witness mutual compliance trust verification between AI agents before interaction | EU AI Act Art. 9(4)(c), NIST AI RMF GOVERN 1.2 |
+| `AI-TRUST.2` | Trust Handshake | Witness the detailed handshake result (checks performed, checks passed) of a trust verification | EU AI Act Art. 12(2)(a), NIST AI RMF MANAGE 4.1 |
+| `AI-FAIR.3` | Bias Audit | Witness periodic bias audit results against protected categories | EU AI Act Art. 10(2)(f), NIST AI RMF MEASURE 2.11 |
+| `AI-CHAIN.2` | Chain Trust Credential | Witness chain-of-trust credential verification between agents in a pipeline | EU AI Act Art. 9(4)(c), NIST AI RMF MANAGE 4.1 |
+| `AI-ENV.1` | Runtime Environment | Witness the runtime environment fingerprint (OS, language version, package hashes) at startup | EU AI Act Art. 15(4), NIST AI RMF MANAGE 1.3 |
+| `AI-ENV.2` | Dependency Manifest | Witness the dependency tree and lock file hash for supply chain integrity | EU AI Act Art. 15(3), NIST AI RMF MANAGE 1.3 |
+| `AI-MARK.1` | Content Provenance | Witness AI-generated content marking with method and content type | EU AI Act Art. 50(2), NIST AI RMF GOVERN 1.7 |
+| `AI-BASE.1` | Agent Behavioral Baseline | Witness agent behavioral baseline establishment, monitoring, or drift detection | NIST AI RMF MEASURE 2.6, EU AI Act Art. 9(4)(a) |
+| `AI-LIC.1` | License Provenance | Witness license composition of models, adapters, and data with SPDX identification | EU AI Act Art. 53(1)(d), NIST AI RMF GOVERN 1.7 |
+| `AI-SBOM.1` | AI Bill of Materials | Witness AI system component inventory with G7 cluster coverage and format | G7/CISA SBOM-AI, EU AI Act Art. 11, EO 14028 |
+| `AI-REDTEAM.1` | Adversarial Test Campaign | Witness red team campaign results with coverage category and pass rate | EO 14110, EU AI Act Art. 9(7), NIST AI 100-2 |
+| `AI-CONSENT.1` | Data Subject Consent | Witness data subject consent documentation with legal basis and withdrawal status | GDPR Art. 6/7, EU AI Act Art. 10 |
+| `AI-MULTI.1` | Multi-Agent Delegation | Witness inter-agent permission delegation with depth, scope, and time bounds | EU AI Act Art. 9, NIST AI RMF GOVERN 1.3 |
+| `AI-DRIFT.1` | Model Drift Detection | Witness statistical model drift including data, concept, and prediction drift | EU AI Act Art. 9(2)(b), NIST AI RMF MEASURE 2.6 |
+| `AI-AUDIT.1` | Audit Log Integrity | Witness verification of audit trail integrity and traceability | EU AI Act Art. 12, GDPR Art. 30 |
+| `AI-INCIDENT.1` | Incident Reporting | Witness serious incident reporting to authorities | EU AI Act Art. 62, NIST AI RMF MANAGE 3.2 |
+| `AI-PERF.1` | Performance Metrics | Witness model performance benchmark results with accuracy levels | EU AI Act Art. 15(1), NIST AI RMF MEASURE 2.5 |
+| `AI-ROBUST.1` | Robustness Testing | Witness resilience against errors, faults, and inconsistencies | EU AI Act Art. 15(3), NIST AI RMF MEASURE 2.6 |
+| `AI-CYBER.1` | Cybersecurity Attestation | Witness cybersecurity assessment results against framework controls | EU AI Act Art. 15(4), NIST CSF |
+| `AI-TRANS.1` | Transparency Disclosure | Witness AI usage disclosures to deployers, users, and data subjects | EU AI Act Art. 13, GDPR Art. 13/14 |
+| `AI-WATERMARK.1` | Watermark Verification | Witness verification that AI content marking survived downstream processing | EU AI Act Art. 50(2), GPAI Code of Practice |
+| `AI-DPIA.1` | Data Protection Impact Assessment | Witness DPIA completion for high-risk AI processing | GDPR Art. 35, EU AI Act Art. 27 |
+| `AI-AUTO.1` | Automated Decision Notification | Witness notification of automated decisions with legal effects | GDPR Art. 22, EU AI Act Art. 14 |
+| `AI-DUALUSE.1` | Dual-Use Model Classification | Witness classification and reporting of dual-use foundation models | EO 14110 Sec 4(a), NIST AI RMF GOVERN 1.1 |
+| `AI-SUPPLY.1` | Supply Chain Risk | Witness third-party AI supply chain risk assessment | NIST AI RMF MEASURE 3.1, G7/CISA SBOM-AI, EO 14028 |
+| `AI-PMM.1` | Post-Market Monitoring | Witness execution of post-market monitoring plans | EU AI Act Art. 72, NIST AI RMF MANAGE 4.1 |
+| `AI-METAGOV.1` | Governance Self-Witnessing | Witness governance infrastructure configuration changes | NIST AI RMF GOVERN 1.1, EU AI Act Art. 9 |
+| `AI-DEL.1` | Delegation Witnessing | Witness scope-bounded authority delegation between agents | EU AI Act Art. 14(4), NIST AI RMF GOVERN 1.3 |
+| `AI-CAP.1` | Capability Attestation | Witness runtime capability manifest with drift detection | EU AI Act Art. 12(2)(b), NIST AI RMF MAP 1.5 |
+| `AI-COST.1` | Resource Consumption | Witness resource consumption (tokens, API calls, compute) as compliance evidence | NIST AI RMF MANAGE 2.4, EU AI Act Art. 9 |
+| `AI-AUTO.3` | Autonomy Transition | Witness promotion or demotion of agent autonomy levels | EU AI Act Art. 14, NIST AI RMF GOVERN 1.4 |
+| `AI-MOB.1` | Offline SIM Attestation | Witness offline attestation buffer with SIM integrity verification on reconnection | EU AI Act Art. 12, NIST AI RMF MANAGE 1.3 |
+| `AI-EMRG.1` | Emergency Override | Witness human-initiated override lifecycle with continuous checkpoints | EU AI Act Art. 14(4)(e), NIST AI RMF MANAGE 4.1 |
+| `AI-DRIFT.2` | Consequence-Mapped Drift | Witness statistical drift mapped to consequence severity categories | EU AI Act Art. 9(2)(b), NIST AI RMF MEASURE 2.6 |
+| `AI-ASSESS.1` | Champion-Challenger Assessment | Witness parallel-run model comparison with divergence tracking | OCC SR 26-2, NIST AI RMF MEASURE 2.5 |
+| `AI-SAMPLE.1` | Probabilistic Sampling | Witness sampling decisions for high-volume attestation pipelines | EU AI Act Art. 12, NIST AI RMF MANAGE 2.2 |
+
+#### 9.1.1 Non-Human Identity (NHI) Namespace
+
+NHI procedures witness credential lifecycle events for non-human identities (service accounts, API keys, machine credentials) as an independent, out-of-band audit trail. SWT3 does NOT issue, validate, or enforce credentials. It records reported lifecycle events.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `NHI-SCOPE.1` | Credential Scope | Witness reported credential scope with canonical scope hashing and TTL | NIST IA-4, EU AI Act Art. 9(4)(c), NIS-2 Art. 21(2)(i) |
+| `NHI-CYCLE.1` | Credential Lifecycle | Witness credential lifecycle events (issued, activated, suspended, expired, revoked) | NIST IA-5, EU AI Act Art. 12(1), NIS-2 Art. 21(2)(i) |
+| `NHI-PRIV.1` | Privilege Change | Witness credential privilege changes with scope delta tracking | NIST AC-6, EU AI Act Art. 9(4)(c), NIS-2 Art. 21(2)(d) |
+| `NHI-ROTATE.1` | Credential Rotation | Witness credential rotation with old/new hash linking and reason tracking | NIST IA-5(1), EU AI Act Art. 9(9), NIS-2 Art. 21(2)(i) |
+| `NHI-AGENT.1` | Credential Delegation | Witness agent-to-agent credential delegation with depth tracking | NIST AC-2(7), EU AI Act Art. 14(4), OWASP Agentic MCP-07 |
+| `NHI-REVOKE.1` | Credential Revocation | Witness credential revocation with cascade flag for delegation tree propagation | NIST IA-5(2), EU AI Act Art. 16(i), NIS-2 Art. 21(2)(i) |
+
+#### 9.1.2 Hardware Bill of Materials (HBOM) Namespace
+
+HBOM procedures witness hardware component inventory, lifecycle, and environmental metrics. SWT3 records reported values; it does NOT measure temperature, power, or water consumption.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `HBOM-INV.1` | Hardware Inventory | Witness hardware component inventory with manifest hashing and baseline delta | EU CRA Art. 10(9), NIST CM-8 |
+| `HBOM-LIFE.1` | Component Lifecycle | Witness component lifecycle events (installed through recycled) | EU Battery Reg Art. 77, NIST SA-22 |
+| `HBOM-THERM.1` | Thermal Profile | Witness reported thermal measurements with threshold alerting | EU Battery Reg Art. 14, NIST PE-14 |
+| `HBOM-WATER.1` | Water Consumption | Witness reported water consumption with WUE ratio and source classification | CSRD ESRS-E3, EU EED Art. 12 |
+| `HBOM-PUE.1` | Power Usage Effectiveness | Witness reported PUE with facility and IT load measurements | EU EED Art. 12, ISO 30134-2 |
+| `HBOM-SUPPLY.1` | Supply Chain Provenance | Witness hardware supply chain provenance with country of origin hashing | EU Battery Reg Art. 39, EU CRA Art. 10(9), EU Conflict Minerals 2017/821 |
+
+#### 9.1.3 Digital Product Passport (DPP) Namespace
+
+DPP procedures witness battery and product lifecycle data for EU Battery Regulation and ESPR Digital Product Passport compliance.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `DPP-SOH.1` | Battery State of Health | Witness reported battery SoH percentage, cycle count, and remaining capacity | EU Battery Reg Art. 14(1) |
+| `DPP-CHRG.1` | Charge/Discharge Cycle | Witness charge and discharge cycle events with energy transfer and peak temperature | EU Battery Reg Art. 14(1), IEC 62619 |
+| `DPP-DEGRAD.1` | Degradation Event | Witness battery degradation events with cause classification and SoH impact | EU Battery Reg Art. 14(1) |
+| `DPP-EOL.1` | End-of-Life Handoff | Witness end-of-life disposition with handler identification and final SoH | EU Battery Reg Art. 59, EU WEEE 2012/19 |
+
+#### 9.1.4 Automated Demand Response (ADR) Namespace
+
+ADR procedures witness energy grid demand response event lifecycles. SWT3 does NOT control grid operations, measure power, or dispatch curtailment. It records reported values from participants.
+
+| Procedure ID | Domain | Description | Regulatory Basis |
+|-------------|--------|-------------|------------------|
+| `ADR-EVENT.1` | DR Event Lifecycle | Witness demand response event phases (signal received through restoration) | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-BASE.1` | Baseline Consumption | Witness reported baseline power consumption with measurement methodology | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-CURT.1` | Curtailment Verification | Witness actual curtailment against committed values with compliance ratio | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-SETTLE.1` | Settlement Data | Witness settlement quantities and prices with event count | FERC Order 2222, EU CEP Art. 17 |
+| `ADR-CARBON.1` | Carbon Credit / REC | Witness carbon credit and REC issuance with registry identification | EU CBAM 2023/956, EU RED III, SEC Climate S-K Item 1504 |
+| `ADR-GRID.1` | Grid Signal Correlation | Witness grid signal type, response latency, and operator identification | FERC Order 2222, NERC BAL-001 |
+
+### 9.2 Factor Matrix Semantics for AI
+
+The SWT3 Factor Matrix (factor_a, factor_b, factor_c) carries domain-specific
+meaning for each AI procedure. The following table defines the canonical
+factor semantics. Implementations MUST use these semantics for interoperability.
+
+| Procedure | factor_a (baseline/threshold) | factor_b (observed) | factor_c (delta) |
+|-----------|------|------|------|
+| `AI-INF.1` | Model weight hash (first 10 digits as integer) | Input hash (first 10 digits as integer) | Output hash (first 10 digits as integer) |
+| `AI-INF.2` | Latency SLA threshold (ms) | Actual latency (ms) | `factor_b - factor_a` (negative = within SLA) |
+| `AI-INF.3` | Capacity threshold (req/min) | Actual throughput (req/min) | `factor_b - factor_a` |
+| `AI-MDL.1` | Approved hash (first 10 digits as integer) | Running hash (first 10 digits as integer) | Match flag (1 = match, 0 = mismatch) |
+| `AI-MDL.2` | Expected version (integer encoding) | Deployed version (integer encoding) | Match flag (1 = match, 0 = mismatch) |
+| `AI-MDL.3` | Baseline accuracy (× 1000, e.g., 950 = 95.0%) | Current accuracy (× 1000) | `factor_b - factor_a` (negative = degradation) |
+| `AI-GRD.1` | Required guardrail count | Active guardrail count | `factor_b - factor_a` (negative = missing) |
+| `AI-GRD.2` | Block rate threshold (× 1000) | Actual block rate (× 1000) | `factor_b - factor_a` |
+| `AI-GRD.3` | PII fields requiring redaction | PII fields successfully redacted | `factor_b - factor_a` (0 = compliant) |
+| `AI-FAIR.1` | Parity threshold (× 1000, e.g., 800 = 80.0%) | Measured parity ratio (× 1000) | `factor_b - factor_a` (negative = violation) |
+| `AI-FAIR.2` | Fairness bound (× 1000) | Measured fairness score (× 1000) | `factor_b - factor_a` |
+| `AI-DATA.1` | Approved dataset hash (first 10 digits) | Actual training hash (first 10 digits) | Match flag (1 = match, 0 = unauthorized) |
+| `AI-DATA.2` | Required license flags (bitmask) | Verified license flags (bitmask) | `factor_b AND factor_a` XOR `factor_a` (0 = compliant) |
+| `AI-DATA.3` | Row count (total samples) | Feature count (dimensions) | Class balance ratio (x1000, e.g., 850 = 85% balance) |
+| `AI-DATA.4` | Records affected (count) | 1 if event completed, 0 if partial/failed | Event type code (0=unspecified, 1=pseudonymization, 2=anonymization, 3=access_restriction, 4=deletion, 5=encryption) |
+| `AI-HITL.1` | Review required flag (1 = yes) | Review completed flag (1 = yes) | `factor_b - factor_a` (0 = compliant) |
+| `AI-HITL.2` | AI recommendation hash (first 10 digits) | Final decision hash (first 10 digits) | Override flag (1 = overridden, 0 = accepted) |
+| `AI-EXPL.1` | Explanation required flag (1 = yes) | Explanation generated flag (1 = yes) | `factor_b - factor_a` (0 = compliant) |
+| `AI-EXPL.2` | Minimum confidence threshold (× 1000) | Actual confidence score (× 1000) | `factor_b - factor_a` (negative = below threshold) |
+| `AI-TOOL.1` | 1 (tool was called) | Latency (ms) | 1 if succeeded, 0 if exception |
+| `AI-ID.1` | 1 (identity asserted) | 1 (identity verified) | 0 (reserved) |
+| `AI-ACC.1` | 1 (access attempted) | 1 if within scope, 0 if out of scope | 1 if granted, 0 if denied |
+| `AI-REV.1` | 1 (revocation event) | 1 (target declared) | Reason code (0=unspecified, 1=model_recall, 2=policy_violation, 3=data_contamination, 4=consent_withdrawal, 5=regulatory_order, 6=error_correction) |
+| `AI-SEC.1` | Detection threshold (threat score x 1000) | Observed threat score (x 1000) | Threat type code (0=none, 1=prompt_injection, 2=data_poisoning, 3=model_extraction, 4=jailbreak, 5=adversarial_input) |
+| `AI-SEC.2` | 1 (validation required) | 1 if validation passed, 0 if rejected | 0 if clean, 1 if sanitized, 2 if blocked |
+| `AI-RAG.1` | Chunk count (number of chunks retrieved) | 1 if corpus_id provided, 0 if anonymous | 0 (reserved) |
+| `AI-RAG.2` | Similarity threshold (x 1000, e.g., 750 = 0.75) | Average similarity (x 1000) | Chunks below threshold count |
+| `AI-MDL.5` | 1 (integrity check required) | 1 if weight hash matches expected, 0 if mismatch | 0 (reserved) |
+| `AI-MDL.6` | Adapter count (number loaded) | 1 if all adapter hashes verified, 0 if any unverified | 0 (reserved) |
+| `AI-MDL.7` | 1 (attestation required) | 1 (attested) | Quantization code (0=FP32, 1=FP16, 2=BF16, 3=INT8, 4=INT4, 5=GPTQ, 6=AWQ, 7=GGUF) |
+| `AI-SKILL.1` | Skill count (number loaded) | 1 if manifest hash matches expected, 0 if mismatch | 0 (reserved) |
+| `AI-SKILL.2` | Memory source count | 1 if all sources identified, 0 if any anonymous | 0 (reserved) |
+| `AI-SKILL.3` | 1 (reward model required) | 1 if reward model identified, 0 if unknown | 0 (reserved) |
+| `AI-CHAIN.1` | Chain depth (position in sequence, 1-based) | 1 if cycle_id bound, 0 if standalone | 1 if handoff accepted, 0 if rejected |
+| `AI-VIO.1` | Violation severity (1=low, 2=medium, 3=high, 4=critical) | 1 if auto-detected, 0 if manually reported | Policy code (0=unspecified, 1=content, 2=access, 3=data, 4=safety, 5=regulatory) |
+| `AI-CHR.1` | 1 (charter required) | 1 if charter hash matches expected, 0 if mismatch | 0 (reserved) |
+| `AI-MDL.8` | 1 (registry check required) | 1 if model found in approved registry, 0 if not found | 0 if approved, 1 if pending review, 2 if denied |
+| `AI-HITL.3` | Reviewer count required (e.g., 2 for four-eyes) | Reviewer count actual | Identity binding method (0=none, 1=session, 2=cryptographic) |
+| `AI-SAFE.1` | 1 (stop mechanism required) | 1 if mechanism exists and tested, 0 if absent | 1 if safe state confirmed after last invocation, 0 if not confirmed |
+| `AI-HW.1` | GPU count (number of accelerators detected) | 1 if all healthy and topology matches expected, 0 if mismatch | Topology code (0=single, 1=multi-gpu/DGX, 2=NVL36/NVL72/multi-node, 3=unknown) |
+| `AI-HW.3` | PCR registers read (count) | 1 if all non-zero (healthy), 0 if uninitialized/tampered | 0 (reserved) |
+| `AI-TRUST.1` | 1 (trust verification performed) | 1 if trust granted, 0 if denied | Trust level (0=denied, 1=basic, 2=verified, 3=attested, 4=sovereign) |
+| `AI-TRUST.2` | Checks performed (count) | Checks passed (count) | 1 if trust granted, 0 if denied |
+| `AI-FAIR.3` | Audit frequency required (days) | Days since last audit | Categories audited count |
+| `AI-CHAIN.2` | 1 (credential verification required) | 1 if credential valid, 0 if invalid/expired | Trust level of presenting agent (0-4) |
+| `AI-ENV.1` | Expected environment hash (first 10 digits) | Actual environment hash (first 10 digits) | Match flag (1 = match, 0 = drift) |
+| `AI-ENV.2` | Expected dependency count | Actual dependency count | Lock file hash match (1 = match, 0 = mismatch) |
+| `AI-MARK.1` | Content type code (0=text, 1=image, 2=audio, 3=video, 4=code, 5=multimodal, 6=synthetic_data) | Marking method (0=metadata, 1=watermark, 2=c2pa, 3=header, 4=visible) | Content hash (first 10 digits as integer) |
+| `AI-BASE.1` | Mode (0=establishing, 1=monitoring, 2=drift_detected, 3=baseline_reset) | Metric count (number of tracked metrics) | Drift score (x1000, e.g., 150 = 0.150) |
+| `AI-LIC.1` | Components checked (count) | All compliant (1=yes, 0=violation) | License type code (0=permissive, 1=copyleft, 2=proprietary, 3=dual, 4=openmdw, 5=unknown) |
+| `AI-SBOM.1` | Total components (count) | G7 clusters documented (0-7) | Format code (0=cyclonedx, 1=spdx, 2=custom, 3=unknown) |
+| `AI-REDTEAM.1` | Tests executed (count) | Tests passed (count) | Coverage category code (0-10) |
+| `AI-CONSENT.1` | Subjects covered (count) | Legal basis code (0-5) | Withdrawal available (1=yes, 0=no) |
+| `AI-MULTI.1` | Delegation depth (hops) | Permissions granted (count) | Time bound minutes (0=unbounded) |
+| `AI-DRIFT.1` | Metrics evaluated (count) | Drifted count | Drift type code (0-5) |
+| `AI-AUDIT.1` | Entries checked (count) | Integrity verified (1=yes, 0=no) | Log format code (0-3) |
+| `AI-INCIDENT.1` | Severity code (1-4) | Authority notified (1=yes, 0=no) | Incident type code (0-5) |
+| `AI-PERF.1` | Metrics evaluated (count) | Metrics passing (count) | Benchmark type code (0-5) |
+| `AI-ROBUST.1` | Perturbations tested (count) | Perturbations survived (count) | Perturbation type code (0-5) |
+| `AI-CYBER.1` | Controls assessed (count) | Controls compliant (count) | Framework code (0-4) |
+| `AI-TRANS.1` | Disclosures made (count) | Disclosure type code (0-4) | Recipient type code (0-3) |
+| `AI-WATERMARK.1` | Items checked (count) | Watermarks detected (count) | Detection method code (0-4) |
+| `AI-DPIA.1` | Risks identified (count) | Risks mitigated (count) | Processing type code (0-4) |
+| `AI-AUTO.1` | Decisions made (count) | Human reviewed (count) | Decision type code (0-5) |
+| `AI-DUALUSE.1` | Classification code (0-2) | Reporting status code (0-3) | Days since classification |
+| `AI-SUPPLY.1` | Suppliers assessed (count) | Suppliers compliant (count) | Risk level code (0-3) |
+| `AI-PMM.1` | Monitoring checks run (count) | Anomalies detected (count) | Monitoring type code (0-4) |
+| `AI-EMRG.1` | Override trigger type (1=emergency_stop, 2=operator_command, 3=escalation, 4=external) | Authorization level (1=operator, 2=supervisor, 3=site_manager, 4=emergency_responder) | Fallback state (1=safe_state, 2=legacy_controller, 3=manual_mode, 4=degraded, 5=shutdown) |
+| `AI-DRIFT.2` | Consequence severity (1=safety, 2=environmental, 3=financial, 4=operational, 5=reputational) | Drift metric value (x1000) | Threshold value (x1000) |
+| `AI-ASSESS.1` | Divergence metric value (x1000) | Challenger model hash (first 10 digits) | Assessment decision (0=pending, 1=promote, 2=reject, 3=extend) |
+| `AI-SAMPLE.1` | Total events in window | Sampled events in window | Sampling rate (x1000) |
+| `NHI-SCOPE.1` | Credential ID hash (SHA-256[:16] as integer) | Scope hash (SHA-256[:16] of canonical scope as integer) | TTL in seconds (0=non-expiring) |
+| `NHI-CYCLE.1` | Event type (1=issued, 2=activated, 3=suspended, 4=expired, 5=revoked) | Credential ID hash (SHA-256[:16] as integer) | Issuer hash (SHA-256[:16] as integer) |
+| `NHI-PRIV.1` | Credential ID hash (SHA-256[:16] as integer) | Previous scope hash (SHA-256[:16] as integer, 0 if new) | New scope hash (SHA-256[:16] as integer) |
+| `NHI-ROTATE.1` | Old credential hash (SHA-256[:16] as integer) | New credential hash (SHA-256[:16] as integer) | Rotation reason (1=scheduled, 2=compromise, 3=policy, 4=manual) |
+| `NHI-AGENT.1` | Delegator credential hash (SHA-256[:16] as integer) | Delegatee credential hash (SHA-256[:16] as integer) | Delegation depth (1=direct, 2+=chained) |
+| `NHI-REVOKE.1` | Revoked credential hash (SHA-256[:16] as integer) | Reason code (0-6, same as AI-REV.1) | Cascade flag (1=cascade to delegated, 0=single) |
+| `HBOM-INV.1` | Component count (total in inventory) | Manifest hash (SHA-256[:16] as integer) | Delta from baseline (added/removed count) |
+| `HBOM-LIFE.1` | Event type (1=installed, 2=commissioned, 3=maintained, 4=degraded, 5=decommissioned, 6=recycled) | Component hash (SHA-256[:16] as integer) | Age in days since installation |
+| `HBOM-THERM.1` | Ambient temperature (Celsius) | Component temperature (Celsius) | Threshold exceeded (1=alarm, 0=normal) |
+| `HBOM-WATER.1` | Liters consumed | WUE ratio (x1000) | Source type (1=municipal, 2=recycled, 3=rainwater, 4=groundwell, 5=mixed) |
+| `HBOM-PUE.1` | Total facility power (kW) | IT load power (kW) | PUE ratio (x1000, e.g., 1200=PUE 1.2) |
+| `HBOM-SUPPLY.1` | Supplier hash (SHA-256[:16] as integer) | Provenance verified (1=yes, 0=no) | Country of origin hash (SHA-256[:16] as integer) |
+| `DPP-SOH.1` | SoH percentage (x100, e.g., 9230=92.30%) | Cycle count | Remaining capacity kWh (x100) |
+| `DPP-CHRG.1` | Event type (1=charge_start, 2=charge_complete, 3=discharge_start, 4=discharge_complete) | Energy kWh (x100) | Peak temperature (Celsius) |
+| `DPP-DEGRAD.1` | Degradation type (1=calendar_aging, 2=thermal_stress, 3=overcharge, 4=deep_discharge, 5=mechanical, 6=unknown) | SoH drop (percentage points x100) | Ambient temperature (Celsius) |
+| `DPP-EOL.1` | Disposition (1=recycling, 2=repurpose, 3=refurbishment, 4=landfill, 5=hazmat) | Handler hash (SHA-256[:16] as integer) | Final SoH (x100) |
+| `ADR-EVENT.1` | Event phase (1=signal_received, 2=curtailment_start, 3=curtailment_end, 4=restoration) | Committed curtailment (kW) | Signal source hash (SHA-256[:16] as integer) |
+| `ADR-BASE.1` | Baseline consumption (kW) | Measurement method (1=metered_10day_avg, 2=regression, 3=real_time_meter, 4=deemed_savings) | Confidence level (x1000) |
+| `ADR-CURT.1` | Actual reduction (kW) | Committed curtailment (kW) | Compliance ratio (x1000, 1000=100%) |
+| `ADR-SETTLE.1` | Settlement quantity kWh (x100) | Price USD/MWh (x100) | Event count in settlement period |
+| `ADR-CARBON.1` | Credit type (1=REC, 2=carbon_offset, 3=EAC, 4=guarantee_of_origin) | Quantity MWh (x100) or tonnes CO2e (x100) | Registry hash (SHA-256[:16] as integer) |
+| `ADR-GRID.1` | Signal type (1=emergency, 2=economic, 3=capacity, 4=frequency_regulation, 5=voltage_support) | Response latency (ms) | Grid operator hash (SHA-256[:16] as integer) |
+
+### 9.3 Clearing Protocol for AI Systems
+
+AI systems present unique Clearing considerations due to the sensitivity of
+inference data (prompts may contain PII, trade secrets, medical records, or
+classified information). The Clearing Protocol (Section 5.3) applies to AI
+systems with these additional guidance:
+
+#### 9.3.1 Recommended Clearing Levels by AI Context
+
+| Context | Recommended Level | Rationale |
+|---------|-------------------|-----------|
+| Internal analytics | Level 0 (RETAIN) | Full forensic capability for model debugging |
+| B2B SaaS inference | Level 1 (FACTOR-ONLY) | Factors retained, prompts/responses cleared |
+| Healthcare / PII | Level 2 (ANCHOR-ONLY) | Factors may reveal PHI; only anchor persists |
+| Classified / defense | Level 3 (SOVEREIGN) | Nothing persists on the minting system |
+
+#### 9.3.2 Inference Clearing Sequence
+
+For AI-INF procedures, the clearing sequence is:
+
+```
+1. Capture prompt and response (Provenance)
+2. Compute input_hash = SHA-256(prompt)[0:20] as integer
+3. Compute output_hash = SHA-256(response)[0:20] as integer
+4. Mint SWT3 anchor with factor matrix (Verification)
+5. Clear prompt and response from memory/storage (Clearing)
+```
+
+After step 5, the implementation retains only the anchor and factor matrix.
+The original prompt and response are irrecoverable from the factors  --  only
+their hashes are preserved, and SHA-256 is pre-image resistant. This satisfies
+GDPR Article 17 (Right to Erasure) while preserving Article 12 (Transparency)
+of the EU AI Act: you can prove the inference happened and verify its integrity
+without being able to reconstruct the data.
+
+### 9.4 AI Enclave Verification
+
+AI systems SHOULD support enclave-level verification analogous to Section 6.3.
+An AI Enclave encompasses all anchors produced by a single AI system (model +
+infrastructure + guardrails) within a trust boundary.
+
+The AI Enclave Integrity Signature covers:
+- All AI-INF anchors (inference provenance)
+- All AI-MDL anchors (model integrity)
+- All AI-GRD anchors (guardrail enforcement)
+- All AI-FAIR anchors (fairness measurements)
+- All AI-HITL anchors (human oversight)
+- All AI-EXPL anchors (explainability)
+
+This enables a single verification command to attest the complete operational
+integrity of an AI system over any time window:
+
+```bash
+swt3-verify --enclave --filter "AI-*" --from 2026-01-01 --to 2026-03-31
+```
+
+The resulting Enclave Integrity Signature can be included in:
+- EU AI Act conformity assessment documentation
+- NIST AI RMF assessment reports
+- ISO 42001 management review evidence
+- SOC 2 + AI supplementary criteria reports
+
+### 9.5 AI Witness Transport Extension
+
+The JSON transport format (Section 8.1) is extended for AI procedures with
+an `ai_context` field in the metadata object:
+
+```json
+{
+  "swt3_version": "1.0",
+  "anchor": "SWT3-S-AWS-AI-AIINF1-PASS-1773900000-a4c7e2f91b03",
+  "factors": {
+    "procedure_id": "AI-INF.1",
+    "tenant_id": "ACME_CORP",
+    "factor_a": 2847593016,
+    "factor_b": 1938274650,
+    "factor_c": 7462019385,
+    "timestamp_ms": 1773900000000
+  },
+  "verdict": "PASS",
+  "witnessed_at": "2026-04-15T14:30:00Z",
+  "metadata": {
+    "source": "swt3-ai-sdk-v1.0",
+    "check_type": "inference",
+    "ai_context": {
+      "model_id": "gpt-4o-2025-04-16",
+      "model_provider": "openai",
+      "guardrails_active": ["content_safety", "pii_redaction", "fairness_monitor"],
+      "clearing_level": 1,
+      "risk_tier": "high",
+      "regulatory_scope": ["eu-ai-act", "nist-ai-rmf"]
+    }
+  }
+}
+```
+
+The `ai_context` metadata is OPTIONAL and is not included in the fingerprint
+computation. It provides operational context for ledger queries, dashboards,
+and reporting. Implementations at Clearing Level 2+ SHOULD omit `ai_context`
+or restrict it to non-sensitive fields.
+
+### 9.6 Regulatory Mapping
+
+#### 9.6.1 EU AI Act Coverage
+
+| EU AI Act Article | Requirement | SWT3 AI Procedure |
+|-------------------|-------------|-------------------|
+| Art. 9(4)(a) | Risk management measures operational | AI-GRD.1, AI-GRD.2 |
+| Art. 9(4)(b) | Appropriate testing and validation | AI-MDL.1, AI-MDL.3 |
+| Art. 9(8) | Residual risk mitigation | AI-GRD.2, AI-FAIR.1 |
+| Art. 10 | Data governance | AI-DATA.1, AI-DATA.2, AI-DATA.3 |
+| Art. 10(5) | Personal data safeguards in training | AI-DATA.4 |
+| Art. 10(2)(f) | Bias examination | AI-FAIR.1, AI-FAIR.2 |
+| Art. 12(1) | Automatic logging capability | AI-INF.1 (all inferences anchored) |
+| Art. 12(2)(a) | Log identification of input/output | AI-INF.1 (input/output hashes), AI-CHAIN.1 (multi-agent tracing) |
+| Art. 12(3)(d) | Identification of natural persons verifying results | AI-HITL.3 |
+| Art. 13 | Transparency and information | AI-EXPL.1, AI-EXPL.2, AI-CHR.1 |
+| Art. 14 | Human oversight | AI-HITL.1, AI-HITL.2, AI-HITL.3 |
+| Art. 14(4)(a) | Ability to override | AI-HITL.2 |
+| Art. 14(4)(e) | Stop button and safe state | AI-SAFE.1 |
+| Art. 14(5) | Four-eyes verification (biometrics) | AI-HITL.3 |
+| Art. 51 | Registration in EU database | AI-MDL.8 |
+| Art. 53(1)(d) | Training data transparency (GPAI) | AI-DATA.2 |
+| Art. 72 | Post-market monitoring | AI-MDL.3, AI-FAIR.1 (continuous) |
+
+#### 9.6.2 NIST AI RMF Coverage
+
+| AI RMF Function | Category | SWT3 AI Procedure |
+|-----------------|----------|-------------------|
+| GOVERN 1.4 | Oversight mechanisms | AI-HITL.1, AI-HITL.2 |
+| GOVERN 1.5 | Ongoing monitoring plans | AI-MDL.3, AI-GRD.1 |
+| GOVERN 1.7 | Privacy and civil liberties | AI-GRD.3, AI-FAIR.1 |
+| MAP 2.3 | Fairness criteria defined | AI-FAIR.2 |
+| MAP 4.1 | Data requirements | AI-DATA.1, AI-DATA.2, AI-DATA.3 |
+| MEASURE 1.1 | Performance measurement | AI-MDL.3, AI-INF.2 |
+| MEASURE 2.6 | Traceability of outputs | AI-INF.1 |
+| MEASURE 2.9 | Confidence characterization | AI-EXPL.2 |
+| MEASURE 2.11 | Fairness assessment | AI-FAIR.1, AI-FAIR.2 |
+| MANAGE 1.3 | Deployment integrity | AI-MDL.1, AI-MDL.2 |
+| MANAGE 2.2 | Performance monitoring | AI-INF.2, AI-INF.3 |
+| MANAGE 2.4 | Resource allocation | AI-INF.3 |
+| MANAGE 3.2 | Incident detection and response | AI-VIO.1, AI-SEC.1 |
+| MANAGE 4.1 | Post-deployment monitoring plans | AI-HITL.2, AI-TOOL.1, AI-CHAIN.1, AI-SAFE.1 |
+
+## 10. Security Considerations
+
+### 10.1 Truncation Risk
+
+The 12-character (48-bit) fingerprint is not intended as a cryptographic
+signature. It is a **verification shortcut**. Systems requiring full
+cryptographic assurance SHOULD store and verify against the full 64-character
+SHA-256 digest.
+
+### 10.2 Factor Confidentiality
+
+Factor values (especially `factor_a` thresholds) may reveal security posture
+details (e.g., expected port counts, patch windows). Implementations SHOULD
+apply access controls to factor data and leverage the Clearing Protocol
+(Section 5.3) at Level 1 or higher for sensitive environments.
+
+### 10.3 Clearing and Data Sovereignty
+
+The Clearing Protocol (Section 5.3) is designed to prevent raw evidence from
+becoming a persistent attack surface. However, implementations must consider:
+
+- **Pre-clearing exfiltration:** An attacker with access during the Provenance
+  phase (before clearing) can capture raw evidence. Clearing protects against
+  post-anchoring data exposure, not real-time interception.
+- **Factor inference:** Even at Clearing Level 1, retained factors may allow
+  partial reconstruction of the original state (e.g., factor_b = 3 open ports
+  reveals network topology). Clearing Level 2 or 3 is RECOMMENDED for
+  environments where factor values themselves are sensitive.
+- **Clearing verification:** Implementations SHOULD provide a mechanism to
+  confirm that clearing has occurred (e.g., a clearing timestamp or clearing
+  receipt). This supports SI-12 (Information Management and Retention) audit
+  requirements.
+
+### 10.4 Timestamp Manipulation
+
+The `timestamp_ms` is a critical input to the fingerprint. An attacker who can
+control the timestamp can forge a valid fingerprint with different factors.
+Implementations MUST ensure timestamps are generated by trusted sources (system
+clock, NTP-synchronized) and not accepted from untrusted input.
+
+### 10.5 Collision Resistance
+
+At 48 bits, the birthday paradox threshold is approximately 2^24 (~16.7 million)
+anchors before a 50% collision probability. For most compliance ledgers (tens of
+thousands of anchors), this provides adequate uniqueness. Enclave integrity
+verification (Section 6.3) uses the full 64-character digest.
+
+## 11. Conformance
+
+An implementation is SWT3-conformant if it:
+
+1. Produces anchors matching the format in Section 3
+2. Uses only registered UCT codes from the UCT Registry (Section 3.2)
+3. Computes fingerprints using the algorithm in Section 4
+4. Can verify anchors using the algorithm in Section 6.1
+5. Uses the JSON transport format in Section 8 for interoperability
+6. Documents its Clearing Level (Section 5.3.1) in its security posture
+7. Documents its AI Clearing Level (Section 9.3) if implementing AI procedures
+
+An implementation claiming **SWT3-Sovereign** conformance MUST additionally:
+
+8. Implement Clearing Level 1 or higher as the default behavior
+9. Ensure clearing irreversibility per Section 5.3.3
+
+Implementations MAY extend the metadata field with additional properties.
+Implementations MUST NOT modify the fingerprint algorithm or anchor format.
+
+## 12. IANA Considerations
+
+This specification does not require any IANA registrations. The `SWT3` protocol
+identifier and the UCT Registry are maintained by Tenable Nova LLC (DBA TeNova).
+The UCT Registry governance process is defined in Section 3.2.5.
 
 ---
 
-*Copyright 2026 Tenable Nova LLC. Patent pending. SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC.*
+**Copyright (c) 2026 Tenable Nova LLC (DBA TeNova). Licensed under Apache 2.0.**
 
-*This specification is provided for informational purposes and does not constitute legal, regulatory, or compliance advice. Consult qualified legal counsel before making compliance decisions based on this content.*
+SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending.
+
+---
+
+*SWT3: Sovereign Witness Traceability  --  Provenance, Verification, Clearing.*
+
+## Appendix A: Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2026-02-26 | Initial specification. |
+| 1.1.0 | 2026-03-15 | Canonical fingerprint formula with `WITNESS:` domain separator. Legacy fallback defined. |
+| 1.2.0 | 2026-03-29 | AI Witnessing Profile (Section 9). UCT Extended codes. Protocol Lock (Phase 2). |
+| 1.3.0 | 2026-04-17 | RFC 2119 notation. ABNF grammar. Section numbering fixes. Proposed Standard status. |
+| 1.4.0 | 2026-05-03 | AI-DATA.3 (Training Data Statistics), AI-DATA.4 (Training Data PII Lifecycle). 42 total AI procedures. |
+| 1.5.0 | 2026-05-23 | AI-FAIR.3 (Bias Audit), AI-CHAIN.2 (Chain Trust Credential), AI-ENV.1 (Runtime Environment), AI-ENV.2 (Dependency Manifest), AI-MARK.1 (Content Provenance), AI-BASE.1 (Agent Behavioral Baseline). 47 total AI procedures, 23 namespaces. |
+| 1.6.0 | 2026-05-28 | AI-LIC.1 (License Provenance). 48 total AI procedures, 24 namespaces. |
+| 1.7.0 | 2026-05-29 | AI-SBOM.1 (AI Bill of Materials), AI-REDTEAM.1 (Adversarial Test Campaign), AI-CONSENT.1 (Data Subject Consent), AI-MULTI.1 (Multi-Agent Delegation). 52 total AI procedures, 28 namespaces. |
+| 1.8.0 | 2026-05-29 | AI-DRIFT.1, AI-AUDIT.1, AI-INCIDENT.1, AI-PERF.1, AI-ROBUST.1, AI-CYBER.1, AI-TRANS.1, AI-WATERMARK.1, AI-DPIA.1, AI-AUTO.1, AI-DUALUSE.1, AI-SUPPLY.1, AI-PMM.1. Full EU AI Act Art. 15 coverage (accuracy, robustness, cybersecurity), GDPR Art. 22/35, EO 14110, NIST MEASURE 3.1. 65 total AI procedures, 41 namespaces. |
+| 1.9.0 | 2026-06-11 | AI-METAGOV.1 through AI-METAGOV.8 (Recursive Governance). AI-DEL.1 (Delegation), AI-CAP.1 (Capability), AI-COST.1 (Resource Consumption), AI-AUTO.3 (Autonomy Transition), AI-CLR.2 (Regulatory Transparency). 80 total AI procedures, 50 namespaces. |
+| 1.10.0 | 2026-06-19 | AI-MOB.1 through AI-MOB.5 (Mobile Edge Governance). Platform-native witnessing for iOS, Android, visionOS. 85 total AI procedures, 51 namespaces. |
+| 1.11.0 | 2026-07-10 | AI-EMRG.1 (Emergency Override Lifecycle), AI-DRIFT.2 (Consequence-Mapped Drift), AI-ASSESS.1 (Champion-Challenger Assessment). Lifecycle chain infrastructure with shared cycle_id linking. 88 total AI procedures, 53 namespaces. |
+| 1.12.0 | 2026-07-14 | v6.0.0 "Operational Governance". AI-MOB.6 (Spatial Provenance), AI-MOB.7 (Compile-Time Detection), AI-SAMPLE.1 (Probabilistic Sampling). 111 total AI procedures across 61 namespaces. Lifecycle chain infrastructure finalized. |
+| 2.0.0 | 2026-08-30 | Four new namespace clusters: NHI (Non-Human Identity, 6 procedures), HBOM (Hardware Bill of Materials, 6 procedures), DPP (Digital Product Passport, 4 procedures), ADR (Automated Demand Response, 6 procedures). Protocol extends beyond AI governance to infrastructure identity, physical product lifecycle, and energy grid compliance. 266 total procedures across 9 top-level namespaces. 36 frameworks. SDKs in 10 languages. |
+
+## Appendix B: Intellectual Property
+
+Certain aspects of the SWT3 protocol and its implementations are covered by
+one or more patent applications held by TeNova Labs. The protocol specification
+is published under Apache 2.0. Implementations are free to use, modify, and
+distribute. Patent protection covers specific commercial implementations and
+platform features, not the open protocol itself.

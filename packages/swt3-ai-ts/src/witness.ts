@@ -46,7 +46,7 @@ import type {
   WitnessConfig, WitnessPayload, WitnessReceipt, InferenceRecord,
   RagChunk, RagContextOptions, ModelWeightInfo, AdapterInfo, SkillInfo, MemorySource,
 } from "./types.js";
-import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES, SAFETY_CLASSIFICATION_CODES } from "./types.js";
+import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES, SAFETY_CLASSIFICATION_CODES, NHI_LIFECYCLE_EVENT_CODES, NHI_ROTATION_REASON_CODES, NHI_REVOCATION_REASON_CODES, HBOM_LIFECYCLE_EVENT_CODES, HBOM_WATER_SOURCE_CODES, DPP_CHARGE_EVENT_CODES, DPP_DEGRADATION_TYPE_CODES, DPP_DISPOSITION_CODES, ADR_EVENT_PHASE_CODES, ADR_BASELINE_METHOD_CODES, ADR_CREDIT_TYPE_CODES, ADR_SIGNAL_TYPE_CODES } from "./types.js";
 import { loadConfig as loadConfigFromFile, loadFullConfig, validatePolicy } from "./config.js";
 import type { TrustMeshConfig, HardwareConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, ChainRule, ChainPolicyViolation, RuntimeProfileConfig } from "./types.js";
 import { MerkleAccumulator } from "./merkle.js";
@@ -384,6 +384,8 @@ export interface WitnessOptions {
   jurisdiction?: string;
   legalBasis?: string;
   purposeClass?: string;
+  authorizationExpires?: number;
+  authorizationScope?: string;
   onFlush?: (payloads: WitnessPayload[], receipts: WitnessReceipt[]) => void;
   tokenBudget?: number;
   chainMinTrustLevel?: number;
@@ -742,6 +744,8 @@ export class Witness {
       jurisdiction: options.jurisdiction,
       legalBasis: options.legalBasis,
       purposeClass: options.purposeClass,
+      authorizationExpires: options.authorizationExpires,
+      authorizationScope: options.authorizationScope,
       tokenBudget: options.tokenBudget,
       chainMinTrustLevel: options.chainMinTrustLevel,
       onFlush: options.onFlush,
@@ -1490,7 +1494,7 @@ export class Witness {
         if (this._localCtaCount === 1) {
           console.info(`  [SWT3] Run witness.coverage("EU-AI-ACT") to see your coverage score`);
           console.info(`  [SWT3] Add swt3-local/ to .gitignore`);
-          console.info(`  [SWT3] Connect to persist & audit: https://sovereign.tenova.io/signup?ref=sdk_local\n`);
+          console.info(`  [SWT3] Connect to make anchors auditor-verifiable: https://sovereign.tenova.io/signup?ref=sdk_local\n`);
         }
       } catch { /* never break witness for summary */ }
     }
@@ -1753,6 +1757,8 @@ export class Witness {
     if (this.config.jurisdiction) payload.jurisdiction = this.config.jurisdiction;
     if (this.config.legalBasis) payload.legal_basis = this.config.legalBasis;
     if (this.config.purposeClass) payload.purpose_class = this.config.purposeClass;
+    if (this.config.authorizationExpires !== undefined) payload.authorization_expires = this.config.authorizationExpires;
+    if (this.config.authorizationScope) payload.authorization_scope = this.config.authorizationScope;
     if (policyHash) payload.policy_version_hash = policyHash;
     if (this.config.signingKey) {
       const alg = this.config.signingAlgorithm ?? "hmac-sha256";
@@ -3441,6 +3447,813 @@ export class Witness {
     return payload;
   }
 
+  // ── NHI: Non-Human Identity Governance (v0.7.0) ────────────────
+
+  /** Witness credential scope attestation (NHI-SCOPE.1). NIST IA-4, EU AI Act Art. 9(4)(c). */
+  witnessNhiScope(options: {
+    credentialId: string;
+    scope: string;
+    ttlSeconds?: number;
+  }): WitnessPayload {
+    const credHash = sha256Truncated(options.credentialId, 8);
+    const fa = parseInt(credHash, 16);
+    const fb = parseInt(sha256Truncated(options.scope.toLowerCase(), 8), 16);
+    const fc = options.ttlSeconds ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-SCOPE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-SCOPE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-scope-${credHash}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", credential_id_hash: credHash, scope: options.scope };
+      if (options.ttlSeconds != null) ctx.ttl_seconds = options.ttlSeconds;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential lifecycle event (NHI-CYCLE.1). NIST IA-4, IA-5. */
+  witnessNhiLifecycle(options: {
+    eventType: string;
+    credentialId: string;
+    issuer: string;
+  }): WitnessPayload {
+    const fa = NHI_LIFECYCLE_EVENT_CODES[options.eventType] ?? 0;
+    const fb = parseInt(sha256Truncated(options.credentialId, 8), 16);
+    const fc = parseInt(sha256Truncated(options.issuer, 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-CYCLE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-CYCLE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-lifecycle-${options.eventType}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", event_type: options.eventType, credential_id_hash: sha256Truncated(options.credentialId, 8), issuer_hash: sha256Truncated(options.issuer, 8) };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential privilege change (NHI-PRIV.1). NIST AC-6, IA-4. */
+  witnessNhiPrivilegeChange(options: {
+    credentialId: string;
+    previousScope: string;
+    newScope: string;
+  }): WitnessPayload {
+    const fa = parseInt(sha256Truncated(options.credentialId, 8), 16);
+    const fb = options.previousScope ? parseInt(sha256Truncated(options.previousScope.toLowerCase(), 8), 16) : 0;
+    const fc = parseInt(sha256Truncated(options.newScope.toLowerCase(), 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-PRIV.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-PRIV.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-priv-${sha256Truncated(options.credentialId, 8)}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", credential_id_hash: sha256Truncated(options.credentialId, 8), previous_scope: options.previousScope, new_scope: options.newScope };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential rotation (NHI-ROTATE.1). NIST IA-5(1), SC-12. */
+  witnessNhiRotation(options: {
+    oldCredentialId: string;
+    newCredentialId: string;
+    reason?: string;
+  }): WitnessPayload {
+    const fa = parseInt(sha256Truncated(options.oldCredentialId, 8), 16);
+    const fb = parseInt(sha256Truncated(options.newCredentialId, 8), 16);
+    const fc = NHI_ROTATION_REASON_CODES[options.reason ?? "scheduled"] ?? 1;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-ROTATE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-ROTATE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-rotate-${options.reason ?? "scheduled"}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", old_credential_hash: sha256Truncated(options.oldCredentialId, 8), new_credential_hash: sha256Truncated(options.newCredentialId, 8), reason: options.reason ?? "scheduled" };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential delegation chain (NHI-AGENT.1). NIST AC-6(3), IA-4. */
+  witnessNhiDelegation(options: {
+    delegatorCredentialId: string;
+    delegateeCredentialId: string;
+    delegationDepth?: number;
+  }): WitnessPayload {
+    const fa = parseInt(sha256Truncated(options.delegatorCredentialId, 8), 16);
+    const fb = parseInt(sha256Truncated(options.delegateeCredentialId, 8), 16);
+    const fc = Math.max(1, options.delegationDepth ?? 1);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-AGENT.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-AGENT.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-delegation-depth-${fc}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", delegator_hash: sha256Truncated(options.delegatorCredentialId, 8), delegatee_hash: sha256Truncated(options.delegateeCredentialId, 8), delegation_depth: fc };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential revocation (NHI-REVOKE.1). NIST IA-5(2), SC-12. */
+  witnessNhiRevocation(options: {
+    credentialId: string;
+    reason?: string;
+    cascade?: boolean;
+  }): WitnessPayload {
+    const fa = parseInt(sha256Truncated(options.credentialId, 8), 16);
+    const fb = NHI_REVOCATION_REASON_CODES[options.reason ?? "unspecified"] ?? 0;
+    const fc = options.cascade ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-REVOKE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-REVOKE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `nhi-revoke-${options.reason ?? "unspecified"}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", credential_id_hash: sha256Truncated(options.credentialId, 8), reason: options.reason ?? "unspecified", cascade: options.cascade ?? false };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness credential expiration event (NHI-EXPIRE.1). NIST IA-5(13), Art. 9(2). */
+  witnessNhiExpiration(options: {
+    credentialId: string;
+    expiresEpochMs: number;
+    renewalPossible?: boolean;
+    gracePeriodSeconds?: number;
+  }): WitnessPayload {
+    const credHash = sha256Truncated(options.credentialId, 8);
+    const fa = parseInt(credHash, 16);
+    const fb = Math.floor(options.expiresEpochMs / 1000);
+    const fc = (options.renewalPossible ? 1 : 0) | ((Math.min(options.gracePeriodSeconds ?? 0, 0xFFFFFF) << 8));
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "NHI-EXPIRE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "NHI-EXPIRE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      const label = options.renewalPossible ? "renewable" : "permanent";
+      payload.ai_model_id = `nhi-expire-${label}`;
+      const ctx: Record<string, unknown> = { provider: "nhi-governance", credential_hash: credHash, expires_epoch_ms: options.expiresEpochMs, renewal_possible: options.renewalPossible ?? false, grace_period_seconds: options.gracePeriodSeconds ?? 0 };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── HBOM: Hardware Bill of Materials (v0.7.0) ─────────────────
+
+  /** Witness hardware inventory attestation (HBOM-INV.1). NIST CM-8, EU CBAM. */
+  witnessHardwareInventory(options: {
+    componentCount: number;
+    manifestHash: string;
+    deltaFromBaseline?: number;
+  }): WitnessPayload {
+    const fa = options.componentCount;
+    const fb = parseInt(options.manifestHash.slice(0, 8), 16);
+    const fc = options.deltaFromBaseline ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-INV.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-INV.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-inv-${options.componentCount}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", component_count: options.componentCount, manifest_hash: options.manifestHash };
+      if (options.deltaFromBaseline != null) ctx.delta_from_baseline = options.deltaFromBaseline;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness component lifecycle event (HBOM-LIFE.1). NIST CM-8, SA-22. */
+  witnessComponentLifecycle(options: {
+    eventType: string;
+    componentId: string;
+    ageDays?: number;
+  }): WitnessPayload {
+    const fa = HBOM_LIFECYCLE_EVENT_CODES[options.eventType] ?? 0;
+    const fb = parseInt(sha256Truncated(options.componentId, 8), 16);
+    const fc = options.ageDays ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-LIFE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-LIFE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-lifecycle-${options.eventType}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", event_type: options.eventType, component_id_hash: sha256Truncated(options.componentId, 8) };
+      if (options.ageDays != null) ctx.age_days = options.ageDays;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness thermal profile measurement (HBOM-THERM.1). ASHRAE TC 9.9, EU EED. */
+  witnessThermalProfile(options: {
+    ambientTempC: number;
+    componentTempC: number;
+    thresholdExceeded?: boolean;
+  }): WitnessPayload {
+    const fa = options.ambientTempC;
+    const fb = options.componentTempC;
+    const fc = options.thresholdExceeded ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-THERM.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-THERM.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-thermal-${options.thresholdExceeded ? "exceeded" : "normal"}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", ambient_temp_c: options.ambientTempC, component_temp_c: options.componentTempC, threshold_exceeded: options.thresholdExceeded ?? false };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness water consumption metrics (HBOM-WATER.1). EU EED, EPA WaterSense. */
+  witnessWaterConsumption(options: {
+    litersConsumed: number;
+    wueRatioX1000: number;
+    sourceType?: string;
+  }): WitnessPayload {
+    const fa = options.litersConsumed;
+    const fb = options.wueRatioX1000;
+    const fc = HBOM_WATER_SOURCE_CODES[options.sourceType ?? "municipal"] ?? 1;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-WATER.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-WATER.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-water-${options.sourceType ?? "municipal"}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", liters_consumed: options.litersConsumed, wue_ratio_x1000: options.wueRatioX1000, source_type: options.sourceType ?? "municipal" };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness power usage effectiveness (HBOM-PUE.1). ISO 30134-2, EU EED. */
+  witnessPowerUsage(options: {
+    totalFacilityKw: number;
+    itLoadKw: number;
+    pueX1000: number;
+  }): WitnessPayload {
+    const fa = options.totalFacilityKw;
+    const fb = options.itLoadKw;
+    const fc = options.pueX1000;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-PUE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-PUE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-pue-${options.pueX1000}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", total_facility_kw: options.totalFacilityKw, it_load_kw: options.itLoadKw, pue_x1000: options.pueX1000 };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness supply chain provenance verification (HBOM-SUPPLY.1). NIST SA-12, EU CBAM. */
+  witnessSupplyChainProvenance(options: {
+    supplierId: string;
+    provenanceVerified: boolean;
+    countryOfOrigin: string;
+  }): WitnessPayload {
+    const fa = parseInt(sha256Truncated(options.supplierId, 8), 16);
+    const fb = options.provenanceVerified ? 1 : 0;
+    const fc = parseInt(sha256Truncated(options.countryOfOrigin.toUpperCase(), 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "HBOM-SUPPLY.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "HBOM-SUPPLY.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `hbom-supply-${options.provenanceVerified ? "verified" : "unverified"}`;
+      const ctx: Record<string, unknown> = { provider: "hbom-governance", supplier_id_hash: sha256Truncated(options.supplierId, 8), provenance_verified: options.provenanceVerified, country_of_origin: options.countryOfOrigin };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── DPP: Digital Product Passport / Battery (v0.7.0) ──────────
+
+  /** Witness battery state-of-health reading (DPP-SOH.1). EU Battery Regulation 2023/1542. */
+  witnessBatterySoh(options: {
+    sohPercent: number;
+    cycleCount: number;
+    capacityKwh: number;
+  }): WitnessPayload {
+    const fa = Math.round(options.sohPercent * 100);
+    const fb = options.cycleCount;
+    const fc = Math.round(options.capacityKwh * 100);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "DPP-SOH.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "DPP-SOH.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `dpp-soh-${options.cycleCount}`;
+      const ctx: Record<string, unknown> = { provider: "dpp-governance", soh_percent: options.sohPercent, cycle_count: options.cycleCount, capacity_kwh: options.capacityKwh };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness charge/discharge cycle event (DPP-CHRG.1). EU Battery Regulation 2023/1542. */
+  witnessChargeCycle(options: {
+    eventType: string;
+    energyKwh: number;
+    peakTempC: number;
+  }): WitnessPayload {
+    const fa = DPP_CHARGE_EVENT_CODES[options.eventType] ?? 0;
+    const fb = Math.round(options.energyKwh * 100);
+    const fc = options.peakTempC;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "DPP-CHRG.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "DPP-CHRG.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `dpp-charge-${options.eventType}`;
+      const ctx: Record<string, unknown> = { provider: "dpp-governance", event_type: options.eventType, energy_kwh: options.energyKwh, peak_temp_c: options.peakTempC };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness battery degradation event (DPP-DEGRAD.1). EU Battery Regulation 2023/1542. */
+  witnessDegradationEvent(options: {
+    degradationType: string;
+    sohDeltaPercent: number;
+    ambientTempC: number;
+  }): WitnessPayload {
+    const fa = DPP_DEGRADATION_TYPE_CODES[options.degradationType] ?? 6;
+    const fb = Math.round(options.sohDeltaPercent * 100);
+    const fc = options.ambientTempC;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "DPP-DEGRAD.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "DPP-DEGRAD.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `dpp-degrad-${options.degradationType}`;
+      const ctx: Record<string, unknown> = { provider: "dpp-governance", degradation_type: options.degradationType, soh_delta_percent: options.sohDeltaPercent, ambient_temp_c: options.ambientTempC };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness end-of-life disposition (DPP-EOL.1). EU Battery Regulation 2023/1542, WEEE. */
+  witnessEndOfLife(options: {
+    dispositionType: string;
+    handlerId: string;
+    finalSohPercent: number;
+  }): WitnessPayload {
+    const fa = DPP_DISPOSITION_CODES[options.dispositionType] ?? 1;
+    const fb = parseInt(sha256Truncated(options.handlerId, 8), 16);
+    const fc = Math.round(options.finalSohPercent * 100);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "DPP-EOL.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "DPP-EOL.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `dpp-eol-${options.dispositionType}`;
+      const ctx: Record<string, unknown> = { provider: "dpp-governance", disposition_type: options.dispositionType, handler_id_hash: sha256Truncated(options.handlerId, 8), final_soh_percent: options.finalSohPercent };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── ADR: Automated Demand Response (v0.7.0) ──────────────────
+
+  /** Witness demand response event (ADR-EVENT.1). FERC Order 2222, OpenADR 2.0. */
+  witnessDemandResponse(options: {
+    eventPhase: string;
+    committedKw: number;
+    signalSource: string;
+  }): WitnessPayload {
+    const fa = ADR_EVENT_PHASE_CODES[options.eventPhase] ?? 0;
+    const fb = options.committedKw;
+    const fc = parseInt(sha256Truncated(options.signalSource, 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-EVENT.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-EVENT.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-event-${options.eventPhase}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", event_phase: options.eventPhase, committed_kw: options.committedKw, signal_source: options.signalSource };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness baseline consumption measurement (ADR-BASE.1). IPMVP, M&V 2.0. */
+  witnessBaselineConsumption(options: {
+    baselineKw: number;
+    measurementMethod: string;
+    confidenceX1000?: number;
+  }): WitnessPayload {
+    const fa = options.baselineKw;
+    const fb = ADR_BASELINE_METHOD_CODES[options.measurementMethod] ?? 1;
+    const fc = options.confidenceX1000 ?? 950;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-BASE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-BASE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-baseline-${options.measurementMethod}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", baseline_kw: options.baselineKw, measurement_method: options.measurementMethod, confidence_x1000: options.confidenceX1000 ?? 950 };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness curtailment performance (ADR-CURT.1). FERC Order 745, PJM DR rules. */
+  witnessCurtailment(options: {
+    actualReductionKw: number;
+    committedKw: number;
+    complianceRatioX1000: number;
+  }): WitnessPayload {
+    const fa = options.actualReductionKw;
+    const fb = options.committedKw;
+    const fc = options.complianceRatioX1000;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-CURT.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-CURT.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-curtailment-${options.complianceRatioX1000}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", actual_reduction_kw: options.actualReductionKw, committed_kw: options.committedKw, compliance_ratio_x1000: options.complianceRatioX1000 };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness settlement reconciliation (ADR-SETTLE.1). FERC Order 2222, ISO/RTO settlements. */
+  witnessSettlement(options: {
+    settlementKwh: number;
+    priceUsdPerMwh: number;
+    eventCount: number;
+  }): WitnessPayload {
+    const fa = Math.round(options.settlementKwh * 100);
+    const fb = Math.round(options.priceUsdPerMwh * 100);
+    const fc = options.eventCount;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-SETTLE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-SETTLE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-settlement-${options.eventCount}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", settlement_kwh: options.settlementKwh, price_usd_per_mwh: options.priceUsdPerMwh, event_count: options.eventCount };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness carbon credit or renewable energy certificate (ADR-CARBON.1). EU ETS, I-REC. */
+  witnessCarbonCredit(options: {
+    creditType: string;
+    quantityMwh: number;
+    registryId: string;
+  }): WitnessPayload {
+    const fa = ADR_CREDIT_TYPE_CODES[options.creditType] ?? 1;
+    const fb = Math.round(options.quantityMwh * 100);
+    const fc = parseInt(sha256Truncated(options.registryId, 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-CARBON.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-CARBON.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-carbon-${options.creditType}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", credit_type: options.creditType, quantity_mwh: options.quantityMwh, registry_id_hash: sha256Truncated(options.registryId, 8) };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness grid signal response (ADR-GRID.1). IEEE 2030.5, OpenADR 2.0b. */
+  witnessGridSignal(options: {
+    signalType: string;
+    responseLatencyMs: number;
+    gridOperator: string;
+  }): WitnessPayload {
+    const fa = ADR_SIGNAL_TYPE_CODES[options.signalType] ?? 1;
+    const fb = options.responseLatencyMs;
+    const fc = parseInt(sha256Truncated(options.gridOperator, 8), 16);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "ADR-GRID.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "ADR-GRID.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `adr-grid-${options.signalType}`;
+      const ctx: Record<string, unknown> = { provider: "adr-governance", signal_type: options.signalType, response_latency_ms: options.responseLatencyMs, grid_operator_hash: sha256Truncated(options.gridOperator, 8) };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Harness Governance (v0.7.2) ─────────────────────────────────────
+
+  /**
+   * Witness orchestration topology selection (AI-ORCH.1).
+   *
+   * Records the routing pattern chosen by an agent harness for a
+   * multi-agent task. NIST AI RMF GOVERN 1.3, EU AI Act Art. 9.
+   */
+  witnessOrchestrationTopology(options: {
+    topology: string;
+    agentCount: number;
+    dependencyDepth?: number;
+  }): WitnessPayload {
+    const { ORCHESTRATION_TOPOLOGY_CODES } = require("./types.js");
+    const fa = ORCHESTRATION_TOPOLOGY_CODES[options.topology] ?? 0;
+    const fb = Math.max(options.agentCount, 0);
+    const fc = Math.max(options.dependencyDepth ?? 0, 0);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-ORCH.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-ORCH.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `orch-topology-${options.topology}`;
+      payload.ai_context = { provider: "harness-governance", topology: options.topology, agent_count: options.agentCount, dependency_depth: options.dependencyDepth ?? 0 };
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /**
+   * Witness inter-agent handoff (AI-ORCH.2).
+   *
+   * Records identity linkage when one agent delegates work to another,
+   * including whether the handoff escalates, restricts, or maintains
+   * permissions. NIST AI RMF GOVERN 1.3, EU AI Act Art. 9.
+   */
+  witnessAgentHandoff(options: {
+    delegatorId: string;
+    delegateId: string;
+    permissionDelta?: number;
+  }): WitnessPayload {
+    const d1Hash = sha256Truncated(options.delegatorId, 16);
+    const d2Hash = sha256Truncated(options.delegateId, 16);
+    const fa = parseInt(d1Hash, 16) % 2 ** 32;
+    const fb = parseInt(d2Hash, 16) % 2 ** 32;
+    const delta = options.permissionDelta ?? 0;
+    const fc = Math.max(-1, Math.min(1, delta));
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-ORCH.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-ORCH.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      const deltaLabel = delta > 0 ? "escalation" : (delta < 0 ? "restriction" : "lateral");
+      payload.ai_model_id = `orch-handoff-${deltaLabel}`;
+      payload.ai_context = { provider: "harness-governance", delegator_hash: d1Hash, delegate_hash: d2Hash, permission_delta: fc };
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /**
+   * Witness context window management event (AI-CTX.1).
+   *
+   * Records when a harness truncates, summarizes, or evicts context.
+   * NIST AI RMF MEASURE 2.6, EU AI Act Art. 13.
+   */
+  witnessContextWindow(options: {
+    tokensBefore: number;
+    tokensAfter: number;
+    evictionMethod?: string;
+  }): WitnessPayload {
+    const { EVICTION_METHOD_CODES } = require("./types.js");
+    const eviction = options.evictionMethod ?? "none";
+    const fa = Math.max(options.tokensBefore, 0);
+    const fb = Math.max(options.tokensAfter, 0);
+    const fc = EVICTION_METHOD_CODES[eviction] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-CTX.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-CTX.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `ctx-window-${eviction}`;
+      payload.ai_context = { provider: "harness-governance", tokens_before: options.tokensBefore, tokens_after: options.tokensAfter, eviction_method: eviction };
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /**
+   * Witness sandbox enforcement attestation (AI-SAND.1).
+   *
+   * Records the harness's own report of tool restriction compliance.
+   * Independent verification requires cross-referencing AI-TOOL.1 anchors.
+   * NIST 800-53 SA-11(8), EU AI Act Art. 15, OWASP Agentic A03.
+   */
+  witnessSandboxEnforcement(options: {
+    toolsDeclared: number;
+    toolsInvoked: number;
+    violations?: number;
+  }): WitnessPayload {
+    const fa = Math.max(options.toolsDeclared, 0);
+    const fb = Math.max(options.toolsInvoked, 0);
+    const fc = Math.max(options.violations ?? 0, 0);
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-SAND.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-SAND.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `sandbox-${fc === 0 ? "clean" : "violation"}`;
+      payload.ai_context = { provider: "harness-governance", tools_declared: options.toolsDeclared, tools_invoked: options.toolsInvoked, violations: fc };
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /**
+   * Witness eval gate decision (AI-GATE.1).
+   *
+   * Records pass/fail deployment gating based on eval results.
+   * Auto-computes gateScore from evalsPassed/totalEvals when not provided.
+   * NIST AI RMF MEASURE 2.5, EU AI Act Art. 9(7).
+   */
+  witnessEvalGate(options: {
+    totalEvals: number;
+    evalsPassed: number;
+    gateScore?: number;
+  }): WitnessPayload {
+    const fa = Math.max(options.totalEvals, 0);
+    const fb = Math.max(options.evalsPassed, 0);
+    let score = options.gateScore;
+    if (score == null) {
+      score = Math.round((options.evalsPassed / Math.max(options.totalEvals, 1)) * 100);
+    }
+    const fc = Math.max(0, Math.min(100, score));
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-GATE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-GATE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `eval-gate-${fc >= 70 ? "pass" : "fail"}`;
+      payload.ai_context = { provider: "harness-governance", total_evals: options.totalEvals, evals_passed: options.evalsPassed, gate_score: fc };
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
   // ── Chain, Violation, Charter, Registry, Reviewer, Safe State ───
 
   /**
@@ -4327,6 +5140,151 @@ export class Witness {
       };
       if (options.serverName) ctx.server_name = options.serverName;
       if (options.transportType) ctx.transport_type = options.transportType;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── MCP Tool Integrity (AI-MCP.2) ──────────────────────────────────
+
+  /**
+   * Witness MCP tool integrity attestation (AI-MCP.2).
+   *
+   * Hashes the tool definition/schema at invocation time to detect
+   * tool poisoning (OWASP MCP-03) and schema rug pulls. SDK auto-computes
+   * drift when previousSchemaHash is provided.
+   *
+   * OWASP Agentic Top 10 MCP-03, NIST 800-53 SI-7, EU AI Act Art. 15(4).
+   */
+  witnessToolIntegrity(options: {
+    toolName: string;
+    toolSchema: string | Record<string, unknown>;
+    invocationSeq: number;
+    previousSchemaHash?: string;
+    serverName?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const schemaStr = typeof options.toolSchema === "string"
+      ? options.toolSchema
+      : JSON.stringify(options.toolSchema, Object.keys(options.toolSchema).sort());
+    const schemaHash = sha256Truncated(schemaStr, 16);
+    const fa = parseInt(schemaHash, 16) % 2 ** 32;
+    const fb = options.invocationSeq;
+    const drift = options.previousSchemaHash != null && options.previousSchemaHash !== schemaHash ? 1 : 0;
+    const fc = drift;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `mcp-tool-${options.toolName}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-tool-integrity",
+        tool_name: options.toolName,
+        schema_hash: schemaHash,
+        invocation_seq: options.invocationSeq,
+        schema_drift: drift === 1,
+      };
+      if (options.serverName) ctx.server_name = options.serverName;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── MCP Server Authentication (AI-MCP.3) ─────────────────────────────
+
+  /**
+   * Witness MCP server authentication attestation (AI-MCP.3).
+   *
+   * Records the authentication method used before tool invocation.
+   * PASS when auth is configured. FAIL when no auth (method=0) is
+   * a valid compliance finding per IA-9.
+   *
+   * OWASP Agentic Top 10 MCP-07, NIST 800-53 IA-9, EU AI Act Art. 15(3).
+   */
+  witnessServerAuth(options: {
+    authMethod: number;
+    credentialValiditySeconds?: number;
+    mutualAuth?: boolean;
+    serverName?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.authMethod;
+    const fb = options.credentialValiditySeconds ?? 0;
+    const fc = options.mutualAuth ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.3", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.3", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      const methodLabels: Record<number, string> = { 0: "none", 1: "api_key", 2: "oauth", 3: "mtls", 4: "did" };
+      payload.ai_model_id = `mcp-auth-${methodLabels[options.authMethod] ?? `unknown-${options.authMethod}`}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-server-auth",
+        auth_method: options.authMethod,
+        credential_validity_seconds: fb,
+        mutual_auth: options.mutualAuth ?? false,
+      };
+      if (options.serverName) ctx.server_name = options.serverName;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── MCP Server Discovery (AI-MCP.4) ──────────────────────────────────
+
+  /**
+   * Witness MCP server discovery attestation (AI-MCP.4).
+   *
+   * Records MCP server inventory and unauthorized server detection.
+   * PASS when at least one server discovered. Unauthorized count
+   * provides shadow server visibility.
+   *
+   * OWASP Agentic Top 10 MCP-09, NIST 800-53 CM-8, EU AI Act Art. 15(1).
+   */
+  witnessServerDiscovery(options: {
+    discoveryMethod: number;
+    serversFound: number;
+    unauthorizedCount?: number;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.discoveryMethod;
+    const fb = options.serversFound;
+    const fc = options.unauthorizedCount ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.4", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.4", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      const methodLabels: Record<number, string> = { 0: "manual", 1: "dns-sd", 2: "mdns", 3: "registry", 4: "network" };
+      payload.ai_model_id = `mcp-discovery-${methodLabels[options.discoveryMethod] ?? `method-${options.discoveryMethod}`}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-server-discovery",
+        discovery_method: options.discoveryMethod,
+        servers_found: options.serversFound,
+        unauthorized_count: fc,
+      };
       mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
@@ -5365,7 +6323,7 @@ export class Witness {
    * destination BEFORE clearing proceeds. If the handoff fails, the
    * payload is NOT transmitted.
    */
-  record(inference: InferenceRecord, authorizationId?: string): void {
+  record(inference: InferenceRecord, authorizationId?: string, authorizationExpires?: number, authorizationScope?: string): void {
     if (this._gatewayMode) return;
 
     // Merge guardrail config
@@ -5395,6 +6353,8 @@ export class Witness {
       this.config.legalBasis,
       this.config.purposeClass,
       authorizationId,
+      authorizationExpires ?? this.config.authorizationExpires,
+      authorizationScope ?? this.config.authorizationScope,
       this.config.signingAlgorithm,
     );
 
@@ -5406,12 +6366,16 @@ export class Witness {
       if (!this.handoffWarned) {
         this.handoffWarned = true;
         if (this._localMode) {
-          console.info(`\n  [SWT3] Local mode -- anchors saved to ${this.config.factorHandoffPath}/`);
+          console.info(
+            `\n  [SWT3] Local mode -- anchors saved to ${this.config.factorHandoffPath}/` +
+            `\n  [SWT3] Local anchors cannot be verified by auditors or included in compliance exports.` +
+            `\n  [SWT3] Connect for free: https://sovereign.tenova.io/signup?ref=sdk_local\n`
+          );
         } else {
           console.info(
             `\n  [SWT3] ${payloads.length} anchors saved locally to ${this.config.factorHandoffPath}` +
-            `\n  [SWT3] Local anchors are not persisted to the ledger.` +
-            `\n  [SWT3] Connect to persist: https://sovereign.tenova.io/signup?ref=sdk (free)\n`
+            `\n  [SWT3] Local anchors cannot be verified by auditors or included in compliance exports.` +
+            `\n  [SWT3] Connect to persist (free): https://sovereign.tenova.io/signup?ref=sdk\n`
           );
         }
       }

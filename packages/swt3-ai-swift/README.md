@@ -10,37 +10,59 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
-## What's New in v0.6.6
+## What's New in v0.7.2
 
-Supply chain accountability. Four new procedures, a CI/CD gate action, and OTel GenAI conventions across the ecosystem. Every improvement flows through to Swift because fingerprints are identical across all 10 languages.
+Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. v0.7.2 adds five new procedures for orchestration, context management, sandboxing, and eval gating -- the decisions AI harnesses make before inference that have no audit trail today. It also ships a Witness Middleware (`withSWT3(transport)`) in the companion MCP package that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server, with zero code changes to tool handlers.
 
-### 4 New Procedures
+**Why this matters for Swift:** Apple Intelligence and on-device agents increasingly use tool-calling patterns that mirror MCP. When your iOS or visionOS app delegates inference to a server-side agent pipeline, the harness governance anchors (AI-ORCH.1/2, AI-CTX.1, AI-SAND.1, AI-GATE.1) prove which agent handled the request, whether context was truncated, and whether the eval gate passed before the response reached the device. Your Swift code can verify all five anchor types with the same `SWT3.mintFingerprint` call -- zero package changes. For edge deployments where the device itself hosts an MCP server, the Witness Middleware wraps the transport to attest every tool call without modifying tool handlers.
 
-**AI-PROV.1 (Model Provenance Chain):** Records model lineage -- base model, training pipeline, fine-tuning ancestry. The G7 Hiroshima AI SBOM framework requires provenance documentation. A `parent_model_fingerprint` parameter on model weight/adapter/quantization methods links derivative models to their ancestors. Provenance anchors verify with `SWT3.mintFingerprint` like any other anchor.
+### 5 New Procedures
 
-**AI-DEL.2 (Delegation Boundary):** Records what an agent is NOT permitted to do -- blocked tools, restricted scopes, escalation triggers. EU AI Act Art. 14 requires documented AI system limitations. Where AI-DEL.1 tracks permissions, AI-DEL.2 tracks constraints.
-
-**AI-DENSITY.1 (Anchor Density):** Records the ratio of witnessed events to total events over a time window. Catches the slow coverage drift from 100% to 2% that nobody notices until the audit. A DensityEnforcer class in Python and TypeScript auto-fires density anchors when coverage drops.
-
-**AI-MCP.1 (MCP Security Posture):** Evaluates 8 security properties of an MCP server connection. Records checks passed vs. total -- never which specific checks failed. NSA and CISA flagged 200,000+ vulnerable MCP deployments in 2026. This creates evidence that security was evaluated at connection time without becoming an attack map.
-
-**Why it matters for Swift:** All four procedures produce anchors with the same fingerprint formula. Your Swift app can verify any of these new anchor types with the existing `SWT3.mintFingerprint` function -- no package update required for verification. On-device Core ML models fine-tuned from open-weight base models now have a provenance chain linking edge inference back to the training lineage. The delegation boundary procedure is particularly relevant for iOS agents that need to prove their constraints before operating in restricted environments like healthcare or financial services.
-
-### GitHub Action
-
-`tenova-labs/swt3-gate-action@v1` evaluates `.swt3-gate.yml` in CI/CD. Fails the build when coverage drops. Works with Xcode Cloud and any CI system -- the gate checks anchors on the server, not the SDK in your repo.
-
-### OTel GenAI Conventions (Python + TypeScript)
-
-The OpenTelemetry exporters now emit `gen_ai.system`, `gen_ai.request.model`, and token usage attributes following the OTel GenAI semantic conventions. If your Swift app's backend consumes OTel spans from the Python or TypeScript witness pipeline, these new attributes appear automatically.
+- **AI-ORCH.1** (Orchestration Topology): Records routing pattern (parallel/sequential/hierarchical), agent count, dependency depth.
+- **AI-ORCH.2** (Agent Handoff): Records delegator-to-delegate identity link with permission delta direction.
+- **AI-CTX.1** (Context Window Management): Records token count before/after eviction and the method used.
+- **AI-SAND.1** (Sandbox Enforcement): Records tools declared vs. invoked and violation count.
+- **AI-GATE.1** (Eval Gate Decision): Records eval pass/fail counts with auto-computed gate score.
 
 ### Updated Coverage
 
-- 118 procedures across 64 namespaces (+AI-PROV.1, AI-DEL.2, AI-DENSITY.1, AI-MCP.1)
-- 37 MCP tools (+witness_delegation_boundary, witness_anchor_density, witness_mcp_security, witness_model_provenance)
+- 280 procedures across 77 namespaces (was 275/77)
+- 68 MCP tools (was 63)
 - 10 SDK languages with byte-identical output
-- 36 framework crosswalks, 222 compliance guides
-- 2,825 tests passing across 5 languages
+- 77 framework crosswalks, 265 compliance guides
+- ~3,000 tests passing across 10 languages
+
+## What's New in v0.7.1
+
+MCP security is under fire. OWASP published the MCP Top 10 in 2026 -- 30-82% of MCP servers are vulnerable to tool poisoning, insufficient authentication, and shadow server proliferation. v0.7.1 adds three new procedures (AI-MCP.2, AI-MCP.3, AI-MCP.4) that close the remaining OWASP gaps. SWT3 is now the first protocol to cover all 10 OWASP MCP risks with cryptographic evidence. Every new anchor type verifies with the existing `SWT3.mintFingerprint` function -- no package update required.
+
+**Why this matters for Swift:** When your iOS or visionOS app calls server-side MCP tools, the new MCP security anchors prove the tool schema was stable (AI-MCP.2), the server authenticated (AI-MCP.3), and the server was on your approved list (AI-MCP.4). Zero package changes.
+
+### 3 New Procedures
+
+- **AI-MCP.2** (Tool Integrity Attestation): Detects tool schema drift between connect and invoke. OWASP MCP-03.
+- **AI-MCP.3** (Server Auth Attestation): Records auth method and verification. No auth = FAIL = IA-9 finding. OWASP MCP-07.
+- **AI-MCP.4** (Server Discovery Attestation): Shadow server detection via allowlist check. OWASP MCP-09.
+
+## What's New in v0.7.0
+
+AI does not run in a vacuum. It authenticates with service accounts, runs on hardware with supply chains, and consumes enough electricity to reshape power grids. v0.7.0 extends SWT3 down the full AI infrastructure stack with 22 new procedures across three families: credential governance (NHI), hardware supply chains (HBOM/DPP), and energy management (ADR). Every new anchor type verifies with the existing `SWT3.mintFingerprint` function -- no package update required.
+
+**Why this matters for Swift:** On-device Core ML inference is expanding into healthcare, automotive, and industrial settings where the hardware matters as much as the model. An iPhone running a clinical AI model now has credential governance (which health API keys does the agent hold?), hardware attestation (is the Secure Enclave intact?), and energy monitoring (is the device thermally safe for inference?) all verifiable with the same `SWT3.mintFingerprint` call. Edge devices in EV charging infrastructure can witness battery passport data using the same protocol their server-side Python pipeline uses for inference attestation.
+
+### 22 New Procedures
+
+**NHI (6):** Credential scope, lifecycle, privilege changes, rotation, delegation, revocation. **HBOM/DPP (10):** Hardware inventory, component lifecycle, thermal monitoring, water, PUE, supply chain provenance, battery health, charge cycles, degradation, end-of-life. **ADR (6):** Demand response events, baseline, curtailment, settlement, carbon credits, grid signals.
+
+- 266 procedures across 75 namespaces (was 118/64)
+- 59 MCP tools (was 37)
+- 10 SDK languages with byte-identical output
+- 36 framework crosswalks, 237 compliance guides
+- ~2,950 tests passing across 5 languages
+
+## What's New in v0.6.6
+
+Supply chain accountability. Four new procedures, a CI/CD gate action, and OTel GenAI conventions across the ecosystem. Every improvement flows through to Swift because fingerprints are identical across all 10 languages.
 
 ## What's New in v0.6.5
 

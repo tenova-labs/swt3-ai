@@ -42,6 +42,20 @@ import { handleWitnessOutputFilter } from "./tools/output-filter.js";
 import { handleWitnessTrajectory } from "./tools/trajectory.js";
 import { handleWitnessIncident } from "./tools/incident.js";
 import { handleWitnessDataProvenance } from "./tools/data-provenance.js";
+import {
+  handleNhiScope, handleNhiLifecycle, handleNhiPrivilegeChange,
+  handleNhiRotation, handleNhiDelegation, handleNhiRevocation, handleNhiExpiration,
+  handleHbomInventory, handleHbomLifecycle, handleHbomThermal,
+  handleHbomWater, handleHbomPue, handleHbomSupply,
+  handleDppSoh, handleDppCharge, handleDppDegrad, handleDppEol,
+  handleAdrEvent, handleAdrBaseline, handleAdrCurtailment,
+  handleAdrSettlement, handleAdrCarbon, handleAdrGrid,
+  handleMcpToolIntegrity, handleMcpServerAuth, handleMcpServerDiscovery,
+} from "./tools/verticals.js";
+import {
+  handleOrchestrationTopology, handleAgentHandoff, handleContextWindow,
+  handleSandboxEnforcement, handleEvalGate,
+} from "./tools/harness.js";
 import { buildComplianceCheckPrompt } from "./prompts/compliance-check.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
@@ -953,6 +967,87 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     }
   });
 
+  // --- MCP Tool Integrity (AI-MCP.2) ---
+
+  const mcpBasis = config.demo ? " Currently in DEMO mode -- anchors are minted locally." : "";
+
+  server.registerTool("witness_tool_integrity", {
+    description:
+      "Witness MCP tool integrity attestation (AI-MCP.2). " +
+      "Hashes tool definition/schema to detect poisoning (OWASP MCP-03) " +
+      "and schema rug pulls. Auto-detects drift when previous hash provided. Evidence only." + mcpBasis,
+    inputSchema: {
+      tool_name: z.string().describe("Name of the MCP tool being attested"),
+      tool_schema: z.string().describe("JSON-serialized tool definition/schema"),
+      invocation_seq: z.number().optional().describe("Monotonic invocation counter for this tool"),
+      previous_schema_hash: z.string().optional().describe("SHA-256[:16] hash from previous invocation for drift detection"),
+      server_name: z.string().optional().describe("MCP server name"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleMcpToolIntegrity(args, config, client);
+      trackProcedure(sessionState, "AI-MCP.2");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- MCP Server Authentication (AI-MCP.3) ---
+
+  server.registerTool("witness_server_auth", {
+    description:
+      "Witness MCP server authentication attestation (AI-MCP.3). " +
+      "Records auth method before tool invocation. PASS when auth configured, " +
+      "FAIL when no auth (method=0) -- valid compliance finding per IA-9. Evidence only." + mcpBasis,
+    inputSchema: {
+      auth_method: z.number().describe("Auth method: 0=none, 1=API_key, 2=OAuth, 3=mTLS, 4=DID"),
+      credential_validity_seconds: z.number().optional().describe("TTL of auth credential in seconds"),
+      mutual_auth: z.boolean().optional().describe("Whether mutual authentication occurred"),
+      server_name: z.string().optional().describe("MCP server name"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleMcpServerAuth(args, config, client);
+      trackProcedure(sessionState, "AI-MCP.3");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- MCP Server Discovery (AI-MCP.4) ---
+
+  server.registerTool("witness_server_discovery", {
+    description:
+      "Witness MCP server discovery attestation (AI-MCP.4). " +
+      "Records server inventory and unauthorized server detection. " +
+      "PASS when at least one server discovered. Unauthorized count " +
+      "provides shadow server visibility per OWASP MCP-09. Evidence only." + mcpBasis,
+    inputSchema: {
+      discovery_method: z.number().describe("Discovery method: 0=manual, 1=DNS-SD, 2=mDNS, 3=registry_scan, 4=network_probe"),
+      servers_found: z.number().describe("Total MCP servers discovered"),
+      unauthorized_count: z.number().optional().describe("Servers not in approved registry"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleMcpServerDiscovery(args, config, client);
+      trackProcedure(sessionState, "AI-MCP.4");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
   // --- Model Provenance Chain Tool ---
 
   server.registerTool("witness_model_provenance", {
@@ -1406,6 +1501,203 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     const text = buildComplianceCheckPrompt(args as any);
     return { messages: [{ role: "user" as const, content: { type: "text" as const, text } }] };
   });
+
+  // ── NHI: Non-Human Identity Governance (v6.7) ─────────────────────
+
+  const nhiBasis = config.demo ? " Currently in DEMO mode -- anchors are minted locally." : "";
+
+  server.registerTool("witness_nhi_scope", {
+    description: "Witness credential scope attestation (NHI-SCOPE.1). Creates an audit trail of reported credential permissions. SWT3 is not the credential authority -- it witnesses what the IdP reports. Evidence only." + nhiBasis,
+    inputSchema: {
+      credential_id: z.string().describe("Credential identifier (hashed locally, never sent to server)"),
+      scope: z.string().describe("Permission scope string (e.g., 'read,write,admin')"),
+      ttl_seconds: z.number().optional().describe("Credential time-to-live in seconds (0 = non-expiring)"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiScope(args, config, client);
+      trackProcedure(sessionState, "NHI-SCOPE.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_lifecycle", {
+    description: "Witness credential lifecycle event (NHI-CYCLE.1). Records issuance, activation, suspension, expiration, or revocation. Evidence only." + nhiBasis,
+    inputSchema: {
+      event_type: z.string().describe("Event: 'issued', 'activated', 'suspended', 'expired', 'revoked'"),
+      credential_id: z.string().describe("Credential identifier (hashed locally)"),
+      issuer: z.string().describe("Identity provider name (e.g., 'Entra ID', 'Okta')"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiLifecycle(args, config, client);
+      trackProcedure(sessionState, "NHI-CYCLE.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_privilege_change", {
+    description: "Witness privilege change on a credential (NHI-PRIV.1). Records scope escalation or de-escalation. Evidence only." + nhiBasis,
+    inputSchema: {
+      credential_id: z.string().describe("Credential identifier (hashed locally)"),
+      previous_scope: z.string().optional().describe("Previous scope string (empty if new credential)"),
+      new_scope: z.string().describe("New scope string after privilege change"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiPrivilegeChange(args, config, client);
+      trackProcedure(sessionState, "NHI-PRIV.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_rotation", {
+    description: "Witness credential rotation (NHI-ROTATE.1). Records old-to-new credential swap with reason. Evidence only." + nhiBasis,
+    inputSchema: {
+      old_credential_id: z.string().describe("Outgoing credential identifier (hashed locally)"),
+      new_credential_id: z.string().describe("Incoming credential identifier (hashed locally)"),
+      reason: z.string().optional().describe("Reason: 'scheduled', 'compromise', 'policy', 'manual'"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiRotation(args, config, client);
+      trackProcedure(sessionState, "NHI-ROTATE.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_delegation", {
+    description: "Witness agent-to-agent credential delegation (NHI-AGENT.1). Records delegation chain depth and participants. Evidence only." + nhiBasis,
+    inputSchema: {
+      delegator_credential_id: z.string().describe("Delegating agent's credential (hashed locally)"),
+      delegatee_credential_id: z.string().describe("Receiving agent's credential (hashed locally)"),
+      delegation_depth: z.number().optional().describe("Chain depth: 1=direct, 2+=chained (default: 1)"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiDelegation(args, config, client);
+      trackProcedure(sessionState, "NHI-AGENT.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_revocation", {
+    description: "Witness credential revocation (NHI-REVOKE.1). Records which credential was revoked, why, and whether it cascades. Evidence only." + nhiBasis,
+    inputSchema: {
+      credential_id: z.string().describe("Revoked credential identifier (hashed locally)"),
+      reason: z.string().optional().describe("Reason: 'unspecified', 'model_recall', 'policy_violation', 'data_contamination', 'consent_withdrawal', 'regulatory_order', 'error_correction'"),
+      cascade: z.boolean().optional().describe("Whether revocation cascades to delegated credentials"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiRevocation(args, config, client);
+      trackProcedure(sessionState, "NHI-REVOKE.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  server.registerTool("witness_nhi_expiration", {
+    description: "Witness credential expiration event (NHI-EXPIRE.1). Records when a credential expires, whether renewal is possible, and grace period. Evidence only." + nhiBasis,
+    inputSchema: {
+      credential_id: z.string().describe("Expiring credential identifier (hashed locally)"),
+      expires_epoch_ms: z.number().describe("Expiration timestamp in epoch milliseconds"),
+      renewal_possible: z.boolean().optional().describe("Whether the credential can be renewed"),
+      grace_period_seconds: z.number().optional().describe("Grace period after expiry in seconds"),
+      agent_id: z.string().optional(), cycle_id: z.string().optional(),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleNhiExpiration(args, config, client);
+      trackProcedure(sessionState, "NHI-EXPIRE.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // ── HBOM: Hardware Bill of Materials (v6.7) ───────────────────────
+
+  server.registerTool("witness_hbom_inventory", { description: "Witness hardware inventory attestation (HBOM-INV.1). EU CRA Art. 10(9). Evidence only." + nhiBasis, inputSchema: { component_count: z.number().describe("Number of hardware components"), manifest_hash: z.string().describe("SHA-256 hash of inventory manifest"), delta_from_baseline: z.number().optional().describe("Components added/removed since last attestation"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomInventory(args, config, client); trackProcedure(sessionState, "HBOM-INV.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_hbom_lifecycle", { description: "Witness component lifecycle event (HBOM-LIFE.1). EU Battery Reg Art. 77. Evidence only." + nhiBasis, inputSchema: { event_type: z.string().describe("Event: 'installed', 'commissioned', 'maintained', 'degraded', 'decommissioned', 'recycled'"), component_id: z.string().describe("Component identifier (hashed locally)"), age_days: z.number().optional().describe("Component age in days"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomLifecycle(args, config, client); trackProcedure(sessionState, "HBOM-LIFE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_hbom_thermal", { description: "Witness thermal profile (HBOM-THERM.1). ASHRAE TC 9.9. Evidence only." + nhiBasis, inputSchema: { ambient_temp_c: z.number().describe("Ambient temperature in Celsius"), component_temp_c: z.number().describe("Component temperature in Celsius"), threshold_exceeded: z.boolean().optional().describe("Whether thermal threshold was exceeded"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomThermal(args, config, client); trackProcedure(sessionState, "HBOM-THERM.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_hbom_water", { description: "Witness water consumption (HBOM-WATER.1). CSRD ESRS-E3. Evidence only." + nhiBasis, inputSchema: { liters_consumed: z.number().describe("Water consumption in liters"), wue_ratio_x1000: z.number().describe("WUE ratio x1000"), source_type: z.string().optional().describe("Source: 'municipal', 'recycled', 'rainwater', 'groundwell', 'mixed'"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomWater(args, config, client); trackProcedure(sessionState, "HBOM-WATER.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_hbom_pue", { description: "Witness PUE attestation (HBOM-PUE.1). EU EED Art. 12, ISO 30134-2. Evidence only." + nhiBasis, inputSchema: { total_facility_kw: z.number().describe("Total facility power in kW"), it_load_kw: z.number().describe("IT load power in kW"), pue_x1000: z.number().describe("PUE ratio x1000 (e.g., 1250 = 1.25)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomPue(args, config, client); trackProcedure(sessionState, "HBOM-PUE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_hbom_supply", { description: "Witness hardware supply chain provenance (HBOM-SUPPLY.1). EU CRA Art. 10(9). Evidence only." + nhiBasis, inputSchema: { supplier_id: z.string().describe("Supplier identifier (hashed locally)"), provenance_verified: z.boolean().describe("Whether supply chain docs were verified"), country_of_origin: z.string().describe("ISO 3166-1 country code"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleHbomSupply(args, config, client); trackProcedure(sessionState, "HBOM-SUPPLY.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  // ── DPP: Digital Product Passport (v6.7) ──────────────────────────
+
+  server.registerTool("witness_dpp_soh", { description: "Witness battery State of Health (DPP-SOH.1). EU Battery Reg Art. 14(1). Evidence only." + nhiBasis, inputSchema: { soh_percent: z.number().describe("State of Health percentage (e.g., 92.3)"), cycle_count: z.number().describe("Charge/discharge cycles completed"), capacity_kwh: z.number().describe("Remaining capacity in kWh"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleDppSoh(args, config, client); trackProcedure(sessionState, "DPP-SOH.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_dpp_charge", { description: "Witness charge/discharge cycle (DPP-CHRG.1). EU Battery Reg Art. 14(1). Evidence only." + nhiBasis, inputSchema: { event_type: z.string().describe("Event: 'charge_start', 'charge_complete', 'discharge_start', 'discharge_complete'"), energy_kwh: z.number().describe("Energy transferred in kWh"), peak_temp_c: z.number().describe("Peak temperature in Celsius"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleDppCharge(args, config, client); trackProcedure(sessionState, "DPP-CHRG.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_dpp_degradation", { description: "Witness battery degradation (DPP-DEGRAD.1). EU Battery Reg Art. 14(1). Evidence only." + nhiBasis, inputSchema: { degradation_type: z.string().describe("Cause: 'calendar_aging', 'thermal_stress', 'overcharge', 'deep_discharge', 'mechanical', 'unknown'"), soh_delta_percent: z.number().describe("SoH drop in percentage points"), ambient_temp_c: z.number().describe("Ambient temperature in Celsius"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleDppDegrad(args, config, client); trackProcedure(sessionState, "DPP-DEGRAD.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_dpp_eol", { description: "Witness end-of-life handoff (DPP-EOL.1). EU Battery Reg Art. 59. Evidence only." + nhiBasis, inputSchema: { disposition_type: z.string().describe("Disposition: 'recycling', 'repurpose', 'refurbishment', 'landfill', 'hazmat_disposal'"), handler_id: z.string().describe("Receiving handler identifier (hashed locally)"), final_soh_percent: z.number().describe("Final SoH at handoff (percentage)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleDppEol(args, config, client); trackProcedure(sessionState, "DPP-EOL.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  // ── ADR: Automated Demand Response (v6.7) ─────────────────────────
+
+  server.registerTool("witness_adr_event", { description: "Witness demand response event (ADR-EVENT.1). FERC Order 2222. Evidence only." + nhiBasis, inputSchema: { event_phase: z.string().describe("Phase: 'signal_received', 'curtailment_start', 'curtailment_end', 'restoration'"), committed_kw: z.number().describe("Committed curtailment in kW"), signal_source: z.string().describe("Grid operator identifier (hashed locally)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrEvent(args, config, client); trackProcedure(sessionState, "ADR-EVENT.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_adr_baseline", { description: "Witness baseline consumption (ADR-BASE.1). FERC Order 2222. Evidence only." + nhiBasis, inputSchema: { baseline_kw: z.number().describe("Baseline power in kW"), measurement_method: z.string().describe("Method: 'metered_10day_avg', 'regression', 'real_time_meter', 'deemed_savings'"), confidence_x1000: z.number().optional().describe("Confidence x1000 (default: 950 = 95%)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrBaseline(args, config, client); trackProcedure(sessionState, "ADR-BASE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_adr_curtailment", { description: "Witness curtailment verification (ADR-CURT.1). FERC Order 2222. Evidence only." + nhiBasis, inputSchema: { actual_reduction_kw: z.number().describe("Actual reduction in kW"), committed_kw: z.number().describe("Committed curtailment in kW"), compliance_ratio_x1000: z.number().describe("Compliance ratio x1000 (e.g., 1050 = 105%)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrCurtailment(args, config, client); trackProcedure(sessionState, "ADR-CURT.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_adr_settlement", { description: "Witness settlement data (ADR-SETTLE.1). FERC Order 2222. Evidence only." + nhiBasis, inputSchema: { settlement_kwh: z.number().describe("Settlement quantity in kWh"), price_usd_per_mwh: z.number().describe("Price in USD/MWh"), event_count: z.number().describe("Number of DR events in settlement period"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrSettlement(args, config, client); trackProcedure(sessionState, "ADR-SETTLE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_adr_carbon", { description: "Witness carbon credit / REC (ADR-CARBON.1). EU CBAM, EU RED III. Evidence only." + nhiBasis, inputSchema: { credit_type: z.string().describe("Type: 'rec', 'carbon_offset', 'eac', 'guarantee_of_origin'"), quantity_mwh: z.number().describe("Quantity in MWh"), registry_id: z.string().describe("Registry identifier (e.g., 'M-RETS')"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrCarbon(args, config, client); trackProcedure(sessionState, "ADR-CARBON.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_adr_grid_signal", { description: "Witness grid signal correlation (ADR-GRID.1). FERC Order 2222, NERC BAL-001. Evidence only." + nhiBasis, inputSchema: { signal_type: z.string().describe("Signal: 'emergency', 'economic', 'capacity', 'frequency_regulation', 'voltage_support'"), response_latency_ms: z.number().describe("Response latency in milliseconds"), grid_operator: z.string().describe("Grid operator identifier (hashed locally)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAdrGrid(args, config, client); trackProcedure(sessionState, "ADR-GRID.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  // --- Harness Governance (v0.7.2) ---
+
+  const harnessBasis = "\n\nBasis: NIST AI RMF GOVERN 1.3, EU AI Act Art. 9/15, OWASP Agentic Top 10.";
+
+  server.registerTool("witness_orchestration_topology", { description: "Witness orchestration topology selection (AI-ORCH.1). Records when a harness selects sequential, parallel, hierarchical, hybrid, or mesh routing for a multi-agent task. Evidence only." + harnessBasis, inputSchema: { topology: z.string().describe("Routing pattern: 'sequential', 'parallel', 'hierarchical', 'hybrid', 'mesh'"), agent_count: z.number().describe("Number of agents in the topology"), dependency_depth: z.number().optional().describe("Max depth of task dependency graph (default 0)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleOrchestrationTopology(args, config, client); trackProcedure(sessionState, "AI-ORCH.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_agent_handoff", { description: "Witness inter-agent handoff (AI-ORCH.2). Records when one agent delegates work to another with permission boundary changes. Evidence only." + harnessBasis, inputSchema: { delegator_id: z.string().describe("Identifier of the delegating agent (hashed locally)"), delegate_id: z.string().describe("Identifier of the receiving agent (hashed locally)"), permission_delta: z.number().optional().describe("Permission change: 1=escalation, 0=lateral (default), -1=restriction"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleAgentHandoff(args, config, client); trackProcedure(sessionState, "AI-ORCH.2"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_context_window", { description: "Witness context window management (AI-CTX.1). Records when a harness truncates, summarizes, or evicts context tokens. Evidence only." + harnessBasis, inputSchema: { tokens_before: z.number().describe("Token count before the management event"), tokens_after: z.number().describe("Token count after the management event"), eviction_method: z.string().optional().describe("Method: 'none' (default), 'truncation', 'summarization', 'sliding_window', 'priority_eviction'"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleContextWindow(args, config, client); trackProcedure(sessionState, "AI-CTX.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_sandbox_enforcement", { description: "Witness sandbox enforcement attestation (AI-SAND.1). Records the harness's own report of tool restriction compliance. Cross-reference AI-TOOL.1 for independent verification. Evidence only." + harnessBasis, inputSchema: { tools_declared: z.number().describe("Number of tools in the sandbox allow-list"), tools_invoked: z.number().describe("Number of distinct tools actually invoked"), violations: z.number().optional().describe("Count of out-of-scope invocations (default 0)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleSandboxEnforcement(args, config, client); trackProcedure(sessionState, "AI-SAND.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_eval_gate", { description: "Witness eval gate decision (AI-GATE.1). Records pass/fail deployment gating based on eval results. Auto-computes gate score when not provided. Evidence only." + harnessBasis, inputSchema: { total_evals: z.number().describe("Total evaluation checks executed"), evals_passed: z.number().describe("Number of checks that passed"), gate_score: z.number().optional().describe("Gate score 0-100 (auto-computed from evals if omitted)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleEvalGate(args, config, client); trackProcedure(sessionState, "AI-GATE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
 
   // --- Resources ---
 

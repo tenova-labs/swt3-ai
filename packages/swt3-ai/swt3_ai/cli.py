@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-VERSION = "0.6.6"
+VERSION = "0.7.2"
 
 PROFILES = {
     "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",
@@ -324,22 +324,59 @@ def main() -> None:
             )
         else:
             from .fingerprint import mint_fingerprint
+            import datetime
 
-            recomputed = mint_fingerprint(
-                tenant, procedure,
-                float(fa), float(fb), float(fc),
-                int(ts),
-            )
+            _fa, _fb, _fc, _ts = float(fa), float(fb), float(fc), int(ts)
+
+            # Consistent number formatting (match fingerprint.py)
+            def _num_str(v: float) -> str:
+                return str(int(v)) if v == int(v) else str(v)
+
+            recomputed = mint_fingerprint(tenant, procedure, _fa, _fb, _fc, _ts)
             claimed = anchor.rsplit("-", 1)[-1] if anchor else ""
             match = recomputed == claimed
 
+            # Colors (respect non-TTY)
+            _green = "\033[32m" if sys.stdout.isatty() else ""
+            _red = "\033[31m" if sys.stdout.isatty() else ""
+            _bold = "\033[1m" if sys.stdout.isatty() else ""
+            _dim = "\033[2m" if sys.stdout.isatty() else ""
+            _cyan = "\033[36m" if sys.stdout.isatty() else ""
+            _rst = "\033[0m" if sys.stdout.isatty() else ""
+
+            # Human-readable timestamp
+            ts_sec = _ts / 1000 if _ts > 1e12 else _ts
+            try:
+                ts_human = datetime.datetime.fromtimestamp(ts_sec, tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+            except (OSError, ValueError):
+                ts_human = "invalid"
+
+            # Formula preimage
+            formula = f'WITNESS:{tenant}:{procedure}:{_num_str(_fa)}:{_num_str(_fb)}:{_num_str(_fc)}:{_ts}'
+
+            sep = "\u2500" * 55
+
+            print(f"\n  {_bold}SWT3 Verify{_rst}")
+            print(f"  {sep}")
+            print(f"  Anchor:     {_cyan}{anchor}{_rst}")
+            print(f"  Tenant:     {tenant}")
+            print(f"  Procedure:  {procedure}")
+            print(f"  Timestamp:  {_ts} ({ts_human})")
+            print(f"  Formula:    {_dim}SHA256(\"{formula}\")[:12]{_rst}")
+            print(f"  {sep}")
+            print()
+
             if match:
-                print(f"\033[32mCERTIFIED TRUTH\033[0m")
-                print(f"  Fingerprint: {recomputed}")
+                print(f"  {_green}{_bold}CERTIFIED TRUTH{_rst}")
+                print(f"    Fingerprint: {_green}{recomputed}{_rst}")
+                print(f"    {_dim}The claimed fingerprint matches the recomputed SHA-256.{_rst}")
             else:
-                print(f"\033[31mTAMPERED\033[0m")
-                print(f"  Claimed:    {claimed}")
-                print(f"  Recomputed: {recomputed}")
+                print(f"  {_red}{_bold}TAMPERED{_rst}")
+                print(f"    Claimed:    {_red}{claimed}{_rst}")
+                print(f"    Recomputed: {recomputed}")
+                print(f"    {_dim}The fingerprint does not match. This anchor may have been altered.{_rst}")
+
+            print(f"\n  {_dim}Zero network calls. Offline verification complete.{_rst}\n")
     elif cmd == "procedures":
         from .procedures import handle_procedures
         namespace = _get_flag(args[1:], "--namespace")

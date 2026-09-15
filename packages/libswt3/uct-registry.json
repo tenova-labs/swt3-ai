@@ -3,8 +3,8 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-06-06T00:00:00Z",
-  "description": "Universal Control Taxonomy (UCT) Registry. Defines the factor semantics, evaluation rules, and framework cross-references for every SWT3-anchored compliance procedure. Covers NIST 800-53, NIST AI RMF, CMMC, 800-171, FedRAMP, DoD RMF, EU AI Act, ISO 42001, GDPR, Five-Eyes Agentic AI, OWASP Agentic Top 10, SR 11-7, Colorado SB 26-189, Illinois SB 315, GPAI Code of Practice, EO 14110, EO 14028, OSHA 1926, and HIPAA.",
+  "generated_at": "2026-09-03T23:40:25Z",
+  "description": "Universal Control Taxonomy (UCT) Registry. Defines the factor semantics, evaluation rules, and framework cross-references for every SWT3-anchored compliance procedure. Covers NIST 800-53, NIST AI RMF, NIST AI 600-1, CMMC, 800-171, FedRAMP, DoD RMF, EU AI Act, EU CRA, EU DORA, ISO 42001, ISO 23894, GDPR, Five-Eyes Agentic AI, OWASP Agentic Top 10, SR 11-7, CA CCPA ADMT, Colorado SB 26-189, Illinois SB 315, GPAI Code of Practice, EO 14179, EO 14110, EO 14028, South Korea AI Basic Act, OSHA 1926, and HIPAA.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "fingerprint_formula": "SHA256('WITNESS:' + tenant_id + ':' + procedure_id + ':' + factor_a + ':' + factor_b + ':' + factor_c + ':' + timestamp_ms)[0:12]",
   "procedures": {
@@ -528,7 +528,7 @@
     "AI-GRD.1": {
       "procedure_id": "AI-GRD.1",
       "parent_control": "AI-GRD",
-      "title": "Guardrail Enforcement — Required Safety Filters Active",
+      "title": "Guardrail Enforcement \u2014 Required Safety Filters Active",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_GUARDRAIL_ENFORCEMENT",
@@ -559,14 +559,16 @@
         "ISO-42001": "A.8.3",
         "NIST-AI-RMF": "GOVERN 1.5",
         "OWASP-AGENTIC": "MCP-03",
-        "SG-IMDA-AGENTIC": "MGF-3.1"
+        "SG-IMDA-AGENTIC": "MGF-3.1",
+        "ID-SB-1297": "Sec.2(c)",
+        "NIST-AI-600-1": "GAI-3"
       },
       "namespace": "AI"
     },
     "AI-GRD.2": {
       "procedure_id": "AI-GRD.2",
       "parent_control": "AI-GRD",
-      "title": "Content Safety Filter — Output Classification Passed",
+      "title": "Content Safety Filter \u2014 Output Classification Passed",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_CONTENT_SAFETY",
@@ -595,14 +597,15 @@
         "EU-AI-ACT": "Art.15(3)",
         "FIVE-EYES-AGENTIC": "FE-7",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-03"
+        "OWASP-AGENTIC": "MCP-03",
+        "NIST-AI-600-1": "GAI-3"
       },
       "namespace": "AI"
     },
     "AI-INF.1": {
       "procedure_id": "AI-INF.1",
       "parent_control": "AI-INF",
-      "title": "Inference Provenance — Prompt/Response Hash Capture",
+      "title": "Inference Provenance \u2014 Prompt/Response Hash Capture",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_INFERENCE_PROVENANCE",
@@ -632,14 +635,16 @@
         "EU-AI-ACT": "Art.12(1)",
         "FIVE-EYES-AGENTIC": "FE-2,FE-4",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "VN-LAW-134": "Art.41",
+        "NIST-AI-600-1": "GAI-2"
       },
       "namespace": "AI"
     },
     "AI-INF.2": {
       "procedure_id": "AI-INF.2",
       "parent_control": "AI-INF",
-      "title": "Inference Latency — Response Time Within Threshold",
+      "title": "Inference Latency \u2014 Response Time Within Threshold",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_INFERENCE_LATENCY",
@@ -675,7 +680,7 @@
     "AI-MDL.1": {
       "procedure_id": "AI-MDL.1",
       "parent_control": "AI-MDL",
-      "title": "Model Weight Integrity — Deployed Hash Matches Approved",
+      "title": "Model Weight Integrity \u2014 Deployed Hash Matches Approved",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_MODEL_INTEGRITY",
@@ -707,14 +712,16 @@
         "NIST-AI-RMF": "MANAGE 1.3",
         "OWASP-AGENTIC": "MCP-04",
         "SR-11-7": "III.B",
-        "NIS-2": "Art.21(2)(e)"
+        "NIS-2": "Art.21(2)(e)",
+        "EU-CRA": "Art.10(4)",
+        "KR-AI-BASIC": "Art.28"
       },
       "namespace": "AI"
     },
     "AI-MDL.2": {
       "procedure_id": "AI-MDL.2",
       "parent_control": "AI-MDL",
-      "title": "Model Version Tracking — Version Identifier Recorded",
+      "title": "Model Version Tracking \u2014 Version Identifier Recorded",
       "category": "AI",
       "scope": "ai_governance",
       "check_type": "AI_MODEL_VERSION",
@@ -4079,7 +4086,7 @@
     "VARP-BASELINE": {
       "procedure_id": "VARP-BASELINE",
       "parent_control": "SI-2",
-      "title": "VARP Baseline — All remediations completed",
+      "title": "VARP Baseline \u2014 All remediations completed",
       "category": "linux_infra",
       "scope": "linux_infra",
       "check_type": "VARP Baseline Completeness",
@@ -4108,7 +4115,7 @@
     "VARP-FLAGGED-REM": {
       "procedure_id": "VARP-FLAGGED-REM",
       "parent_control": "SI-2",
-      "title": "VARP Flagged Items — All critical findings resolved",
+      "title": "VARP Flagged Items \u2014 All critical findings resolved",
       "category": "linux_infra",
       "scope": "linux_infra",
       "check_type": "VARP Flagged Items Remediation",
@@ -4204,7 +4211,11 @@
         "NIST-800-53": "AU-11",
         "NIST-AI-RMF": "GOVERN 1.4",
         "NIS-2": "Art.21(2)(f)",
-        "SG-IMDA-AGENTIC": "MGF-4.2"
+        "SG-IMDA-AGENTIC": "MGF-4.2",
+        "CA-CCPA-ADMT": "Art.12",
+        "EU-DORA": "Art.12",
+        "EU-CRA": "Art.10(10)",
+        "HEALTH-INS-AI": "NAIC-MB,IN-HEA-1304"
       },
       "namespace": "AI"
     },
@@ -4833,7 +4844,13 @@
         "SR-11-7": "III.A",
         "KR-AI-BASIC": "Art.25",
         "TX-TRAIGA": "Sec.224.105",
-        "NYC-LL144": "Sec.20-871(a)"
+        "NYC-LL144": "Sec.20-871(a)",
+        "HEALTH-INS-AI": "NAIC-MB Sec.5",
+        "MD-HB-895": "Sec.3(a)",
+        "VN-LAW-134": "Art.48",
+        "CA-CCPA-ADMT": "Art.11(c)(3)",
+        "NIST-AI-600-1": "GAI-6",
+        "ISO-23894": "Cl.6.1.3"
       },
       "namespace": "AI"
     },
@@ -4871,7 +4888,8 @@
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MAP 2.3",
         "SR-11-7": "III.A",
-        "NYC-LL144": "Sec.20-871(a)"
+        "NYC-LL144": "Sec.20-871(a)",
+        "NIST-AI-600-1": "GAI-6"
       },
       "namespace": "AI"
     },
@@ -4913,7 +4931,13 @@
         "CA-SB-942": "Sec.22757.5(c)",
         "KR-AI-BASIC": "Art.28",
         "TX-TRAIGA": "Sec.224.107",
-        "NYC-LL144": "Sec.20-871(d)"
+        "NYC-LL144": "Sec.20-871(d)",
+        "HEALTH-INS-AI": "NAIC-MB Sec.6",
+        "MD-HB-895": "Sec.4(a)",
+        "RI-AI-LAWS": "Clinical Disclosure Sec.5",
+        "VN-LAW-134": "Art.44",
+        "CA-CCPA-ADMT": "Art.12",
+        "ISO-23894": "Cl.6.1.2"
       },
       "namespace": "AI"
     },
@@ -4949,7 +4973,8 @@
         "EU-AI-ACT": "Art.10(2)(a)",
         "FIVE-EYES-AGENTIC": "FE-14",
         "ISO-42001": "A.8.4",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "NIST-AI-600-1": "GAI-10"
       },
       "namespace": "AI"
     },
@@ -5023,7 +5048,8 @@
         "FIVE-EYES-AGENTIC": "FE-14",
         "GDPR": "Art.25",
         "ISO-42001": "A.8.2",
-        "NIST-AI-RMF": "MAP 3.5"
+        "NIST-AI-RMF": "MAP 3.5",
+        "NIST-AI-600-1": "GAI-4"
       },
       "namespace": "AI"
     },
@@ -5065,7 +5091,15 @@
         "NIS-2": "Art.21(2)(g)",
         "KR-AI-BASIC": "Art.24",
         "SG-IMDA-AGENTIC": "MGF-3.3",
-        "TX-TRAIGA": "Sec.224.106"
+        "TX-TRAIGA": "Sec.224.106",
+        "HEALTH-INS-AI": "IN-HEA-1304 Sec.3",
+        "ID-SB-1297": "Sec.2(b)",
+        "RI-AI-LAWS": "Therapy Ban Sec.2",
+        "TN-SB-1580": "Sec.4",
+        "VN-LAW-134": "Art.45",
+        "CA-CCPA-ADMT": "Art.11(d)",
+        "NIST-AI-600-1": "GAI-7",
+        "ISO-23894": "Cl.6.1.5"
       },
       "namespace": "AI"
     },
@@ -5102,7 +5136,9 @@
         "EU-AI-ACT": "Art.14(4)(d)",
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
-        "NIST-AI-RMF": "MANAGE 4.1"
+        "NIST-AI-RMF": "MANAGE 4.1",
+        "NIST-AI-600-1": "GAI-7",
+        "HEALTH-INS-AI": "GA-SB-444,IL-SB-3114"
       },
       "namespace": "AI"
     },
@@ -5144,7 +5180,10 @@
         "CA-SB-942": "Sec.22757.5(b)",
         "KR-AI-BASIC": "Art.22",
         "TX-TRAIGA": "Sec.224.104",
-        "NYC-LL144": "Sec.20-871(b)"
+        "NYC-LL144": "Sec.20-871(b)",
+        "HEALTH-INS-AI": "IN-HEA-1304 Sec.4",
+        "MD-HB-895": "Sec.3(c)",
+        "CA-CCPA-ADMT": "Art.11(c)(2)"
       },
       "namespace": "AI"
     },
@@ -5182,7 +5221,8 @@
         "FIVE-EYES-AGENTIC": "FE-9",
         "ISO-42001": "A.8.3",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "IV.B"
+        "SR-11-7": "IV.B",
+        "NIST-AI-600-1": "GAI-2"
       },
       "namespace": "AI"
     },
@@ -5222,7 +5262,17 @@
         "NIST-800-53": "PL-4",
         "NIST-AI-RMF": "GOVERN 1.1",
         "NIS-2": "Art.21(2)(a)",
-        "TX-TRAIGA": "Sec.224.102"
+        "TX-TRAIGA": "Sec.224.102",
+        "HEALTH-INS-AI": "NAIC-MB Sec.3",
+        "RI-AI-LAWS": "Therapy Ban Sec.5",
+        "TN-SB-1580": "Sec.7",
+        "VN-LAW-134": "Art.40",
+        "CA-CCPA-ADMT": "Art.12",
+        "EU-DORA": "Art.5",
+        "ISO-23894": "Cl.5",
+        "EO-14179": "Sec.2",
+        "EU-CRA": "Art.13(1)",
+        "KR-AI-BASIC": "Art.23"
       },
       "namespace": "AI"
     },
@@ -5260,7 +5310,8 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "7.2",
         "NIST-800-53": "AT-2",
-        "NIST-AI-RMF": "GOVERN 2.1"
+        "NIST-AI-RMF": "GOVERN 2.1",
+        "KR-AI-BASIC": "Art.30"
       },
       "namespace": "AI"
     },
@@ -5373,7 +5424,8 @@
         "ISO-42001": "A.6.2.7",
         "NIST-800-53": "SA-4",
         "NIST-AI-RMF": "GOVERN 6.1",
-        "SR-11-7": "V.A"
+        "SR-11-7": "V.A",
+        "EU-DORA": "Art.28-30"
       },
       "namespace": "AI"
     },
@@ -5450,7 +5502,11 @@
         "OWASP-AGENTIC": "MCP-01,MCP-07",
         "NIS-2": "Art.21(2)(i)",
         "CA-SB-942": "Sec.22757.5(d)",
-        "SG-IMDA-AGENTIC": "MGF-2.1"
+        "SG-IMDA-AGENTIC": "MGF-2.1",
+        "ID-SB-1297": "Sec.2(a)",
+        "RI-AI-LAWS": "Therapy Ban Sec.3",
+        "TN-SB-1580": "Sec.3(b)",
+        "VN-LAW-134": "Art.42(b)"
       },
       "namespace": "AI"
     },
@@ -5565,7 +5621,10 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MANAGE 2.3",
-        "OWASP-AGENTIC": "MCP-03"
+        "OWASP-AGENTIC": "MCP-03",
+        "NIST-AI-600-1": "GAI-9",
+        "EO-14179": "Sec.5",
+        "EU-CRA": "Art.10(1)"
       },
       "namespace": "AI"
     },
@@ -5602,7 +5661,9 @@
         "FIVE-EYES-AGENTIC": "FE-10",
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-10",
-        "NIST-AI-RMF": "MANAGE 2.3"
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "NIST-AI-600-1": "GAI-9",
+        "EU-CRA": "Art.10(3)"
       },
       "namespace": "AI"
     },
@@ -5639,7 +5700,8 @@
         "EU-AI-ACT": "Art.17",
         "ISO-42001": "6.1",
         "NIST-800-53": "PM-9",
-        "NIST-AI-RMF": "GOVERN 1.3"
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "ISO-23894": "Cl.5.1"
       },
       "namespace": "AI"
     },
@@ -6005,7 +6067,11 @@
         "SR-11-7": "II.A",
         "NIS-2": "Art.21(2)(a)",
         "KR-AI-BASIC": "Art.27",
-        "TX-TRAIGA": "Sec.224.103"
+        "TX-TRAIGA": "Sec.224.103",
+        "CA-CCPA-ADMT": "Art.12",
+        "EU-DORA": "Art.6-7",
+        "ISO-23894": "Cl.6.1",
+        "EO-14179": "Sec.4"
       },
       "namespace": "AI"
     },
@@ -6043,7 +6109,9 @@
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-8",
         "NIST-AI-RMF": "MANAGE 3.1",
-        "NIS-2": "Art.21(2)(b)"
+        "NIS-2": "Art.21(2)(b)",
+        "EU-DORA": "Art.17",
+        "HEALTH-INS-AI": "GA-SB-444,IN-HEA-1304"
       },
       "namespace": "AI"
     },
@@ -6082,7 +6150,9 @@
         "NIST-800-53": "RA-3",
         "NIST-AI-RMF": "MAP 5.2",
         "KR-AI-BASIC": "Art.27",
-        "TX-TRAIGA": "Sec.224.103"
+        "TX-TRAIGA": "Sec.224.103",
+        "CA-CCPA-ADMT": "Art.12",
+        "ISO-23894": "Cl.6.2"
       },
       "namespace": "AI"
     },
@@ -6637,7 +6707,13 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MANAGE 2.3",
         "NIS-2": "Art.21(2)(c)",
-        "KR-AI-BASIC": "Art.26"
+        "KR-AI-BASIC": "Art.26",
+        "HEALTH-INS-AI": "WA-SB-5518 Sec.5",
+        "ID-SB-1297": "Sec.2(b)",
+        "RI-AI-LAWS": "SB-2195 Sec.4",
+        "TN-SB-1580": "Sec.5",
+        "VN-LAW-134": "Art.43",
+        "ISO-23894": "Cl.6.4.2"
       },
       "namespace": "AI"
     },
@@ -6750,7 +6826,8 @@
         "FIVE-EYES-AGENTIC": "FE-15",
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "III.A"
+        "SR-11-7": "III.A",
+        "CA-CCPA-ADMT": "Art.11(c)(3)"
       },
       "namespace": "AI"
     },
@@ -6824,7 +6901,8 @@
         "EU-AI-ACT": "Art.11",
         "FIVE-EYES-AGENTIC": "FE-8",
         "ISO-42001": "A.6.2.6",
-        "NIST-AI-RMF": "GOVERN 1.2"
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "EU-CRA": "Art.13(4)"
       },
       "namespace": "AI"
     },
@@ -6860,7 +6938,10 @@
         "EU-AI-ACT": "Art.50(2)",
         "GPAI-CoP": "Transparency",
         "ISO-42001": "A.8.3",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "VN-LAW-134": "Art.42(c)",
+        "NIST-AI-600-1": "GAI-8",
+        "KR-AI-BASIC": "Art.31"
       },
       "namespace": "AI"
     },
@@ -6932,7 +7013,8 @@
         "EU-AI-ACT": "Art.53(1)(d)",
         "ISO-42001": "A.6.2.7",
         "NIST-800-53": "SA-4",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "NIST-AI-600-1": "GAI-10"
       },
       "namespace": "AI"
     },
@@ -6971,7 +7053,10 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "MAP 1.1",
-        "NIS-2": "Art.21(2)(e)"
+        "NIS-2": "Art.21(2)(e)",
+        "VN-LAW-134": "Art.46",
+        "NIST-AI-600-1": "GAI-12",
+        "EU-CRA": "Art.13"
       },
       "namespace": "AI"
     },
@@ -7010,7 +7095,11 @@
         "NIST-AI-100-2": "Red Teaming",
         "NIST-AI-RMF": "MEASURE 3.1",
         "NIS-2": "Art.21(2)(f)",
-        "CA-SB-942": "Sec.22757.5(f)"
+        "CA-SB-942": "Sec.22757.5(f)",
+        "EO-14110": "Sec.4.2",
+        "NIST-AI-600-1": "GAI-11",
+        "EU-DORA": "Art.26",
+        "EO-14179": "Sec.5"
       },
       "namespace": "AI"
     },
@@ -7047,7 +7136,12 @@
         "EU-AI-ACT": "Art.10",
         "GDPR": "Art.6/7",
         "ISO-42001": "A.8.2",
-        "NIST-AI-RMF": "GOVERN 1.5"
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "HEALTH-INS-AI": "UT-SB-149, WA-SB-5518",
+        "RI-AI-LAWS": "Clinical Disclosure Sec.3",
+        "TN-SB-1580": "Sec.6",
+        "CA-CCPA-ADMT": "Art.11(d)",
+        "NIST-AI-600-1": "GAI-4"
       },
       "namespace": "AI"
     },
@@ -7122,7 +7216,8 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
         "SR-11-7": "IV.A",
-        "NIS-2": "Art.21(2)(f)"
+        "NIS-2": "Art.21(2)(f)",
+        "ISO-23894": "Cl.6.3"
       },
       "namespace": "AI"
     },
@@ -7163,7 +7258,15 @@
         "NIST-AI-RMF": "GOVERN 1.4",
         "NIS-2": "Art.21(2)(a)",
         "CA-SB-942": "Sec.22757.5(a)",
-        "NYC-LL144": "Sec.20-871(c)"
+        "NYC-LL144": "Sec.20-871(c)",
+        "HEALTH-INS-AI": "NAIC-MB Sec.4",
+        "MD-HB-895": "Sec.5",
+        "RI-AI-LAWS": "SB-2195 Sec.6",
+        "VN-LAW-134": "Art.49",
+        "CA-CCPA-ADMT": "Art.13",
+        "EU-DORA": "Art.12",
+        "EU-CRA": "Art.10(10)",
+        "KR-AI-BASIC": "Art.24"
       },
       "namespace": "AI"
     },
@@ -7201,7 +7304,11 @@
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-4",
         "NIST-AI-RMF": "MANAGE 3.2",
-        "NIS-2": "Art.21(2)(b)"
+        "NIS-2": "Art.21(2)(b)",
+        "VN-LAW-134": "Art.47",
+        "EU-DORA": "Art.17-19",
+        "EU-CRA": "Art.14",
+        "KR-AI-BASIC": "Art.29"
       },
       "namespace": "AI"
     },
@@ -7239,7 +7346,10 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.5",
         "SR-11-7": "IV.A",
-        "NIS-2": "Art.21(2)(f)"
+        "NIS-2": "Art.21(2)(f)",
+        "EU-DORA": "Art.8",
+        "EO-14179": "Sec.6",
+        "HEALTH-INS-AI": "NAIC-MB,GA-SB-444"
       },
       "namespace": "AI"
     },
@@ -7276,7 +7386,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "EU-DORA": "Art.24-25"
       },
       "namespace": "AI"
     },
@@ -7314,7 +7425,9 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "CA-2",
         "NIST-AI-RMF": "MANAGE 2.2",
-        "NIST-CSF": "Core"
+        "NIST-CSF": "Core",
+        "EU-DORA": "Art.9",
+        "EU-CRA": "Art.10(2)"
       },
       "namespace": "AI"
     },
@@ -7355,7 +7468,16 @@
         "CA-SB-942": "Sec.22757.5(a)",
         "KR-AI-BASIC": "Art.22",
         "TX-TRAIGA": "Sec.224.104",
-        "NYC-LL144": "Sec.20-871(b)"
+        "NYC-LL144": "Sec.20-871(b)",
+        "HEALTH-INS-AI": "IN-HEA-1304, WA-SB-5518",
+        "ID-SB-1297": "Sec.2(a)",
+        "MD-HB-895": "Sec.3(b)",
+        "RI-AI-LAWS": "SB-2195 Sec.3",
+        "TN-SB-1580": "Sec.3(a)",
+        "VN-LAW-134": "Art.42",
+        "CA-CCPA-ADMT": "Art.11(a)",
+        "ISO-23894": "Cl.6.1.4",
+        "EO-14179": "Sec.3"
       },
       "namespace": "AI"
     },
@@ -7391,7 +7513,9 @@
         "EU-AI-ACT": "Art.50(2)",
         "GPAI-CoP": "Transparency",
         "ISO-42001": "A.8.3",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "NIST-AI-600-1": "GAI-8",
+        "KR-AI-BASIC": "Art.31"
       },
       "namespace": "AI"
     },
@@ -7429,7 +7553,9 @@
         "ISO-42001": "6.1.2",
         "NIST-800-53": "RA-3",
         "NIST-AI-RMF": "MAP 5.2",
-        "KR-AI-BASIC": "Art.27"
+        "KR-AI-BASIC": "Art.27",
+        "CA-CCPA-ADMT": "Art.12",
+        "ISO-23894": "Cl.6.2"
       },
       "namespace": "AI"
     },
@@ -7466,7 +7592,9 @@
         "EU-AI-ACT": "Art.14",
         "GDPR": "Art.22",
         "ISO-42001": "A.8.4",
-        "NIST-AI-RMF": "MANAGE 3.2"
+        "NIST-AI-RMF": "MANAGE 3.2",
+        "HEALTH-INS-AI": "NAIC-MB, IN-HEA-1304",
+        "CA-CCPA-ADMT": "Art.11(c)"
       },
       "namespace": "AI"
     },
@@ -7501,7 +7629,9 @@
       "frameworks": {
         "EU-AI-ACT": "Art.6",
         "ISO-42001": "A.6.2.3",
-        "NIST-AI-RMF": "GOVERN 1.1"
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "EO-14110": "Sec.4(a)",
+        "NIST-AI-600-1": "GAI-1"
       },
       "namespace": "AI"
     },
@@ -7539,7 +7669,10 @@
         "G7-CISA": "SBOM-AI",
         "ISO-42001": "A.6.2.7",
         "NIST-800-53": "SA-4",
-        "NIST-AI-RMF": "MEASURE 3.1"
+        "NIST-AI-RMF": "MEASURE 3.1",
+        "NIST-AI-600-1": "GAI-12",
+        "EU-DORA": "Art.28",
+        "EU-CRA": "Art.13(7)"
       },
       "namespace": "AI"
     },
@@ -7575,7 +7708,10 @@
         "EU-AI-ACT": "Art.72",
         "GPAI-CoP": "Art.55",
         "ISO-42001": "A.6.2.5",
-        "NIST-AI-RMF": "MANAGE 4.1"
+        "NIST-AI-RMF": "MANAGE 4.1",
+        "ISO-23894": "Cl.6.4",
+        "EU-CRA": "Art.14",
+        "KR-AI-BASIC": "Art.26"
       },
       "namespace": "AI"
     },
@@ -7614,7 +7750,8 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
         "NIST-800-53": "CM-3",
-        "NIST-AI-RMF": "GOVERN 1.5"
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "EO-14110": "Sec.3"
       },
       "namespace": "AI"
     },
@@ -8690,8 +8827,118 @@
         "ISO-42001": "A.8.1"
       },
       "namespace": "AI"
-    }
-  },
+    },
+    "AI-MCP.2": {
+      "procedure_id": "AI-MCP.2",
+      "parent_control": "AI-MCP",
+      "title": "Tool Integrity Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MCP_TOOL_INTEGRITY",
+      "factors": {
+        "factor_a": {
+          "label": "tool_definition_hash",
+          "description": "SHA-256[:16] hash of the JSON-serialized tool definition/schema, converted to uint32.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-03; NIST 800-53 SI-7"
+        },
+        "factor_b": {
+          "label": "invocation_sequence",
+          "description": "Monotonic invocation counter for the tool within the current session.",
+          "regulatory_ref": "NIST 800-53 SI-7"
+        },
+        "factor_c": {
+          "label": "schema_drift_flag",
+          "description": "1 if tool schema hash differs from previous invocation, 0 if unchanged or first invocation.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-03"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0",
+        "description": "PASS when tool definition hash is recorded."
+      },
+      "frameworks": {
+        "OWASP-AGENTIC": "MCP-03",
+        "NIST-800-53": "SI-7",
+        "EU-AI-ACT": "Art.15(4)",
+        "ISO-42001": "A.8.2",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      },
+      "namespace": "AI"
+    },
+    "AI-MCP.3": {
+      "procedure_id": "AI-MCP.3",
+      "parent_control": "AI-MCP",
+      "title": "Server Authentication Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MCP_SERVER_AUTH",
+      "factors": {
+        "factor_a": {
+          "label": "auth_method_code",
+          "description": "Authentication method: 0=none, 1=API_key, 2=OAuth, 3=mTLS, 4=DID.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-07; NIST 800-53 IA-9"
+        },
+        "factor_b": {
+          "label": "credential_validity_seconds",
+          "description": "Time-to-live of the authentication credential in seconds. 0 when no auth.",
+          "regulatory_ref": "NIST 800-53 IA-9"
+        },
+        "factor_c": {
+          "label": "mutual_auth_flag",
+          "description": "1 if mutual authentication occurred (both client and server verified), 0 if server-only or none.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-07"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0",
+        "description": "PASS when authentication is configured. FAIL when no auth (fa=0) is a valid compliance finding per IA-9."
+      },
+      "frameworks": {
+        "OWASP-AGENTIC": "MCP-07",
+        "NIST-800-53": "IA-9",
+        "EU-AI-ACT": "Art.15(3)",
+        "ISO-42001": "A.6.2",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      },
+      "namespace": "AI"
+    },
+    "AI-MCP.4": {
+      "procedure_id": "AI-MCP.4",
+      "parent_control": "AI-MCP",
+      "title": "Server Discovery Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MCP_SERVER_DISCOVERY",
+      "factors": {
+        "factor_a": {
+          "label": "discovery_method_code",
+          "description": "Discovery method: 0=manual, 1=DNS-SD, 2=mDNS, 3=registry_scan, 4=network_probe.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-09; NIST 800-53 CM-8"
+        },
+        "factor_b": {
+          "label": "server_count_discovered",
+          "description": "Total number of MCP servers discovered in the inventory scan.",
+          "regulatory_ref": "NIST 800-53 CM-8"
+        },
+        "factor_c": {
+          "label": "unauthorized_count",
+          "description": "Number of discovered servers not present in the approved server registry.",
+          "regulatory_ref": "OWASP Agentic Top 10 MCP-09"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b > 0",
+        "description": "PASS when at least one server discovered in inventory scan."
+      },
+      "frameworks": {
+        "OWASP-AGENTIC": "MCP-09",
+        "NIST-800-53": "CM-8",
+        "EU-AI-ACT": "Art.15(1)",
+        "ISO-42001": "A.7.3",
+        "NIST-AI-RMF": "GOVERN 1.7"
+      },
+      "namespace": "AI"
+    },
     "AI-PROV.1": {
       "procedure_id": "AI-PROV.1",
       "parent_control": "AI-PROV",
@@ -8727,13 +8974,1091 @@
         "ISO-42001": "A.7.3"
       },
       "namespace": "AI"
+    },
+    "NHI-SCOPE.1": {
+      "procedure_id": "NHI-SCOPE.1",
+      "parent_control": "NHI-SCOPE",
+      "title": "Credential Scope Attestation",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_CREDENTIAL_SCOPE",
+      "factors": {
+        "factor_a": {
+          "label": "credential_id_hash",
+          "description": "SHA-256[:16] hash of the reported credential identifier. SWT3 witnesses the caller's report; it is not the credential authority.",
+          "regulatory_ref": "NIST 800-53 IA-4; EU AI Act Art. 9(4)(c)"
+        },
+        "factor_b": {
+          "label": "scope_hash",
+          "description": "SHA-256[:16] hash of the canonical scope string (sorted, lowercased, deterministic serialization).",
+          "regulatory_ref": "NIST 800-53 AC-6(1); NIST AI RMF MANAGE 2.4"
+        },
+        "factor_c": {
+          "label": "ttl_seconds",
+          "description": "Reported time-to-live of the credential in seconds. 0 = non-expiring.",
+          "regulatory_ref": "NIST 800-53 IA-5(13)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != '' and factor_b != ''",
+        "description": "PASS when both credential identifier and scope are reported and hashed."
+      },
+      "frameworks": {
+        "NIST-800-53": "IA-4",
+        "EU-AI-ACT": "Art.9(4)(c)",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "OWASP-AGENTIC": "MCP-07",
+        "NIS-2": "Art.21(2)(i)"
+      },
+      "namespace": "NHI"
+    },
+    "NHI-CYCLE.1": {
+      "procedure_id": "NHI-CYCLE.1",
+      "parent_control": "NHI-CYCLE",
+      "title": "Credential Lifecycle Event Witnessing",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_CREDENTIAL_LIFECYCLE",
+      "factors": {
+        "factor_a": {
+          "label": "event_type",
+          "description": "Reported lifecycle event: 1=issued, 2=activated, 3=suspended, 4=expired, 5=revoked.",
+          "regulatory_ref": "NIST 800-53 IA-5; EU AI Act Art. 12(1)"
+        },
+        "factor_b": {
+          "label": "credential_id_hash",
+          "description": "SHA-256[:16] hash of the reported credential identifier.",
+          "regulatory_ref": "NIST 800-53 IA-4"
+        },
+        "factor_c": {
+          "label": "issuer_hash",
+          "description": "SHA-256[:16] hash of the identity provider name (e.g., Entra ID, Okta, CyberArk).",
+          "regulatory_ref": "NIST 800-53 IA-8"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 5 and factor_b != ''",
+        "description": "PASS when event type is valid (1-5) and credential identifier is reported."
+      },
+      "frameworks": {
+        "NIST-800-53": "IA-5",
+        "EU-AI-ACT": "Art.12(1)",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "OWASP-AGENTIC": "MCP-01",
+        "NIS-2": "Art.21(2)(i)"
+      },
+      "namespace": "NHI"
+    },
+    "NHI-PRIV.1": {
+      "procedure_id": "NHI-PRIV.1",
+      "parent_control": "NHI-PRIV",
+      "title": "Privilege Change Witnessing",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_PRIVILEGE_CHANGE",
+      "factors": {
+        "factor_a": {
+          "label": "credential_id_hash",
+          "description": "SHA-256[:16] hash of the reported credential identifier whose privileges changed.",
+          "regulatory_ref": "NIST 800-53 AC-6; EU AI Act Art. 9(4)(c)"
+        },
+        "factor_b": {
+          "label": "previous_scope_hash",
+          "description": "SHA-256[:16] hash of the previous canonical scope string. 0 if newly created.",
+          "regulatory_ref": "NIST 800-53 AC-6(5)"
+        },
+        "factor_c": {
+          "label": "new_scope_hash",
+          "description": "SHA-256[:16] hash of the new canonical scope string after privilege change.",
+          "regulatory_ref": "NIST 800-53 AC-6(5)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != '' and factor_c != ''",
+        "description": "PASS when credential and new scope are reported. Auditors compare factor_b to factor_c to detect escalation."
+      },
+      "frameworks": {
+        "NIST-800-53": "AC-6",
+        "EU-AI-ACT": "Art.9(4)(c)",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "FIVE-EYES-AGENTIC": "FE-4",
+        "OWASP-AGENTIC": "MCP-07",
+        "NIS-2": "Art.21(2)(d)"
+      },
+      "namespace": "NHI"
+    },
+    "NHI-ROTATE.1": {
+      "procedure_id": "NHI-ROTATE.1",
+      "parent_control": "NHI-ROTATE",
+      "title": "Credential Rotation Attestation",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_CREDENTIAL_ROTATION",
+      "factors": {
+        "factor_a": {
+          "label": "old_credential_hash",
+          "description": "SHA-256[:16] hash of the outgoing credential identifier.",
+          "regulatory_ref": "NIST 800-53 IA-5(1)"
+        },
+        "factor_b": {
+          "label": "new_credential_hash",
+          "description": "SHA-256[:16] hash of the incoming credential identifier.",
+          "regulatory_ref": "NIST 800-53 IA-5(1)"
+        },
+        "factor_c": {
+          "label": "rotation_reason",
+          "description": "Reason for rotation: 1=scheduled, 2=compromise, 3=policy, 4=manual.",
+          "regulatory_ref": "NIST 800-53 IA-5(1); NIST AI RMF MANAGE 4.2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != '' and factor_b != '' and factor_a != factor_b",
+        "description": "PASS when old and new credentials are distinct and both reported."
+      },
+      "frameworks": {
+        "NIST-800-53": "IA-5(1)",
+        "EU-AI-ACT": "Art.9(9)",
+        "NIST-AI-RMF": "MANAGE 4.2",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "OWASP-AGENTIC": "MCP-01",
+        "NIS-2": "Art.21(2)(i)"
+      },
+      "namespace": "NHI"
+    },
+    "NHI-AGENT.1": {
+      "procedure_id": "NHI-AGENT.1",
+      "parent_control": "NHI-AGENT",
+      "title": "Agent-to-Agent Credential Delegation",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_AGENT_DELEGATION",
+      "factors": {
+        "factor_a": {
+          "label": "delegator_credential_hash",
+          "description": "SHA-256[:16] hash of the delegating agent's credential identifier.",
+          "regulatory_ref": "NIST 800-53 AC-2(7); EU AI Act Art. 14(4)"
+        },
+        "factor_b": {
+          "label": "delegatee_credential_hash",
+          "description": "SHA-256[:16] hash of the receiving agent's credential identifier.",
+          "regulatory_ref": "NIST 800-53 AC-2(7)"
+        },
+        "factor_c": {
+          "label": "delegation_depth",
+          "description": "Depth in the delegation chain: 1=direct delegation, 2+=chained delegation.",
+          "regulatory_ref": "NIST 800-53 AC-6(2)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != '' and factor_b != '' and factor_c >= 1",
+        "description": "PASS when both delegator and delegatee are identified and delegation depth is valid."
+      },
+      "frameworks": {
+        "NIST-800-53": "AC-2(7)",
+        "EU-AI-ACT": "Art.14(4)",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "FIVE-EYES-AGENTIC": "FE-4",
+        "OWASP-AGENTIC": "MCP-07,MCP-09",
+        "NIS-2": "Art.21(2)(d)"
+      },
+      "namespace": "NHI"
+    },
+    "NHI-REVOKE.1": {
+      "procedure_id": "NHI-REVOKE.1",
+      "parent_control": "NHI-REVOKE",
+      "title": "Credential Revocation Attestation",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_CREDENTIAL_REVOCATION",
+      "factors": {
+        "factor_a": {
+          "label": "revoked_credential_hash",
+          "description": "SHA-256[:16] hash of the revoked credential identifier.",
+          "regulatory_ref": "NIST 800-53 IA-5(2)"
+        },
+        "factor_b": {
+          "label": "reason_code",
+          "description": "Reason for revocation: 0=unspecified, 1=model_recall, 2=policy_violation, 3=data_contamination, 4=consent_withdrawal, 5=regulatory_order, 6=error_correction.",
+          "regulatory_ref": "NIST 800-53 IA-5(2); EU AI Act Art. 16(i)"
+        },
+        "factor_c": {
+          "label": "cascade_flag",
+          "description": "Whether revocation cascades to delegated credentials: 1=cascade, 0=single credential only.",
+          "regulatory_ref": "NIST 800-53 AC-2(7)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != ''",
+        "description": "PASS when revoked credential is identified. Revocation itself is valid evidence (verdict always PASS)."
+      },
+      "frameworks": {
+        "NIST-800-53": "IA-5(2)",
+        "EU-AI-ACT": "Art.16(i)",
+        "NIST-AI-RMF": "MANAGE 4.2",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "OWASP-AGENTIC": "MCP-01",
+        "NIS-2": "Art.21(2)(i)"
+      },
+      "namespace": "NHI"
+    },
+    "HBOM-INV.1": {
+      "procedure_id": "HBOM-INV.1",
+      "parent_control": "HBOM-INV",
+      "title": "Hardware Inventory Attestation",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_HARDWARE_INVENTORY",
+      "factors": {
+        "factor_a": {
+          "label": "component_count",
+          "description": "Number of hardware components in the reported inventory manifest.",
+          "regulatory_ref": "EU CRA Art. 10(9); NIST 800-53 CM-8"
+        },
+        "factor_b": {
+          "label": "manifest_hash",
+          "description": "SHA-256[:16] hash of the serialized hardware inventory manifest.",
+          "regulatory_ref": "EU CRA Art. 10(9)"
+        },
+        "factor_c": {
+          "label": "delta_from_baseline",
+          "description": "Number of components added or removed since last attestation. 0 = no change.",
+          "regulatory_ref": "NIST 800-53 CM-8(3)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_b != ''",
+        "description": "PASS when at least one component is inventoried and manifest hash is reported."
+      },
+      "frameworks": {
+        "EU-CRA": "Art.10(9)",
+        "NIST-800-53": "CM-8",
+        "NIST-AI-RMF": "GOVERN 1.6",
+        "ISO-42001": "A.7.4"
+      },
+      "namespace": "HBOM"
+    },
+    "HBOM-LIFE.1": {
+      "procedure_id": "HBOM-LIFE.1",
+      "parent_control": "HBOM-LIFE",
+      "title": "Component Lifecycle Witnessing",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_COMPONENT_LIFECYCLE",
+      "factors": {
+        "factor_a": {
+          "label": "event_type",
+          "description": "Lifecycle event: 1=installed, 2=commissioned, 3=maintained, 4=degraded, 5=decommissioned, 6=recycled.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 77; NIST 800-53 SA-22"
+        },
+        "factor_b": {
+          "label": "component_hash",
+          "description": "SHA-256[:16] hash of the component serial number or identifier.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 77"
+        },
+        "factor_c": {
+          "label": "age_days",
+          "description": "Component age in days since installation. 0 if newly installed.",
+          "regulatory_ref": "NIST 800-53 SA-22"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 6 and factor_b != ''",
+        "description": "PASS when event type is valid and component is identified."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.77",
+        "EU-CRA": "Art.10(12)",
+        "NIST-800-53": "SA-22",
+        "ISO-42001": "A.7.4"
+      },
+      "namespace": "HBOM"
+    },
+    "HBOM-THERM.1": {
+      "procedure_id": "HBOM-THERM.1",
+      "parent_control": "HBOM-THERM",
+      "title": "Thermal Profile Attestation",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_THERMAL_PROFILE",
+      "factors": {
+        "factor_a": {
+          "label": "ambient_temp_c",
+          "description": "Reported ambient temperature in Celsius at the measurement point.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14; ASHRAE TC 9.9"
+        },
+        "factor_b": {
+          "label": "component_temp_c",
+          "description": "Reported component or exhaust temperature in Celsius.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14"
+        },
+        "factor_c": {
+          "label": "threshold_exceeded",
+          "description": "1 = thermal threshold exceeded (alarm condition), 0 = within bounds.",
+          "regulatory_ref": "ASHRAE TC 9.9; NIST 800-53 PE-14"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 0",
+        "description": "PASS when thermal readings are within acceptable thresholds."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.14",
+        "NIST-800-53": "PE-14",
+        "ISO-42001": "A.7.4",
+        "CSRD": "ESRS-E1"
+      },
+      "namespace": "HBOM"
+    },
+    "HBOM-WATER.1": {
+      "procedure_id": "HBOM-WATER.1",
+      "parent_control": "HBOM-WATER",
+      "title": "Water Consumption Witnessing",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_WATER_CONSUMPTION",
+      "factors": {
+        "factor_a": {
+          "label": "liters_consumed",
+          "description": "Reported water consumption in liters for the measurement interval.",
+          "regulatory_ref": "CSRD ESRS-E3; EU Energy Efficiency Directive 2023/1791"
+        },
+        "factor_b": {
+          "label": "wue_ratio",
+          "description": "Water Usage Effectiveness ratio (liters per kWh of IT load). Multiplied by 1000 for integer transmission.",
+          "regulatory_ref": "EU Energy Efficiency Directive 2023/1791"
+        },
+        "factor_c": {
+          "label": "source_type",
+          "description": "Water source: 1=municipal, 2=recycled, 3=rainwater, 4=groundwell, 5=mixed.",
+          "regulatory_ref": "CSRD ESRS-E3"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 0 and factor_b > 0",
+        "description": "PASS when consumption and WUE ratio are reported with valid values."
+      },
+      "frameworks": {
+        "CSRD": "ESRS-E3",
+        "EU-EED": "Art.12",
+        "ISO-42001": "A.7.4",
+        "NIST-800-53": "SA-15"
+      },
+      "namespace": "HBOM"
+    },
+    "HBOM-PUE.1": {
+      "procedure_id": "HBOM-PUE.1",
+      "parent_control": "HBOM-PUE",
+      "title": "Power Usage Effectiveness Attestation",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_POWER_USAGE_EFFECTIVENESS",
+      "factors": {
+        "factor_a": {
+          "label": "total_facility_kw",
+          "description": "Reported total facility power draw in kilowatts.",
+          "regulatory_ref": "EU Energy Efficiency Directive 2023/1791 Art. 12"
+        },
+        "factor_b": {
+          "label": "it_load_kw",
+          "description": "Reported IT equipment power draw in kilowatts.",
+          "regulatory_ref": "EU Energy Efficiency Directive 2023/1791 Art. 12"
+        },
+        "factor_c": {
+          "label": "pue_x1000",
+          "description": "PUE ratio multiplied by 1000 (e.g., 1200 = PUE 1.2). Integer transmission for factor math.",
+          "regulatory_ref": "EU EED Art. 12; ISO 30134-2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b > 0 and factor_c >= 1000",
+        "description": "PASS when IT load is reported and PUE is >= 1.0 (physically valid)."
+      },
+      "frameworks": {
+        "EU-EED": "Art.12",
+        "CSRD": "ESRS-E1",
+        "ISO-30134": "Part 2",
+        "NIST-800-53": "SA-15"
+      },
+      "namespace": "HBOM"
+    },
+    "HBOM-SUPPLY.1": {
+      "procedure_id": "HBOM-SUPPLY.1",
+      "parent_control": "HBOM-SUPPLY",
+      "title": "Hardware Supply Chain Provenance",
+      "category": "HBOM",
+      "scope": "hardware_governance",
+      "check_type": "HBOM_SUPPLY_CHAIN_PROVENANCE",
+      "factors": {
+        "factor_a": {
+          "label": "supplier_hash",
+          "description": "SHA-256[:16] hash of the supplier or manufacturer identifier.",
+          "regulatory_ref": "EU CRA Art. 10(9); NIST 800-53 SA-12"
+        },
+        "factor_b": {
+          "label": "provenance_verified",
+          "description": "1 = supply chain documentation verified, 0 = unverified.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 39"
+        },
+        "factor_c": {
+          "label": "country_of_origin_hash",
+          "description": "SHA-256[:16] hash of the ISO 3166-1 country code of component origin.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 39; EU Conflict Minerals Reg 2017/821"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a != '' and factor_b == 1",
+        "description": "PASS when supplier is identified and provenance documentation is verified."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.39",
+        "EU-CRA": "Art.10(9)",
+        "EU-CONFLICT-MINERALS": "2017/821",
+        "NIST-800-53": "SA-12"
+      },
+      "namespace": "HBOM"
+    },
+    "DPP-SOH.1": {
+      "procedure_id": "DPP-SOH.1",
+      "parent_control": "DPP-SOH",
+      "title": "Battery State of Health Attestation",
+      "category": "DPP",
+      "scope": "digital_product_passport",
+      "check_type": "DPP_STATE_OF_HEALTH",
+      "factors": {
+        "factor_a": {
+          "label": "soh_percent_x100",
+          "description": "Reported State of Health as percentage multiplied by 100 (e.g., 9230 = 92.30%). Integer transmission.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_b": {
+          "label": "cycle_count",
+          "description": "Reported number of charge/discharge cycles completed.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_c": {
+          "label": "capacity_kwh_x100",
+          "description": "Reported remaining capacity in kWh multiplied by 100. Integer transmission.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0 and factor_b >= 0",
+        "description": "PASS when SoH is reported with valid positive value and cycle count is non-negative."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.14(1)",
+        "CSRD": "ESRS-E1",
+        "EU-EED": "Art.12"
+      },
+      "namespace": "DPP"
+    },
+    "DPP-CHRG.1": {
+      "procedure_id": "DPP-CHRG.1",
+      "parent_control": "DPP-CHRG",
+      "title": "Charge/Discharge Cycle Witnessing",
+      "category": "DPP",
+      "scope": "digital_product_passport",
+      "check_type": "DPP_CHARGE_DISCHARGE_CYCLE",
+      "factors": {
+        "factor_a": {
+          "label": "event_type",
+          "description": "Cycle event: 1=charge_start, 2=charge_complete, 3=discharge_start, 4=discharge_complete.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_b": {
+          "label": "energy_kwh_x100",
+          "description": "Energy transferred in kWh multiplied by 100. Integer transmission.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_c": {
+          "label": "peak_temp_c",
+          "description": "Peak battery temperature in Celsius during the cycle event.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1); IEC 62619"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 4 and factor_b >= 0",
+        "description": "PASS when event type is valid and energy value is non-negative."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.14(1)",
+        "IEC-62619": "Sec.7",
+        "CSRD": "ESRS-E1"
+      },
+      "namespace": "DPP"
+    },
+    "DPP-DEGRAD.1": {
+      "procedure_id": "DPP-DEGRAD.1",
+      "parent_control": "DPP-DEGRAD",
+      "title": "Battery Degradation Event Witnessing",
+      "category": "DPP",
+      "scope": "digital_product_passport",
+      "check_type": "DPP_DEGRADATION_EVENT",
+      "factors": {
+        "factor_a": {
+          "label": "degradation_type",
+          "description": "Degradation cause: 1=calendar_aging, 2=thermal_stress, 3=overcharge, 4=deep_discharge, 5=mechanical, 6=unknown.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_b": {
+          "label": "soh_delta_x100",
+          "description": "Reported SoH drop (percentage points x100) attributed to this event.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        },
+        "factor_c": {
+          "label": "ambient_temp_c",
+          "description": "Ambient temperature in Celsius at time of degradation event.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 6",
+        "description": "PASS when degradation type is reported with a valid code."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.14(1)",
+        "IEC-62619": "Sec.7",
+        "CSRD": "ESRS-E1"
+      },
+      "namespace": "DPP"
+    },
+    "DPP-EOL.1": {
+      "procedure_id": "DPP-EOL.1",
+      "parent_control": "DPP-EOL",
+      "title": "End-of-Life / Recycling Handoff Witnessing",
+      "category": "DPP",
+      "scope": "digital_product_passport",
+      "check_type": "DPP_END_OF_LIFE",
+      "factors": {
+        "factor_a": {
+          "label": "disposition_type",
+          "description": "Disposition: 1=recycling, 2=repurpose, 3=refurbishment, 4=landfill, 5=hazmat_disposal.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 59; EU WEEE Directive 2012/19"
+        },
+        "factor_b": {
+          "label": "handler_hash",
+          "description": "SHA-256[:16] hash of the receiving recycler/handler organization identifier.",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 59"
+        },
+        "factor_c": {
+          "label": "final_soh_x100",
+          "description": "Final SoH at time of handoff (percentage x100).",
+          "regulatory_ref": "EU Battery Reg 2023/1542 Art. 14(1)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 5 and factor_b != ''",
+        "description": "PASS when disposition type is valid and receiving handler is identified."
+      },
+      "frameworks": {
+        "EU-BATTERY-REG": "Art.59",
+        "EU-WEEE": "2012/19",
+        "CSRD": "ESRS-E5",
+        "ISO-42001": "A.7.4"
+      },
+      "namespace": "DPP"
+    },
+    "ADR-EVENT.1": {
+      "procedure_id": "ADR-EVENT.1",
+      "parent_control": "ADR-EVENT",
+      "title": "Demand Response Event Witnessing",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_DEMAND_RESPONSE_EVENT",
+      "factors": {
+        "factor_a": {
+          "label": "event_type",
+          "description": "DR event phase: 1=signal_received, 2=curtailment_start, 3=curtailment_end, 4=restoration.",
+          "regulatory_ref": "FERC Order 2222; EU Clean Energy Package Art. 17"
+        },
+        "factor_b": {
+          "label": "committed_kw",
+          "description": "Committed curtailment magnitude in kilowatts.",
+          "regulatory_ref": "FERC Order 2222"
+        },
+        "factor_c": {
+          "label": "signal_source_hash",
+          "description": "SHA-256[:16] hash of the grid operator / ISO signal identifier.",
+          "regulatory_ref": "FERC Order 2222; EU Clean Energy Package"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 4 and factor_b > 0",
+        "description": "PASS when event phase is valid and committed curtailment is positive."
+      },
+      "frameworks": {
+        "FERC-2222": "Order 2222",
+        "EU-CEP": "Art.17",
+        "EU-EED": "Art.12",
+        "NIST-800-53": "SA-15"
+      },
+      "namespace": "ADR"
+    },
+    "ADR-BASE.1": {
+      "procedure_id": "ADR-BASE.1",
+      "parent_control": "ADR-BASE",
+      "title": "Baseline Consumption Attestation",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_BASELINE_CONSUMPTION",
+      "factors": {
+        "factor_a": {
+          "label": "baseline_kw",
+          "description": "Reported baseline power consumption in kilowatts (pre-event reference).",
+          "regulatory_ref": "FERC Order 2222; PJM Manual 11"
+        },
+        "factor_b": {
+          "label": "measurement_method",
+          "description": "Baseline method: 1=metered_10day_avg, 2=regression, 3=real_time_meter, 4=deemed_savings.",
+          "regulatory_ref": "FERC Order 2222"
+        },
+        "factor_c": {
+          "label": "confidence_x1000",
+          "description": "Confidence level of baseline estimate multiplied by 1000 (e.g., 950 = 95.0%).",
+          "regulatory_ref": "PJM Manual 11"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0 and factor_b >= 1 and factor_b <= 4",
+        "description": "PASS when baseline power and valid measurement method are reported."
+      },
+      "frameworks": {
+        "FERC-2222": "Order 2222",
+        "EU-CEP": "Art.17",
+        "EU-EED": "Art.12"
+      },
+      "namespace": "ADR"
+    },
+    "ADR-CURT.1": {
+      "procedure_id": "ADR-CURT.1",
+      "parent_control": "ADR-CURT",
+      "title": "Curtailment Verification",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_CURTAILMENT_VERIFICATION",
+      "factors": {
+        "factor_a": {
+          "label": "actual_reduction_kw",
+          "description": "Reported actual power reduction in kilowatts during the curtailment period.",
+          "regulatory_ref": "FERC Order 2222; EU CEP Art. 17"
+        },
+        "factor_b": {
+          "label": "committed_kw",
+          "description": "Originally committed curtailment in kilowatts (from ADR-EVENT.1).",
+          "regulatory_ref": "FERC Order 2222"
+        },
+        "factor_c": {
+          "label": "compliance_ratio_x1000",
+          "description": "Actual/committed ratio x1000 (e.g., 1050 = 105% of commitment met).",
+          "regulatory_ref": "PJM Manual 11; FERC Order 2222"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0 and factor_c >= 900",
+        "description": "PASS when actual reduction is reported and compliance ratio is >= 90% of commitment."
+      },
+      "frameworks": {
+        "FERC-2222": "Order 2222",
+        "EU-CEP": "Art.17",
+        "EU-EED": "Art.12"
+      },
+      "namespace": "ADR"
+    },
+    "ADR-SETTLE.1": {
+      "procedure_id": "ADR-SETTLE.1",
+      "parent_control": "ADR-SETTLE",
+      "title": "Settlement Data Attestation",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_SETTLEMENT_DATA",
+      "factors": {
+        "factor_a": {
+          "label": "settlement_kwh_x100",
+          "description": "Reported settlement quantity in kWh multiplied by 100. Integer transmission.",
+          "regulatory_ref": "FERC Order 2222; PJM Manual 28"
+        },
+        "factor_b": {
+          "label": "price_usd_x100",
+          "description": "Settlement price in USD per MWh multiplied by 100. Integer transmission.",
+          "regulatory_ref": "FERC Order 2222"
+        },
+        "factor_c": {
+          "label": "event_count",
+          "description": "Number of DR events included in this settlement period.",
+          "regulatory_ref": "PJM Manual 28"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0 and factor_c >= 1",
+        "description": "PASS when settlement quantity is positive and at least one event is included."
+      },
+      "frameworks": {
+        "FERC-2222": "Order 2222",
+        "EU-CEP": "Art.17"
+      },
+      "namespace": "ADR"
+    },
+    "ADR-CARBON.1": {
+      "procedure_id": "ADR-CARBON.1",
+      "parent_control": "ADR-CARBON",
+      "title": "Carbon Credit / REC Attestation",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_CARBON_CREDIT",
+      "factors": {
+        "factor_a": {
+          "label": "credit_type",
+          "description": "Credit type: 1=REC, 2=carbon_offset, 3=EAC (energy attribute certificate), 4=GO (guarantee_of_origin).",
+          "regulatory_ref": "EU CBAM 2023/956; EU RED III 2023/2413"
+        },
+        "factor_b": {
+          "label": "quantity_mwh_x100",
+          "description": "Credit quantity in MWh multiplied by 100 (for RECs/EACs) or tonnes CO2e x100 (for offsets). Integer transmission.",
+          "regulatory_ref": "EU CBAM 2023/956"
+        },
+        "factor_c": {
+          "label": "registry_hash",
+          "description": "SHA-256[:16] hash of the credit registry identifier (e.g., M-RETS, PJM-GATS, AIB).",
+          "regulatory_ref": "EU RED III 2023/2413"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 4 and factor_b > 0 and factor_c != ''",
+        "description": "PASS when credit type is valid, quantity is positive, and registry is identified."
+      },
+      "frameworks": {
+        "EU-CBAM": "2023/956",
+        "EU-RED-III": "2023/2413",
+        "CSRD": "ESRS-E1",
+        "SEC-CLIMATE": "S-K Item 1504"
+      },
+      "namespace": "ADR"
+    },
+    "ADR-GRID.1": {
+      "procedure_id": "ADR-GRID.1",
+      "parent_control": "ADR-GRID",
+      "title": "Grid Signal Correlation Attestation",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_GRID_SIGNAL_CORRELATION",
+      "factors": {
+        "factor_a": {
+          "label": "signal_type",
+          "description": "Grid signal type: 1=emergency, 2=economic, 3=capacity, 4=frequency_regulation, 5=voltage_support.",
+          "regulatory_ref": "FERC Order 2222; EU Clean Energy Package"
+        },
+        "factor_b": {
+          "label": "response_latency_ms",
+          "description": "Latency in milliseconds between grid signal receipt and curtailment action.",
+          "regulatory_ref": "FERC Order 2222; NERC BAL-001"
+        },
+        "factor_c": {
+          "label": "grid_operator_hash",
+          "description": "SHA-256[:16] hash of the ISO/TSO/grid operator identifier.",
+          "regulatory_ref": "FERC Order 2222; EU CEP Art. 17"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 1 and factor_a <= 5 and factor_c != ''",
+        "description": "PASS when signal type is valid and grid operator is identified."
+      },
+      "frameworks": {
+        "FERC-2222": "Order 2222",
+        "EU-CEP": "Art.17",
+        "NERC": "BAL-001"
+      },
+      "namespace": "ADR"
+    },
+    "AI-AUTO.3": {
+      "procedure_id": "AI-AUTO.3",
+      "parent_control": "AI-AUTO",
+      "title": "Autonomy Level Transition",
+      "category": "AI",
+      "scope": "ai_witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art. 14",
+        "NIST-AI-RMF": "GOVERN 1.4"
+      }
+    },
+    "AI-CAP.1": {
+      "procedure_id": "AI-CAP.1",
+      "parent_control": "AI-CAP",
+      "title": "Capability Attestation",
+      "category": "AI",
+      "scope": "ai_witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art. 15",
+        "NIST-AI-RMF": "MAP 2.1"
+      }
+    },
+    "AI-CLR.2": {
+      "procedure_id": "AI-CLR.2",
+      "parent_control": "AI-CLR",
+      "title": "Clearing Fidelity Attestation",
+      "category": "AI",
+      "scope": "ai_witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art. 12",
+        "GDPR": "Art. 25"
+      }
+    },
+    "AI-COST.1": {
+      "procedure_id": "AI-COST.1",
+      "parent_control": "AI-COST",
+      "title": "Resource Consumption Witnessing",
+      "category": "AI",
+      "scope": "ai_witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art. 13(3)(b)",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "NIST-AI-600-1": "GAI-5"
+      }
+    },
+    "AI-DEL.1": {
+      "procedure_id": "AI-DEL.1",
+      "parent_control": "AI-DEL",
+      "title": "Delegation Tree Witnessing",
+      "category": "AI",
+      "scope": "ai_witness",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art. 14",
+        "GPAI-COP": "Rule 12",
+        "NIST-AI-RMF": "GOVERN 1.3"
+      }
+    },
+    "NHI-EXPIRE.1": {
+      "procedure_id": "NHI-EXPIRE.1",
+      "parent_control": "NHI-EXPIRE",
+      "title": "Credential Expiration Event Witnessing",
+      "category": "NHI",
+      "scope": "nhi_governance",
+      "check_type": "NHI_CREDENTIAL_EXPIRATION",
+      "factors": {
+        "factor_a": {
+          "label": "credential_id_hash",
+          "description": "SHA-256[:16] hash of the expiring credential identifier.",
+          "regulatory_ref": "NIST 800-53 IA-5(13)"
+        },
+        "factor_b": {
+          "label": "expiration_epoch",
+          "description": "Unix epoch timestamp (seconds) when credential expires.",
+          "regulatory_ref": "NIST 800-53 IA-5(13)"
+        },
+        "factor_c": {
+          "label": "renewal_and_grace_flags",
+          "description": "Bit 0: renewal possible (1=yes, 0=no). Bits 8+: grace period in seconds.",
+          "regulatory_ref": "NIST 800-53 IA-8"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b > 0",
+        "description": "PASS when expiration timestamp is reported. Expiration itself is valid evidence."
+      },
+      "frameworks": {
+        "NIST-800-53": "IA-5(13)",
+        "EU-AI-ACT": "Art.9(2)(a)",
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "OWASP-AGENTIC": "MCP-01",
+        "NIS-2": "Art.21(2)(i)"
+      },
+      "namespace": "NHI"
+    },
+    "AI-ORCH.1": {
+      "procedure_id": "AI-ORCH.1",
+      "parent_control": "AI-ORCH",
+      "title": "Orchestration Topology Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_ORCH_TOPOLOGY",
+      "factors": {
+        "factor_a": {
+          "label": "topology_code",
+          "description": "Orchestration routing pattern: 0=sequential, 1=parallel, 2=hierarchical, 3=hybrid, 4=mesh.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.3; EU AI Act Art. 9"
+        },
+        "factor_b": {
+          "label": "agent_count",
+          "description": "Number of agents participating in the orchestration topology.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.3"
+        },
+        "factor_c": {
+          "label": "dependency_depth",
+          "description": "Maximum depth of the task dependency graph in the orchestration topology.",
+          "regulatory_ref": "ISO 42001 A.8.5"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 0",
+        "description": "PASS when topology selection is recorded. Informational -- topology choice is a governance event, not a pass/fail."
+      },
+      "frameworks": {
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "EU-AI-ACT": "Art.9",
+        "ISO-42001": "A.8.5",
+        "OWASP-AGENTIC": "A07"
+      },
+      "namespace": "AI"
+    },
+    "AI-ORCH.2": {
+      "procedure_id": "AI-ORCH.2",
+      "parent_control": "AI-ORCH",
+      "title": "Inter-Agent Handoff Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_ORCH_HANDOFF",
+      "factors": {
+        "factor_a": {
+          "label": "delegator_hash",
+          "description": "SHA-256[:8] of the delegating agent identifier, parsed to uint32. SWT3 witnesses the caller's report of the handoff.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.3; EU AI Act Art. 9"
+        },
+        "factor_b": {
+          "label": "delegate_hash",
+          "description": "SHA-256[:8] of the receiving agent identifier, parsed to uint32.",
+          "regulatory_ref": "NIST AI RMF GOVERN 1.3"
+        },
+        "factor_c": {
+          "label": "permission_delta",
+          "description": "Permission change direction: 1=escalation (delegate gains permissions), 0=lateral (same permissions), -1=restriction (delegate has fewer permissions).",
+          "regulatory_ref": "ISO 42001 A.8.5"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a > 0",
+        "description": "PASS when delegator identity is recorded."
+      },
+      "frameworks": {
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "EU-AI-ACT": "Art.9",
+        "ISO-42001": "A.8.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-CTX.1": {
+      "procedure_id": "AI-CTX.1",
+      "parent_control": "AI-CTX",
+      "title": "Context Window Management Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_CTX_WINDOW",
+      "factors": {
+        "factor_a": {
+          "label": "tokens_before",
+          "description": "Token count in the context window before the management event.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.6"
+        },
+        "factor_b": {
+          "label": "tokens_after",
+          "description": "Token count in the context window after the management event.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.6"
+        },
+        "factor_c": {
+          "label": "eviction_method_code",
+          "description": "Context management method: 0=none, 1=truncation, 2=summarization, 3=sliding_window, 4=priority_eviction.",
+          "regulatory_ref": "EU AI Act Art. 13; ISO 42001 A.7.4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= factor_b",
+        "description": "PASS when context was maintained or reduced. FAIL if tokens_after exceeds tokens_before, indicating potential corruption."
+      },
+      "frameworks": {
+        "NIST-AI-RMF": "MEASURE 2.6",
+        "EU-AI-ACT": "Art.13",
+        "ISO-42001": "A.7.4"
+      },
+      "namespace": "AI"
+    },
+    "AI-SAND.1": {
+      "procedure_id": "AI-SAND.1",
+      "parent_control": "AI-SAND",
+      "title": "Sandbox Enforcement Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_SAND_ENFORCEMENT",
+      "factors": {
+        "factor_a": {
+          "label": "tools_declared",
+          "description": "Number of tools declared in the sandbox allow-list.",
+          "regulatory_ref": "NIST 800-53 SA-11(8); NIST AI RMF GOVERN 1.7"
+        },
+        "factor_b": {
+          "label": "tools_invoked",
+          "description": "Number of distinct tools actually invoked during the session.",
+          "regulatory_ref": "NIST 800-53 SA-11(8)"
+        },
+        "factor_c": {
+          "label": "violations",
+          "description": "Count of tool invocations that violated the sandbox allow-list (out-of-scope calls). 0 = clean.",
+          "regulatory_ref": "EU AI Act Art. 15; OWASP Agentic Top 10 A03"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c == 0",
+        "description": "PASS when no sandbox violations occurred. FAIL when any tool was invoked outside the declared allow-list. This procedure witnesses the harness's own report; independent verification requires cross-referencing AI-TOOL.1 anchors."
+      },
+      "frameworks": {
+        "NIST-800-53": "SA-11(8)",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "EU-AI-ACT": "Art.15",
+        "OWASP-AGENTIC": "A03"
+      },
+      "namespace": "AI"
+    },
+    "AI-GATE.1": {
+      "procedure_id": "AI-GATE.1",
+      "parent_control": "AI-GATE",
+      "title": "Eval Gate Decision Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_GATE_EVAL",
+      "factors": {
+        "factor_a": {
+          "label": "total_evals",
+          "description": "Total number of evaluation checks executed in the gate.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.5; EU AI Act Art. 9(7)"
+        },
+        "factor_b": {
+          "label": "evals_passed",
+          "description": "Number of evaluation checks that passed.",
+          "regulatory_ref": "NIST AI RMF MEASURE 2.5"
+        },
+        "factor_c": {
+          "label": "gate_score",
+          "description": "Gate score 0-100 derived from evals_passed/total_evals. Auto-computed when not provided.",
+          "regulatory_ref": "ISO 42001 A.6.2.3; NIST 800-53 SA-11"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c >= 70",
+        "description": "PASS when gate score meets threshold of 70. FAIL when below."
+      },
+      "frameworks": {
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "EU-AI-ACT": "Art.9(7)",
+        "ISO-42001": "A.6.2.3",
+        "NIST-800-53": "SA-11"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (118 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing, harness governance (123 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",
-    "HCF": "Healthcare AI accountability, diagnostic traceability, HIPAA / 21 CFR Part 11 compliance"
+    "HCF": "Healthcare AI accountability, diagnostic traceability, HIPAA / 21 CFR Part 11 compliance",
+    "NHI": "Non-Human Identity governance, credential lifecycle witnessing, agent delegation auditing (7 procedures)",
+    "HBOM": "Hardware Bill of Materials, component lifecycle, thermal/water/power attestation (6 procedures)",
+    "DPP": "Digital Product Passport, battery state of health, charge cycle, degradation, end-of-life witnessing (4 procedures)",
+    "ADR": "Automated Demand Response, curtailment verification, carbon credit attestation, grid signal correlation (6 procedures)"
   }
 }

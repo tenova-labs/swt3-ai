@@ -10,10 +10,10 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 ```bash
 # Local mode -- anchors emit as structured JSON to stdout
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2
 
 # Cloud mode -- anchors flush to the SWT3 clearing house
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.5.8 \
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT
@@ -71,7 +71,7 @@ Returns:
 ```json
 {
   "status": "ok",
-  "version": "0.5.8",
+  "version": "0.7.2",
   "mode": "local",
   "silicon_vendor": "nvidia",
   "topology": "single",
@@ -91,7 +91,7 @@ Returns:
 ## Container Image
 
 ```bash
-docker pull ghcr.io/tenova-labs/swt3-witness:0.5.8
+docker pull ghcr.io/tenova-labs/swt3-witness:0.7.2
 ```
 
 ## License

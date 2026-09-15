@@ -148,6 +148,12 @@ PROCEDURE_HINTS: Dict[str, str] = {
     "AI-LIC.1": "witness_license_provenance",
     "AI-JUR.1": "witness_routing",
     "AI-FIN.1": "witness_transaction",
+    # Harness governance
+    "AI-ORCH.1": "witness_orchestration",
+    "AI-ORCH.2": "witness_orchestration_policy",
+    "AI-CTX.1": "witness_context_boundary",
+    "AI-SAND.1": "witness_sandbox_attestation",
+    "AI-GATE.1": "witness_gate_decision",
     # Engineering (safety-critical domains)
     "AI-ENG.1": "witness_design_provenance",
     "AI-ENG.2": "witness_simulation_validation",

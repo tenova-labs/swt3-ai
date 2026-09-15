@@ -5,6 +5,24 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+# -- Harness Governance code maps (v0.7.2) --
+
+ORCHESTRATION_TOPOLOGY_CODES: Dict[str, int] = {
+    "sequential": 0,
+    "parallel": 1,
+    "hierarchical": 2,
+    "hybrid": 3,
+    "mesh": 4,
+}
+
+EVICTION_METHOD_CODES: Dict[str, int] = {
+    "none": 0,
+    "truncation": 1,
+    "summarization": 2,
+    "sliding_window": 3,
+    "priority_eviction": 4,
+}
+
 
 @dataclass
 class WitnessConfig:
@@ -30,6 +48,8 @@ class WitnessConfig:
     jurisdiction: Optional[str] = None  # ISO 3166-1 jurisdiction code (e.g., "DE", "US-VA")
     legal_basis: Optional[str] = None  # GDPR legal basis (e.g., "consent", "legitimate_interest")
     purpose_class: Optional[str] = None  # CJT purpose classification (e.g., "clinical_decision_support")
+    authorization_expires: Optional[int] = None  # CJT authorization expiry epoch ms (default TTL for all anchors)
+    authorization_scope: Optional[str] = None  # CJT authorization scope descriptor (default scope for all anchors)
     token_budget: Optional[int] = None  # Mint anchor every N tokens (None = disabled, use buffer_size)
     chain_min_trust_level: Optional[int] = None  # Minimum effective trust level for chain handoffs (0-4)
     flush_target: Optional[str] = None  # "http" (default) or "redis" for high-throughput decoupled intake
@@ -157,6 +177,8 @@ class WitnessPayload:
     legal_basis: Optional[str] = None  # GDPR legal basis (survives all clearing levels)
     purpose_class: Optional[str] = None  # CJT purpose classification (survives all clearing levels)
     authorization_id: Optional[str] = None  # CJT pre-inference authorization receipt (survives all clearing levels)
+    authorization_expires: Optional[int] = None  # CJT authorization expiry epoch ms (survives all clearing levels)
+    authorization_scope: Optional[str] = None  # CJT authorization scope descriptor (survives all clearing levels)
     references: Optional[List[Dict[str, str]]] = None  # upstream anchor references for provenance chains (survives all clearing levels)
     revocation_target: Optional[str] = None  # fingerprint of anchor being revoked (survives all clearing levels)
     revocation_reason: Optional[str] = None  # reason for revocation (survives all clearing levels)
@@ -216,6 +238,10 @@ class WitnessPayload:
             d["purpose_class"] = self.purpose_class
         if self.authorization_id is not None:
             d["authorization_id"] = self.authorization_id
+        if self.authorization_expires is not None:
+            d["authorization_expires"] = self.authorization_expires
+        if self.authorization_scope is not None:
+            d["authorization_scope"] = self.authorization_scope
         if self.references:
             d["references"] = self.references
         if self.revocation_target is not None:
