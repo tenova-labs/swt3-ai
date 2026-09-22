@@ -1,6 +1,6 @@
 [package]
 name = "swt3-ai"
-version = "0.7.2"
+version = "0.7.3"
 edition = "2021"
 description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference and infrastructure governance. 280 procedures, 9 namespaces, 10 languages, 77 frameworks. EU AI Act, NIST AI RMF, OWASP MCP Top 10, CMMC, SR 11-7, NIS-2, EU Battery Reg, FERC."
 license = "Apache-2.0"

@@ -13,6 +13,27 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, xAI (Grok), and any Op
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
+## What's New in v0.7.3
+
+A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.
+
+**Why this matters for TypeScript:** TypeScript powers the MCP ecosystem, Vercel AI SDK, and most agent orchestrators. The upgraded `wrapA2A()` adapter auto-detects `createTask`/`getTask`/`cancelTask` methods and mints AI-A2A.1 anchors on every state transition. `witnessOauthTokenBinding()` provides confused deputy prevention evidence for MCP servers running behind OAuth proxies.
+
+### 4 New Procedures
+
+- **AI-A2A.1** (Task Delegation Lifecycle): Records task state transitions (submitted/working/input_required/completed/failed/canceled/rejected) with delegation depth and latency.
+- **AI-A2A.2** (Agent Card Discovery): Records agent discovery via well-known URLs, registries, or referrals, with verified credential count.
+- **AI-A2A.3** (Context Chain Linking): Records contextId linkage across multi-agent delegation chains for forensic reconstruction.
+- **AI-MCP.5** (OAuth Token Binding): Records 8 OAuth lifecycle events (discovery through revocation) with binding strength and scope governance.
+
+### Updated Coverage
+
+- 284 procedures across 10 namespaces (was 280/9)
+- 72 MCP tools (was 68)
+- A2A namespace added (10th namespace)
+- `swt3 crosswalk <procedure>` CLI command for offline framework mapping lookup
+- 269 compliance guides
+
 ## What's New in v0.7.2
 
 Two categories of AI infrastructure have no compliance evidence today: harness-layer governance and MCP server operations. The harness decides which agent runs, what context it sees, and whether the output ships -- but those decisions are invisible to auditors. MCP servers process thousands of tool calls with zero attestation. v0.7.2 closes both gaps: five new procedures for harness governance, and a Witness Middleware that adds cryptographic attestation to any MCP server with one function call.
@@ -1801,15 +1822,15 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 - [SDK Reference](https://sovereign.tenova.io/docs/) -- full API, all providers, clearing levels, configuration
 - [10-Minute Quickstart](https://sovereign.tenova.io/guides/ai-witness-quickstart.html) -- from install to first anchor
-- [SWT3 Protocol Spec](https://sovereign.tenova.io/guides/swt3-protocol.html) -- formal specification with ABNF grammar
+- [SWT3 Protocol Spec](https://swt3.ai/spec) -- formal specification with ABNF grammar
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
-- [UCT Registry](https://sovereign.tenova.io/registry) -- full procedure catalog with factor definitions
-- [Anchor Verifier](https://sovereign.tenova.io/verify) -- verify any anchor, zero server calls
+- [UCT Registry](https://swt3.ai/registry) -- full procedure catalog with factor definitions
+- [Anchor Verifier](https://swt3.ai/verify) -- verify any anchor, zero server calls
 - [Before & After](https://sovereign.tenova.io/guides/developer-before-after.html) -- manual audit evidence vs. cryptographic witness anchors
 - [Integration Patterns](https://sovereign.tenova.io/guides/developer-integration-patterns.html) -- 8 instrumentation patterns mapped to regulatory requirements
 - [What Your Auditor Sees](https://sovereign.tenova.io/guides/developer-auditor-bridge.html) -- both sides of a witness anchor, developer to auditor
 - [CI/CD Integration](https://sovereign.tenova.io/guides/developer-cicd-guide.html) -- validate compliance configuration in your pipeline
-- [Assessment Mapping](https://sovereign.tenova.io/registry/assessment.html) -- which procedures satisfy which regulatory requirements
+- [Assessment Mapping](https://swt3.ai/registry) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
 - [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 77 frameworks

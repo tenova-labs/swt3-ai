@@ -56,6 +56,11 @@ import {
   handleOrchestrationTopology, handleAgentHandoff, handleContextWindow,
   handleSandboxEnforcement, handleEvalGate,
 } from "./tools/harness.js";
+import {
+  handleWitnessTaskLifecycle, handleWitnessAgentCardDiscovery,
+  handleWitnessContextChain,
+} from "./tools/a2a.js";
+import { handleWitnessOauthTokenBinding } from "./tools/oauth.js";
 import { buildComplianceCheckPrompt } from "./prompts/compliance-check.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
@@ -224,7 +229,7 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
 
   const server = new McpServer({
     name: "swt3-mcp",
-    version: "0.6.3",
+    version: "0.7.3",
   });
 
   // --- Tools ---
@@ -1044,6 +1049,125 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
       if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
       const text = await handleMcpServerDiscovery(args, config, client);
       trackProcedure(sessionState, "AI-MCP.4");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- OAuth Token Binding Tool (AI-MCP.5) ---
+
+  server.registerTool("witness_oauth_token_binding", {
+    description:
+      "Witness OAuth token lifecycle event for MCP servers (AI-MCP.5). " +
+      "Records discovery, registration, grant, token binding, validation, " +
+      "refresh, scope changes, and revocation. Provides confused deputy " +
+      "prevention evidence and scope governance. OWASP MCP-07, NIST IA-9." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      event_type: z.number().describe("OAuth event: 0=discovery, 1=registration, 2=grant, 3=token_bind, 4=validation, 5=refresh, 6=scope_change, 7=revocation"),
+      scope_count: z.number().describe("Number of OAuth scopes requested or granted"),
+      binding_strength: z.number().describe("Token binding: 0=none, 1=session, 2=dpop, 3=mtls_bound"),
+      server_name: z.string().optional().describe("MCP server name"),
+      grant_type: z.string().optional().describe("OAuth grant type (authorization_code, client_credentials, etc.)"),
+      audience_hash: z.string().optional().describe("Truncated hash of token audience"),
+      scope_list: z.string().optional().describe("Comma-separated OAuth scope list"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessOauthTokenBinding(args as any, config, client);
+      trackProcedure(sessionState, "AI-MCP.5");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- A2A Task Delegation Lifecycle Tool (AI-A2A.1) ---
+
+  server.registerTool("witness_task_lifecycle", {
+    description:
+      "Witness A2A task delegation lifecycle event (AI-A2A.1). " +
+      "Records task state transitions in agent-to-agent workflows: " +
+      "submitted, working, input_required, completed, failed, canceled, rejected. " +
+      "EU AI Act Art. 9, Five Eyes Agentic FE-6." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      state_code: z.number().describe("A2A task state: 0=submitted, 1=working, 2=input_required, 3=completed, 4=failed, 5=canceled, 6=rejected"),
+      latency_ms: z.number().describe("Time spent in current state (milliseconds)"),
+      depth: z.number().optional().describe("Delegation depth from original requester (default: 1)"),
+      task_id: z.string().optional().describe("A2A task identifier (hashed in anchor)"),
+      from_agent: z.string().optional().describe("Requesting agent identity (hashed in anchor)"),
+      to_agent: z.string().optional().describe("Target agent identity (hashed in anchor)"),
+      context_id: z.string().optional().describe("A2A contextId for delegation chain linking"),
+      previous_state: z.number().optional().describe("Previous task state code"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessTaskLifecycle(args as any, config, client);
+      trackProcedure(sessionState, "AI-A2A.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- A2A Agent Card Discovery Tool (AI-A2A.2) ---
+
+  server.registerTool("witness_agent_card_discovery", {
+    description:
+      "Witness A2A Agent Card discovery event (AI-A2A.2). " +
+      "Records agent discovery via well-known URLs, registries, or referrals. " +
+      "Attests how many discovered agents have verifiable credentials. " +
+      "Five Eyes FE-5, OWASP MCP-09." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      discovery_method: z.number().describe("Discovery: 0=direct_url, 1=well_known, 2=registry, 3=referral"),
+      agents_discovered: z.number().describe("Number of agents discovered"),
+      verified_count: z.number().optional().describe("Agents with verifiable credentials (default: 0)"),
+      card_hash: z.string().optional().describe("SHA-256 hash of the Agent Card content"),
+      capabilities_count: z.number().optional().describe("Number of capabilities declared"),
+      auth_schemes: z.string().optional().describe("Authentication schemes declared (comma-separated)"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessAgentCardDiscovery(args as any, config, client);
+      trackProcedure(sessionState, "AI-A2A.2");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- A2A Context Chain Linking Tool (AI-A2A.3) ---
+
+  server.registerTool("witness_context_chain", {
+    description:
+      "Witness A2A context chain linking event (AI-A2A.3). " +
+      "Records contextId linkage in multi-task delegation chains. " +
+      "Creates a forensic delegation trail across agent boundaries. " +
+      "EU AI Act Art. 9, NIST AI RMF GOVERN 1.3." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      chain_length: z.number().describe("Number of tasks linked by this contextId"),
+      context_id: z.string().describe("A2A contextId linking related tasks"),
+      agents_in_chain: z.number().describe("Number of distinct agents in the chain"),
+      originator_id: z.string().optional().describe("Identity of the chain originator (hashed)"),
+      current_agent_id: z.string().optional().describe("Identity of the current agent (hashed)"),
+      chain_complete: z.boolean().optional().describe("Whether the chain has reached a terminal state (default: true)"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessContextChain(args as any, config, client);
+      trackProcedure(sessionState, "AI-A2A.3");
       return { content: [{ type: "text" as const, text }] };
     } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
   });

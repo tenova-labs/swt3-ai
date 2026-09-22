@@ -2,8 +2,8 @@ apiVersion: v2
 name: swt3-witness
 description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 0.7.2
-appVersion: "0.7.2"
+version: 0.7.3
+appVersion: "0.7.3"
 keywords:
   - ai
   - compliance
@@ -33,10 +33,10 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/changes: |
     - kind: added
-      description: "Harness governance: orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), eval gate (AI-GATE.1)"
+      description: "Agent Protocol: A2A task delegation lifecycle (AI-A2A.1), agent card discovery (AI-A2A.2), context chain linking (AI-A2A.3)"
     - kind: added
-      description: "Witness Middleware support: withSWT3(transport) for zero-code MCP server attestation"
+      description: "MCP OAuth token binding attestation (AI-MCP.5)"
     - kind: added
-      description: "MCP security procedures: tool integrity (AI-MCP.2), server auth (AI-MCP.3), server discovery (AI-MCP.4)"
+      description: "swt3 crosswalk CLI command for terminal framework lookups"
     - kind: changed
-      description: "Underlying SDK updated to 0.7.2 with 280 procedures, 68 MCP tools, 265 compliance guides"
+      description: "Underlying SDK updated to 0.7.3 with 284 procedures, 72 MCP tools, 269 compliance guides"

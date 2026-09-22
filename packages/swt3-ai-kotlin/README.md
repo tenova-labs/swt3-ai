@@ -9,6 +9,23 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
+## Ecosystem: v0.7.3
+
+A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.
+
+**Why this matters for Kotlin:** Kotlin/JVM agent frameworks gain A2A lifecycle attestation. The four new procedure IDs verify with the existing `mintFingerprint` function.
+
+### 4 New Procedures
+
+- **AI-A2A.1** (Task Delegation Lifecycle): Records task state transitions (submitted/working/input_required/completed/failed/canceled/rejected) with delegation depth and latency.
+- **AI-A2A.2** (Agent Card Discovery): Records agent discovery via well-known URLs, registries, or referrals, with verified credential count.
+- **AI-A2A.3** (Context Chain Linking): Records contextId linkage across multi-agent delegation chains for forensic reconstruction.
+- **AI-MCP.5** (OAuth Token Binding): Records 8 OAuth lifecycle events (discovery through revocation) with binding strength and scope governance.
+
+### Updated Coverage
+
+- 284 procedures across 10 namespaces (was 280/9). 72 MCP tools (was 68). A2A namespace added (10th namespace). 269 compliance guides. All new anchor types verify with `Fingerprint.mint()` -- no library update required.
+
 ## Ecosystem: v0.7.2
 
 Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. The SWT3 ecosystem now includes five new procedures for orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), and eval gating (AI-GATE.1) -- the decisions AI harnesses make before inference that have no audit trail today. The companion MCP package also ships a Witness Middleware (`withSWT3(transport)`) that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server with zero code changes. 280 procedures across 77 namespaces, 68 MCP tools, 265 compliance guides. All new anchor types verify with the existing `Fingerprint.mint()` method -- no library update required. Kotlin code stays at v0.1.1.
@@ -181,7 +198,7 @@ echo -n "WITNESS:DEMO_TENANT:AI-INF.1:1:1:0:1774800000000" | sha256sum | cut -c1
 # Produces a 12-character fingerprint. Compare it to the anchor. If it matches, the anchor is real.
 ```
 
-Or verify in your browser at [sovereign.tenova.io/verify](https://sovereign.tenova.io/verify).
+Or verify in your browser at [swt3.ai/verify](https://swt3.ai/verify).
 
 ## What is an SWT3 Witness Anchor?
 
@@ -220,8 +237,8 @@ The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}
 ## Resources
 
 - [SDK Documentation](https://sovereign.tenova.io/docs/) -- quickstart, provider matrix, API reference
-- [UCT Registry](https://sovereign.tenova.io/registry/) -- 229 procedures, searchable
-- [Public Verifier](https://sovereign.tenova.io/verify) -- verify any anchor in your browser
+- [UCT Registry](https://swt3.ai/registry) -- 284 procedures, searchable
+- [Public Verifier](https://swt3.ai/verify) -- verify any anchor in your browser
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable to hand your auditor during assessment meetings
 - [All 150 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 

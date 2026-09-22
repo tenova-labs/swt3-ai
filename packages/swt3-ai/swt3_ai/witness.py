@@ -2853,6 +2853,217 @@ class Witness:
         self._enqueue_sampled(payload)
         return payload
 
+    # ── OAuth Token Binding (AI-MCP.5) ────────────────────────────────────
+
+    OAUTH_EVENT_TYPE_CODES: Dict[str, int] = {
+        "discovery": 0, "registration": 1, "grant": 2, "token_bind": 3,
+        "validation": 4, "refresh": 5, "scope_change": 6, "revocation": 7,
+    }
+
+    BINDING_STRENGTH_CODES: Dict[str, int] = {
+        "none": 0, "session": 1, "dpop": 2, "mtls_bound": 3,
+    }
+
+    def witness_oauth_token_binding(
+        self,
+        event_type: int,
+        scope_count: int,
+        binding_strength: int,
+        *,
+        server_name: Optional[str] = None,
+        grant_type: Optional[str] = None,
+        audience_hash: Optional[str] = None,
+        scope_list: Optional[list] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness OAuth token lifecycle event for MCP servers (AI-MCP.5).
+
+        Records OAuth discovery, registration, grant, token binding,
+        validation, refresh, scope changes, and revocation events.
+        Provides confused deputy prevention evidence and scope governance.
+
+        OWASP Agentic MCP-07, NIST 800-53 IA-9, EU AI Act Art. 15(3).
+        """
+        fa = float(event_type)
+        fb = float(scope_count)
+        fc = float(binding_strength)
+        payload = self._mint_and_sign("AI-MCP.5", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            event_labels = {v: k for k, v in self.OAUTH_EVENT_TYPE_CODES.items()}
+            label = event_labels.get(event_type, f"event-{event_type}")
+            payload.ai_model_id = f"mcp-oauth-{label}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-oauth",
+                "event_type": event_type,
+                "scope_count": scope_count,
+                "binding_strength": binding_strength,
+            }
+            if server_name:
+                ctx["server_name"] = server_name
+            if grant_type:
+                ctx["grant_type"] = grant_type
+            if audience_hash:
+                ctx["audience_hash"] = audience_hash
+            if scope_list:
+                ctx["scope_list"] = scope_list
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── A2A Task Delegation Lifecycle (AI-A2A.1) ───────────────────────────
+
+    A2A_STATE_CODES: Dict[str, int] = {
+        "submitted": 0, "working": 1, "input_required": 2,
+        "completed": 3, "failed": 4, "canceled": 5, "rejected": 6,
+    }
+
+    def witness_task_lifecycle(
+        self,
+        state_code: int,
+        latency_ms: int,
+        depth: int = 1,
+        *,
+        task_id: Optional[str] = None,
+        from_agent: Optional[str] = None,
+        to_agent: Optional[str] = None,
+        context_id: Optional[str] = None,
+        previous_state: Optional[int] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness A2A task delegation lifecycle event (AI-A2A.1).
+
+        Records task state transitions in agent-to-agent workflows.
+        Each state change (submitted, working, input_required, completed,
+        failed, canceled, rejected) becomes a verifiable anchor.
+
+        EU AI Act Art. 9, NIST AI RMF GOVERN 1.3, Five Eyes Agentic FE-6.
+        """
+        fa = float(state_code)
+        fb = float(latency_ms)
+        fc = float(depth)
+        payload = self._mint_and_sign("AI-A2A.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            state_labels = {v: k for k, v in self.A2A_STATE_CODES.items()}
+            label = state_labels.get(state_code, f"state-{state_code}")
+            payload.ai_model_id = f"a2a-task-{label}"
+            ctx: Dict[str, Any] = {
+                "provider": "a2a",
+                "state_code": state_code,
+                "latency_ms": latency_ms,
+                "depth": depth,
+            }
+            if task_id:
+                ctx["task_id_hash"] = sha256_truncated(task_id, 12)
+            if from_agent:
+                ctx["from_agent_hash"] = sha256_truncated(from_agent, 12)
+            if to_agent:
+                ctx["to_agent_hash"] = sha256_truncated(to_agent, 12)
+            if context_id:
+                ctx["context_id_hash"] = sha256_truncated(context_id, 12)
+            if previous_state is not None:
+                ctx["previous_state"] = previous_state
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── A2A Agent Card Discovery (AI-A2A.2) ────────────────────────────────
+
+    A2A_DISCOVERY_CODES: Dict[str, int] = {
+        "direct_url": 0, "well_known": 1, "registry": 2, "referral": 3,
+    }
+
+    def witness_agent_card_discovery(
+        self,
+        discovery_method: int,
+        agents_discovered: int,
+        verified_count: int = 0,
+        *,
+        card_hash: Optional[str] = None,
+        capabilities_count: Optional[int] = None,
+        auth_schemes: Optional[list] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness A2A Agent Card discovery event (AI-A2A.2).
+
+        Records agent discovery through well-known URLs, registries,
+        referrals, or direct URLs. Attests how many discovered agents
+        have verifiable credentials or signed Agent Cards.
+
+        EU AI Act Art. 13, NIST AI RMF MAP 1.1, Five Eyes Agentic FE-5.
+        """
+        fa = float(discovery_method)
+        fb = float(agents_discovered)
+        fc = float(verified_count)
+        payload = self._mint_and_sign("AI-A2A.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            method_labels = {v: k for k, v in self.A2A_DISCOVERY_CODES.items()}
+            label = method_labels.get(discovery_method, f"method-{discovery_method}")
+            payload.ai_model_id = f"a2a-discovery-{label}"
+            ctx: Dict[str, Any] = {
+                "provider": "a2a",
+                "discovery_method": discovery_method,
+                "agents_discovered": agents_discovered,
+                "verified_count": verified_count,
+            }
+            if card_hash:
+                ctx["card_hash"] = card_hash
+            if capabilities_count is not None:
+                ctx["capabilities_count"] = capabilities_count
+            if auth_schemes:
+                ctx["auth_schemes"] = auth_schemes
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── A2A Context Chain Linking (AI-A2A.3) ───────────────────────────────
+
+    def witness_context_chain(
+        self,
+        chain_length: int,
+        context_id: str,
+        agents_in_chain: int,
+        *,
+        originator_id: Optional[str] = None,
+        current_agent_id: Optional[str] = None,
+        chain_complete: bool = True,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness A2A context chain linking event (AI-A2A.3).
+
+        Records contextId linkage in multi-task delegation chains.
+        Each anchor captures the chain length, a hash of the contextId,
+        and the number of distinct agents. Linked anchors form a
+        forensic delegation trail across agent boundaries.
+
+        EU AI Act Art. 9, NIST AI RMF GOVERN 1.3, Five Eyes Agentic FE-6.
+        """
+        fa = float(chain_length)
+        # Convert contextId hash to float for fingerprint compatibility
+        ctx_hash = sha256_truncated(context_id, 8)
+        fb = float(int(ctx_hash, 16)) if ctx_hash else 0.0
+        fc = float(agents_in_chain)
+        payload = self._mint_and_sign("AI-A2A.3", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"a2a-chain-{sha256_truncated(context_id, 6)}"
+            ctx_dict: Dict[str, Any] = {
+                "provider": "a2a",
+                "chain_length": chain_length,
+                "context_id_hash": sha256_truncated(context_id, 12),
+                "agents_in_chain": agents_in_chain,
+                "chain_complete": chain_complete,
+            }
+            if originator_id:
+                ctx_dict["originator_hash"] = sha256_truncated(originator_id, 12)
+            if current_agent_id:
+                ctx_dict["current_agent_hash"] = sha256_truncated(current_agent_id, 12)
+            _merge_governance_metadata(ctx_dict, governance_metadata)
+            payload.ai_context = ctx_dict
+        self._enqueue_sampled(payload)
+        return payload
+
     # ── Model Provenance Chain (AI-PROV.1) ────────────────────────────────
 
     PROVENANCE_LINK_TYPE_CODES: Dict[str, int] = {

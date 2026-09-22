@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-VERSION = "0.7.2"
+VERSION = "0.7.3"
 
 PROFILES = {
     "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",
@@ -66,6 +66,8 @@ def _print_help() -> None:
         "  swt3 gate --init                    List available frameworks",
         "  swt3 gate --validate                Validate gate config (offline)",
         "  swt3 gate                           Evaluate gate (requires API)",
+        "  swt3 crosswalk <procedure>        Framework mappings for a procedure",
+        "  swt3 crosswalk --framework <id>   All procedures for a framework",
         "  swt3 verify                       Offline anchor verification",
         "  swt3 audit                        Forensic chain timeline (html or json)",
         "  swt3 help                         Show this message\n",
@@ -230,6 +232,105 @@ print("\\nDone. See https://sovereign.tenova.io/docs/ for full documentation.")
 '''
 
 
+def _handle_crosswalk(args: list) -> None:
+    """Look up framework mappings for a procedure."""
+    from .crosswalk import resolve, resolve_framework, frameworks
+
+    _tty = sys.stdout.isatty()
+    _bold = "\033[1m" if _tty else ""
+    _dim = "\033[2m" if _tty else ""
+    _cyan = "\033[36m" if _tty else ""
+    _green = "\033[32m" if _tty else ""
+    _rst = "\033[0m" if _tty else ""
+
+    use_json = "--json" in args
+    procedure = ""
+    framework = ""
+
+    framework = _get_flag(args, "--framework")
+
+    # Collect positional args (skip flags and their values)
+    skip_next = False
+    for a in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if a in ("--framework",):
+            skip_next = True
+            continue
+        if a.startswith("--"):
+            continue
+        if not procedure:
+            procedure = a.upper()
+
+    if framework and not procedure:
+        # Framework lookup: show all procedures mapped to this framework
+        fw_id = framework.upper()
+        mappings = resolve_framework(fw_id)
+        if not mappings:
+            print(f"  No crosswalk found for framework: {fw_id}", file=sys.stderr)
+            sys.exit(1)
+
+        if use_json:
+            import json
+            print(json.dumps({"framework": fw_id, "mappings": mappings}, indent=2))
+            return
+
+        print(f"\n  {_bold}Framework Crosswalk: {_cyan}{fw_id}{_rst}\n")
+        for req, procs in sorted(mappings.items()):
+            proc_list = ", ".join(procs)
+            print(f"    {_green}{req:<20}{_rst} {proc_list}")
+        print(f"\n  {_dim}{len(mappings)} requirements mapped.{_rst}\n")
+        return
+
+    if not procedure:
+        print(
+            "\nUsage:\n"
+            "  swt3 crosswalk <procedure>                Show framework mappings\n"
+            "  swt3 crosswalk <procedure> --json          Machine-readable\n"
+            "  swt3 crosswalk --framework <id>            Show all procedures for a framework\n"
+            "  swt3 crosswalk --framework <id> --json     Machine-readable\n\n"
+            "Examples:\n"
+            "  swt3 crosswalk AI-A2A.1\n"
+            "  swt3 crosswalk AI-MCP.5\n"
+            "  swt3 crosswalk --framework EU-AI-ACT\n"
+        )
+        return
+
+    # Procedure lookup
+    mapping = resolve(procedure)
+    if not mapping:
+        print(f"  No crosswalk found for procedure: {procedure}", file=sys.stderr)
+        print(f"  {_dim}Check: swt3 procedures --json | grep {procedure}{_rst}", file=sys.stderr)
+        sys.exit(1)
+
+    if use_json:
+        import json
+        print(json.dumps({"procedure": procedure, "frameworks": mapping}, indent=2))
+        return
+
+    # Procedure name lookup
+    proc_name = ""
+    try:
+        from .procedures import PROCEDURE_CATALOG
+        for p in PROCEDURE_CATALOG:
+            if p["id"] == procedure:
+                proc_name = p["name"]
+                break
+    except Exception:
+        pass
+
+    sep = "\u2500" * 50
+    print(f"\n  {_bold}Crosswalk: {_cyan}{procedure}{_rst}")
+    if proc_name:
+        print(f"  {_dim}{proc_name}{_rst}")
+    print(f"  {sep}")
+    for fw, ref in sorted(mapping.items()):
+        print(f"    {_green}{fw:<24}{_rst} {ref}")
+    print(f"  {sep}")
+    print(f"  {_dim}{len(mapping)} framework(s) mapped. Zero network calls.{_rst}\n")
+
+
 def _handle_quickstart() -> None:
     """Generate a quickstart example script in the current directory."""
     out = Path("swt3_quickstart.py")
@@ -325,6 +426,7 @@ def main() -> None:
         else:
             from .fingerprint import mint_fingerprint
             import datetime
+            import time as _time
 
             _fa, _fb, _fc, _ts = float(fa), float(fb), float(fc), int(ts)
 
@@ -337,19 +439,59 @@ def main() -> None:
             match = recomputed == claimed
 
             # Colors (respect non-TTY)
-            _green = "\033[32m" if sys.stdout.isatty() else ""
-            _red = "\033[31m" if sys.stdout.isatty() else ""
-            _bold = "\033[1m" if sys.stdout.isatty() else ""
-            _dim = "\033[2m" if sys.stdout.isatty() else ""
-            _cyan = "\033[36m" if sys.stdout.isatty() else ""
-            _rst = "\033[0m" if sys.stdout.isatty() else ""
+            _tty = sys.stdout.isatty()
+            _green = "\033[32m" if _tty else ""
+            _red = "\033[31m" if _tty else ""
+            _bold = "\033[1m" if _tty else ""
+            _dim = "\033[2m" if _tty else ""
+            _cyan = "\033[36m" if _tty else ""
+            _rst = "\033[0m" if _tty else ""
 
-            # Human-readable timestamp
+            # Parse anchor: SWT3-{TIER}-{PROVIDER}-...-{VERDICT}-{EPOCH}-{FP}
+            anchor_parts = anchor.split("-") if anchor else []
+            tier_code = anchor_parts[1] if len(anchor_parts) >= 3 else ""
+            tier_map = {"E": "Enclave", "S": "SaaS", "H": "Hybrid"}
+            tier_name = tier_map.get(tier_code, tier_code)
+            verdict = ""
+            for p in anchor_parts:
+                if p in ("PASS", "FAIL"):
+                    verdict = p
+
+            # Procedure name lookup
+            proc_name = ""
+            try:
+                from .procedures import PROCEDURE_CATALOG
+                for p in PROCEDURE_CATALOG:
+                    if p["id"] == procedure:
+                        proc_name = p["name"]
+                        break
+            except Exception:
+                pass
+
+            # Human-readable timestamp + age
             ts_sec = _ts / 1000 if _ts > 1e12 else _ts
             try:
                 ts_human = datetime.datetime.fromtimestamp(ts_sec, tz=datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             except (OSError, ValueError):
                 ts_human = "invalid"
+
+            age_str = ""
+            try:
+                diff_s = _time.time() - ts_sec
+                if diff_s < 0:
+                    age_str = "just now"
+                elif diff_s < 60:
+                    age_str = "just now"
+                elif diff_s < 3600:
+                    age_str = f"{int(diff_s / 60)}m ago"
+                elif diff_s < 86400:
+                    age_str = f"{int(diff_s / 3600)}h ago"
+                elif diff_s < 2592000:
+                    age_str = f"{int(diff_s / 86400)}d ago"
+                else:
+                    age_str = f"{int(diff_s / 2592000)}mo ago"
+            except Exception:
+                pass
 
             # Formula preimage
             formula = f'WITNESS:{tenant}:{procedure}:{_num_str(_fa)}:{_num_str(_fb)}:{_num_str(_fc)}:{_ts}'
@@ -360,8 +502,19 @@ def main() -> None:
             print(f"  {sep}")
             print(f"  Anchor:     {_cyan}{anchor}{_rst}")
             print(f"  Tenant:     {tenant}")
-            print(f"  Procedure:  {procedure}")
-            print(f"  Timestamp:  {_ts} ({ts_human})")
+            proc_line = f"  Procedure:  {procedure}"
+            if proc_name:
+                proc_line += f"  {_dim}({proc_name}){_rst}"
+            print(proc_line)
+            if tier_name:
+                print(f"  Tier:       {tier_name}")
+            if verdict:
+                v_color = _green if verdict == "PASS" else _red
+                print(f"  Verdict:    {v_color}{_bold}{verdict}{_rst}")
+            ts_line = f"  Timestamp:  {_ts} ({ts_human})"
+            if age_str:
+                ts_line += f"  {_dim}[{age_str}]{_rst}"
+            print(ts_line)
             print(f"  Formula:    {_dim}SHA256(\"{formula}\")[:12]{_rst}")
             print(f"  {sep}")
             print()
@@ -388,6 +541,8 @@ def main() -> None:
     elif cmd == "gate":
         from .gate import handle_gate
         handle_gate(args[1:])
+    elif cmd == "crosswalk":
+        _handle_crosswalk(args[1:])
     elif cmd == "quickstart":
         _handle_quickstart()
     elif cmd in ("help", "--help", "-h", None):

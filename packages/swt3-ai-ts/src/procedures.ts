@@ -119,6 +119,25 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   // Mobile Edge Governance (v0.6.3)
   { id: "AI-MOB.6", name: "Trajectory Decision Attestation", namespace: "MOB" },
   { id: "AI-MOB.7", name: "VLA Inference Witnessing", namespace: "MOB" },
+  // Delegation Governance (v0.6.6)
+  { id: "AI-DEL.2", name: "Delegation Boundary Attestation", namespace: "DEL" },
+  { id: "AI-DENSITY.1", name: "Witnessing Density Attestation", namespace: "DENSITY" },
+  { id: "AI-MCP.1", name: "MCP Security Posture Attestation", namespace: "MCP" },
+  { id: "AI-MCP.2", name: "Tool Integrity Attestation", namespace: "MCP" },
+  { id: "AI-MCP.3", name: "Server Authentication Attestation", namespace: "MCP" },
+  { id: "AI-MCP.4", name: "Server Discovery Attestation", namespace: "MCP" },
+  { id: "AI-MCP.5", name: "OAuth Token Binding Attestation", namespace: "AI" },
+  { id: "AI-PROV.1", name: "Model Provenance Chain", namespace: "PROV" },
+  // Harness Governance (v0.7.2)
+  { id: "AI-ORCH.1", name: "Orchestration Topology Attestation", namespace: "ORCH" },
+  { id: "AI-ORCH.2", name: "Agent Handoff Attestation", namespace: "ORCH" },
+  { id: "AI-CTX.1", name: "Context Window Management Attestation", namespace: "CTX" },
+  { id: "AI-SAND.1", name: "Sandbox Enforcement Attestation", namespace: "SAND" },
+  { id: "AI-GATE.1", name: "Eval Gate Decision Attestation", namespace: "GATE" },
+  // A2A Protocol Governance (v0.7.3)
+  { id: "AI-A2A.1", name: "Task Delegation Lifecycle Attestation", namespace: "A2A" },
+  { id: "AI-A2A.2", name: "Agent Card Discovery Attestation", namespace: "A2A" },
+  { id: "AI-A2A.3", name: "Context Chain Linking Attestation", namespace: "A2A" },
   // Healthcare / Clinical AI (HCF)
   { id: "HCF-DX.1", name: "Diagnostic Accountability", namespace: "HCF" },
   { id: "HCF-RX.1", name: "Prescription Safety", namespace: "HCF" },

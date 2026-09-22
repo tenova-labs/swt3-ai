@@ -6,6 +6,14 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 (NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi) and
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
+## What's New in v0.7.3
+
+- Aligned agent, container image, and Helm chart with SDK v0.7.3 "Agent Protocol" release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.3 with 284 procedures across 10 namespaces.
+- 4 new procedures: task delegation lifecycle (AI-A2A.1), agent card discovery (AI-A2A.2), context chain linking (AI-A2A.3), OAuth token binding (AI-MCP.5). A2A namespace added (10th namespace).
+- Kubernetes operators managing multi-agent deployments gain visibility into A2A task delegation across pod boundaries. The four new procedures complement the existing agent lifecycle and chain witnessing.
+- 72 MCP tools, 269 compliance guides, `swt3 crosswalk <procedure>` CLI command for offline framework mapping lookup.
+
 ## What's New in v0.7.2
 
 - Aligned agent, container image, and Helm chart with SDK v0.7.2 "Harness Governance" release.
@@ -126,4 +134,4 @@ docker pull ghcr.io/tenova-labs/swt3-witness:0.7.2
 
 Apache-2.0. Copyright 2026 Tenable Nova LLC.
 
-Part of the [SWT3 AI Witness Protocol](https://github.com/tenova-labs/swt3-ai).
+Part of the [SWT3 AI Witness Protocol](https://swt3.ai/spec).

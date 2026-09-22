@@ -6,6 +6,29 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
+## What's New in v0.7.3
+
+A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.
+
+**Why this matters for MCP Server:** Four new tools bring the total to 72. `witness_task_lifecycle`, `witness_agent_card_discovery`, and `witness_context_chain` let any MCP client witness A2A delegation flows without SDK integration. `witness_oauth_token_binding` records the 8 OAuth lifecycle events that OWASP MCP-07 identifies as under-attested.
+
+### 4 New MCP Tools (72 total)
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_task_lifecycle` | AI-A2A.1 | Task state transitions (submitted/working/input_required/completed/failed/canceled/rejected) with delegation depth and latency |
+| `witness_agent_card_discovery` | AI-A2A.2 | Agent discovery via well-known URLs, registries, or referrals, with verified credential count |
+| `witness_context_chain` | AI-A2A.3 | contextId linkage across multi-agent delegation chains for forensic reconstruction |
+| `witness_oauth_token_binding` | AI-MCP.5 | 8 OAuth lifecycle events (discovery through revocation) with binding strength and scope governance |
+
+### Updated Coverage
+
+- 284 procedures across 10 namespaces (was 280/9)
+- 72 MCP tools (was 68)
+- A2A namespace added (10th namespace)
+- `swt3 crosswalk <procedure>` CLI command for offline framework mapping lookup
+- 269 compliance guides
+
 ## What's New in v0.7.2
 
 Every MCP server in production today ships without compliance evidence. Tool calls flow through with no attestation, no audit trail, no proof of what happened. v0.7.2 changes that with one function call: `withSWT3(transport)`. The Witness Middleware wraps any MCP transport -- Stdio, SSE, HTTP, custom -- and auto-mints AI-TOOL.1 anchors for every tool call. No code changes to tool handlers. The response is already on the wire before the witness fires -- it cannot block, cannot fail your tools, cannot add latency to the critical path. For platform teams running fleets of MCP servers, this is the difference between "we should add compliance" and "compliance is already there."
@@ -590,8 +613,12 @@ Raw prompt and response text never leaves your machine at any clearing level.
 
 ## Resources
 
-- `swt3://registry/procedures` -- Full UCT procedure catalog
-- `swt3://health` -- Service health status
+- [SWT3 Protocol Spec](https://swt3.ai/spec) -- formal specification with ABNF grammar
+- [UCT Registry](https://swt3.ai/registry) -- full procedure catalog with factor definitions
+- [Anchor Verifier](https://swt3.ai/verify) -- verify any anchor, zero server calls
+- [Conformance Vectors](https://swt3.ai/vectors) -- 13 test vectors for cross-language parity
+- `swt3://registry/procedures` -- MCP resource: full UCT procedure catalog
+- `swt3://health` -- MCP resource: service health status
 
 ## License
 

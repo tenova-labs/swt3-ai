@@ -5294,6 +5294,240 @@ export class Witness {
     return payload;
   }
 
+  // ── MCP OAuth Token Binding (AI-MCP.5) ──────────────────────────────
+
+  /** OAuth event type codes for AI-MCP.5. */
+  static readonly OAUTH_EVENT_CODES: Record<string, number> = {
+    discovery: 0, authorization: 1, token_exchange: 2, refresh: 3,
+    introspection: 4, scope_change: 5, binding: 6, revocation: 7,
+  };
+
+  /**
+   * Witness MCP OAuth token binding attestation (AI-MCP.5).
+   *
+   * Records OAuth token lifecycle events and binding strength for
+   * MCP server authentication. Stronger bindings (DPoP, mTLS) provide
+   * higher assurance against token theft and replay.
+   *
+   * OWASP Agentic Top 10 MCP-07, NIST 800-53 IA-5, EU AI Act Art. 15(3).
+   */
+  witnessOauthTokenBinding(options: {
+    eventType: number;
+    scopeCount: number;
+    bindingStrength: number;
+    serverName?: string;
+    grantType?: string;
+    audienceHash?: string;
+    scopeList?: string[];
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.eventType;
+    const fb = options.scopeCount;
+    const fc = options.bindingStrength;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.5", fa, fb, fc, ts);
+    const eventLabels: Record<number, string> = {
+      0: "discovery", 1: "authorization", 2: "token_exchange", 3: "refresh",
+      4: "introspection", 5: "scope_change", 6: "binding", 7: "revocation",
+    };
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.5", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `mcp-oauth-${eventLabels[options.eventType] ?? `event-${options.eventType}`}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-oauth",
+        event_type: options.eventType,
+        scope_count: options.scopeCount,
+        binding_strength: options.bindingStrength,
+      };
+      if (options.serverName) ctx.server_name = options.serverName;
+      if (options.grantType) ctx.grant_type = options.grantType;
+      if (options.audienceHash) ctx.audience_hash = options.audienceHash;
+      if (options.scopeList) ctx.scope_list = options.scopeList;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── A2A Task Lifecycle (AI-A2A.1) ──────────────────────────────────
+
+  /** Task state codes for AI-A2A.1. */
+  static readonly A2A_TASK_STATE_CODES: Record<string, number> = {
+    submitted: 0, working: 1, input_required: 2, completed: 3,
+    canceled: 4, failed: 5, rejected: 6,
+  };
+
+  /**
+   * Witness A2A task lifecycle state transition (AI-A2A.1).
+   *
+   * Records inter-agent task delegation and state changes. Each state
+   * transition mints a witness anchor, creating a full audit trail
+   * of multi-agent orchestration.
+   *
+   * Google A2A Protocol, NIST 800-53 AU-3, EU AI Act Art. 12.
+   */
+  witnessTaskLifecycle(options: {
+    stateCode: number;
+    latencyMs: number;
+    depth?: number;
+    taskId?: string;
+    fromAgent?: string;
+    toAgent?: string;
+    contextId?: string;
+    previousState?: number;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.stateCode;
+    const fb = options.latencyMs;
+    const fc = options.depth ?? 1;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-A2A.1", fa, fb, fc, ts);
+    const stateLabels: Record<number, string> = {
+      0: "submitted", 1: "working", 2: "input_required", 3: "completed",
+      4: "canceled", 5: "failed", 6: "rejected",
+    };
+    const payload: WitnessPayload = {
+      procedure_id: "AI-A2A.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `a2a-task-${stateLabels[options.stateCode] ?? `state-${options.stateCode}`}`;
+      const ctx: Record<string, unknown> = {
+        provider: "a2a",
+        state_code: options.stateCode,
+        latency_ms: options.latencyMs,
+        depth: fc,
+      };
+      if (options.taskId) ctx.task_id = sha256Truncated(options.taskId, 12);
+      if (options.fromAgent) ctx.from_agent = sha256Truncated(options.fromAgent, 12);
+      if (options.toAgent) ctx.to_agent = sha256Truncated(options.toAgent, 12);
+      if (options.contextId) ctx.context_id = sha256Truncated(options.contextId, 12);
+      if (options.previousState !== undefined) ctx.previous_state = options.previousState;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── A2A Agent Card Discovery (AI-A2A.2) ────────────────────────────
+
+  /** Discovery method codes for AI-A2A.2. */
+  static readonly A2A_DISCOVERY_METHOD_CODES: Record<string, number> = {
+    direct_url: 0, well_known: 1, registry: 2, referral: 3,
+  };
+
+  /**
+   * Witness A2A agent card discovery (AI-A2A.2).
+   *
+   * Records agent inventory through discovery of agent cards
+   * (/.well-known/agent-card.json). Tracks how agents are found
+   * and whether their capabilities have been verified.
+   *
+   * Google A2A Protocol, NIST 800-53 CM-8, EU AI Act Art. 15(1).
+   */
+  witnessAgentCardDiscovery(options: {
+    discoveryMethod: number;
+    agentsDiscovered: number;
+    verifiedCount?: number;
+    cardHash?: string;
+    capabilitiesCount?: number;
+    authSchemes?: string[];
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.discoveryMethod;
+    const fb = options.agentsDiscovered;
+    const fc = options.verifiedCount ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-A2A.2", fa, fb, fc, ts);
+    const methodLabels: Record<number, string> = {
+      0: "direct_url", 1: "well_known", 2: "registry", 3: "referral",
+    };
+    const payload: WitnessPayload = {
+      procedure_id: "AI-A2A.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `a2a-discovery-${methodLabels[options.discoveryMethod] ?? `method-${options.discoveryMethod}`}`;
+      const ctx: Record<string, unknown> = {
+        provider: "a2a",
+        discovery_method: options.discoveryMethod,
+        agents_discovered: options.agentsDiscovered,
+        verified_count: fc,
+      };
+      if (options.cardHash) ctx.card_hash = options.cardHash;
+      if (options.capabilitiesCount !== undefined) ctx.capabilities_count = options.capabilitiesCount;
+      if (options.authSchemes) ctx.auth_schemes = options.authSchemes;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── A2A Context Chain (AI-A2A.3) ───────────────────────────────────
+
+  /**
+   * Witness A2A context chain integrity (AI-A2A.3).
+   *
+   * Records multi-agent context propagation chains. The contextId
+   * links all agents in a conversation, enabling full audit trail
+   * reconstruction across agent boundaries.
+   *
+   * Google A2A Protocol, NIST 800-53 AU-10, EU AI Act Art. 12(1).
+   */
+  witnessContextChain(options: {
+    chainLength: number;
+    contextId: string;
+    agentsInChain: number;
+    originatorId?: string;
+    currentAgentId?: string;
+    chainComplete?: boolean;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = options.chainLength;
+    const fb = parseInt(sha256Truncated(options.contextId, 8), 16);
+    const fc = options.agentsInChain;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-A2A.3", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-A2A.3", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `a2a-chain-${sha256Truncated(options.contextId, 6)}`;
+      const ctx: Record<string, unknown> = {
+        provider: "a2a",
+        chain_length: options.chainLength,
+        context_id: sha256Truncated(options.contextId, 12),
+        agents_in_chain: options.agentsInChain,
+        chain_complete: options.chainComplete ?? true,
+      };
+      if (options.originatorId) ctx.originator_id = sha256Truncated(options.originatorId, 12);
+      if (options.currentAgentId) ctx.current_agent_id = sha256Truncated(options.currentAgentId, 12);
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
   // ── Model Provenance Chain (AI-PROV.1) ──────────────────────────────
 
   /** Provenance link type codes for AI-PROV.1. */

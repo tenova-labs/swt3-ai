@@ -10,6 +10,27 @@ Your models run on-device. Your attestation stays on-device until you choose to 
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
+## What's New in v0.7.3
+
+A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.
+
+**Why this matters for Swift:** Apple platforms hosting on-device agents (Core ML, Secure Enclave signing) gain A2A task lifecycle witnessing. Agents running on Apple Silicon can now attest delegation chains with the same cryptographic parity as server-side SDKs.
+
+### 4 New Procedures
+
+- **AI-A2A.1** (Task Delegation Lifecycle): Records task state transitions (submitted/working/input_required/completed/failed/canceled/rejected) with delegation depth and latency.
+- **AI-A2A.2** (Agent Card Discovery): Records agent discovery via well-known URLs, registries, or referrals, with verified credential count.
+- **AI-A2A.3** (Context Chain Linking): Records contextId linkage across multi-agent delegation chains for forensic reconstruction.
+- **AI-MCP.5** (OAuth Token Binding): Records 8 OAuth lifecycle events (discovery through revocation) with binding strength and scope governance.
+
+### Updated Coverage
+
+- 284 procedures across 10 namespaces (was 280/9)
+- 72 MCP tools (was 68)
+- A2A namespace added (10th namespace)
+- `swt3 crosswalk <procedure>` CLI command for offline framework mapping lookup
+- 269 compliance guides
+
 ## What's New in v0.7.2
 
 Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. v0.7.2 adds five new procedures for orchestration, context management, sandboxing, and eval gating -- the decisions AI harnesses make before inference that have no audit trail today. It also ships a Witness Middleware (`withSWT3(transport)`) in the companion MCP package that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server, with zero code changes to tool handlers.
@@ -281,7 +302,7 @@ For Core ML predictions, the SDK hashes feature provider descriptions (names and
 ## Links
 
 - **Website**: [tenova.io](https://tenova.io)
-- **Protocol Spec**: [SWT3-SPEC-v1.0](https://github.com/tenova-labs/swt3-ai)
+- **Protocol Spec**: [SWT3 Protocol Specification](https://swt3.ai/spec)
 - **Live Demo**: [sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public](https://sovereign.tenova.io/audit/axm_audit_demo_eu_ai_act_public)
 
 ---

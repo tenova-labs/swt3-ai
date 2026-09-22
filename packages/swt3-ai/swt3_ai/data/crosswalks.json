@@ -3,7 +3,7 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-07-02T01:21:12Z",
+  "generated_at": "2026-09-22T02:41:41Z",
   "source": "uct-registry.json",
   "description": "Bidirectional crosswalk between 113 SWT3 AI procedures and 36 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
@@ -1776,6 +1776,70 @@
         "NIST-AI-RMF": "MEASURE 2.5, MAP 3.2",
         "UNECE-WP29": "R157"
       }
+    },
+    "AI-A2A.1": {
+      "title": "Task Delegation Lifecycle Attestation",
+      "namespace": "A2A",
+      "factors": {
+        "factor_a": "state_code",
+        "factor_b": "latency_ms",
+        "factor_c": "depth"
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "FIVE-EYES-AGENTIC": "FE-6",
+        "SG-IMDA-AGENTIC": "MGF-4.1",
+        "OWASP-AGENTIC": "MCP-06",
+        "ISO-42001": "A.8.5"
+      }
+    },
+    "AI-A2A.2": {
+      "title": "Agent Card Discovery Attestation",
+      "namespace": "A2A",
+      "factors": {
+        "factor_a": "discovery_method",
+        "factor_b": "agents_discovered",
+        "factor_c": "verified_count"
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.13",
+        "NIST-AI-RMF": "MAP 1.1",
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "OWASP-AGENTIC": "MCP-09",
+        "ISO-42001": "A.6.2"
+      }
+    },
+    "AI-A2A.3": {
+      "title": "Context Chain Linking Attestation",
+      "namespace": "A2A",
+      "factors": {
+        "factor_a": "chain_length",
+        "factor_b": "context_id_hash",
+        "factor_c": "agents_in_chain"
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-AI-RMF": "GOVERN 1.3",
+        "FIVE-EYES-AGENTIC": "FE-6",
+        "ISO-42001": "A.8.5"
+      }
+    },
+    "AI-MCP.5": {
+      "title": "OAuth Token Binding Attestation",
+      "namespace": "MCP",
+      "factors": {
+        "factor_a": "event_type",
+        "factor_b": "scope_count",
+        "factor_c": "binding_strength"
+      },
+      "frameworks": {
+        "OWASP-AGENTIC": "MCP-07",
+        "NIST-800-53": "IA-9",
+        "EU-AI-ACT": "Art.15(3)",
+        "FIVE-EYES-AGENTIC": "FE-3",
+        "ISO-42001": "A.8.1"
+      }
     }
   },
   "by_framework": {
@@ -1941,7 +2005,8 @@
         "AI-CHR.1",
         "AI-RAG.1",
         "AI-RAG.2",
-        "AI-TRANS.1"
+        "AI-TRANS.1",
+        "AI-A2A.2"
       ],
       "Art.13(1)": [
         "AI-EXPL.1"
@@ -1973,7 +2038,8 @@
         "AI-GRD.2",
         "AI-MDL.7",
         "AI-ROBUST.1",
-        "AI-SEC.2"
+        "AI-SEC.2",
+        "AI-MCP.5"
       ],
       "Art.15(4)": [
         "AI-CYBER.1",
@@ -2046,7 +2112,9 @@
         "AI-TRUST.1",
         "AI-TRUST.2",
         "AI-VIO.1",
-        "AI-DECOM.1"
+        "AI-DECOM.1",
+        "AI-A2A.1",
+        "AI-A2A.3"
       ],
       "Art.9(2)(a)": [
         "AI-GRD.1"
@@ -2132,7 +2200,8 @@
         "AI-ID.1",
         "AI-MULTI.1",
         "AI-TRUST.1",
-        "AI-TRUST.2"
+        "AI-TRUST.2",
+        "AI-MCP.5"
       ],
       "FE-4": [
         "AI-AUDIT.2",
@@ -2146,12 +2215,15 @@
         "AI-GOV.2",
         "AI-HITL.1",
         "AI-HITL.2",
-        "AI-HITL.3"
+        "AI-HITL.3",
+        "AI-A2A.2"
       ],
       "FE-6": [
         "AI-CHAIN.1",
         "AI-CHAIN.2",
-        "AI-REV.1"
+        "AI-REV.1",
+        "AI-A2A.1",
+        "AI-A2A.3"
       ],
       "FE-7": [
         "AI-GRD.1",
@@ -2396,7 +2468,15 @@
         "AI-HITL.2",
         "AI-HITL.3",
         "AI-MULTI.1",
-        "AI-TOOL.1"
+        "AI-TOOL.1",
+        "AI-A2A.1",
+        "AI-A2A.3"
+      ],
+      "A.6.2": [
+        "AI-A2A.2"
+      ],
+      "A.8.1": [
+        "AI-MCP.5"
       ]
     },
     "KR-AI-BASIC": {
@@ -2531,6 +2611,9 @@
         "AI-HW.1",
         "AI-HW.3",
         "AI-REV.1"
+      ],
+      "IA-9": [
+        "AI-MCP.5"
       ]
     },
     "NIST-AI-100-2": {
@@ -2559,7 +2642,9 @@
         "AI-DEL.1",
         "AI-GOV.6",
         "AI-METAGOV.2",
-        "AI-MULTI.1"
+        "AI-MULTI.1",
+        "AI-A2A.1",
+        "AI-A2A.3"
       ],
       "GOVERN 1.4": [
         "AI-AUDIT.1",
@@ -2648,7 +2733,8 @@
         "AI-GOV.3",
         "AI-ID.1",
         "AI-MDL.4",
-        "AI-SBOM.1"
+        "AI-SBOM.1",
+        "AI-A2A.2"
       ],
       "MAP 1.3": [
         "AI-LCM.1"
@@ -2732,17 +2818,20 @@
       "MCP-06": [
         "AI-CHAIN.1",
         "AI-MULTI.1",
-        "AI-TRUST.1"
+        "AI-TRUST.1",
+        "AI-A2A.1"
       ],
       "MCP-07": [
         "AI-ACC.1",
         "AI-ID.1",
         "AI-TRUST.1",
-        "AI-TRUST.2"
+        "AI-TRUST.2",
+        "AI-MCP.5"
       ],
       "MCP-09": [
         "AI-CHAIN.1",
-        "AI-TRUST.1"
+        "AI-TRUST.1",
+        "AI-A2A.2"
       ],
       "MCP-10": [
         "AI-DATA.1",
@@ -2786,6 +2875,11 @@
       ],
       "V.A": [
         "AI-GOV.5"
+      ]
+    },
+    "SG-IMDA-AGENTIC": {
+      "MGF-4.1": [
+        "AI-A2A.1"
       ]
     }
   },
