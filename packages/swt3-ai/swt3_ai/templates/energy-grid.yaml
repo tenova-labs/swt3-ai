@@ -1,0 +1,70 @@
+# SWT3 Profile: Energy Grid AI (NERC CIP + FERC 2222 + IEEE 1547)
+# AI governance for utilities, ISOs/RTOs, demand response aggregators,
+# and distributed energy resource (DER) operators.
+#
+# Covers NERC CIP v7 (CIP-002 through CIP-014), FERC Order 2222,
+# IEEE 1547-2018, EU System Operation Guideline (SOGL), and
+# EU Clean Energy Package Art. 17.
+#
+# Energy grid AI requires deterministic safety: every autonomous
+# voltage regulation, load forecast, frequency response, or
+# curtailment decision must produce a verifiable witness anchor.
+#
+# Usage:
+#   profile: energy-grid
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: grid-optimizer-v1
+
+clearing_level: 2   # Sensitive (grid reliability data)
+
+policy:
+  require_agent_id: true
+  require_signing: true
+  min_clearing_level: 2
+  require_jurisdiction: true
+  required_procedures:
+    # Demand response lifecycle
+    - ADR-BASE.1     # Baseline consumption measurement
+    - ADR-EVENT.1    # Demand response event witnessing
+    - ADR-CURT.1     # Curtailment verification
+    - ADR-GRID.1     # Grid signal correlation
+    - ADR-SETTLE.1   # Settlement data recording
+    - ADR-CARBON.1   # Carbon credit attestation
+    - ADR-VOLT.1     # Autonomous voltage regulation
+    # AI governance (NERC CIP mapped)
+    - AI-SAFE.1      # Safety classification (CIP-002)
+    - AI-GOV.1       # Governance policy (CIP-003)
+    - AI-DRIFT.1     # Configuration baseline (CIP-010 R1)
+    - AI-DRIFT.2     # Drift threshold response (CIP-010 R2)
+    - AI-EMRG.1      # Emergency override lifecycle (CIP-009)
+    - AI-INCIDENT.1  # Incident response plan (CIP-008)
+    - AI-CHAIN.1     # Control center communications (CIP-012)
+    - AI-SUPPLY.1    # Supply chain risk (CIP-013)
+    - AI-HITL.1      # Personnel oversight (CIP-004)
+
+trust_mesh:
+  mode: standard
+  min_trust_level: 3          # High trust (grid operations)
+  require_signature: true
+  freshness_window: 1800      # 30 minutes (grid operational cycle)
+
+hardware:
+  require_attestation: false
+  attestation_freshness: 7200
+  allowed_methods:
+    - tpm2
+    - sgx
+
+density_policy:
+  min_anchors_per_1000_tokens: 3
+  max_chain_gap_seconds: 120
+  require_signing_key: true
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: true
+  max_velocity: "10/60s"
+  max_chain_depth: 8
+  fail_secure: true

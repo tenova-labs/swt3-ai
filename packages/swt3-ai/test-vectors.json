@@ -831,6 +831,18 @@
       "fingerprint_timestamp_ms": 1774800014000,
       "clearing_level": 1,
       "expected_fingerprint": "cdccfadd40cd"
+    },
+    {
+      "id": 70,
+      "description": "AI-SHELL.1 Runtime Containment - openshell, policy enforced, zero violations",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-SHELL.1",
+      "factor_a": 0,
+      "factor_b": 1,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800015000,
+      "clearing_level": 1,
+      "expected_fingerprint": "8ead3df6087d"
     }
   ],
   "signing_vectors": [

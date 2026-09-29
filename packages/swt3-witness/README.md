@@ -6,6 +6,18 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 (NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi) and
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
+> **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.4
+
+- Aligned agent, container image, and Helm chart with SDK v0.7.4 release.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.4 with 278 procedures across 10 namespaces.
+- 3 new procedures: runtime containment attestation (AI-SHELL.1), distillation provenance (AI-DIST.1), elicitation detection (AI-MCP.6). Incident lifecycle chains for forensic sequences.
+- AI-SHELL.1 produces cryptographic evidence from any OCSF-compatible sandbox (OpenShell, gVisor, Kata, Firecracker, WASM). Kubernetes operators managing sandboxed agent workloads gain containment attestation alongside existing model integrity and inference witnessing.
+- 75 MCP tools, 277 compliance guides. [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html).
+
+**Why this matters for Kubernetes:** AI-SHELL.1 turns sandbox enforcement into auditable evidence. A DaemonSet already sees every node -- now it can attest that gVisor, Kata, Firecracker, or OpenShell containment policies were enforced during a specific observation window, not just that they were configured. Distillation provenance (AI-DIST.1) records teacher-to-student lineage for on-cluster model compression jobs. Elicitation detection (AI-MCP.6) captures prompt boundary violations in MCP sidecar deployments. All three procedures mint with the same fingerprint formula as every other SDK language -- zero image rebuild required.
+
 ## What's New in v0.7.3
 
 - Aligned agent, container image, and Helm chart with SDK v0.7.3 "Agent Protocol" release.

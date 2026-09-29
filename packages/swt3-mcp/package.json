@@ -1,8 +1,8 @@
 {
   "name": "@tenova/swt3-mcp",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "mcpName": "io.tenova/swt3-witness",
-  "description": "MCP server for AI compliance audit trail and governance. 72 tools, 1 prompt, 77 frameworks. EU AI Act, NIST AI RMF, GDPR, CMMC, ISO 42001, OWASP Agentic Top 10, OWASP MCP Top 10, SR 11-7, NIS-2, EU Battery Reg, FERC. Witness every inference, gate tool calls, enforce clearing levels. Full OWASP MCP Top 10 coverage. Cryptographic attestation with tamper-proof anchor chain.",
+  "description": "MCP server for AI compliance audit trail and governance. 74 tools, 1 prompt, 77 frameworks. EU AI Act, NIST AI RMF, GDPR, CMMC, ISO 42001, OWASP Agentic Top 10, OWASP MCP Top 10, SR 11-7, NIS-2, EU Battery Reg, FERC. Witness every inference, gate tool calls, enforce clearing levels. Full OWASP MCP Top 10 coverage. Cryptographic attestation with tamper-proof anchor chain.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -66,7 +66,7 @@
     "type": "git",
     "url": "https://github.com/tenova-labs/swt3-ai"
   },
-  "homepage": "https://tenova.io",
+  "homepage": "https://swt3.ai",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tenova/swt3-ai": "file:../swt3-ai-ts",

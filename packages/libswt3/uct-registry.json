@@ -707,7 +707,8 @@
         "NIST-AI-RMF": "MANAGE 1.3",
         "OWASP-AGENTIC": "MCP-04",
         "SR-11-7": "III.B",
-        "NIS-2": "Art.21(2)(e)"
+        "NIS-2": "Art.21(2)(e)",
+        "NERC-CIP": "CIP-010-4 R4"
       },
       "namespace": "AI"
     },
@@ -4166,7 +4167,8 @@
         "EU-AI-ACT": "Art.12(2)(d)",
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
-        "NIST-AI-RMF": "GOVERN 4.1"
+        "NIST-AI-RMF": "GOVERN 4.1",
+        "NERC-CIP": "CIP-004-7 R2"
       },
       "namespace": "AI"
     },
@@ -4833,7 +4835,9 @@
         "SR-11-7": "III.A",
         "KR-AI-BASIC": "Art.25",
         "TX-TRAIGA": "Sec.224.105",
-        "NYC-LL144": "Sec.20-871(a)"
+        "NYC-LL144": "Sec.20-871(a)",
+        "NERC-CIP": "CIP-003-9 R1.4",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -4913,7 +4917,9 @@
         "CA-SB-942": "Sec.22757.5(c)",
         "KR-AI-BASIC": "Art.28",
         "TX-TRAIGA": "Sec.224.107",
-        "NYC-LL144": "Sec.20-871(d)"
+        "NYC-LL144": "Sec.20-871(d)",
+        "NERC-CIP": "CIP-011-3 R1",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -5065,7 +5071,9 @@
         "NIS-2": "Art.21(2)(g)",
         "KR-AI-BASIC": "Art.24",
         "SG-IMDA-AGENTIC": "MGF-3.3",
-        "TX-TRAIGA": "Sec.224.106"
+        "TX-TRAIGA": "Sec.224.106",
+        "NERC-CIP": "CIP-004-7 R1",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -5144,7 +5152,9 @@
         "CA-SB-942": "Sec.22757.5(b)",
         "KR-AI-BASIC": "Art.22",
         "TX-TRAIGA": "Sec.224.104",
-        "NYC-LL144": "Sec.20-871(b)"
+        "NYC-LL144": "Sec.20-871(b)",
+        "NERC-CIP": "CIP-003-9 R1.3",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -5222,7 +5232,10 @@
         "NIST-800-53": "PL-4",
         "NIST-AI-RMF": "GOVERN 1.1",
         "NIS-2": "Art.21(2)(a)",
-        "TX-TRAIGA": "Sec.224.102"
+        "TX-TRAIGA": "Sec.224.102",
+        "NERC-CIP": "CIP-003-9 R1",
+        "3GPP-R19": "TS 28.908",
+        "ITU-T": "Y.3172"
       },
       "namespace": "AI"
     },
@@ -5260,7 +5273,8 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "7.2",
         "NIST-800-53": "AT-2",
-        "NIST-AI-RMF": "GOVERN 2.1"
+        "NIST-AI-RMF": "GOVERN 2.1",
+        "NERC-CIP": "CIP-003-9 R2"
       },
       "namespace": "AI"
     },
@@ -5298,7 +5312,8 @@
         "FIVE-EYES-AGENTIC": "FE-11",
         "ISO-42001": "A.6.2.4",
         "NIST-800-53": "CM-8",
-        "NIST-AI-RMF": "MAP 1.1"
+        "NIST-AI-RMF": "MAP 1.1",
+        "NERC-CIP": "CIP-003-9 R3"
       },
       "namespace": "AI"
     },
@@ -5450,7 +5465,8 @@
         "OWASP-AGENTIC": "MCP-01,MCP-07",
         "NIS-2": "Art.21(2)(i)",
         "CA-SB-942": "Sec.22757.5(d)",
-        "SG-IMDA-AGENTIC": "MGF-2.1"
+        "SG-IMDA-AGENTIC": "MGF-2.1",
+        "NERC-CIP": "CIP-007-6 R5"
       },
       "namespace": "AI"
     },
@@ -5491,7 +5507,8 @@
         "OWASP-AGENTIC": "MCP-02,MCP-07",
         "NIS-2": "Art.21(2)(i)",
         "CA-SB-942": "Sec.22757.5(e)",
-        "SG-IMDA-AGENTIC": "MGF-2.2"
+        "SG-IMDA-AGENTIC": "MGF-2.2",
+        "NERC-CIP": "CIP-004-7 R3"
       },
       "namespace": "AI"
     },
@@ -5527,7 +5544,8 @@
         "FIVE-EYES-AGENTIC": "FE-6",
         "GDPR": "Art.17",
         "NIST-800-53": "SI-7",
-        "NIST-AI-RMF": "MANAGE 2.4"
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "NERC-CIP": "CIP-004-7 R4"
       },
       "namespace": "AI"
     },
@@ -5565,7 +5583,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MANAGE 2.3",
-        "OWASP-AGENTIC": "MCP-03"
+        "OWASP-AGENTIC": "MCP-03",
+        "NERC-CIP": "CIP-005-7 R1"
       },
       "namespace": "AI"
     },
@@ -5602,7 +5621,8 @@
         "FIVE-EYES-AGENTIC": "FE-10",
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-10",
-        "NIST-AI-RMF": "MANAGE 2.3"
+        "NIST-AI-RMF": "MANAGE 2.3",
+        "NERC-CIP": "CIP-005-7 R2"
       },
       "namespace": "AI"
     },
@@ -6410,7 +6430,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-7",
         "NIST-AI-RMF": "GOVERN 1.2",
-        "NIS-2": "Art.21(2)(d)"
+        "NIS-2": "Art.21(2)(d)",
+        "NERC-CIP": "CIP-014-3 R1"
       },
       "namespace": "AI"
     },
@@ -6485,7 +6506,9 @@
         "NIST-AI-RMF": "GOVERN 1.5",
         "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09",
         "NIS-2": "Art.21(2)(d),Art.21(2)(j)",
-        "SG-IMDA-AGENTIC": "MGF-5.1"
+        "SG-IMDA-AGENTIC": "MGF-5.1",
+        "NERC-CIP": "CIP-012-1 R1.2",
+        "3GPP-R19": "TR 28.908"
       },
       "namespace": "AI"
     },
@@ -6524,7 +6547,8 @@
         "NIST-AI-RMF": "GOVERN 1.5",
         "OWASP-AGENTIC": "MCP-07",
         "NIS-2": "Art.21(2)(j)",
-        "SG-IMDA-AGENTIC": "MGF-5.2"
+        "SG-IMDA-AGENTIC": "MGF-5.2",
+        "3GPP-R19": "TR 28.908"
       },
       "namespace": "AI"
     },
@@ -6563,7 +6587,10 @@
         "NIST-AI-RMF": "GOVERN 1.3",
         "OWASP-AGENTIC": "MCP-06,MCP-09",
         "NIS-2": "Art.21(2)(d)",
-        "SG-IMDA-AGENTIC": "MGF-4.1"
+        "SG-IMDA-AGENTIC": "MGF-4.1",
+        "NERC-CIP": "CIP-012-1 R1",
+        "3GPP-R19": "TS 28.310",
+        "ITU-T": "Y.3172"
       },
       "namespace": "AI"
     },
@@ -6637,7 +6664,9 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MANAGE 2.3",
         "NIS-2": "Art.21(2)(c)",
-        "KR-AI-BASIC": "Art.26"
+        "KR-AI-BASIC": "Art.26",
+        "NERC-CIP": "CIP-002-7 R1",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -6787,7 +6816,9 @@
         "FIVE-EYES-AGENTIC": "FE-8",
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "CM-6",
-        "NIST-AI-RMF": "GOVERN 1.2"
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "NERC-CIP": "CIP-005-7 R3",
+        "3GPP-R19": "TS 28.310"
       },
       "namespace": "AI"
     },
@@ -6971,7 +7002,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "MAP 1.1",
-        "NIS-2": "Art.21(2)(e)"
+        "NIS-2": "Art.21(2)(e)",
+        "NERC-CIP": "CIP-013-2 R3"
       },
       "namespace": "AI"
     },
@@ -7122,7 +7154,10 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
         "SR-11-7": "IV.A",
-        "NIS-2": "Art.21(2)(f)"
+        "NIS-2": "Art.21(2)(f)",
+        "NERC-CIP": "CIP-010-4 R1",
+        "3GPP-R19": "TS 23.288",
+        "ITU-T": "Y.3172"
       },
       "namespace": "AI"
     },
@@ -7163,7 +7198,8 @@
         "NIST-AI-RMF": "GOVERN 1.4",
         "NIS-2": "Art.21(2)(a)",
         "CA-SB-942": "Sec.22757.5(a)",
-        "NYC-LL144": "Sec.20-871(c)"
+        "NYC-LL144": "Sec.20-871(c)",
+        "NERC-CIP": "CIP-003-9 R4"
       },
       "namespace": "AI"
     },
@@ -7201,7 +7237,9 @@
         "ISO-42001": "A.6.2.5",
         "NIST-800-53": "IR-4",
         "NIST-AI-RMF": "MANAGE 3.2",
-        "NIS-2": "Art.21(2)(b)"
+        "NIS-2": "Art.21(2)(b)",
+        "NERC-CIP": "CIP-008-6 R1",
+        "ITU-T": "Y.3180"
       },
       "namespace": "AI"
     },
@@ -7239,7 +7277,10 @@
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.5",
         "SR-11-7": "IV.A",
-        "NIS-2": "Art.21(2)(f)"
+        "NIS-2": "Art.21(2)(f)",
+        "NERC-CIP": "CIP-010-4 R3",
+        "3GPP-R19": "TS 23.288",
+        "ITU-T": "Y.3172"
       },
       "namespace": "AI"
     },
@@ -7276,7 +7317,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-009-6 R2"
       },
       "namespace": "AI"
     },
@@ -7314,7 +7356,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "CA-2",
         "NIST-AI-RMF": "MANAGE 2.2",
-        "NIST-CSF": "Core"
+        "NIST-CSF": "Core",
+        "NERC-CIP": "CIP-007-6 R1"
       },
       "namespace": "AI"
     },
@@ -7355,7 +7398,9 @@
         "CA-SB-942": "Sec.22757.5(a)",
         "KR-AI-BASIC": "Art.22",
         "TX-TRAIGA": "Sec.224.104",
-        "NYC-LL144": "Sec.20-871(b)"
+        "NYC-LL144": "Sec.20-871(b)",
+        "NERC-CIP": "CIP-003-9 R1.2",
+        "ITU-T": "Y.3176"
       },
       "namespace": "AI"
     },
@@ -7429,7 +7474,8 @@
         "ISO-42001": "6.1.2",
         "NIST-800-53": "RA-3",
         "NIST-AI-RMF": "MAP 5.2",
-        "KR-AI-BASIC": "Art.27"
+        "KR-AI-BASIC": "Art.27",
+        "NERC-CIP": "CIP-002-7 R1.3"
       },
       "namespace": "AI"
     },
@@ -7539,7 +7585,9 @@
         "G7-CISA": "SBOM-AI",
         "ISO-42001": "A.6.2.7",
         "NIST-800-53": "SA-4",
-        "NIST-AI-RMF": "MEASURE 3.1"
+        "NIST-AI-RMF": "MEASURE 3.1",
+        "NERC-CIP": "CIP-013-2 R1",
+        "3GPP-R19": "TS 33.501"
       },
       "namespace": "AI"
     },
@@ -7987,7 +8035,9 @@
         "EU-AI-ACT": "Art. 12",
         "NIST-AI-RMF": "MAP 1.3",
         "ISO-42001": "6.1.2",
-        "FIVE-EYES-AGENTIC": "Principle 5"
+        "FIVE-EYES-AGENTIC": "Principle 5",
+        "NERC-CIP": "CIP-010-4 R1.6",
+        "3GPP-R19": "TS 28.105"
       },
       "namespace": "AI"
     },
@@ -8057,7 +8107,9 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art. 15(4)",
-        "NIST-AI-RMF": "MANAGE 2.4"
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "3GPP-R19": "TS 33.501",
+        "ITU-T": "Y.3172"
       },
       "namespace": "AI"
     },
@@ -8091,7 +8143,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art. 9(7)",
-        "NIST-AI-RMF": "GOVERN 1.1"
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "3GPP-R19": "TS 23.501"
       },
       "namespace": "AI"
     },
@@ -8126,7 +8179,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art. 15(4)",
         "GDPR": "Art. 44-49",
-        "NIS-2": "Art. 21"
+        "NIS-2": "Art. 21",
+        "3GPP-R19": "TS 23.501"
       },
       "namespace": "AI"
     },
@@ -8160,7 +8214,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art. 15(1)",
-        "NIST-AI-RMF": "MANAGE 2.2"
+        "NIST-AI-RMF": "MANAGE 2.2",
+        "3GPP-R19": "TR 28.908"
       },
       "namespace": "AI"
     },
@@ -8194,7 +8249,8 @@
       },
       "frameworks": {
         "EU-AI-ACT": "Art. 12",
-        "NIST-AI-RMF": "MEASURE 2.5"
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "3GPP-R19": "TS 28.105"
       },
       "namespace": "AI"
     },
@@ -8231,7 +8287,8 @@
         "EU-AI-ACT": "Annex III(3a), Art. 9(2)(a)",
         "ISO-PAS-8800": "Cl. 6, Cl. 7, Cl. 8",
         "NIST-AI-RMF": "MANAGE 4.1, MEASURE 2.6",
-        "UNECE-WP29": "R157"
+        "UNECE-WP29": "R157",
+        "3GPP-R19": "TS 28.310"
       },
       "namespace": "AI"
     },
@@ -8268,7 +8325,8 @@
         "EU-AI-ACT": "Art. 12(1), Art. 15(1), Art. 9(4)(b)",
         "ISO-PAS-8800": "Cl. 9, Cl. 10",
         "NIST-AI-RMF": "MEASURE 2.5, MAP 3.2",
-        "UNECE-WP29": "R157"
+        "UNECE-WP29": "R157",
+        "3GPP-R19": "TS 28.105"
       },
       "namespace": "AI"
     },
@@ -8333,7 +8391,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.14",
         "NIST-AI-RMF": "GOVERN 1.1",
-        "NIST-800-53": "IR-4"
+        "NIST-800-53": "IR-4",
+        "NERC-CIP": "CIP-009-6 R1"
       },
       "namespace": "AI"
     },
@@ -8369,7 +8428,8 @@
         "EU-AI-ACT": "Art.9(2)(b)",
         "NIST-AI-RMF": "MEASURE 2.6",
         "NIST-800-53": "SI-2",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-010-4 R2"
       },
       "namespace": "AI"
     },
@@ -8475,7 +8535,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.9",
         "ISO-42001": "8.2",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "NERC-CIP": "CIP-011-3 R2"
       },
       "namespace": "AI"
     },
@@ -8510,7 +8571,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.72",
         "ISO-42001": "10.2",
-        "NIST-AI-RMF": "MANAGE 4.1"
+        "NIST-AI-RMF": "MANAGE 4.1",
+        "NERC-CIP": "CIP-009-6 R3"
       },
       "namespace": "AI"
     },
@@ -9455,7 +9517,8 @@
         "FERC-2222": "Order 2222",
         "EU-CEP": "Art.17",
         "EU-EED": "Art.12",
-        "NIST-800-53": "SA-15"
+        "NIST-800-53": "SA-15",
+        "NERC-CIP": "TOP-001-5 R1"
       },
       "namespace": "ADR"
     },
@@ -9490,7 +9553,8 @@
       "frameworks": {
         "FERC-2222": "Order 2222",
         "EU-CEP": "Art.17",
-        "EU-EED": "Art.12"
+        "EU-EED": "Art.12",
+        "NERC-CIP": "MOD-031-3 R1"
       },
       "namespace": "ADR"
     },
@@ -9525,7 +9589,8 @@
       "frameworks": {
         "FERC-2222": "Order 2222",
         "EU-CEP": "Art.17",
-        "EU-EED": "Art.12"
+        "EU-EED": "Art.12",
+        "NERC-CIP": "TOP-001-5 R3"
       },
       "namespace": "ADR"
     },
@@ -9559,7 +9624,8 @@
       },
       "frameworks": {
         "FERC-2222": "Order 2222",
-        "EU-CEP": "Art.17"
+        "EU-CEP": "Art.17",
+        "NERC-CIP": "BAL-005-1 R1"
       },
       "namespace": "ADR"
     },
@@ -9595,7 +9661,8 @@
         "EU-CBAM": "2023/956",
         "EU-RED-III": "2023/2413",
         "CSRD": "ESRS-E1",
-        "SEC-CLIMATE": "S-K Item 1504"
+        "SEC-CLIMATE": "S-K Item 1504",
+        "NERC-CIP": "FAC-001-3 R1"
       },
       "namespace": "ADR"
     },
@@ -9630,7 +9697,8 @@
       "frameworks": {
         "FERC-2222": "Order 2222",
         "EU-CEP": "Art.17",
-        "NERC": "BAL-001"
+        "NERC": "BAL-001",
+        "NERC-CIP": "BAL-001-2"
       },
       "namespace": "ADR"
     },
@@ -9781,10 +9849,190 @@
         "ISO-42001": "A.8.1"
       },
       "namespace": "AI"
+    },
+    "AI-DIST.1": {
+      "procedure_id": "AI-DIST.1",
+      "parent_control": "AI-DIST",
+      "title": "Knowledge Distillation Provenance",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_DIST_PROVENANCE",
+      "factors": {
+        "factor_a": {
+          "label": "distillation_type_code",
+          "description": "Distillation method: 0=response, 1=logit, 2=feature, 3=attention, 4=progressive.",
+          "regulatory_ref": "EU AI Act Art. 53; NIST AI RMF GOVERN 1.5"
+        },
+        "factor_b": {
+          "label": "compression_ratio",
+          "description": "Teacher-to-student parameter compression ratio (teacher_params / student_params).",
+          "regulatory_ref": "EU AI Act Art. 53(1)(b); NIST AI RMF MAP 2.3"
+        },
+        "factor_c": {
+          "label": "tos_compliance",
+          "description": "Terms-of-service compliance: 0=no, 1=yes, 2=unknown.",
+          "regulatory_ref": "EU AI Act Art. 53(1)(c)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_c <= 1",
+        "description": "PASS when ToS compliance is confirmed (yes or no). FAIL when unknown -- distillation without ToS verification is a transparency gap."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.53",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "ISO-42001": "A.7.5"
+      },
+      "namespace": "AI"
+    },
+    "AI-MCP.6": {
+      "procedure_id": "AI-MCP.6",
+      "parent_control": "AI-MCP",
+      "title": "MCP Elicitation Consent Witnessing",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_MCP_ELICITATION",
+      "factors": {
+        "factor_a": {
+          "label": "elicitation_type_code",
+          "description": "Elicitation type: 0=direct_query, 1=indirect_probe, 2=social_engineering, 3=context_manipulation, 4=tool_chaining.",
+          "regulatory_ref": "OWASP MCP Top 10; EU AI Act Art. 13"
+        },
+        "factor_b": {
+          "label": "consent_status",
+          "description": "Consent: 0=denied, 1=granted, 2=implicit, 3=not_requested.",
+          "regulatory_ref": "EU AI Act Art. 13(3); GDPR Art. 6"
+        },
+        "factor_c": {
+          "label": "scope_violation",
+          "description": "Scope deviation: 0=within_scope, 1=minor_deviation, 2=major_deviation, 3=complete_violation.",
+          "regulatory_ref": "OWASP MCP Top 10 (Elicitation); EU AI Act Art. 13(1)"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b >= 1 AND factor_c <= 1",
+        "description": "PASS when consent is granted or implicit AND scope deviation is within or minor. FAIL on denied consent or major/complete scope violation."
+      },
+      "frameworks": {
+        "OWASP-AGENTIC": "MCP-Elicitation",
+        "EU-AI-ACT": "Art.13",
+        "NIST-800-53": "AC-4",
+        "FIVE-EYES-AGENTIC": "FE-5",
+        "ISO-42001": "A.8.4"
+      },
+      "namespace": "AI"
+    },
+    "ADR-VOLT.1": {
+      "procedure_id": "ADR-VOLT.1",
+      "parent_control": "ADR-VOLT",
+      "title": "Autonomous Voltage Regulation Witnessing",
+      "category": "ADR",
+      "scope": "energy_governance",
+      "check_type": "ADR_VOLTAGE_REGULATION",
+      "factors": {
+        "factor_a": {
+          "label": "voltage_deviation_pct",
+          "description": "Voltage deviation from nominal as percentage x100 (e.g., 250 = 2.50%)",
+          "regulatory_ref": "IEEE 1547-2018 Sec.6; NERC FAC-001-3"
+        },
+        "factor_b": {
+          "label": "response_action",
+          "description": "Autonomous action taken: 1=tap_change, 2=capacitor_bank, 3=statcom, 4=inverter_droop, 5=load_transfer",
+          "regulatory_ref": "EU SOGL Art.18; NERC BAL-001-2"
+        },
+        "factor_c": {
+          "label": "response_time_ms",
+          "description": "Time from deviation detection to corrective action in milliseconds",
+          "regulatory_ref": "IEEE 1547-2018 Sec.6.4; NERC FAC-001-3 R4"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_a >= 0 and factor_b >= 1 and factor_b <= 5 and factor_c > 0",
+        "description": "PASS when voltage deviation is recorded with a valid response action and positive response time."
+      },
+      "frameworks": {
+        "NERC-CIP": "FAC-001-3 R4",
+        "IEEE-1547": "Sec.6",
+        "EU-SOGL": "Art.18",
+        "FERC-2222": "Order 2222"
+      },
+      "namespace": "ADR"
+    },
+    "AI-MOB.8": {
+      "procedure_id": "AI-MOB.8",
+      "parent_control": "AI-MOB",
+      "title": "Network Slice Isolation Verification",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_SLICE_ISOLATION",
+      "factors": {
+        "factor_a": {
+          "label": "slice_id_hash",
+          "description": "First 6 hex digits of SHA-256 hash of the network slice identifier",
+          "regulatory_ref": "3GPP TS 28.310 Sec.5; GSMA NG.116"
+        },
+        "factor_b": {
+          "label": "isolation_verified",
+          "description": "Isolation status: 0=not verified, 1=verified (resource, security, and traffic isolation confirmed)",
+          "regulatory_ref": "3GPP TS 33.501 Sec.6.8; GSMA NG.116 Sec.4"
+        },
+        "factor_c": {
+          "label": "cross_slice_blocked",
+          "description": "Number of cross-slice requests blocked during verification window",
+          "regulatory_ref": "3GPP TS 28.310 Sec.6.2"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "PASS when slice isolation is verified (factor_b = 1). FAIL when isolation cannot be confirmed."
+      },
+      "frameworks": {
+        "3GPP-R19": "TS 28.310 Sec.5",
+        "GSMA-NG116": "Sec.4",
+        "EU-AI-ACT": "Art.15(3)",
+        "NIST-AI-RMF": "MANAGE 2.4"
+      },
+      "namespace": "AI"
+    },
+    "AI-SHELL.1": {
+      "procedure_id": "AI-SHELL.1",
+      "parent_control": "AI-SHELL",
+      "title": "Runtime Containment Attestation",
+      "category": "AI",
+      "scope": "ai_governance",
+      "check_type": "AI_RUNTIME_CONTAINMENT",
+      "factors": {
+        "factor_a": {
+          "label": "runtime_type_code",
+          "description": "Runtime sandbox type: 0=openshell, 1=gvisor, 2=kata, 3=firecracker, 4=wasm, 5=custom.",
+          "regulatory_ref": "EU AI Act Art. 9(2)(a); NIST AI RMF GOVERN 1.2"
+        },
+        "factor_b": {
+          "label": "policy_enforced",
+          "description": "1 if containment policy is active and zero violations detected, 0 otherwise.",
+          "regulatory_ref": "EU AI Act Art. 12; OWASP Agentic Top 10 #3"
+        },
+        "factor_c": {
+          "label": "violation_count",
+          "description": "Number of policy violations detected in the observation window.",
+          "regulatory_ref": "EU AI Act Art. 12; ISO 42001 A.6.2.6"
+        }
+      },
+      "evaluation": {
+        "expression": "factor_b == 1",
+        "description": "PASS when containment policy is enforced with zero violations (factor_b = 1). FAIL when violations detected or policy not active."
+      },
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(a)",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "OWASP-AGENTIC": "MCP-03"
+      },
+      "namespace": "AI"
     }
   },
   "namespaces": {
-    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (118 procedures)",
+    "AI": "Artificial Intelligence governance, model integrity, inference witnessing (120 procedures)",
     "INF": "Infrastructure controls, OS hardening, network, database, web, container, endpoint",
     "FIN": "Financial services model risk management, SR 11-7 / OCC 2011-12 compliance",
     "CON": "Construction site accountability, structural verification, OSHA 1926 compliance",

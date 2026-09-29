@@ -46,7 +46,7 @@ import type {
   WitnessConfig, WitnessPayload, WitnessReceipt, InferenceRecord,
   RagChunk, RagContextOptions, ModelWeightInfo, AdapterInfo, SkillInfo, MemorySource,
 } from "./types.js";
-import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES, SAFETY_CLASSIFICATION_CODES, NHI_LIFECYCLE_EVENT_CODES, NHI_ROTATION_REASON_CODES, NHI_REVOCATION_REASON_CODES, HBOM_LIFECYCLE_EVENT_CODES, HBOM_WATER_SOURCE_CODES, DPP_CHARGE_EVENT_CODES, DPP_DEGRADATION_TYPE_CODES, DPP_DISPOSITION_CODES, ADR_EVENT_PHASE_CODES, ADR_BASELINE_METHOD_CODES, ADR_CREDIT_TYPE_CODES, ADR_SIGNAL_TYPE_CODES } from "./types.js";
+import { QUANTIZATION_CODES, POLICY_CATEGORIES, BINDING_METHODS, APPROVAL_STATUS, PII_EVENT_TYPES, CONTENT_TYPE_CODES, BASELINE_MODE_CODES, LICENSE_TYPE_CODES, SBOM_FORMAT_CODES, REDTEAM_CATEGORY_CODES, CONSENT_BASIS_CODES, DRIFT_TYPE_CODES, LOG_FORMAT_CODES, INCIDENT_SEVERITY_CODES, INCIDENT_TYPE_CODES, BENCHMARK_TYPE_CODES, PERTURBATION_TYPE_CODES, CYBER_FRAMEWORK_CODES, DISCLOSURE_TYPE_CODES, RECIPIENT_TYPE_CODES, DETECTION_METHOD_CODES, PROCESSING_TYPE_CODES, DECISION_TYPE_CODES, CLASSIFICATION_CODES, REPORTING_STATUS_CODES, SUPPLY_RISK_CODES, PMM_TYPE_CODES, LIFECYCLE_STAGE_CODES, METAGOV_SCOPE_CODES, METAGOV_PERMISSION_CODES, METAGOV_OVERRIDE_REASON_CODES, METAGOV_REVIEW_STATUS_CODES, METAGOV_DIVERGENCE_CODES, METAGOV_PURITY_TIERS, DESIGN_DOMAIN_CODES, SIMULATION_TYPE_CODES, APPROVAL_TYPE_CODES, MATERIAL_STANDARD_CODES, CHAIN_STATUS_CODES, RELEASE_TYPE_CODES, SAFETY_CLASSIFICATION_CODES, NHI_LIFECYCLE_EVENT_CODES, NHI_ROTATION_REASON_CODES, NHI_REVOCATION_REASON_CODES, HBOM_LIFECYCLE_EVENT_CODES, HBOM_WATER_SOURCE_CODES, DPP_CHARGE_EVENT_CODES, DPP_DEGRADATION_TYPE_CODES, DPP_DISPOSITION_CODES, ADR_EVENT_PHASE_CODES, ADR_BASELINE_METHOD_CODES, ADR_CREDIT_TYPE_CODES, ADR_SIGNAL_TYPE_CODES, DISTILLATION_TYPE_CODES, TOS_COMPLIANCE_CODES, DISTILLATION_LINK_TYPES, ELICITATION_TYPE_CODES, ELICITATION_CONSENT_CODES, SCOPE_VIOLATION_CODES, ELICITATION_DETECTION_METHODS } from "./types.js";
 import { loadConfig as loadConfigFromFile, loadFullConfig, validatePolicy } from "./config.js";
 import type { TrustMeshConfig, HardwareConfig, DensityPolicyConfig, McpPolicyConfig, MerkleConfig, ChainRule, ChainPolicyViolation, RuntimeProfileConfig } from "./types.js";
 import { MerkleAccumulator } from "./merkle.js";
@@ -1956,6 +1956,110 @@ export class Witness {
       ? sha256Truncated(this.config.policyVersion, 12)
       : undefined;
     this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Runtime Containment (AI-SHELL.1) ──────────────────────────────
+
+  static readonly RUNTIME_TYPE_CODES: Record<string, number> = {
+    openshell: 0, gvisor: 1, kata: 2,
+    firecracker: 3, wasm: 4, custom: 5,
+  };
+
+  /**
+   * Witness runtime containment attestation (AI-SHELL.1).
+   *
+   * Records that a sandboxed runtime enforced its containment policy
+   * during a specific observation window. Works with any OCSF-compatible
+   * runtime: OpenShell, gVisor, Kata Containers, Firecracker, WASM.
+   *
+   * Duck-typed: no runtime SDK import, no NVIDIA dependency.
+   *
+   * @param opts.runtimeType - Sandbox runtime (default "openshell")
+   * @param opts.policyHash - SHA-256 of enforced containment policy
+   * @param opts.violationCount - Policy violations in observation window
+   * @param opts.sandboxId - Sandbox identifier (hashed at L1+, stripped at L2+)
+   * @param opts.observationWindowMs - Duration of observation window in ms
+   * @param opts.ocsfEventCount - Total OCSF events processed in window
+   * @param opts.quarantineEvents - Quarantine/kill actions taken
+   */
+  witnessRuntimeContainment(opts?: {
+    runtimeType?: string;
+    policyHash?: string;
+    violationCount?: number;
+    sandboxId?: string;
+    observationWindowMs?: number;
+    ocsfEventCount?: number;
+    quarantineEvents?: number;
+  }): WitnessPayload {
+    const runtimeType = opts?.runtimeType ?? "openshell";
+    const policyHash = opts?.policyHash ?? "";
+    const violationCount = opts?.violationCount ?? 0;
+    const sandboxId = opts?.sandboxId ?? "";
+    const observationWindowMs = opts?.observationWindowMs ?? 0;
+    const ocsfEventCount = opts?.ocsfEventCount ?? 0;
+    const quarantineEvents = opts?.quarantineEvents ?? 0;
+
+    const fa = Witness.RUNTIME_TYPE_CODES[runtimeType] ?? 5;
+    const fb = violationCount === 0 ? 1 : 0;
+    const fc = violationCount;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-SHELL.1", fa, fb, fc, ts);
+
+    const payload: WitnessPayload = {
+      procedure_id: "AI-SHELL.1",
+      factor_a: fa,
+      factor_b: fb,
+      factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp,
+      anchor_epoch: epoch,
+      fingerprint_timestamp_ms: ts,
+    };
+
+    if (this.config.clearingLevel === 0) {
+      payload.ai_model_id = `shell-${runtimeType}`;
+      payload.ai_context = {
+        provider: runtimeType,
+        runtime_type: runtimeType,
+        policy_hash: policyHash,
+        violation_count: violationCount,
+        sandbox_id: sandboxId,
+        observation_window_ms: observationWindowMs,
+        ocsf_event_count: ocsfEventCount,
+        quarantine_events: quarantineEvents,
+      };
+    } else if (this.config.clearingLevel === 1) {
+      payload.ai_model_id = `shell-${runtimeType}`;
+      const sandboxHash = sandboxId ? sha256Truncated(sandboxId, 12) : "";
+      payload.ai_context = {
+        provider: runtimeType,
+        runtime_type: runtimeType,
+        policy_hash: policyHash,
+        violation_count: violationCount,
+        sandbox_id_hash: sandboxHash,
+        observation_window_ms: observationWindowMs,
+        ocsf_event_count: ocsfEventCount,
+        quarantine_events: quarantineEvents,
+      };
+    } else if (this.config.clearingLevel === 2) {
+      payload.ai_model_id = `shell-${runtimeType}`;
+      payload.ai_context = {
+        provider: runtimeType,
+        runtime_type: runtimeType,
+        policy_hash: policyHash,
+        violation_count: violationCount,
+        ocsf_event_count: ocsfEventCount,
+        quarantine_events: quarantineEvents,
+      };
+    }
+    // L3: factors only (no ai_context)
+
+    const ph = this.config.policyVersion
+      ? sha256Truncated(this.config.policyVersion, 12)
+      : undefined;
+    this._applyOperationalMetadata(payload, ph);
     this._enqueueSampled(payload);
     return payload;
   }
@@ -5528,6 +5632,148 @@ export class Witness {
     return payload;
   }
 
+  // ── Knowledge Distillation Provenance (AI-DIST.1, v0.7.4) ────────────
+
+  /**
+   * Witness knowledge distillation provenance (AI-DIST.1).
+   *
+   * Records teacher-to-student model distillation events with ToS compliance.
+   * EU AI Act Art. 53 requires GPAI transparency including distillation provenance.
+   * NIST AI RMF GOVERN 1.5 requires governance of model derivation.
+   */
+  witnessDistillation(options: {
+    distillationType: string;
+    compressionRatio: number;
+    tosCompliance?: string;
+    teacherModel?: string;
+    studentModel?: string;
+    datasetHash?: string;
+    linkType?: string;
+    distillationMethod?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = DISTILLATION_TYPE_CODES[options.distillationType] ?? 0;
+    const fb = options.compressionRatio;
+    const fc = TOS_COMPLIANCE_CODES[options.tosCompliance ?? "unknown"] ?? 2;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DIST.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DIST.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `distillation-${options.distillationType}`;
+      const ctx: Record<string, unknown> = {
+        provider: "distillation-provenance",
+        distillation_type: options.distillationType,
+        compression_ratio: options.compressionRatio,
+        tos_compliance: options.tosCompliance ?? "unknown",
+      };
+      if (options.teacherModel) ctx.teacher_model_hash = sha256Truncated(options.teacherModel, 12);
+      if (options.studentModel) ctx.student_model_hash = sha256Truncated(options.studentModel, 12);
+      if (options.datasetHash) ctx.dataset_hash = sha256Truncated(options.datasetHash, 12);
+      if (options.linkType) ctx.link_type = DISTILLATION_LINK_TYPES.has(options.linkType) ? options.linkType : "unknown";
+      if (options.distillationMethod) ctx.distillation_method = options.distillationMethod;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── MCP Elicitation Consent (AI-MCP.6, v0.7.4) ──────────────────────
+
+  /**
+   * Witness MCP elicitation consent (AI-MCP.6).
+   *
+   * Records when a tool attempts information elicitation beyond its declared scope.
+   * OWASP MCP Top 10 requires elicitation attack detection.
+   * EU AI Act Art. 13 requires transparency in AI interactions.
+   */
+  witnessElicitation(options: {
+    elicitationType: string;
+    consentStatus: string;
+    scopeViolation: string;
+    toolName?: string;
+    requestingAgent?: string;
+    declaredScope?: string;
+    actualScope?: string;
+    detectionMethod?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = ELICITATION_TYPE_CODES[options.elicitationType] ?? 0;
+    const fb = ELICITATION_CONSENT_CODES[options.consentStatus] ?? 3;
+    const fc = SCOPE_VIOLATION_CODES[options.scopeViolation] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MCP.6", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MCP.6", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `mcp-elicitation-${options.elicitationType}`;
+      const ctx: Record<string, unknown> = {
+        provider: "mcp-elicitation",
+        elicitation_type: options.elicitationType,
+        consent_status: options.consentStatus,
+        scope_violation: options.scopeViolation,
+      };
+      if (options.toolName) ctx.tool_name_hash = sha256Truncated(options.toolName, 12);
+      if (options.requestingAgent) ctx.requesting_agent_hash = sha256Truncated(options.requestingAgent, 12);
+      if (options.declaredScope) ctx.declared_scope_hash = sha256Truncated(options.declaredScope, 12);
+      if (options.actualScope) ctx.actual_scope_hash = sha256Truncated(options.actualScope, 12);
+      if (options.detectionMethod) {
+        ctx.detection_method = ELICITATION_DETECTION_METHODS.has(options.detectionMethod) ? options.detectionMethod : "unknown";
+      }
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Incident Chain (v0.7.4) ──────────────────────────────────────────
+
+  /**
+   * Start an incident lifecycle chain (AI-INCIDENT.1).
+   *
+   * Returns an IncidentChainBuilder that links multiple incident stages
+   * (reported -> investigating -> mitigated -> resolved) via a shared
+   * lifecycle_chain_id. Each stage mints an AI-INCIDENT.1 anchor.
+   *
+   * @example
+   * const chain = witness.incidentChain("high", "safety");
+   * chain.investigate();
+   * chain.mitigate({ remediation: "patched model v2" });
+   * chain.resolve({ authorityNotified: true });
+   */
+  incidentChain(
+    severity: string,
+    incidentType: string = "other",
+    options?: { incidentId?: string; authority?: string },
+  ): IncidentChainBuilder {
+    const severityCode = INCIDENT_SEVERITY_CODES[severity] ?? 2;
+    const typeCode = INCIDENT_TYPE_CODES[incidentType] ?? 5;
+    const lc = this.beginLifecycle("AI-INCIDENT.1", severityCode, 0, typeCode, {
+      modelId: `incident-${incidentType}`,
+      context: {
+        provider: "incident-lifecycle",
+        severity,
+        incident_type: incidentType,
+        stage: "reported",
+        incident_id_hash: options?.incidentId ? sha256Truncated(options.incidentId, 12) : undefined,
+        authority_hash: options?.authority ? sha256Truncated(options.authority, 12) : undefined,
+      },
+    });
+    return new IncidentChainBuilder(this, lc, severityCode, typeCode, options?.incidentId, options?.authority);
+  }
+
   // ── Model Provenance Chain (AI-PROV.1) ──────────────────────────────
 
   /** Provenance link type codes for AI-PROV.1. */
@@ -7312,6 +7558,95 @@ export class LifecycleChain {
       (ctx as any).abandon_reason = options.reason;
     }
     return this._mint(0.0, 0.0, 0.0, "abandoned", { context: Object.keys(ctx).length ? ctx : undefined });
+  }
+}
+
+/**
+ * Typed incident lifecycle chain builder (v0.7.4).
+ *
+ * Provides stage-specific methods for incident management: investigate,
+ * mitigate, resolve, escalate, abandon. Each stage mints an AI-INCIDENT.1
+ * anchor linked by a shared lifecycle_chain_id.
+ */
+export class IncidentChainBuilder {
+  private readonly _witness: Witness;
+  private readonly _chain: LifecycleChain;
+  private readonly _severityCode: number;
+  private readonly _typeCode: number;
+  private readonly _incidentId?: string;
+  private readonly _authority?: string;
+  private readonly _startMs: number;
+
+  constructor(
+    witness: Witness,
+    chain: LifecycleChain,
+    severityCode: number,
+    typeCode: number,
+    incidentId?: string,
+    authority?: string,
+  ) {
+    this._witness = witness;
+    this._chain = chain;
+    this._severityCode = severityCode;
+    this._typeCode = typeCode;
+    this._incidentId = incidentId;
+    this._authority = authority;
+    this._startMs = timestampMs()[0];
+  }
+
+  get chainId(): string { return this._chain.chainId; }
+  get closed(): boolean { return this._chain.closed; }
+
+  private _stageContext(stage: string, extra?: Record<string, unknown>): Record<string, unknown> {
+    const ctx: Record<string, unknown> = {
+      provider: "incident-lifecycle",
+      stage,
+      elapsed_ms: Math.round(timestampMs()[0] - this._startMs),
+    };
+    if (this._incidentId) ctx.incident_id_hash = sha256Truncated(this._incidentId, 12);
+    if (this._authority) ctx.authority_hash = sha256Truncated(this._authority, 12);
+    if (extra) Object.assign(ctx, extra);
+    return ctx;
+  }
+
+  /** Transition to investigating stage. */
+  investigate(): WitnessPayload {
+    return this._chain.checkpoint(this._severityCode, 0, this._typeCode, {
+      context: this._stageContext("investigating"),
+    });
+  }
+
+  /** Transition to mitigated stage with optional remediation note. */
+  mitigate(options?: { remediation?: string }): WitnessPayload {
+    return this._chain.checkpoint(this._severityCode, 0, this._typeCode, {
+      context: this._stageContext("mitigated", options?.remediation ? { remediation: options.remediation } : undefined),
+    });
+  }
+
+  /** Resolve the incident chain (terminal stage). */
+  resolve(options?: { authorityNotified?: boolean }): WitnessPayload {
+    return this._chain.resolve(
+      this._severityCode,
+      options?.authorityNotified ? 1 : 0,
+      this._typeCode,
+      { context: this._stageContext("resolved", { authority_notified: options?.authorityNotified ?? false }) },
+    );
+  }
+
+  /** Mark the incident as escalated (terminal stage on this chain). */
+  escalate(): WitnessPayload {
+    return (this._chain as any)._mint(
+      this._severityCode, 0, this._typeCode, "escalated",
+      { context: this._stageContext("escalated") },
+    );
+  }
+
+  /** Abandon the incident chain (terminal stage). */
+  abandon(reason?: string): WitnessPayload {
+    return this._chain.abandon({
+      reason,
+      context: this._stageContext("abandoned", reason ? { abandon_reason: reason } : undefined),
+    });
   }
 }
 

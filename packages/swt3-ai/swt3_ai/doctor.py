@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .schema import validate_schema
 
-VERSION = "0.5.2"
+VERSION = "0.7.4"
 
 
 @dataclass
@@ -248,9 +248,9 @@ def print_doctor_results(checks: List[DoctorCheck], use_json: bool = False, ci_m
 
     print(f"\n  {p} passed, {w} warnings, {fl} failures\n")
 
-    print("  \033[33mNew in v0.5.2:\033[0m Trust Mesh -- agents verify each other before exchanging data.")
+    print("  \033[33mNew in v0.7.4:\033[0m Distillation witnessing, incident chains, insurance governance.")
     print("  Configure: \033[36mswt3 init --profile eu-ai-act-high-risk\033[0m")
-    print("  Docs: https://www.npmjs.com/package/@tenova/swt3-mcp\n")
+    print("  Docs: https://sovereign.tenova.io/docs/\n")
 
 
 # ── Friction Test ───────────────────────────────────────────────────────

@@ -3,9 +3,9 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-09-22T02:41:41Z",
+  "generated_at": "2026-09-27T20:00:00Z",
   "source": "uct-registry.json",
-  "description": "Bidirectional crosswalk between 113 SWT3 AI procedures and 36 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
+  "description": "Bidirectional crosswalk between 134 SWT3 procedures and 34 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "frameworks": {
     "CA-SB-942": {
@@ -36,6 +36,19 @@
       ],
       "binding": "mandatory"
     },
+    "CN-TC260-3": {
+      "name": "TC260 AI Safety Governance Framework 3.0",
+      "authority": "TC260 (National Technical Committee 260 on Cybersecurity)",
+      "document": "AI Safety Governance Framework v3.0 + GB/Z 185-2026",
+      "version": "2026-09",
+      "url": "https://www.tc260.org.cn/",
+      "procedure_count": 17,
+      "requirement_count": 10,
+      "jurisdictions": [
+        "CN"
+      ],
+      "binding": "advisory"
+    },
     "CO-SB-26-189": {
       "name": "Colorado Artificial Intelligence Act",
       "authority": "Colorado General Assembly",
@@ -49,6 +62,19 @@
         "US-CO"
       ],
       "binding": "mandatory"
+    },
+    "CSA-AGENT-GOV": {
+      "name": "CSA AI Agent Governance Gap",
+      "authority": "Cloud Security Alliance (CSA)",
+      "document": "AI Agent Governance Framework Gap Research Note",
+      "version": "2026-04",
+      "url": "https://cloudsecurityalliance.org/",
+      "procedure_count": 16,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "advisory"
     },
     "EO-14028": {
       "name": "Improving the Nation's Cybersecurity",
@@ -70,7 +96,7 @@
       "version": "2024/1689",
       "url": "https://eur-lex.europa.eu/eli/reg/2024/1689",
       "enforcement_date": "2027-12-02",
-      "procedure_count": 107,
+      "procedure_count": 109,
       "requirement_count": 50,
       "jurisdictions": [
         "EU",
@@ -254,6 +280,19 @@
       ],
       "binding": "voluntary"
     },
+    "ISO-42006": {
+      "name": "Requirements for AI Certification Bodies",
+      "authority": "ISO/IEC JTC 1/SC 42",
+      "document": "ISO/IEC 42006:2025",
+      "version": "2025-07",
+      "url": "https://www.iso.org/standard/44546.html",
+      "procedure_count": 13,
+      "requirement_count": 7,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "mandatory"
+    },
     "JP-AI-PROMOTION": {
       "name": "Act on Promotion of AI-Related Technologies",
       "authority": "National Diet of Japan",
@@ -409,7 +448,7 @@
       "document": "Agentic AI Top 10",
       "version": "2025",
       "url": "https://owasp.org/www-project-agentic-ai-threats-and-mitigations/",
-      "procedure_count": 17,
+      "procedure_count": 18,
       "requirement_count": 9,
       "jurisdictions": [
         "*"
@@ -470,6 +509,19 @@
       ],
       "binding": "mandatory"
     },
+    "US-AI-PREEMPTION": {
+      "name": "Federal AI Preemption Executive Order",
+      "authority": "White House",
+      "document": "Ensuring a National Policy Framework for Artificial Intelligence",
+      "version": "2025-12",
+      "url": "https://www.whitehouse.gov/presidential-actions/",
+      "procedure_count": 11,
+      "requirement_count": 6,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "advisory"
+    },
     "VN-LAW-134": {
       "name": "Vietnam Law on Artificial Intelligence",
       "authority": "National Assembly of Vietnam",
@@ -483,14 +535,99 @@
         "VN"
       ],
       "binding": "mandatory"
+    },
+    "NERC-CIP": {
+      "name": "NERC Critical Infrastructure Protection Standards",
+      "authority": "North American Electric Reliability Corporation (NERC)",
+      "document": "CIP-002-7 through CIP-014-3, BAL-001-2, TOP-001-5, MOD-031-3, FAC-001-3",
+      "version": "v7",
+      "url": "https://www.nerc.com/pa/Stand/Pages/ReliabilityStandards.aspx",
+      "enforcement_date": "2024-10-01",
+      "procedure_count": 41,
+      "requirement_count": 47,
+      "jurisdictions": [
+        "US",
+        "CA",
+        "MX"
+      ],
+      "binding": "mandatory"
+    },
+    "3GPP-R19": {
+      "name": "3GPP Release 19 AI/ML Standards",
+      "authority": "3rd Generation Partnership Project (3GPP)",
+      "document": "TS 28.105, TS 28.908, TS 23.288, TS 33.501, TS 28.310, TR 28.908",
+      "version": "Release 19",
+      "url": "https://www.3gpp.org/release19",
+      "procedure_count": 20,
+      "requirement_count": 18,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "standard"
+    },
+    "ITU-T-AI": {
+      "name": "ITU-T AI/ML Framework Standards",
+      "authority": "International Telecommunication Union (ITU-T)",
+      "document": "Y.3172, Y.3176, Y.3180",
+      "version": "2023-2025",
+      "url": "https://www.itu.int/en/ITU-T/AI/Pages/default.aspx",
+      "procedure_count": 12,
+      "requirement_count": 10,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "standard"
     }
   },
   "procedures": {
+    "ADR-BASE.1": {
+      "title": "Baseline Consumption Measurement",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "MOD-031-3 R1"
+      }
+    },
+    "ADR-CARBON.1": {
+      "title": "Carbon Credit Attestation",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "FAC-001-3 R1"
+      }
+    },
+    "ADR-CURT.1": {
+      "title": "Curtailment Verification",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "TOP-001-5 R3"
+      }
+    },
+    "ADR-EVENT.1": {
+      "title": "Demand Response Event Witnessing",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "TOP-001-5 R1"
+      }
+    },
+    "ADR-GRID.1": {
+      "title": "Grid Signal Correlation",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "BAL-001-2"
+      }
+    },
+    "ADR-SETTLE.1": {
+      "title": "Settlement Data Recording",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "BAL-005-1 R1"
+      }
+    },
     "AI-ACC.1": {
       "title": "Agent Access Control Witnessing",
       "namespace": "AI",
       "frameworks": {
         "EU-AI-ACT": "Art.9(4)(c)",
+        "NERC-CIP": "CIP-004-7 R3",
         "FIVE-EYES-AGENTIC": "FE-1",
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "AC-4",
@@ -516,7 +653,8 @@
         "NIS-2": "Art.21(2)(g)",
         "NYC-LL144": "Sec.5-304",
         "TX-TRAIGA": "Sec.7",
-        "VN-LAW-134": "Art.13"
+        "VN-LAW-134": "Art.13",
+        "NERC-CIP": "CIP-003-9 R4, CIP-008-6 R3"
       }
     },
     "AI-AUDIT.2": {
@@ -591,7 +729,10 @@
         "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.3",
         "OWASP-AGENTIC": "MCP-06,MCP-09",
-        "SG-IMDA-AGENTIC": "Sec.4.1"
+        "SG-IMDA-AGENTIC": "Sec.4.1",
+        "NERC-CIP": "CIP-012-1 R1",
+        "3GPP-R19": "TS 28.310 Sec.7",
+        "ITU-T-AI": "Y.3172 Sec.7"
       }
     },
     "AI-CHAIN.2": {
@@ -655,7 +796,8 @@
         "NIST-800-53": "CA-2",
         "NIST-AI-RMF": "MANAGE 2.2",
         "NIST-CSF": "Core",
-        "NIS-2": "Art.21(2)(a)"
+        "NIS-2": "Art.21(2)(a)",
+        "NERC-CIP": "CIP-007-6 R1"
       }
     },
     "AI-DATA.1": {
@@ -673,7 +815,9 @@
         "SR-11-7": "III.B",
         "JP-AI-PROMOTION": "Art.12",
         "NYC-LL144": "Sec.5-301(d)",
-        "VN-LAW-134": "Art.11"
+        "VN-LAW-134": "Art.11",
+        "NERC-CIP": "CIP-011-3 R1",
+        "ITU-T-AI": "Y.3176 Sec.5"
       }
     },
     "AI-DATA.2": {
@@ -729,7 +873,8 @@
         "NIST-800-53": "RA-3",
         "NIST-AI-RMF": "MAP 5.2",
         "JP-AI-PROMOTION": "Art.11",
-        "TX-TRAIGA": "Sec.6(a)"
+        "TX-TRAIGA": "Sec.6(a)",
+        "NERC-CIP": "CIP-002-7 R1.3"
       }
     },
     "AI-DRIFT.1": {
@@ -740,7 +885,10 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-010-4 R1",
+        "3GPP-R19": "TS 23.288 Sec.6.9",
+        "ITU-T-AI": "Y.3172 Sec.9"
       }
     },
     "AI-DUALUSE.1": {
@@ -834,7 +982,9 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "CM-6",
         "NIST-AI-RMF": "GOVERN 1.2",
-        "NIS-2": "Art.21(2)(e)"
+        "NIS-2": "Art.21(2)(e)",
+        "NERC-CIP": "CIP-005-7 R3",
+        "3GPP-R19": "TS 28.310 Sec.5"
       }
     },
     "AI-ENV.2": {
@@ -865,7 +1015,9 @@
         "JP-AI-PROMOTION": "Art.13",
         "NYC-LL144": "Sec.5-302(b)",
         "TW-AI-BASIC": "Art.3(5)",
-        "TX-TRAIGA": "Sec.4(c)"
+        "TX-TRAIGA": "Sec.4(c)",
+        "NERC-CIP": "CIP-003-9 R1.3",
+        "ITU-T-AI": "Y.3176 Sec.7"
       }
     },
     "AI-EXPL.2": {
@@ -897,7 +1049,9 @@
         "NYC-LL144": "Sec.5-301(a)",
         "TW-AI-BASIC": "Art.3(6)",
         "TX-TRAIGA": "Sec.5(a)",
-        "VN-LAW-134": "Art.18"
+        "VN-LAW-134": "Art.18",
+        "NERC-CIP": "CIP-003-9 R1.4",
+        "ITU-T-AI": "Y.3176 Sec.6"
       }
     },
     "AI-FAIR.2": {
@@ -949,7 +1103,10 @@
         "NIS-2": "Art.20",
         "SG-IMDA-AGENTIC": "Sec.1.1",
         "TX-TRAIGA": "Sec.3",
-        "VN-LAW-134": "Art.8"
+        "VN-LAW-134": "Art.8",
+        "NERC-CIP": "CIP-003-9 R1",
+        "3GPP-R19": "TS 28.908 Sec.5",
+        "ITU-T-AI": "Y.3172 Sec.5"
       }
     },
     "AI-GOV.2": {
@@ -960,7 +1117,8 @@
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "7.2",
         "NIST-800-53": "AT-2",
-        "NIST-AI-RMF": "GOVERN 2.1"
+        "NIST-AI-RMF": "GOVERN 2.1",
+        "NERC-CIP": "CIP-003-9 R2"
       }
     },
     "AI-GOV.3": {
@@ -971,7 +1129,8 @@
         "FIVE-EYES-AGENTIC": "FE-11",
         "ISO-42001": "A.6.2.4",
         "NIST-800-53": "CM-8",
-        "NIST-AI-RMF": "MAP 1.1"
+        "NIST-AI-RMF": "MAP 1.1",
+        "NERC-CIP": "CIP-003-9 R3"
       }
     },
     "AI-GOV.4": {
@@ -1066,7 +1225,9 @@
         "NYC-LL144": "Sec.5-303",
         "SG-IMDA-AGENTIC": "Sec.3.2",
         "TX-TRAIGA": "Sec.5(b)",
-        "VN-LAW-134": "Art.14"
+        "VN-LAW-134": "Art.14",
+        "NERC-CIP": "CIP-004-7 R1",
+        "ITU-T-AI": "Y.3176 Sec.10"
       }
     },
     "AI-HITL.2": {
@@ -1087,7 +1248,8 @@
         "EU-AI-ACT": "Art.12(2)(d)",
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
-        "NIST-AI-RMF": "GOVERN 4.1"
+        "NIST-AI-RMF": "GOVERN 4.1",
+        "NERC-CIP": "CIP-004-7 R2"
       }
     },
     "AI-HW.1": {
@@ -1099,7 +1261,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-7",
         "NIST-AI-RMF": "GOVERN 1.2",
-        "TW-AI-BASIC": "Art.7"
+        "TW-AI-BASIC": "Art.7",
+        "NERC-CIP": "CIP-014-3 R1"
       }
     },
     "AI-HW.3": {
@@ -1123,7 +1286,8 @@
         "NIST-AI-RMF": "MAP 1.1",
         "OWASP-AGENTIC": "MCP-01,MCP-07",
         "CA-SB-942": "Sec.6(a)",
-        "SG-IMDA-AGENTIC": "Sec.2.1"
+        "SG-IMDA-AGENTIC": "Sec.2.1",
+        "NERC-CIP": "CIP-007-6 R5"
       }
     },
     "AI-IMPACT.1": {
@@ -1149,7 +1313,9 @@
         "NIST-AI-RMF": "MANAGE 3.2",
         "NIS-2": "Art.23",
         "TX-TRAIGA": "Sec.8",
-        "VN-LAW-134": "Art.20"
+        "VN-LAW-134": "Art.20",
+        "NERC-CIP": "CIP-008-6 R1",
+        "ITU-T-AI": "Y.3180 Sec.6"
       }
     },
     "AI-INF.1": {
@@ -1211,7 +1377,9 @@
         "EU-AI-ACT": "Art. 12",
         "FIVE-EYES-AGENTIC": "Principle 5",
         "ISO-42001": "6.1.2",
-        "NIST-AI-RMF": "MAP 1.3"
+        "NIST-AI-RMF": "MAP 1.3",
+        "NERC-CIP": "CIP-010-4 R1.6",
+        "3GPP-R19": "TS 28.105 Sec.5"
       }
     },
     "AI-LIC.1": {
@@ -1225,16 +1393,13 @@
       }
     },
     "AI-LOG.1": {
-      "title": "Log Retention Compliance - Minimum 180-Day Retention Verified",
+      "title": "Security Event Monitoring",
       "namespace": "AI",
       "frameworks": {
-        "EU-AI-ACT": "Art.12(3)",
-        "ISO-42001": "9.2",
-        "NIST-800-53": "AU-11",
-        "NIST-AI-RMF": "GOVERN 1.4",
-        "CA-SB-942": "Sec.7",
-        "NIS-2": "Art.21(2)(h)",
-        "SG-IMDA-AGENTIC": "Sec.6.1"
+        "EU-AI-ACT": "Art.12(1)",
+        "NIST-800-53": "AU-6",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "NERC-CIP": "CIP-007-6 R4"
       }
     },
     "AI-MARK.1": {
@@ -1260,7 +1425,8 @@
         "NIST-AI-RMF": "MANAGE 1.3",
         "OWASP-AGENTIC": "MCP-04",
         "SR-11-7": "III.B",
-        "VN-LAW-134": "Art.12"
+        "VN-LAW-134": "Art.12",
+        "NERC-CIP": "CIP-010-4 R4"
       }
     },
     "AI-MDL.2": {
@@ -1415,7 +1581,10 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-010-4 R3",
+        "3GPP-R19": "TS 23.288 Sec.6.1",
+        "ITU-T-AI": "Y.3172 Sec.8"
       }
     },
     "AI-PMM.1": {
@@ -1468,7 +1637,8 @@
         "FIVE-EYES-AGENTIC": "FE-6",
         "GDPR": "Art.17",
         "NIST-800-53": "SI-7",
-        "NIST-AI-RMF": "MANAGE 2.4"
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "NERC-CIP": "CIP-004-7 R4"
       }
     },
     "AI-RISK.1": {
@@ -1493,7 +1663,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-009-6 R2"
       }
     },
     "AI-SAFE.1": {
@@ -1507,7 +1678,9 @@
         "KR-AI-BASIC": "Art.26",
         "NIST-AI-RMF": "MANAGE 2.3",
         "JP-AI-PROMOTION": "Art.14",
-        "SG-IMDA-AGENTIC": "Sec.3.3"
+        "SG-IMDA-AGENTIC": "Sec.3.3",
+        "NERC-CIP": "CIP-002-7 R1, CIP-014-3 R5",
+        "ITU-T-AI": "Y.3176 Sec.9"
       }
     },
     "AI-SBOM.1": {
@@ -1521,7 +1694,8 @@
         "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "MAP 1.1",
         "NIS-2": "Art.21(2)(d)",
-        "VN-LAW-134": "Art.12(3)"
+        "VN-LAW-134": "Art.12(3)",
+        "NERC-CIP": "CIP-013-2 R3"
       }
     },
     "AI-SEC.1": {
@@ -1534,7 +1708,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MANAGE 2.3",
         "OWASP-AGENTIC": "MCP-03",
-        "NIS-2": "Art.21(2)(b)"
+        "NIS-2": "Art.21(2)(b)",
+        "NERC-CIP": "CIP-005-7 R1"
       }
     },
     "AI-SEC.2": {
@@ -1546,7 +1721,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-800-53": "SI-10",
         "NIST-AI-RMF": "MANAGE 2.3",
-        "NIS-2": "Art.21(2)(c)"
+        "NIS-2": "Art.21(2)(c)",
+        "NERC-CIP": "CIP-005-7 R2"
       }
     },
     "AI-SKILL.1": {
@@ -1591,7 +1767,9 @@
         "NIST-800-53": "SA-4",
         "NIST-AI-RMF": "MEASURE 3.1",
         "NIS-2": "Art.22",
-        "TW-AI-BASIC": "Art.7"
+        "TW-AI-BASIC": "Art.7",
+        "NERC-CIP": "CIP-007-6 R2, CIP-013-2 R1",
+        "3GPP-R19": "TS 33.501 Sec.5"
       }
     },
     "AI-TOOL.1": {
@@ -1635,7 +1813,9 @@
         "NYC-LL144": "Sec.5-302(a)",
         "TW-AI-BASIC": "Art.3(5)",
         "TX-TRAIGA": "Sec.4(a)",
-        "VN-LAW-134": "Art.15"
+        "VN-LAW-134": "Art.15",
+        "NERC-CIP": "CIP-003-9 R1.2",
+        "ITU-T-AI": "Y.3176 Sec.8"
       }
     },
     "AI-TRUST.1": {
@@ -1646,7 +1826,9 @@
         "FIVE-EYES-AGENTIC": "FE-3,FE-10",
         "NIST-800-53": "AC-4",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09"
+        "OWASP-AGENTIC": "MCP-06,MCP-07,MCP-09",
+        "NERC-CIP": "CIP-012-1 R1.2",
+        "3GPP-R19": "TR 28.908 Sec.7"
       }
     },
     "AI-TRUST.2": {
@@ -1657,7 +1839,8 @@
         "FIVE-EYES-AGENTIC": "FE-3",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "GOVERN 1.5",
-        "OWASP-AGENTIC": "MCP-07"
+        "OWASP-AGENTIC": "MCP-07",
+        "3GPP-R19": "TR 28.908 Sec.7.2"
       }
     },
     "AI-VIO.1": {
@@ -1689,7 +1872,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.14",
         "NIST-AI-RMF": "GOVERN 1.1",
-        "NIST-800-53": "IR-4"
+        "NIST-800-53": "IR-4",
+        "NERC-CIP": "CIP-009-6 R1"
       }
     },
     "AI-DRIFT.2": {
@@ -1699,7 +1883,8 @@
         "EU-AI-ACT": "Art.9(2)(b)",
         "NIST-AI-RMF": "MEASURE 2.6",
         "NIST-800-53": "SI-2",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "NERC-CIP": "CIP-010-4 R2"
       }
     },
     "AI-ASSESS.1": {
@@ -1736,7 +1921,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.9",
         "ISO-42001": "8.2",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "NERC-CIP": "CIP-011-3 R2"
       }
     },
     "AI-RECOMM.1": {
@@ -1745,7 +1931,8 @@
       "frameworks": {
         "EU-AI-ACT": "Art.72",
         "ISO-42001": "10.2",
-        "NIST-AI-RMF": "MANAGE 4.1"
+        "NIST-AI-RMF": "MANAGE 4.1",
+        "NERC-CIP": "CIP-009-6 R3"
       }
     },
     "AI-FREEZE.1": {
@@ -1764,7 +1951,8 @@
         "EU-AI-ACT": "Annex III(3a), Art.9(2)(a)",
         "ISO-PAS-8800": "Cl.6, Cl.7, Cl.8",
         "NIST-AI-RMF": "MANAGE 4.1, MEASURE 2.6",
-        "UNECE-WP29": "R157"
+        "UNECE-WP29": "R157",
+        "3GPP-R19": "TS 28.310 Sec.6.1"
       }
     },
     "AI-MOB.7": {
@@ -1774,7 +1962,8 @@
         "EU-AI-ACT": "Art.12(1), Art.15(1), Art.9(4)(b)",
         "ISO-PAS-8800": "Cl.9, Cl.10",
         "NIST-AI-RMF": "MEASURE 2.5, MAP 3.2",
-        "UNECE-WP29": "R157"
+        "UNECE-WP29": "R157",
+        "3GPP-R19": "TS 28.105 Sec.7"
       }
     },
     "AI-A2A.1": {
@@ -1839,6 +2028,115 @@
         "EU-AI-ACT": "Art.15(3)",
         "FIVE-EYES-AGENTIC": "FE-3",
         "ISO-42001": "A.8.1"
+      }
+    },
+    "AI-MOB.1": {
+      "title": "SIM-Bound Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.15(4)",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "3GPP-R19": "TS 33.501 Sec.6",
+        "ITU-T-AI": "Y.3172 Sec.6"
+      }
+    },
+    "AI-MOB.2": {
+      "title": "Roaming Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(7)",
+        "NIST-AI-RMF": "GOVERN 1.1",
+        "3GPP-R19": "TS 23.501 Sec.5.15"
+      }
+    },
+    "AI-MOB.3": {
+      "title": "Dual-SIM Policy Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(4)",
+        "NIST-AI-RMF": "MANAGE 2.4",
+        "3GPP-R19": "TS 23.501 Sec.5.17"
+      }
+    },
+    "AI-MOB.4": {
+      "title": "Peer-to-Peer Trust Mesh Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "3GPP-R19": "TR 28.908 Sec.6"
+      }
+    },
+    "AI-MOB.5": {
+      "title": "Bilateral Flush Correlation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.12(1)",
+        "NIST-AI-RMF": "MEASURE 2.5",
+        "3GPP-R19": "TS 28.105 Sec.8"
+      }
+    },
+    "AI-INCIDENT.2": {
+      "title": "Incident Response Testing",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(9)",
+        "NIST-800-53": "IR-3",
+        "NIST-AI-RMF": "MANAGE 3.1",
+        "NERC-CIP": "CIP-008-6 R2"
+      }
+    },
+    "AI-SAFE.2": {
+      "title": "Safety Classification Review",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.6",
+        "NIST-AI-RMF": "MAP 1.5",
+        "NERC-CIP": "CIP-002-7 R2"
+      }
+    },
+    "AI-SEC.3": {
+      "title": "Malicious Code Prevention",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.15(4)",
+        "NIST-800-53": "SI-3",
+        "NERC-CIP": "CIP-007-6 R3"
+      }
+    },
+    "AI-SHELL.1": {
+      "title": "Runtime Containment Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.9(2)(a)",
+        "ISO-42001": "A.6.2.6",
+        "NIST-AI-RMF": "GOVERN 1.2",
+        "OWASP-AGENTIC": "MCP-03"
+      }
+    },
+    "HBOM-SBOM.1": {
+      "title": "Hardware and Software Bill of Materials",
+      "namespace": "HBOM",
+      "frameworks": {
+        "EU-AI-ACT": "Art.11",
+        "NIST-800-53": "SA-4",
+        "NERC-CIP": "CIP-013-2 R2"
+      }
+    },
+    "ADR-VOLT.1": {
+      "title": "Autonomous Voltage Regulation Witnessing",
+      "namespace": "ADR",
+      "frameworks": {
+        "NERC-CIP": "FAC-001-3 R4"
+      }
+    },
+    "AI-MOB.8": {
+      "title": "Network Slice Isolation Verification",
+      "namespace": "AI",
+      "frameworks": {
+        "3GPP-R19": "TS 28.310 Sec.5",
+        "EU-AI-ACT": "Art.15(3)",
+        "NIST-AI-RMF": "MANAGE 2.4"
       }
     }
   },
@@ -2039,7 +2337,8 @@
         "AI-MDL.7",
         "AI-ROBUST.1",
         "AI-SEC.2",
-        "AI-MCP.5"
+        "AI-MCP.5",
+        "AI-MOB.8"
       ],
       "Art.15(4)": [
         "AI-CYBER.1",
@@ -2117,7 +2416,8 @@
         "AI-A2A.3"
       ],
       "Art.9(2)(a)": [
-        "AI-GRD.1"
+        "AI-GRD.1",
+        "AI-SHELL.1"
       ],
       "Art.9(2)(b)": [
         "AI-BASE.1",
@@ -2428,6 +2728,7 @@
         "AI-ROBUST.1",
         "AI-SEC.1",
         "AI-SEC.2",
+        "AI-SHELL.1",
         "AI-TRUST.2"
       ],
       "A.6.2.7": [
@@ -2634,7 +2935,8 @@
         "AI-HW.1",
         "AI-HW.3",
         "AI-MDL.5",
-        "AI-MDL.6"
+        "AI-MDL.6",
+        "AI-SHELL.1"
       ],
       "GOVERN 1.3": [
         "AI-CHAIN.1",
@@ -2804,7 +3106,8 @@
       "MCP-03": [
         "AI-GRD.1",
         "AI-GRD.2",
-        "AI-SEC.1"
+        "AI-SEC.1",
+        "AI-SHELL.1"
       ],
       "MCP-04": [
         "AI-MDL.1",
@@ -2881,6 +3184,244 @@
       "MGF-4.1": [
         "AI-A2A.1"
       ]
+    },
+    "NERC-CIP": {
+      "BAL-001-2": [
+        "ADR-GRID.1"
+      ],
+      "BAL-005-1 R1": [
+        "ADR-SETTLE.1"
+      ],
+      "CIP-002-7 R1": [
+        "AI-SAFE.1"
+      ],
+      "CIP-002-7 R1.3": [
+        "AI-DPIA.1"
+      ],
+      "CIP-002-7 R2": [
+        "AI-SAFE.2"
+      ],
+      "CIP-003-9 R1": [
+        "AI-GOV.1"
+      ],
+      "CIP-003-9 R1.2": [
+        "AI-TRANS.1"
+      ],
+      "CIP-003-9 R1.3": [
+        "AI-EXPL.1"
+      ],
+      "CIP-003-9 R1.4": [
+        "AI-FAIR.1"
+      ],
+      "CIP-003-9 R2": [
+        "AI-GOV.2"
+      ],
+      "CIP-003-9 R3": [
+        "AI-GOV.3"
+      ],
+      "CIP-003-9 R4": [
+        "AI-AUDIT.1"
+      ],
+      "CIP-004-7 R1": [
+        "AI-HITL.1"
+      ],
+      "CIP-004-7 R2": [
+        "AI-HITL.3"
+      ],
+      "CIP-004-7 R3": [
+        "AI-ACC.1"
+      ],
+      "CIP-004-7 R4": [
+        "AI-REV.1"
+      ],
+      "CIP-005-7 R1": [
+        "AI-SEC.1"
+      ],
+      "CIP-005-7 R2": [
+        "AI-SEC.2"
+      ],
+      "CIP-005-7 R3": [
+        "AI-ENV.1"
+      ],
+      "CIP-007-6 R1": [
+        "AI-CYBER.1"
+      ],
+      "CIP-007-6 R2": [
+        "AI-SUPPLY.1"
+      ],
+      "CIP-007-6 R3": [
+        "AI-SEC.3"
+      ],
+      "CIP-007-6 R4": [
+        "AI-LOG.1"
+      ],
+      "CIP-007-6 R5": [
+        "AI-ID.1"
+      ],
+      "CIP-008-6 R1": [
+        "AI-INCIDENT.1"
+      ],
+      "CIP-008-6 R2": [
+        "AI-INCIDENT.2"
+      ],
+      "CIP-008-6 R3": [
+        "AI-AUDIT.1"
+      ],
+      "CIP-009-6 R1": [
+        "AI-EMRG.1"
+      ],
+      "CIP-009-6 R2": [
+        "AI-ROBUST.1"
+      ],
+      "CIP-009-6 R3": [
+        "AI-RECOMM.1"
+      ],
+      "CIP-010-4 R1": [
+        "AI-DRIFT.1"
+      ],
+      "CIP-010-4 R1.6": [
+        "AI-LCM.1"
+      ],
+      "CIP-010-4 R2": [
+        "AI-DRIFT.2"
+      ],
+      "CIP-010-4 R3": [
+        "AI-PERF.1"
+      ],
+      "CIP-010-4 R4": [
+        "AI-MDL.1"
+      ],
+      "CIP-011-3 R1": [
+        "AI-DATA.1"
+      ],
+      "CIP-011-3 R2": [
+        "AI-DECOM.1"
+      ],
+      "CIP-012-1 R1": [
+        "AI-CHAIN.1"
+      ],
+      "CIP-012-1 R1.2": [
+        "AI-TRUST.1"
+      ],
+      "CIP-013-2 R1": [
+        "AI-SUPPLY.1"
+      ],
+      "CIP-013-2 R2": [
+        "HBOM-SBOM.1"
+      ],
+      "CIP-013-2 R3": [
+        "AI-SBOM.1"
+      ],
+      "CIP-014-3 R1": [
+        "AI-HW.1"
+      ],
+      "CIP-014-3 R5": [
+        "AI-SAFE.1"
+      ],
+      "FAC-001-3 R1": [
+        "ADR-CARBON.1"
+      ],
+      "MOD-031-3 R1": [
+        "ADR-BASE.1"
+      ],
+      "TOP-001-5 R1": [
+        "ADR-EVENT.1"
+      ],
+      "TOP-001-5 R3": [
+        "ADR-CURT.1"
+      ],
+      "FAC-001-3 R4": [
+        "ADR-VOLT.1"
+      ]
+    },
+    "3GPP-R19": {
+      "TR 28.908 Sec.6": [
+        "AI-MOB.4"
+      ],
+      "TR 28.908 Sec.7": [
+        "AI-TRUST.1"
+      ],
+      "TR 28.908 Sec.7.2": [
+        "AI-TRUST.2"
+      ],
+      "TS 23.288 Sec.6.1": [
+        "AI-PERF.1"
+      ],
+      "TS 23.288 Sec.6.9": [
+        "AI-DRIFT.1"
+      ],
+      "TS 23.501 Sec.5.15": [
+        "AI-MOB.2"
+      ],
+      "TS 23.501 Sec.5.17": [
+        "AI-MOB.3"
+      ],
+      "TS 28.105 Sec.5": [
+        "AI-LCM.1"
+      ],
+      "TS 28.105 Sec.7": [
+        "AI-MOB.7"
+      ],
+      "TS 28.105 Sec.8": [
+        "AI-MOB.5"
+      ],
+      "TS 28.310 Sec.5": [
+        "AI-ENV.1",
+        "AI-MOB.8"
+      ],
+      "TS 28.310 Sec.6.1": [
+        "AI-MOB.6"
+      ],
+      "TS 28.310 Sec.7": [
+        "AI-CHAIN.1"
+      ],
+      "TS 28.908 Sec.5": [
+        "AI-GOV.1"
+      ],
+      "TS 33.501 Sec.5": [
+        "AI-SUPPLY.1"
+      ],
+      "TS 33.501 Sec.6": [
+        "AI-MOB.1"
+      ]
+    },
+    "ITU-T-AI": {
+      "Y.3172 Sec.5": [
+        "AI-GOV.1"
+      ],
+      "Y.3172 Sec.6": [
+        "AI-MOB.1"
+      ],
+      "Y.3172 Sec.7": [
+        "AI-CHAIN.1"
+      ],
+      "Y.3172 Sec.8": [
+        "AI-PERF.1"
+      ],
+      "Y.3172 Sec.9": [
+        "AI-DRIFT.1"
+      ],
+      "Y.3176 Sec.10": [
+        "AI-HITL.1"
+      ],
+      "Y.3176 Sec.5": [
+        "AI-DATA.1"
+      ],
+      "Y.3176 Sec.6": [
+        "AI-FAIR.1"
+      ],
+      "Y.3176 Sec.7": [
+        "AI-EXPL.1"
+      ],
+      "Y.3176 Sec.8": [
+        "AI-TRANS.1"
+      ],
+      "Y.3176 Sec.9": [
+        "AI-SAFE.1"
+      ],
+      "Y.3180 Sec.6": [
+        "AI-INCIDENT.1"
+      ]
     }
   },
   "profiles": [
@@ -2910,6 +3451,15 @@
       ],
       "procedure_count": 2,
       "clearing_level": 1
+    },
+    {
+      "id": "energy-grid",
+      "name": "Energy Grid AI (NERC CIP + FERC 2222 + IEEE 1547)",
+      "frameworks": [
+        "NERC-CIP"
+      ],
+      "procedure_count": 17,
+      "clearing_level": 2
     },
     {
       "id": "defense-govcon",

@@ -6,6 +6,31 @@ MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attes
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
+> **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.4
+
+NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But no MCP tool existed to attest that a sandbox policy was enforced. v0.7.4 adds `witness_runtime_containment` alongside distillation provenance and elicitation detection. Three new tools, three governance gaps closed.
+
+**Why this matters for MCP Server:** `witness_runtime_containment` lets any MCP client produce cryptographic containment evidence from OpenShell, gVisor, Kata, Firecracker, or WASM sandboxes -- with zero SDK imports. `witness_distillation` records teacher-to-student model lineage. `witness_elicitation` records prompt boundary violations. All duck-typed, all clearing-level aware.
+
+### 3 New MCP Tools (75 total)
+
+| Tool | Procedure | What It Records |
+|------|-----------|-----------------|
+| `witness_runtime_containment` | AI-SHELL.1 | Runtime sandbox policy enforcement, violation count, OCSF event count, observation window |
+| `witness_distillation` | AI-DIST.1 | Teacher-to-student model lineage, distillation type (logit/feature/attention/data/hybrid), ToS compliance |
+| `witness_elicitation` | AI-MCP.6 | Prompt boundary violations via tool responses, consent status, scope violation type, detection method |
+
+### Updated Coverage
+
+- 278 procedures across 10 namespaces (was 277)
+- 75 MCP tools (was 74)
+- 277 compliance guides
+- [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html) -- runtime containment evidence for OpenShell, gVisor, Kata, Firecracker
+- AI Insurance Evidence guide for underwriting conversations
+- Streamable HTTP transport (`swt3-mcp-http`) for Meta Muse and other HTTP-native MCP clients
+
 ## What's New in v0.7.3
 
 A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.
@@ -463,6 +488,22 @@ That fingerprint is a SHA-256 hash of the tenant, procedure, factors, and timest
 When you're ready to persist anchors to the SWT3 ledger, use the `signup` tool from within your agent conversation -- no need to leave your editor.
 
 ## Setup
+
+### Streamable HTTP Transport (Meta Muse, remote agents)
+
+For MCP clients that connect over HTTP instead of stdio (Meta Muse, remote agent orchestrators, web-based MCP clients):
+
+```bash
+npx swt3-mcp-http
+```
+
+This starts a stateless HTTP server on `localhost:8080` that accepts streamable HTTP MCP connections. Configure the port with `--port`:
+
+```bash
+npx swt3-mcp-http --port 9090
+```
+
+See the [Muse Connector Guide](https://sovereign.tenova.io/guides/muse-connector.html) for copy-paste setup instructions.
 
 ### Claude Desktop
 

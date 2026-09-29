@@ -24,6 +24,10 @@ const EVICTION_METHOD_CODES: Record<string, number> = {
   none: 0, truncation: 1, summarization: 2, sliding_window: 3, priority_eviction: 4,
 };
 
+const RUNTIME_TYPE_CODES: Record<string, number> = {
+  openshell: 0, gvisor: 1, kata: 2, firecracker: 3, wasm: 4, custom: 5,
+};
+
 // ── Internal helpers ────────────────────────────────────────────────
 
 function buildPayload(
@@ -142,4 +146,48 @@ export async function handleEvalGate(args: any, config: McpConfig, client: Axiom
     payload.ai_context = { provider: "harness-governance", total_evals: fa, evals_passed: fb, gate_score: fc };
   }
   return submit(config, client, payload, fp, epoch, "Eval Gate", "AI-GATE.1", [`Evals: ${fb}/${fa}`, `Score: ${fc}/100`, `Gate: ${fc >= 70 ? "PASS" : "FAIL"}`]);
+}
+
+export async function handleRuntimeContainment(args: any, config: McpConfig, client: AxiomClient): Promise<string> {
+  const runtimeType = (args.runtime_type as string) || "openshell";
+  const violationCount = Math.max(args.violation_count ?? 0, 0);
+  const fa = RUNTIME_TYPE_CODES[runtimeType] ?? 5;
+  const fb = violationCount === 0 ? 1 : 0;
+  const fc = violationCount;
+  const { payload, fp, epoch, clearingLevel } = buildPayload(config, "AI-SHELL.1", fa, fb, fc, args);
+  if (clearingLevel === 0) {
+    payload.ai_model_id = `shell-${runtimeType}`;
+    payload.ai_context = {
+      provider: runtimeType, runtime_type: runtimeType,
+      policy_hash: args.policy_hash || "", violation_count: violationCount,
+      sandbox_id: args.sandbox_id || "",
+      observation_window_ms: args.observation_window_ms ?? 0,
+      ocsf_event_count: args.ocsf_event_count ?? 0,
+      quarantine_events: args.quarantine_events ?? 0,
+    };
+  } else if (clearingLevel === 1) {
+    payload.ai_model_id = `shell-${runtimeType}`;
+    const sandboxHash = args.sandbox_id ? sha256Truncated(args.sandbox_id, 12) : "";
+    payload.ai_context = {
+      provider: runtimeType, runtime_type: runtimeType,
+      policy_hash: args.policy_hash || "", violation_count: violationCount,
+      sandbox_id_hash: sandboxHash,
+      observation_window_ms: args.observation_window_ms ?? 0,
+      ocsf_event_count: args.ocsf_event_count ?? 0,
+      quarantine_events: args.quarantine_events ?? 0,
+    };
+  } else if (clearingLevel === 2) {
+    payload.ai_model_id = `shell-${runtimeType}`;
+    payload.ai_context = {
+      provider: runtimeType, runtime_type: runtimeType,
+      policy_hash: args.policy_hash || "", violation_count: violationCount,
+      ocsf_event_count: args.ocsf_event_count ?? 0,
+      quarantine_events: args.quarantine_events ?? 0,
+    };
+  }
+  const verdict = violationCount === 0 ? "CLEAN" : `${violationCount} VIOLATION(S)`;
+  return submit(config, client, payload, fp, epoch, "Runtime Containment", "AI-SHELL.1", [
+    `Runtime: ${runtimeType}`, `Verdict: ${verdict}`,
+    ...(args.policy_hash ? [`Policy Hash: ${args.policy_hash.slice(0, 12)}...`] : []),
+  ]);
 }

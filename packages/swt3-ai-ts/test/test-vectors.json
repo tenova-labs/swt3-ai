@@ -771,6 +771,78 @@
       "fingerprint_timestamp_ms": 1774800058000,
       "clearing_level": 2,
       "expected_fingerprint": "374583ad4f0e"
+    },
+    {
+      "id": 65,
+      "description": "AI-ORCH.1 Orchestration Topology - parallel, 3 agents, depth 2",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-ORCH.1",
+      "factor_a": 1,
+      "factor_b": 3,
+      "factor_c": 2,
+      "fingerprint_timestamp_ms": 1774800014000,
+      "clearing_level": 1,
+      "expected_fingerprint": "8df384ee695c"
+    },
+    {
+      "id": 66,
+      "description": "AI-ORCH.2 Inter-Agent Handoff - lateral delegation",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-ORCH.2",
+      "factor_a": 2847501234,
+      "factor_b": 1938274650,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800014000,
+      "clearing_level": 1,
+      "expected_fingerprint": "e6b49bd8c761"
+    },
+    {
+      "id": 67,
+      "description": "AI-CTX.1 Context Window - truncation, 8000 to 4000 tokens",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-CTX.1",
+      "factor_a": 8000,
+      "factor_b": 4000,
+      "factor_c": 1,
+      "fingerprint_timestamp_ms": 1774800014000,
+      "clearing_level": 1,
+      "expected_fingerprint": "b36e32df04b8"
+    },
+    {
+      "id": 68,
+      "description": "AI-SAND.1 Sandbox Enforcement - clean, 10 declared, 5 invoked",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-SAND.1",
+      "factor_a": 10,
+      "factor_b": 5,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800014000,
+      "clearing_level": 1,
+      "expected_fingerprint": "8a58d2707f7a"
+    },
+    {
+      "id": 69,
+      "description": "AI-GATE.1 Eval Gate - 85/100, score 85",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-GATE.1",
+      "factor_a": 100,
+      "factor_b": 85,
+      "factor_c": 85,
+      "fingerprint_timestamp_ms": 1774800014000,
+      "clearing_level": 1,
+      "expected_fingerprint": "cdccfadd40cd"
+    },
+    {
+      "id": 70,
+      "description": "AI-SHELL.1 Runtime Containment - openshell, policy enforced, zero violations",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-SHELL.1",
+      "factor_a": 0,
+      "factor_b": 1,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800015000,
+      "clearing_level": 1,
+      "expected_fingerprint": "8ead3df6087d"
     }
   ],
   "signing_vectors": [

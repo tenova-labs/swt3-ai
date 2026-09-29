@@ -561,6 +561,15 @@ export const ADR_BASELINE_METHOD_CODES: Record<string, number> = { metered_10day
 export const ADR_CREDIT_TYPE_CODES: Record<string, number> = { rec: 1, carbon_offset: 2, eac: 3, guarantee_of_origin: 4 };
 export const ADR_SIGNAL_TYPE_CODES: Record<string, number> = { emergency: 1, economic: 2, capacity: 3, frequency_regulation: 4, voltage_support: 5 };
 
+// ── Distillation + Elicitation Codes (v0.7.4) ────────────────────────
+export const DISTILLATION_TYPE_CODES: Record<string, number> = { response: 0, logit: 1, feature: 2, attention: 3, progressive: 4 };
+export const TOS_COMPLIANCE_CODES: Record<string, number> = { no: 0, yes: 1, unknown: 2 };
+export const DISTILLATION_LINK_TYPES = new Set(["open", "commercial", "research", "unknown"]);
+export const ELICITATION_TYPE_CODES: Record<string, number> = { direct_query: 0, indirect_probe: 1, social_engineering: 2, context_manipulation: 3, tool_chaining: 4 };
+export const ELICITATION_CONSENT_CODES: Record<string, number> = { denied: 0, granted: 1, implicit: 2, not_requested: 3 };
+export const SCOPE_VIOLATION_CODES: Record<string, number> = { within_scope: 0, minor_deviation: 1, major_deviation: 2, complete_violation: 3 };
+export const ELICITATION_DETECTION_METHODS = new Set(["heuristic", "ml_classifier", "rule_based", "behavioral", "manual", "unknown"]);
+
 // ── Declarative Governance Config Types ────────────────────────────────
 
 /** Trust mesh configuration from .swt3.yaml trust_mesh section. */

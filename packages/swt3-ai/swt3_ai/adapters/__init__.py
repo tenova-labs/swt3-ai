@@ -21,4 +21,5 @@ Adapters:
     cohere      - Cohere chat() and chat_stream() witness (V2 API)
     langgraph   - LangGraph CompiledGraph invoke/stream witness (duck-typed)
     skillspector - NVIDIA SkillSpector scan result witness (static analysis, AI-SEC.1)
+    jev         - Jev (TypeSafe AI) typed decision witness (duck-typed, System One Model)
 """

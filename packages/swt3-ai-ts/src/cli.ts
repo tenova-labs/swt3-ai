@@ -33,6 +33,7 @@ const PROFILES: Record<string, string> = {
   "content-platform": "Content platform AI governance (DSA + Art. 50 + GPAI Code)",
   "microsoft-foundry": "Microsoft Foundry agent governance (AGT + OWASP Agentic + SOC 2)",
   "microsoft-agt": "Microsoft AGT policy engine governance (independent witness for AGT decisions)",
+  "energy-grid": "Energy grid AI governance (NERC CIP + FERC 2222 + IEEE 1547)",
   "minimal": "Development / evaluation (no enforcement)",
 };
 

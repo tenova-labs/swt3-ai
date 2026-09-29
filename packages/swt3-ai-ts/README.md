@@ -13,6 +13,38 @@ Works with OpenAI, Anthropic, AWS Bedrock, Vercel AI SDK, xAI (Grok), and any Op
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
+> **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.4
+
+NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.
+
+**Why this matters for TypeScript:** `witnessRuntimeContainment()` produces cryptographic evidence from any OCSF-compatible sandbox -- OpenShell, gVisor, Kata, Firecracker, or WASM -- with zero SDK imports and zero vendor lock-in. The `OpenShellWitness` adapter consumes raw OCSF event streams in real time. `witnessDistillation()` records teacher-to-student lineage with ToS compliance. `witnessElicitation()` captures prompt boundary violations. `incidentChain()` returns an `IncidentChainBuilder` that links detection, containment, and resolution anchors into a single forensic sequence.
+
+### 3 New Procedures
+
+- **AI-SHELL.1** (Runtime Containment Attestation): Records that a sandboxed runtime enforced its containment policy during a specific observation window. Duck-typed: works with OpenShell, gVisor, Kata, Firecracker, WASM. [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html)
+- **AI-DIST.1** (Distillation Provenance): Records teacher-to-student model lineage, distillation type (logit/feature/attention/data/hybrid), and ToS compliance status.
+- **AI-MCP.6** (Elicitation Detection): Records prompt boundary violations via tool responses, consent status, scope violation type, and detection method.
+
+### New SDK Methods
+
+- `witnessRuntimeContainment()` -- runtime containment attestation with policy hash, violation count, observation window, OCSF event count
+- `witnessDistillation()` -- distillation provenance with teacher/student identity and ToS tracking
+- `witnessElicitation()` -- elicitation detection with consent and scope violation codes
+- `incidentChain()` -- builder for multi-anchor incident lifecycle sequences
+- `IncidentChainBuilder` class -- programmatic incident lifecycle with `detect()`, `contain()`, `mitigate()`, `resolve()`, `close()`
+- `wrapJev()` adapter -- TypeSafe AI (Jev) Choice/Score/Noul witnessing
+- `OpenShellWitness` adapter -- real-time OCSF event stream processing with automatic procedure mapping
+
+### Updated Coverage
+
+- 278 procedures across 10 namespaces (was 277)
+- 75 MCP tools (was 74)
+- 277 compliance guides
+- [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html) -- runtime containment evidence for OpenShell, gVisor, Kata, Firecracker
+- AI Insurance Evidence guide for underwriting conversations
+
 ## What's New in v0.7.3
 
 A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.

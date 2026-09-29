@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "swt3-ai"
-version = "0.7.3"
+version = "0.7.4"
 description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference and infrastructure governance. 284 procedures, 10 namespaces, 10 languages, 77 frameworks. EU AI Act, NIST AI RMF, OWASP MCP Top 10, CMMC, SR 11-7, NIS-2, EU Battery Reg, FERC."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -41,8 +41,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-# Zero hard dependencies — only stdlib
-dependencies = []
+# Minimal dependencies — pyyaml for config file support
+dependencies = ["pyyaml>=6.0"]
 
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
@@ -60,6 +60,7 @@ swt3 = "swt3_ai.cli:main"
 
 [project.urls]
 Homepage = "https://tenova.io"
+Protocol = "https://swt3.ai/spec"
 Documentation = "https://sovereign.tenova.io/docs/"
 Repository = "https://github.com/tenova-labs/swt3-ai"
 Issues = "https://github.com/tenova-labs/swt3-ai/issues"

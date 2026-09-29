@@ -54,13 +54,15 @@ import {
 } from "./tools/verticals.js";
 import {
   handleOrchestrationTopology, handleAgentHandoff, handleContextWindow,
-  handleSandboxEnforcement, handleEvalGate,
+  handleSandboxEnforcement, handleEvalGate, handleRuntimeContainment,
 } from "./tools/harness.js";
 import {
   handleWitnessTaskLifecycle, handleWitnessAgentCardDiscovery,
   handleWitnessContextChain,
 } from "./tools/a2a.js";
 import { handleWitnessOauthTokenBinding } from "./tools/oauth.js";
+import { handleWitnessDistillation } from "./tools/distillation.js";
+import { handleWitnessElicitation } from "./tools/elicitation.js";
 import { buildComplianceCheckPrompt } from "./prompts/compliance-check.js";
 import { readRegistry } from "./resources/registry.js";
 import { readHealth } from "./resources/health.js";
@@ -229,7 +231,7 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
 
   const server = new McpServer({
     name: "swt3-mcp",
-    version: "0.7.3",
+    version: "0.7.4",
   });
 
   // --- Tools ---
@@ -1083,6 +1085,66 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
     } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
   });
 
+  // --- Knowledge Distillation Provenance Tool (AI-DIST.1) ---
+
+  server.registerTool("witness_distillation", {
+    description:
+      "Witness knowledge distillation provenance (AI-DIST.1). " +
+      "Records teacher-to-student model distillation with ToS compliance. " +
+      "EU AI Act Art. 53 GPAI transparency." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      distillation_type: z.string().describe("Type: 'response', 'logit', 'feature', 'attention', 'progressive'"),
+      compression_ratio: z.number().describe("Teacher params / student params ratio"),
+      tos_compliance: z.string().optional().describe("ToS: 'no', 'yes', 'unknown'"),
+      teacher_model: z.string().optional().describe("Teacher model identifier (hashed in anchor)"),
+      student_model: z.string().optional().describe("Student model identifier (hashed in anchor)"),
+      dataset_hash: z.string().optional().describe("Training dataset hash"),
+      link_type: z.string().optional().describe("License: 'open', 'commercial', 'research', 'unknown'"),
+      distillation_method: z.string().optional().describe("Distillation methodology"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessDistillation(args as any, config, client);
+      trackProcedure(sessionState, "AI-DIST.1");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
+  // --- MCP Elicitation Consent Tool (AI-MCP.6) ---
+
+  server.registerTool("witness_elicitation", {
+    description:
+      "Witness MCP elicitation consent (AI-MCP.6). " +
+      "Records when a tool elicits information beyond declared scope. " +
+      "OWASP MCP Top 10 elicitation detection." +
+      (config.demo ? " Currently in DEMO mode -- anchors are minted locally." : ""),
+    inputSchema: {
+      elicitation_type: z.string().describe("Type: 'direct_query', 'indirect_probe', 'social_engineering', 'context_manipulation', 'tool_chaining'"),
+      consent_status: z.string().describe("Consent: 'denied', 'granted', 'implicit', 'not_requested'"),
+      scope_violation: z.string().describe("Scope: 'within_scope', 'minor_deviation', 'major_deviation', 'complete_violation'"),
+      tool_name: z.string().optional().describe("Tool name (hashed in anchor)"),
+      requesting_agent: z.string().optional().describe("Requesting agent identity (hashed in anchor)"),
+      declared_scope: z.string().optional().describe("Tool's declared scope (hashed in anchor)"),
+      actual_scope: z.string().optional().describe("Actual scope observed (hashed in anchor)"),
+      detection_method: z.string().optional().describe("Detection: 'heuristic', 'ml_classifier', 'rule_based', 'behavioral', 'manual'"),
+      clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional(),
+    },
+    annotations: { readOnlyHint: false },
+  }, async (args) => {
+    try {
+      const denial = await chainGate(args as Record<string, unknown>);
+      if (denial) return { content: [{ type: "text" as const, text: denial }], isError: true };
+      const text = await handleWitnessElicitation(args as any, config, client);
+      trackProcedure(sessionState, "AI-MCP.6");
+      return { content: [{ type: "text" as const, text }] };
+    } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; }
+  });
+
   // --- A2A Task Delegation Lifecycle Tool (AI-A2A.1) ---
 
   server.registerTool("witness_task_lifecycle", {
@@ -1822,6 +1884,8 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
   server.registerTool("witness_sandbox_enforcement", { description: "Witness sandbox enforcement attestation (AI-SAND.1). Records the harness's own report of tool restriction compliance. Cross-reference AI-TOOL.1 for independent verification. Evidence only." + harnessBasis, inputSchema: { tools_declared: z.number().describe("Number of tools in the sandbox allow-list"), tools_invoked: z.number().describe("Number of distinct tools actually invoked"), violations: z.number().optional().describe("Count of out-of-scope invocations (default 0)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleSandboxEnforcement(args, config, client); trackProcedure(sessionState, "AI-SAND.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
 
   server.registerTool("witness_eval_gate", { description: "Witness eval gate decision (AI-GATE.1). Records pass/fail deployment gating based on eval results. Auto-computes gate score when not provided. Evidence only." + harnessBasis, inputSchema: { total_evals: z.number().describe("Total evaluation checks executed"), evals_passed: z.number().describe("Number of checks that passed"), gate_score: z.number().optional().describe("Gate score 0-100 (auto-computed from evals if omitted)"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleEvalGate(args, config, client); trackProcedure(sessionState, "AI-GATE.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
+
+  server.registerTool("witness_runtime_containment", { description: "Witness runtime containment attestation (AI-SHELL.1). Records that a sandboxed runtime (OpenShell, gVisor, Kata, Firecracker, WASM) enforced its containment policy. Duck-typed: no runtime SDK dependency. Evidence only." + harnessBasis, inputSchema: { runtime_type: z.string().optional().describe("Sandbox runtime: 'openshell' (default), 'gvisor', 'kata', 'firecracker', 'wasm', 'custom'"), policy_hash: z.string().optional().describe("SHA-256 of the enforced containment policy"), violation_count: z.number().optional().describe("Policy violations in observation window (default 0)"), sandbox_id: z.string().optional().describe("Sandbox identifier (hashed at L1+, stripped at L2+)"), observation_window_ms: z.number().optional().describe("Duration of observation window in milliseconds"), ocsf_event_count: z.number().optional().describe("Total OCSF events processed in window"), quarantine_events: z.number().optional().describe("Number of quarantine/kill actions taken"), agent_id: z.string().optional(), cycle_id: z.string().optional(), clearing_level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).optional() }, annotations: { readOnlyHint: false } }, async (args) => { try { const text = await handleRuntimeContainment(args, config, client); trackProcedure(sessionState, "AI-SHELL.1"); return { content: [{ type: "text" as const, text }] }; } catch (err) { return { content: [{ type: "text" as const, text: `Error: ${(err as Error).message}` }], isError: true }; } });
 
   // --- Resources ---
 

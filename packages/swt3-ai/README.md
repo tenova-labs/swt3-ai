@@ -2,6 +2,7 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 [![PyPI](https://img.shields.io/pypi/v/swt3-ai)](https://pypi.org/project/swt3-ai/)
 [![Downloads](https://img.shields.io/pypi/dm/swt3-ai)](https://pypi.org/project/swt3-ai/)
+[![PyPI Top 25%](https://img.shields.io/badge/PyPI-top%2025%25-brightgreen)](https://clickpy.clickhouse.com/dashboard/swt3-ai)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/tenova-labs/swt3-ai/blob/main/LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-io.tenova%2Fswt3--witness-blue)](https://www.npmjs.com/package/@tenova/swt3-mcp)
 
@@ -10,6 +11,38 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 **SWT3 AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
+
+> **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.4
+
+NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.
+
+**Why this matters for Python:** `witness_runtime_containment()` produces cryptographic evidence from any OCSF-compatible sandbox -- OpenShell, gVisor, Kata, Firecracker, or WASM -- with zero SDK imports and zero vendor lock-in. The `OpenShellWitness` adapter consumes raw OCSF event streams in real time. `witness_distillation()` records teacher-to-student lineage with ToS compliance. `witness_elicitation()` captures prompt boundary violations. `incident_chain()` returns an `IncidentChain` context manager that links detection, containment, and resolution anchors into a single forensic sequence.
+
+### 3 New Procedures
+
+- **AI-SHELL.1** (Runtime Containment Attestation): Records that a sandboxed runtime enforced its containment policy during a specific observation window. Duck-typed: works with OpenShell, gVisor, Kata, Firecracker, WASM. Clearing levels strip sandbox identifiers at L2+ while preserving verdict integrity. [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html)
+- **AI-DIST.1** (Distillation Provenance): Records teacher-to-student model lineage, distillation type (logit/feature/attention/data/hybrid), and ToS compliance status.
+- **AI-MCP.6** (Elicitation Detection): Records prompt boundary violations via tool responses, consent status, scope violation type, and detection method.
+
+### New SDK Methods
+
+- `witness_runtime_containment()` -- runtime containment attestation with policy hash, violation count, observation window, OCSF event count
+- `OpenShellWitness` adapter -- real-time OCSF event stream processing with automatic procedure mapping
+- `witness_distillation()` -- distillation provenance with teacher/student identity and ToS tracking
+- `witness_elicitation()` -- elicitation detection with consent and scope violation codes
+- `incident_chain()` -- context manager for multi-anchor incident lifecycle sequences
+- `IncidentChain` class -- programmatic incident lifecycle with `detect()`, `contain()`, `mitigate()`, `resolve()`, `close()`
+- `wrap_jev()` adapter -- TypeSafe AI (Jev) Choice/Score/Noul witnessing
+
+### Updated Coverage
+
+- 278 procedures across 10 namespaces (was 277)
+- 75 MCP tools (was 74)
+- 277 compliance guides
+- [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html) -- runtime containment evidence for OpenShell, gVisor, Kata, Firecracker
+- AI Insurance Evidence guide for underwriting conversations
 
 ## What's New in v0.7.3
 

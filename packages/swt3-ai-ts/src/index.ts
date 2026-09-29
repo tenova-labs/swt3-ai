@@ -60,6 +60,8 @@ export { wrapA2A } from "./adapters/a2a.js";
 export { wrapFoundry } from "./adapters/foundry.js";
 export { wrapAGT } from "./adapters/agt.js";
 export { wrapLangGraph } from "./adapters/langgraph.js";
+export { OpenShellWitness } from "./adapters/openshell.js";
+export type { OcsfEvent, OpenShellStats } from "./adapters/openshell.js";
 export { queryHardware, detectTopology, topologyCode, TOPOLOGY_CODES, queryTPM, parseTPMPcrOutput, ZERO_PCR_HASH, queryGoogleTPU, queryAmdRocm, queryAwsNeuron, queryIntelGaudi, queryPciFallback } from "./hardware.js";
 export type { GpuInfo, HardwareSnapshot, TPMSnapshot, PcrRegister, AcceleratorInfo, SiliconVendor } from "./hardware.js";
 export {

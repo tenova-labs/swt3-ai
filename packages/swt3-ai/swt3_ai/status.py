@@ -513,7 +513,20 @@ def render_status_brief(result: StatusResult) -> str:
         lines.append("")
 
     # Next steps (top 5 actionable gaps -- only show ones with real SDK hints)
+    # Priority order: core inference/model first (what devs do on day 1), then governance
+    _PRIORITY_ORDER = [
+        "AI-INF.1", "AI-INF.2", "AI-INF.3",  # inference (wrap your client)
+        "AI-MDL.1", "AI-MDL.2", "AI-MDL.3",  # model tracking
+        "AI-GRD.1", "AI-GRD.2", "AI-GRD.3",  # guardrails
+        "AI-ID.1", "AI-ACC.1",                # identity + access
+        "AI-FAIR.1", "AI-EXPL.1",             # bias + explainability
+        "AI-DATA.1", "AI-HITL.1",             # data gov + human oversight
+        "AI-RAG.1", "AI-RAG.2",              # RAG witnessing
+        "AI-TOOL.1",                          # tool witnessing
+    ]
+    _priority_set = {p: i for i, p in enumerate(_PRIORITY_ORDER)}
     actionable_gaps = [g for g in result.gaps if g["hint"] != "See docs"]
+    actionable_gaps.sort(key=lambda g: _priority_set.get(g["procedure_id"], 999))
     if actionable_gaps:
         show_count = min(5, len(actionable_gaps))
         lines.append(f"  {BOLD}Next steps:{RESET}")

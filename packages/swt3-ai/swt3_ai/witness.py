@@ -270,6 +270,15 @@ ADR_BASELINE_METHOD_CODES: Dict[str, int] = {"metered_10day_avg": 1, "regression
 ADR_CREDIT_TYPE_CODES: Dict[str, int] = {"rec": 1, "carbon_offset": 2, "eac": 3, "guarantee_of_origin": 4}
 ADR_SIGNAL_TYPE_CODES: Dict[str, int] = {"emergency": 1, "economic": 2, "capacity": 3, "frequency_regulation": 4, "voltage_support": 5}
 
+# ── Distillation + Elicitation Codes (v0.7.4) ────────────────────────
+DISTILLATION_TYPE_CODES: Dict[str, int] = {"response": 0, "logit": 1, "feature": 2, "attention": 3, "progressive": 4}
+TOS_COMPLIANCE_CODES: Dict[str, int] = {"no": 0, "yes": 1, "unknown": 2}
+DISTILLATION_LINK_TYPES = frozenset({"open", "commercial", "research", "unknown"})
+ELICITATION_TYPE_CODES: Dict[str, int] = {"direct_query": 0, "indirect_probe": 1, "social_engineering": 2, "context_manipulation": 3, "tool_chaining": 4}
+ELICITATION_CONSENT_CODES: Dict[str, int] = {"denied": 0, "granted": 1, "implicit": 2, "not_requested": 3}
+SCOPE_VIOLATION_CODES: Dict[str, int] = {"within_scope": 0, "minor_deviation": 1, "major_deviation": 2, "complete_violation": 3}
+ELICITATION_DETECTION_METHODS = frozenset({"heuristic", "ml_classifier", "rule_based", "behavioral", "manual", "unknown"})
+
 # ── Lifecycle Chain Stages (v6.0) ────────────────────────────────────
 LIFECYCLE_CHAIN_STAGES: Dict[str, int] = {
     "initiated": 0, "checkpoint": 1, "escalated": 2,
@@ -2005,6 +2014,97 @@ class Witness:
         self._enqueue_sampled(payload)
         return payload
 
+    # ── Runtime Containment (AI-SHELL.1) ────────────────────────────────
+
+    RUNTIME_TYPE_CODES = {
+        "openshell": 0, "gvisor": 1, "kata": 2,
+        "firecracker": 3, "wasm": 4, "custom": 5,
+    }
+
+    def witness_runtime_containment(
+        self,
+        runtime_type: str = "openshell",
+        policy_hash: str = "",
+        violation_count: int = 0,
+        sandbox_id: str = "",
+        observation_window_ms: int = 0,
+        ocsf_event_count: int = 0,
+        quarantine_events: int = 0,
+    ) -> WitnessPayload:
+        """Witness runtime containment attestation (AI-SHELL.1).
+
+        Records that a sandboxed runtime enforced its containment policy
+        during a specific observation window. Works with any OCSF-compatible
+        runtime: OpenShell, gVisor, Kata Containers, Firecracker, WASM.
+
+        This is a governance witness, not a security enforcement tool.
+        The adapter consumes summary stats -- it does not import any
+        runtime SDK or call any runtime API.
+
+        Args:
+            runtime_type: Sandbox runtime (openshell, gvisor, kata,
+                firecracker, wasm, custom).
+            policy_hash: SHA-256 of the enforced containment policy.
+                Empty string if unknown.
+            violation_count: Number of policy violations in the
+                observation window.
+            sandbox_id: Sandbox identifier (hashed at L1+, stripped at L2+).
+            observation_window_ms: Duration of the observation window in ms.
+            ocsf_event_count: Total OCSF events processed in the window.
+            quarantine_events: Number of quarantine/kill actions taken.
+
+        Returns:
+            WitnessPayload for the AI-SHELL.1 anchor.
+        """
+        fa = float(self.RUNTIME_TYPE_CODES.get(runtime_type, 5))
+        fb = 1.0 if violation_count == 0 else 0.0
+        fc = float(violation_count)
+
+        payload = self._mint_and_sign("AI-SHELL.1", fa, fb, fc)
+
+        if self._config.clearing_level == 0:
+            payload.ai_model_id = f"shell-{runtime_type}"
+            payload.ai_context = {
+                "provider": runtime_type,
+                "runtime_type": runtime_type,
+                "policy_hash": policy_hash,
+                "violation_count": violation_count,
+                "sandbox_id": sandbox_id,
+                "observation_window_ms": observation_window_ms,
+                "ocsf_event_count": ocsf_event_count,
+                "quarantine_events": quarantine_events,
+            }
+        elif self._config.clearing_level == 1:
+            payload.ai_model_id = f"shell-{runtime_type}"
+            sandbox_hash = ""
+            if sandbox_id:
+                from hashlib import sha256
+                sandbox_hash = sha256(sandbox_id.encode()).hexdigest()[:12]
+            payload.ai_context = {
+                "provider": runtime_type,
+                "runtime_type": runtime_type,
+                "policy_hash": policy_hash,
+                "violation_count": violation_count,
+                "sandbox_id_hash": sandbox_hash,
+                "observation_window_ms": observation_window_ms,
+                "ocsf_event_count": ocsf_event_count,
+                "quarantine_events": quarantine_events,
+            }
+        elif self._config.clearing_level == 2:
+            payload.ai_model_id = f"shell-{runtime_type}"
+            payload.ai_context = {
+                "provider": runtime_type,
+                "runtime_type": runtime_type,
+                "policy_hash": policy_hash,
+                "violation_count": violation_count,
+                "ocsf_event_count": ocsf_event_count,
+                "quarantine_events": quarantine_events,
+            }
+        # L3: factors only (no ai_context)
+
+        self._enqueue_sampled(payload)
+        return payload
+
     # ── Environment (AI-ENV.1 / AI-ENV.2) ──────────────────────────────
 
     def witness_environment(
@@ -3063,6 +3163,153 @@ class Witness:
             payload.ai_context = ctx_dict
         self._enqueue_sampled(payload)
         return payload
+
+    # ── Knowledge Distillation Provenance (AI-DIST.1, v0.7.4) ────────────
+
+    def witness_distillation(
+        self,
+        distillation_type: str,
+        compression_ratio: float,
+        tos_compliance: str = "unknown",
+        *,
+        teacher_model: Optional[str] = None,
+        student_model: Optional[str] = None,
+        dataset_hash: Optional[str] = None,
+        link_type: Optional[str] = None,
+        distillation_method: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness knowledge distillation provenance (AI-DIST.1).
+
+        Records teacher-to-student model distillation events with ToS compliance.
+        EU AI Act Art. 53 requires GPAI transparency including distillation provenance.
+        NIST AI RMF GOVERN 1.5 requires governance of model derivation.
+        """
+        fa = float(DISTILLATION_TYPE_CODES.get(distillation_type, 0))
+        fb = float(compression_ratio)
+        fc = float(TOS_COMPLIANCE_CODES.get(tos_compliance, 2))
+        payload = self._mint_and_sign("AI-DIST.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"distillation-{distillation_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "distillation-provenance",
+                "distillation_type": distillation_type,
+                "compression_ratio": compression_ratio,
+                "tos_compliance": tos_compliance,
+            }
+            if teacher_model:
+                ctx["teacher_model_hash"] = sha256_truncated(teacher_model, 12)
+            if student_model:
+                ctx["student_model_hash"] = sha256_truncated(student_model, 12)
+            if dataset_hash:
+                ctx["dataset_hash"] = sha256_truncated(dataset_hash, 12)
+            if link_type:
+                ctx["link_type"] = link_type if link_type in DISTILLATION_LINK_TYPES else "unknown"
+            if distillation_method:
+                ctx["distillation_method"] = distillation_method
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── MCP Elicitation Consent (AI-MCP.6, v0.7.4) ──────────────────────
+
+    def witness_elicitation(
+        self,
+        elicitation_type: str,
+        consent_status: str,
+        scope_violation: str,
+        *,
+        tool_name: Optional[str] = None,
+        requesting_agent: Optional[str] = None,
+        declared_scope: Optional[str] = None,
+        actual_scope: Optional[str] = None,
+        detection_method: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness MCP elicitation consent (AI-MCP.6).
+
+        Records when a tool attempts information elicitation beyond its declared scope.
+        OWASP MCP Top 10 requires elicitation attack detection.
+        EU AI Act Art. 13 requires transparency in AI interactions.
+        """
+        fa = float(ELICITATION_TYPE_CODES.get(elicitation_type, 0))
+        fb = float(ELICITATION_CONSENT_CODES.get(consent_status, 3))
+        fc = float(SCOPE_VIOLATION_CODES.get(scope_violation, 0))
+        payload = self._mint_and_sign("AI-MCP.6", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"mcp-elicitation-{elicitation_type}"
+            ctx: Dict[str, Any] = {
+                "provider": "mcp-elicitation",
+                "elicitation_type": elicitation_type,
+                "consent_status": consent_status,
+                "scope_violation": scope_violation,
+            }
+            if tool_name:
+                ctx["tool_name_hash"] = sha256_truncated(tool_name, 12)
+            if requesting_agent:
+                ctx["requesting_agent_hash"] = sha256_truncated(requesting_agent, 12)
+            if declared_scope:
+                ctx["declared_scope_hash"] = sha256_truncated(declared_scope, 12)
+            if actual_scope:
+                ctx["actual_scope_hash"] = sha256_truncated(actual_scope, 12)
+            if detection_method:
+                ctx["detection_method"] = detection_method if detection_method in ELICITATION_DETECTION_METHODS else "unknown"
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── Incident Chain (v0.7.4) ──────────────────────────────────────────
+
+    def incident_chain(
+        self,
+        severity: str,
+        incident_type: str = "other",
+        *,
+        incident_id: Optional[str] = None,
+        authority: Optional[str] = None,
+    ) -> "IncidentChain":
+        """Start an incident lifecycle chain (AI-INCIDENT.1).
+
+        Returns an IncidentChain that links multiple incident stages
+        (reported -> investigating -> mitigated -> resolved) via a shared
+        lifecycle_chain_id. Each stage mints an AI-INCIDENT.1 anchor.
+
+        Can be used as a context manager -- auto-abandons only on exception.
+
+        Usage::
+
+            chain = witness.incident_chain("high", "safety")
+            chain.investigate()
+            chain.mitigate(remediation="patched model v2")
+            chain.resolve(authority_notified=True)
+
+        Or with context manager::
+
+            with witness.incident_chain("critical", "security") as chain:
+                chain.investigate()
+                chain.mitigate(remediation="rollback to v1")
+                chain.resolve(authority_notified=True)
+        """
+        severity_code = INCIDENT_SEVERITY_CODES.get(severity, 2)
+        type_code = INCIDENT_TYPE_CODES.get(incident_type, 5)
+        lc = self.begin_lifecycle(
+            "AI-INCIDENT.1",
+            float(severity_code),
+            0.0,
+            float(type_code),
+            model_id=f"incident-{incident_type}",
+            context={
+                "provider": "incident-lifecycle",
+                "severity": severity,
+                "incident_type": incident_type,
+                "stage": "reported",
+                "incident_id_hash": sha256_truncated(incident_id, 12) if incident_id else None,
+                "authority_hash": sha256_truncated(authority, 12) if authority else None,
+            },
+        )
+        return IncidentChain(self, lc, severity_code, type_code, incident_id, authority)
 
     # ── Model Provenance Chain (AI-PROV.1) ────────────────────────────────
 
@@ -6326,6 +6573,118 @@ class LifecycleChain:
         if reason:
             ctx["abandon_reason"] = reason
         return self._mint(0.0, 0.0, 0.0, "abandoned", context=ctx or None)
+
+
+class IncidentChain:
+    """Typed incident lifecycle chain wrapping LifecycleChain (v0.7.4).
+
+    Provides stage-specific methods for incident management: investigate,
+    mitigate, resolve, escalate, abandon. Each stage mints an AI-INCIDENT.1
+    anchor linked by a shared lifecycle_chain_id.
+
+    Auto-abandons only on exception exit (not normal exit). Normal exit
+    without resolution logs a warning.
+    """
+
+    STAGES: Dict[str, int] = {
+        "reported": 0, "investigating": 1, "mitigated": 2,
+        "resolved": 3, "escalated": 4, "abandoned": 5,
+    }
+
+    def __init__(
+        self,
+        witness: "Witness",
+        chain: LifecycleChain,
+        severity_code: int,
+        type_code: int,
+        incident_id: Optional[str],
+        authority: Optional[str],
+    ) -> None:
+        self._witness = witness
+        self._chain = chain
+        self._severity_code = severity_code
+        self._type_code = type_code
+        self._incident_id = incident_id
+        self._authority = authority
+        self._start_ms = timestamp_ms()[0]
+        self._resolved = False
+
+    @property
+    def chain_id(self) -> str:
+        return self._chain.chain_id
+
+    @property
+    def closed(self) -> bool:
+        return self._chain.closed
+
+    def _stage_context(self, stage: str, **extra: Any) -> Dict[str, Any]:
+        ctx: Dict[str, Any] = {
+            "provider": "incident-lifecycle",
+            "stage": stage,
+            "elapsed_ms": int(timestamp_ms()[0] - self._start_ms),
+        }
+        if self._incident_id:
+            ctx["incident_id_hash"] = sha256_truncated(self._incident_id, 12)
+        if self._authority:
+            ctx["authority_hash"] = sha256_truncated(self._authority, 12)
+        for k, v in extra.items():
+            if v is not None:
+                ctx[k] = v
+        return ctx
+
+    def investigate(self) -> WitnessPayload:
+        """Transition to investigating stage."""
+        return self._chain.checkpoint(
+            float(self._severity_code), 0.0, float(self._type_code),
+            context=self._stage_context("investigating"),
+        )
+
+    def mitigate(self, *, remediation: Optional[str] = None) -> WitnessPayload:
+        """Transition to mitigated stage with optional remediation note."""
+        return self._chain.checkpoint(
+            float(self._severity_code), 0.0, float(self._type_code),
+            context=self._stage_context("mitigated", remediation=remediation),
+        )
+
+    def resolve(self, *, authority_notified: bool = False) -> WitnessPayload:
+        """Resolve the incident chain (terminal stage)."""
+        self._resolved = True
+        return self._chain.resolve(
+            float(self._severity_code),
+            1.0 if authority_notified else 0.0,
+            float(self._type_code),
+            context=self._stage_context("resolved", authority_notified=authority_notified),
+        )
+
+    def escalate(self) -> WitnessPayload:
+        """Mark the incident as escalated (terminal stage on this chain)."""
+        self._resolved = True
+        return self._chain._mint(
+            float(self._severity_code), 0.0, float(self._type_code),
+            "escalated",
+            context=self._stage_context("escalated"),
+        )
+
+    def abandon(self, *, reason: Optional[str] = None) -> WitnessPayload:
+        """Abandon the incident chain (terminal stage)."""
+        self._resolved = True
+        return self._chain.abandon(
+            reason=reason,
+            context=self._stage_context("abandoned", abandon_reason=reason),
+        )
+
+    def __enter__(self) -> "IncidentChain":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        if exc_type is not None and not self._chain.closed:
+            self.abandon(reason="exception_exit")
+        elif not self._resolved and not self._chain.closed:
+            logger.warning(
+                "IncidentChain %s exited without resolution. "
+                "Call resolve(), escalate(), or abandon() explicitly.",
+                self._chain.chain_id,
+            )
 
 
 def validate_governance_graph(rules: List[Dict[str, Any]]) -> Dict[str, Any]:
