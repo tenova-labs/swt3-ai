@@ -11,6 +11,22 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## Ecosystem: v0.7.5
+
+Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+
+**Why this matters for Kotlin:** AI-TRUST.3 verifies with the existing `Fingerprint.mint()` function. Kotlin/Android ML pipelines and JVM agent frameworks gain trust propagation attestation with byte-identical output across all 10 SDK languages. NERC CIP (45 mappings) and 3GPP R19 (16 mappings) crosswalks expand coverage for Kotlin enterprise compliance. Zero dependency changes.
+
+### 1 New Procedure
+
+- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+
+### Updated Coverage
+
+- 279 procedures across 10 namespaces
+- 84 regulatory frameworks, 288 compliance guides
+- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html)
+
 ## Ecosystem: v0.7.4
 
 NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.

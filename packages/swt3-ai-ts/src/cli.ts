@@ -34,6 +34,7 @@ const PROFILES: Record<string, string> = {
   "microsoft-foundry": "Microsoft Foundry agent governance (AGT + OWASP Agentic + SOC 2)",
   "microsoft-agt": "Microsoft AGT policy engine governance (independent witness for AGT decisions)",
   "energy-grid": "Energy grid AI governance (NERC CIP + FERC 2222 + IEEE 1547)",
+  "si-accord-2026": "White House SI Accord 2026 (4-layer frontier AI governance)",
   "minimal": "Development / evaluation (no enforcement)",
 };
 

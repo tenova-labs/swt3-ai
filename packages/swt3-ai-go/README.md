@@ -12,6 +12,44 @@ Go is the dominant language for backend infrastructure at scale. Kubernetes oper
 
 EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
+> **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.5
+
+Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+
+**Why this matters for Go:** AI-TRUST.3 verifies with the existing `MintFingerprint` function. Go API gateways and Kubernetes operators routing multi-agent traffic gain trust propagation attestation with byte-identical output across all 10 SDK languages. NERC CIP crosswalk coverage (45 mappings, CIP-002 through CIP-014) means Go-based grid control systems and SCADA middleware have a direct path to AI governance evidence. Zero module changes.
+
+### 1 New Procedure
+
+- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+
+### Updated Coverage
+
+- 279 procedures across 10 namespaces
+- 84 regulatory frameworks, 288 compliance guides
+- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html)
+
+## What's New in v0.7.4
+
+NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.
+
+**Why this matters for Go:** All three new procedure IDs (AI-SHELL.1, AI-DIST.1, AI-MCP.6) verify with the existing `MintFingerprint` function. AI-SHELL.1 runtime containment attestation works with zero dependency changes -- Go distillation orchestrators and MCP gateway middleware gain attestation for runtime containment, distillation provenance, and elicitation detection with the same fingerprint parity as every other SDK language.
+
+### 3 New Procedures
+
+- **AI-SHELL.1** (Runtime Containment Attestation): Records that a sandboxed runtime enforced its containment policy during a specific observation window. Duck-typed: works with OpenShell, gVisor, Kata, Firecracker, WASM. [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html)
+- **AI-DIST.1** (Distillation Provenance): Records teacher-to-student model lineage, compression ratio, and knowledge transfer method.
+- **AI-MCP.6** (Elicitation Detection): Records prompt injection attempts via MCP tool responses. OWASP MCP-06.
+
+### Updated Coverage
+
+- 278 procedures across 10 namespaces (was 284)
+- 75 MCP tools (was 72)
+- 277 compliance guides
+- [NVIDIA OpenShell Crosswalk](https://sovereign.tenova.io/guides/nvidia-openshell-crosswalk.html) -- runtime containment evidence for OpenShell, gVisor, Kata, Firecracker
+- All new anchor types verify with `swt3.MintFingerprint()` -- no library update required for verification
+
 ## What's New in v0.7.3
 
 A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all three hyperscalers, and a v1.0 stable specification under Linux Foundation governance. It has zero built-in audit trail. MCP OAuth adoption sits at 8.5% with 30+ CVEs filed in 60 days. v0.7.3 makes SWT3 the evidence layer for both agent communication protocols with dedicated procedures, lifecycle-aware adapters, and a new crosswalk CLI command.

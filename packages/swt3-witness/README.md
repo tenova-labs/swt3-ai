@@ -8,6 +8,18 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.5
+
+Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap with the Trust Propagation Engine and expands crosswalk coverage to energy, telecom, and international safety treaty frameworks.
+
+**Why this matters for Kubernetes:** Hardware attestation anchors (AI-HW.1) now combine with trust propagation (AI-TRUST.3) to provide infrastructure-to-agent evidence chains. NERC CIP (45 mappings) and 3GPP R19 (16 mappings) crosswalks bring energy grid and telecom environments into SWT3 coverage -- sectors where K8s orchestration is the deployment standard.
+
+### Updated Coverage
+
+- 279 procedures across 10 namespaces
+- 84 regulatory frameworks, 288 compliance guides
+- [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html) | [EU Machinery Regulation](https://sovereign.tenova.io/guides/eu-machinery-regulation-crosswalk.html)
+
 ## What's New in v0.7.4
 
 - Aligned agent, container image, and Helm chart with SDK v0.7.4 release.

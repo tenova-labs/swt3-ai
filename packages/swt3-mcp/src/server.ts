@@ -231,7 +231,7 @@ export function createServer(config: McpConfig, bundle?: McpConfigBundle): McpSe
 
   const server = new McpServer({
     name: "swt3-mcp",
-    version: "0.7.4",
+    version: "0.7.5",
   });
 
   // --- Tools ---

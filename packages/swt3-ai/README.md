@@ -14,6 +14,42 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.5
+
+Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+
+Three new crosswalk families bring energy, telecom, and machinery safety into SWT3 coverage.
+
+**Why this matters for Python:** `query_trust()` and `assert_trust()` let Python agent frameworks (LangChain, CrewAI, AutoGen) query an agent's trust score before delegating sensitive tasks and record the propagation decision into the witness chain. Both methods work with the existing `Witness` class and clearing engine.
+
+```python
+score = witness.query_trust("downstream-agent-id")
+witness.assert_trust("downstream-agent-id", score=score)
+```
+
+### 1 New Procedure
+
+- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+
+### New SDK Methods
+
+- `query_trust()` -- query an agent's propagated trust score before delegating
+- `assert_trust()` -- record a trust propagation decision into the witness chain (AI-TRUST.3)
+
+### New Crosswalks and Profiles
+
+- **NERC CIP** crosswalk (45 mappings) -- first energy grid AI governance crosswalk, CIP-002 through CIP-014
+- **EU Machinery Regulation** (2023/1230) crosswalk -- 18 procedures across 7 provisions, enforcement January 20, 2027
+- 3GPP R19 (16 mappings) + ITU-T AI (12 mappings) -- telecom network AI governance
+- SI Accord 2026 CLI profile (`--profile si-accord-2026`) -- international AI safety treaty compliance
+- Energy grid CLI profile (`--profile energy-grid`) -- sector-specific scanning for NERC CIP environments
+
+### Updated Coverage
+
+- 279 procedures across 10 namespaces
+- 75 MCP tools, 288 compliance guides, 84 regulatory frameworks
+- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html) | [EU Machinery Regulation](https://sovereign.tenova.io/guides/eu-machinery-regulation-crosswalk.html)
+
 ## What's New in v0.7.4
 
 NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.

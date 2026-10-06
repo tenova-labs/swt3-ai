@@ -119,6 +119,7 @@ const VALID_PROFILES = new Set([
   "insurance-underwriting",
   "content-platform",
   "microsoft-foundry",
+  "si-accord-2026",
   "minimal",
 ]);
 

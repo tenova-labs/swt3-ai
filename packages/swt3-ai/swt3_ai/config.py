@@ -76,6 +76,7 @@ _VALID_PROFILES = frozenset({
     "insurance-underwriting",
     "content-platform",
     "microsoft-foundry",
+    "si-accord-2026",
     "minimal",
 })
 

@@ -8,6 +8,27 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.5
+
+Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+
+**Why this matters for MCP:** Two new tools bring the total to 75. Any MCP client can query an agent's trust score before delegating sensitive tasks and record the decision as an AI-TRUST.3 anchor -- no SDK integration required.
+
+### 1 New Procedure
+
+- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+
+### New MCP Tools
+
+- `query_trust` -- query an agent's propagated trust score before delegating
+- `assert_trust` -- record a trust propagation decision into the witness chain (AI-TRUST.3)
+
+### Updated Coverage
+
+- 279 procedures across 10 namespaces
+- 75 MCP tools, 288 compliance guides, 84 regulatory frameworks
+- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html)
+
 ## What's New in v0.7.4
 
 NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But no MCP tool existed to attest that a sandbox policy was enforced. v0.7.4 adds `witness_runtime_containment` alongside distillation provenance and elicitation detection. Three new tools, three governance gaps closed.

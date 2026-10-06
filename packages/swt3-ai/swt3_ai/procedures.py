@@ -8,7 +8,7 @@ import json
 import sys
 from typing import Optional, List, Dict
 
-# 117 AI procedures across 64 namespaces
+# 166 AI/vertical procedures across 10 namespaces
 PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-INF.1", "name": "Inference Provenance", "namespace": "INF"},
     {"id": "AI-INF.2", "name": "Inference Latency", "namespace": "INF"},
@@ -144,6 +144,61 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     # Distillation + MCP Elicitation (v0.7.4)
     {"id": "AI-DIST.1", "name": "Knowledge Distillation Provenance", "namespace": "DIST"},
     {"id": "AI-MCP.6", "name": "MCP Elicitation Consent Witnessing", "namespace": "MCP"},
+    # Runtime Containment (v0.7.4)
+    {"id": "AI-SHELL.1", "name": "Runtime Containment Attestation", "namespace": "SHELL"},
+    # Trust Propagation (v0.7.5)
+    {"id": "AI-TRUST.3", "name": "Trust Propagation Assertion", "namespace": "TRUST"},
+    # Additional AI procedures
+    {"id": "AI-GOV.7", "name": "AI Governance Resource Allocation", "namespace": "GOV"},
+    {"id": "AI-HITL.3", "name": "Overseer Identity Capture", "namespace": "HITL"},
+    {"id": "AI-MDL.4", "name": "Feedback Loop Control", "namespace": "MDL"},
+    {"id": "AI-MDL.8", "name": "Model Registry Attestation", "namespace": "MDL"},
+    {"id": "AI-MOB.1", "name": "SIM-Bound Attestation", "namespace": "MOB"},
+    {"id": "AI-MOB.2", "name": "Roaming Attestation", "namespace": "MOB"},
+    {"id": "AI-MOB.3", "name": "Dual-SIM Policy Enforcement", "namespace": "MOB"},
+    {"id": "AI-MOB.4", "name": "Peer-to-Peer Trust Mesh", "namespace": "MOB"},
+    {"id": "AI-MOB.5", "name": "Bilateral Flush Correlation", "namespace": "MOB"},
+    {"id": "AI-MOB.8", "name": "Network Slice Isolation Verification", "namespace": "MOB"},
+    {"id": "AI-SAMPLE.1", "name": "Probabilistic Witnessing Summary", "namespace": "SAMPLE"},
+    # Non-Human Identity (NHI)
+    {"id": "NHI-AGENT.1", "name": "Agent-to-Agent Credential Delegation", "namespace": "NHI"},
+    {"id": "NHI-CYCLE.1", "name": "Credential Lifecycle Event Witnessing", "namespace": "NHI"},
+    {"id": "NHI-PRIV.1", "name": "Privilege Change Witnessing", "namespace": "NHI"},
+    {"id": "NHI-REVOKE.1", "name": "Credential Revocation Attestation", "namespace": "NHI"},
+    {"id": "NHI-ROTATE.1", "name": "Credential Rotation Attestation", "namespace": "NHI"},
+    {"id": "NHI-SCOPE.1", "name": "Credential Scope Attestation", "namespace": "NHI"},
+    # Hardware Bill of Materials (HBOM)
+    {"id": "HBOM-INV.1", "name": "Hardware Inventory Attestation", "namespace": "HBOM"},
+    {"id": "HBOM-LIFE.1", "name": "Component Lifecycle Witnessing", "namespace": "HBOM"},
+    {"id": "HBOM-PUE.1", "name": "Power Usage Effectiveness Attestation", "namespace": "HBOM"},
+    {"id": "HBOM-SUPPLY.1", "name": "Hardware Supply Chain Provenance", "namespace": "HBOM"},
+    {"id": "HBOM-THERM.1", "name": "Thermal Profile Attestation", "namespace": "HBOM"},
+    {"id": "HBOM-WATER.1", "name": "Water Consumption Witnessing", "namespace": "HBOM"},
+    # Digital Product Passport (DPP)
+    {"id": "DPP-CHRG.1", "name": "Charge/Discharge Cycle Witnessing", "namespace": "DPP"},
+    {"id": "DPP-DEGRAD.1", "name": "Battery Degradation Event Witnessing", "namespace": "DPP"},
+    {"id": "DPP-EOL.1", "name": "End-of-Life / Recycling Handoff Witnessing", "namespace": "DPP"},
+    {"id": "DPP-SOH.1", "name": "Battery State of Health Attestation", "namespace": "DPP"},
+    # Automated Demand Response (ADR)
+    {"id": "ADR-BASE.1", "name": "Baseline Consumption Attestation", "namespace": "ADR"},
+    {"id": "ADR-CARBON.1", "name": "Carbon Credit / REC Attestation", "namespace": "ADR"},
+    {"id": "ADR-CURT.1", "name": "Curtailment Verification", "namespace": "ADR"},
+    {"id": "ADR-EVENT.1", "name": "Demand Response Event Witnessing", "namespace": "ADR"},
+    {"id": "ADR-GRID.1", "name": "Grid Signal Correlation Attestation", "namespace": "ADR"},
+    {"id": "ADR-SETTLE.1", "name": "Settlement Data Attestation", "namespace": "ADR"},
+    {"id": "ADR-VOLT.1", "name": "Autonomous Voltage Regulation Witnessing", "namespace": "ADR"},
+    # Financial Model Risk (FIN)
+    {"id": "FIN-GOV.1", "name": "Model Governance Committee Approval", "namespace": "FIN"},
+    {"id": "FIN-MON.1", "name": "Ongoing Performance Monitoring", "namespace": "FIN"},
+    {"id": "FIN-MRM.1", "name": "Model Inventory and Lineage", "namespace": "FIN"},
+    {"id": "FIN-OUT.1", "name": "Outcomes Analysis (Back-testing)", "namespace": "FIN"},
+    {"id": "FIN-VAL.1", "name": "Independent Model Validation", "namespace": "FIN"},
+    # Construction (CON)
+    {"id": "CON-ENV.1", "name": "Environmental Monitoring", "namespace": "CON"},
+    {"id": "CON-FIN.1", "name": "Payment Attestation", "namespace": "CON"},
+    {"id": "CON-INS.1", "name": "Inspection Attestation", "namespace": "CON"},
+    {"id": "CON-SAF.1", "name": "Safety Compliance", "namespace": "CON"},
+    {"id": "CON-STR.1", "name": "Structural Verification", "namespace": "CON"},
     # Healthcare / Clinical AI (HCF)
     {"id": "HCF-DX.1", "name": "Diagnostic Accountability", "namespace": "HCF"},
     {"id": "HCF-RX.1", "name": "Prescription Safety", "namespace": "HCF"},

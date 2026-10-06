@@ -39,7 +39,7 @@ Result: SWT3 anchor minted locally
   trust_level: 1 (basic)
 ```
 
-Every tool call is now witnessed. Try `list_procedures` to see all 44 available procedures.
+Every tool call is now witnessed. Try `list_procedures` to see all 114 available procedures across 62 namespaces.
 
 ## Step 3: Connect to Axiom (Persistent Ledger)
 
@@ -67,6 +67,22 @@ Open `https://sovereign.tenova.io/verify` and paste any fingerprint from the dem
 ## What Just Happened?
 
 Every tool call your AI agent made was cryptographically witnessed (SHA-256 fingerprint), Merkle-accumulated into a session proof, and trust-evaluated against configurable policy. No code changes to your agent. No latency added to inference. Full regulatory evidence trail for EU AI Act, NIST AI RMF, and CMMC.
+
+## Alternative: Witness Middleware
+
+Already have an MCP server? Wrap its transport for zero-code witnessing:
+
+```typescript
+import { withSWT3 } from "@tenova/swt3-mcp/middleware";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
+const transport = withSWT3(new StdioServerTransport(), {
+  apiKey: process.env.SWT3_API_KEY,
+});
+await server.connect(transport);
+```
+
+Every tool call mints an AI-TOOL.1 anchor automatically. The response is sent before the witness fires -- zero latency impact, zero failure risk. No changes to your tool handlers.
 
 ## Next Steps
 

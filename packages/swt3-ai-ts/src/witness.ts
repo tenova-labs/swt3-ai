@@ -6754,6 +6754,118 @@ export class Witness {
   }
 
   /**
+   * Query trust score for a target agent.
+   *
+   * Computes a trust score based on the target agent's witness anchor
+   * history within this tenant. Scores range from 0.0 (no trust) to
+   * 1.0 (full trust), with a recommended clearing level.
+   *
+   * @param targetAgent - Agent ID or DID of the agent to evaluate.
+   * @returns Trust score with confidence, basis, and recommended clearing level.
+   */
+  async queryTrust(targetAgent: string): Promise<{
+    score: number;
+    confidence: "low" | "medium" | "high";
+    path_type: "direct" | "transitive" | "none";
+    hops: number;
+    basis: string;
+    recommended_clearing: number;
+    computed_at_ms: number;
+  }> {
+    if (!targetAgent?.trim()) {
+      throw new Error("targetAgent is required for trust query");
+    }
+
+    const fromAgent = this.config.agentId || "self";
+    const params = new URLSearchParams({
+      agent: targetAgent.trim(),
+      from: fromAgent,
+    });
+
+    const baseUrl = this.config.endpoint.replace(/\/$/, "").replace(/\/witness$/, "").replace(/\/api\/v1$/, "");
+    const url = `${baseUrl}/api/v1/trust/score?${params.toString()}`;
+    const resp = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(`Trust score API returned ${resp.status}: ${body}`);
+    }
+
+    const data = await resp.json() as { ok: boolean; trust: {
+      score: number;
+      confidence: "low" | "medium" | "high";
+      path_type: "direct" | "transitive" | "none";
+      hops: number;
+      basis: string;
+      recommended_clearing: number;
+      computed_at_ms: number;
+    }};
+    return data.trust;
+  }
+
+  /**
+   * Assert trust in a target agent by computing a trust score and
+   * minting an AI-TRUST.3 witness anchor as immutable evidence.
+   *
+   * Requires Pro tier or higher.
+   *
+   * @param targetAgent - Agent ID or DID of the agent to evaluate.
+   * @returns Trust assertion with score, anchor, and fingerprints.
+   */
+  async assertTrust(targetAgent: string): Promise<{
+    score: number;
+    confidence: "low" | "medium" | "high";
+    recommended_clearing: number;
+    basis: string;
+    procedure_id: string;
+    anchor: string;
+    fingerprint: string;
+    assertion_fingerprint: string;
+  }> {
+    if (!targetAgent?.trim()) {
+      throw new Error("targetAgent is required for trust assertion");
+    }
+
+    const fromAgent = this.config.agentId || "self";
+    const baseUrl = this.config.endpoint.replace(/\/$/, "").replace(/\/witness$/, "").replace(/\/api\/v1$/, "");
+    const url = `${baseUrl}/api/v1/trust/assert`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        target_agent: targetAgent.trim(),
+        from_agent: fromAgent,
+      }),
+    });
+
+    if (!resp.ok) {
+      const body = await resp.text();
+      throw new Error(`Trust assert API returned ${resp.status}: ${body}`);
+    }
+
+    const data = await resp.json() as { ok: boolean; assertion: {
+      score: number;
+      confidence: "low" | "medium" | "high";
+      recommended_clearing: number;
+      basis: string;
+      procedure_id: string;
+      anchor: string;
+      fingerprint: string;
+      assertion_fingerprint: string;
+    }};
+    return data.assertion;
+  }
+
+  /**
    * Query the Compliance Manifest API for this tenant's anchors.
    *
    * Returns a structured compliance manifest with summary, coverage,

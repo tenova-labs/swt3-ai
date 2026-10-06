@@ -2,8 +2,8 @@ apiVersion: v2
 name: swt3-witness
 description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 0.7.4
-appVersion: "0.7.4"
+version: 0.7.5
+appVersion: "0.7.5"
 keywords:
   - ai
   - compliance
@@ -33,10 +33,12 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/changes: |
     - kind: added
-      description: "Runtime containment attestation (AI-SHELL.1) for OpenShell, gVisor, Kata, Firecracker, WASM"
+      description: "Trust Propagation Engine: Bayesian-smoothed agent trust scoring with Sybil resistance and transitive decay"
     - kind: added
-      description: "Distillation provenance (AI-DIST.1) and elicitation detection (AI-MCP.6)"
+      description: "AI-TRUST.3 Trust Propagation Assertion procedure with queryTrust/assertTrust SDK methods"
     - kind: added
-      description: "Incident lifecycle chains for multi-anchor forensic sequences"
+      description: "SI Accord 2026 compliance profile for international safety standards"
+    - kind: added
+      description: "NERC CIP (45 mappings), 3GPP R19 (16), ITU-T AI (12) crosswalks"
     - kind: changed
-      description: "Underlying SDK updated to 0.7.4 with 278 procedures, 75 MCP tools, 277 compliance guides"
+      description: "Underlying SDK updated to 0.7.5 with 279 procedures, 75 MCP tools, 288 compliance guides"

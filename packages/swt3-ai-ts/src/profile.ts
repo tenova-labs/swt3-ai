@@ -18,6 +18,7 @@ export const RECOMMENDED_PROCEDURES: Record<string, string[]> = {
   "defense-govcon": ["AI-INF.1", "AI-GRD.1", "AI-MDL.1", "AI-ID.1", "AI-SEC.1"],
   "healthcare-clinical": ["AI-INF.1", "AI-GRD.1", "AI-FAIR.1", "AI-DATA.1", "AI-HITL.1", "AI-EXPL.1"],
   "fintech-model-risk": ["AI-INF.1", "AI-GRD.1", "AI-MDL.1", "AI-FAIR.1", "AI-EXPL.1"],
+  "si-accord-2026": ["AI-ACC.1", "AI-SHELL.1", "AI-MCP.2", "AI-MCP.6", "AI-SEC.1", "AI-GRD.1", "AI-DENSITY.1", "AI-DRIFT.1", "AI-DRIFT.2", "AI-INCIDENT.1", "AI-INF.1", "AI-AUDIT.1", "AI-ASSESS.1", "AI-EXPL.1", "AI-GOV.1", "AI-EMRG.1"],
 };
 
 export interface GenerateProfileOptions {

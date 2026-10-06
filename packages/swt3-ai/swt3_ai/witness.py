@@ -5352,6 +5352,93 @@ class Witness:
 
         return payload.anchor_fingerprint
 
+    def query_trust(self, target_agent: str) -> Dict[str, Any]:
+        """Query trust score for a target agent.
+
+        Computes a trust score based on the target agent's witness anchor
+        history within this tenant. Scores range from 0.0 (no trust) to
+        1.0 (full trust), with a recommended clearing level.
+
+        Args:
+            target_agent: Agent ID or DID of the agent to evaluate.
+
+        Returns:
+            Dict with score, confidence, path_type, hops, basis,
+            recommended_clearing, and computed_at_ms.
+        """
+        if not target_agent or not target_agent.strip():
+            raise ValueError("target_agent is required for trust query")
+
+        from_agent = self._config.agent_id or "self"
+        base_url = self._config.endpoint.rstrip("/")
+        # Strip /witness or /api/v1 suffix to get base
+        for suffix in ["/witness", "/api/v1"]:
+            if base_url.endswith(suffix):
+                base_url = base_url[: -len(suffix)]
+        url = f"{base_url}/api/v1/trust/score"
+
+        import urllib.request
+        import urllib.parse
+        import json as _json
+
+        params = urllib.parse.urlencode(
+            {"agent": target_agent.strip(), "from": from_agent}
+        )
+        req = urllib.request.Request(
+            f"{url}?{params}",
+            headers={
+                "Authorization": f"Bearer {self._config.api_key}",
+                "Accept": "application/json",
+            },
+        )
+        with urllib.request.urlopen(req) as resp:
+            data = _json.loads(resp.read().decode())
+        return data.get("trust", data)
+
+    def assert_trust(self, target_agent: str) -> Dict[str, Any]:
+        """Assert trust in a target agent and mint an AI-TRUST.3 anchor.
+
+        Computes a trust score and records it as immutable witness
+        evidence. Requires Pro tier or higher.
+
+        Args:
+            target_agent: Agent ID or DID of the agent to evaluate.
+
+        Returns:
+            Dict with score, confidence, recommended_clearing, basis,
+            procedure_id, anchor, fingerprint, and assertion_fingerprint.
+        """
+        if not target_agent or not target_agent.strip():
+            raise ValueError("target_agent is required for trust assertion")
+
+        from_agent = self._config.agent_id or "self"
+        base_url = self._config.endpoint.rstrip("/")
+        for suffix in ["/witness", "/api/v1"]:
+            if base_url.endswith(suffix):
+                base_url = base_url[: -len(suffix)]
+        url = f"{base_url}/api/v1/trust/assert"
+
+        import urllib.request
+        import json as _json
+
+        body = _json.dumps({
+            "target_agent": target_agent.strip(),
+            "from_agent": from_agent,
+        }).encode()
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req) as resp:
+            data = _json.loads(resp.read().decode())
+        return data.get("assertion", data)
+
     def manifest(
         self,
         *,

@@ -1,0 +1,61 @@
+# SWT3 Profile: White House SI Accord 2026
+# Joint Commitment on Frontier Responsibilities (Sep 29, 2026)
+# Signed by Google, Meta, NVIDIA, OpenAI, Anthropic, xAI
+#
+# Maps the Accord's 4-layer governance framework to 16 SWT3
+# witness procedures. Voluntary accord -- no statutory penalties,
+# but board committees and external auditors will use the
+# 4-layer structure as their de facto checklist.
+#
+# Usage:
+#   profile: si-accord-2026
+#   api_key_env: SWT3_API_KEY
+#   tenant_id: YOUR_TENANT
+#   agent_id: frontier-model-v1
+
+clearing_level: 1   # Standard (unclassified)
+
+policy:
+  require_agent_id: true
+  require_signing: false    # Voluntary accord, low adoption barrier
+  min_clearing_level: 1
+  required_procedures:
+    # Layer 1: Internal Controls
+    - AI-ACC.1       # Resource access scope witnessing
+    - AI-SHELL.1     # Runtime containment attestation
+    - AI-MCP.2       # Tool integrity (schema drift detection)
+    - AI-MCP.6       # Elicitation consent witnessing
+    - AI-SEC.1       # Security perimeter status
+    - AI-GRD.1       # Guardrail evaluation
+    # Layer 2: Internal Monitoring & Detection
+    - AI-DENSITY.1   # Witnessing coverage density
+    - AI-DRIFT.1     # Configuration drift baseline
+    - AI-DRIFT.2     # Consequence-mapped drift threshold response
+    - AI-INCIDENT.1  # Incident lifecycle chain
+    - AI-INF.1       # Inference prompt/response hashing
+    # Layer 3: Independent External Assessments
+    - AI-AUDIT.1     # Audit log integrity
+    - AI-ASSESS.1    # Champion-challenger assessment
+    - AI-EXPL.1      # Explainability metadata
+    # Layer 4: Board Committee Oversight
+    - AI-GOV.1       # Governance policy attestation
+    - AI-EMRG.1      # Emergency override lifecycle
+
+trust_mesh:
+  mode: standard
+  min_trust_level: 2
+  require_signature: false
+  freshness_window: 3600      # 1 hour
+
+density_policy:
+  min_anchors_per_1000_tokens: 2
+  max_chain_gap_seconds: 300
+  require_signing_key: false
+
+mcp_policy:
+  witnessed_tools: ["*"]
+  auto_witness: true
+  block_on_failure: false     # Voluntary -- observe, don't block
+  max_velocity: "20/60s"
+  max_chain_depth: 10
+  fail_secure: false

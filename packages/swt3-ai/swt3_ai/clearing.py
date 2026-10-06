@@ -28,7 +28,7 @@ from .types import InferenceRecord, WitnessPayload
 from .fingerprint import mint_fingerprint, sha256_truncated, timestamp_ms
 
 
-# All AI procedures from the SWT3 AI Witnessing Profile (76 total)
+# All AI procedures from the SWT3 AI Witnessing Profile
 AI_PROCEDURES = [
     "AI-INF.1",  # Inference Provenance
     "AI-INF.2",  # Inference Latency
@@ -92,6 +92,14 @@ AI_PROCEDURES = [
     "AI-CTX.1",       # Context Window Management Attestation (v0.7.2)
     "AI-SAND.1",      # Sandbox Enforcement Attestation (v0.7.2)
     "AI-GATE.1",      # Eval Gate Decision Attestation (v0.7.2)
+    "AI-A2A.1",       # Task Delegation Lifecycle (v0.7.3)
+    "AI-A2A.2",       # Agent Card Discovery (v0.7.3)
+    "AI-A2A.3",       # Context Chain Linking (v0.7.3)
+    "AI-MCP.5",       # OAuth Token Binding (v0.7.3)
+    "AI-DIST.1",      # Knowledge Distillation Provenance (v0.7.4)
+    "AI-MCP.6",       # MCP Elicitation Consent (v0.7.4)
+    "AI-SHELL.1",     # Runtime Containment Attestation (v0.7.4)
+    "AI-TRUST.3",     # Trust Propagation Assertion (v0.7.5)
 ]
 
 # Revocation reason code mapping
