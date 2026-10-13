@@ -28,37 +28,92 @@ from .types import InferenceRecord, WitnessPayload
 from .fingerprint import mint_fingerprint, sha256_truncated, timestamp_ms
 
 
-# All AI procedures from the SWT3 AI Witnessing Profile
+# All SWT3 procedures recognized by the clearing engine.
+# Kept in sync with uct-registry.json and procedures.py.
+# INF-namespace (NIST 800-53) procedures are adjudicated server-side, not via the SDK.
 AI_PROCEDURES = [
-    "AI-INF.1",  # Inference Provenance
-    "AI-INF.2",  # Inference Latency
-    "AI-INF.3",  # Inference Volume (not per-inference — tracked separately)
-    "AI-MDL.1",  # Model Weight Integrity
-    "AI-MDL.2",  # Model Version Tracking
-    "AI-GRD.1",  # Guardrail Enforcement
-    "AI-GRD.2",  # Content Safety Filter
-    "AI-GRD.3",  # Gatekeeper Gate (pre-call enforcement)
-    "AI-EXPL.2", # Confidence Scoring (when available)
-    "AI-REV.1",  # Anchor Revocation
-    "AI-SEC.1",  # Adversarial Detection
-    "AI-SEC.2",  # Input Validation
-    "AI-RAG.1",  # Context Retrieval Provenance
-    "AI-RAG.2",  # Context Relevance
-    "AI-MDL.5",  # Weight File Integrity
-    "AI-MDL.6",  # Adapter Stack Attestation
-    "AI-MDL.7",  # Quantization Attestation
-    "AI-SKILL.1",  # Skill Manifest Attestation
-    "AI-SKILL.2",  # Memory Context Binding
-    "AI-SKILL.3",  # Reward Model Binding
-    "AI-MARK.1",   # Content Provenance Marking
-    "AI-BASE.1",   # Agent Behavioral Baseline
-    "AI-LIC.1",    # License Provenance
+    # ── Core Inference ──
+    "AI-INF.1",       # Inference Provenance
+    "AI-INF.2",       # Inference Latency
+    "AI-INF.3",       # Inference Volume
+    # ── Model Governance ──
+    "AI-MDL.1",       # Model Weight Integrity
+    "AI-MDL.2",       # Model Version Tracking
+    "AI-MDL.3",       # Model Provenance
+    "AI-MDL.4",       # Feedback Loop Control
+    "AI-MDL.5",       # Weight File Integrity
+    "AI-MDL.6",       # Adapter Stack Attestation
+    "AI-MDL.7",       # Quantization Attestation
+    "AI-MDL.8",       # Model Registry Attestation
+    # ── Guardrails ──
+    "AI-GRD.1",       # Guardrail Enforcement
+    "AI-GRD.2",       # Content Safety Filter
+    "AI-GRD.3",       # Gatekeeper Gate
+    # ── Security ──
+    "AI-SEC.1",       # Adversarial Detection
+    "AI-SEC.2",       # Input Validation
+    # ── RAG ──
+    "AI-RAG.1",       # Context Retrieval Provenance
+    "AI-RAG.2",       # Context Relevance
+    # ── Procedural Knowledge ──
+    "AI-SKILL.1",     # Skill Manifest Attestation
+    "AI-SKILL.2",     # Memory Context Binding
+    "AI-SKILL.3",     # Reward Model Binding
+    # ── Identity & Access ──
+    "AI-ID.1",        # Agent Identity
+    "AI-ACC.1",       # Resource Access Witnessing
+    "AI-TOOL.1",      # Tool Call Witnessing
+    "AI-TOOL.2",      # Tool Permission Attestation
+    # ── Revocation ──
+    "AI-REV.1",       # Anchor Revocation
+    # ── Fairness ──
+    "AI-FAIR.1",      # Bias Detection
+    "AI-FAIR.2",      # Fairness Metrics
+    "AI-FAIR.3",      # Demographic Parity
+    # ── Data Governance ──
+    "AI-DATA.1",      # Training Data Provenance
+    "AI-DATA.2",      # Data Quality Attestation
+    "AI-DATA.3",      # Data Lineage Tracking
+    "AI-DATA.4",      # Data Retention Compliance
+    # ── Human Oversight ──
+    "AI-HITL.1",      # Human Override Capability
+    "AI-HITL.2",      # Human Review Trigger
+    "AI-HITL.3",      # Overseer Identity Capture
+    # ── Explainability ──
+    "AI-EXPL.1",      # Explainability Report
+    "AI-EXPL.2",      # Confidence Scoring
+    # ── Chain / Multi-Agent ──
+    "AI-CHAIN.1",     # Multi-Agent Chain Witnessing
+    "AI-CHAIN.2",     # Chain Trust Degradation
+    "AI-MULTI.1",     # Multi-Agent Delegation
+    # ── Policy & Safety ──
+    "AI-VIO.1",       # Policy Violation Recording
+    "AI-CHR.1",       # Agent Charter Attestation
+    "AI-SAFE.1",      # Safety Boundary Attestation
+    "AI-SAFE.2",      # Agent Interrupt Witnessing
+    # ── Hardware ──
+    "AI-HW.1",        # Hardware Attestation
+    "AI-HW.3",        # Key Attestation
+    # ── Trust ──
+    "AI-TRUST.1",     # Trust Credential Verification
+    "AI-TRUST.2",     # Trust Credential Presentation
+    "AI-TRUST.3",     # Trust Propagation Assertion
+    # ── Environment ──
+    "AI-ENV.1",       # Environment Attestation
+    "AI-ENV.2",       # Runtime Isolation
+    # ── Content & Provenance ──
+    "AI-MARK.1",      # Content Provenance Marking
+    "AI-BASE.1",      # Agent Behavioral Baseline
+    "AI-LIC.1",       # License Provenance
+    "AI-PROV.1",      # Model Provenance Chain
+    # ── Compliance & Reporting ──
     "AI-SBOM.1",      # AI Bill of Materials
     "AI-REDTEAM.1",   # Adversarial Test Campaign
     "AI-CONSENT.1",   # Data Subject Consent
-    "AI-MULTI.1",     # Multi-Agent Delegation
     "AI-DRIFT.1",     # Model Drift Detection
+    "AI-DRIFT.2",     # Consequence-Mapped Drift
     "AI-AUDIT.1",     # Audit Log Integrity
+    "AI-AUDIT.2",     # External Timestamp Attestation
     "AI-INCIDENT.1",  # Incident Reporting
     "AI-PERF.1",      # Performance Metrics
     "AI-ROBUST.1",    # Robustness Testing
@@ -68,13 +123,24 @@ AI_PROCEDURES = [
     "AI-DPIA.1",      # Data Protection Impact Assessment
     "AI-AUTO.1",      # Automated Decision Notification
     "AI-AUTO.2",      # Autonomous Generation Depth
-    "AI-AUDIT.2",     # External Timestamp Attestation
     "AI-DUALUSE.1",   # Dual-Use Model Classification
     "AI-SUPPLY.1",    # Supply Chain Risk
     "AI-PMM.1",       # Post-Market Monitoring
+    "AI-IMPACT.1",    # Fundamental Rights Impact Assessment
+    "AI-LOG.1",       # Logging Completeness Attestation
+    "AI-SAMPLE.1",    # Probabilistic Witnessing Summary
+    "AI-DENSITY.1",   # Witnessing Density Attestation
+    # ── Governance ──
+    "AI-GOV.1",       # Governance Framework Attestation
+    "AI-GOV.2",       # Governance Review Cadence
+    "AI-GOV.3",       # Governance Escalation Path
+    "AI-GOV.4",       # Governance Update Tracking
+    "AI-GOV.5",       # Governance Accountability Assignment
     "AI-GOV.6",       # AI Risk Management Scope Definition
+    "AI-GOV.7",       # AI Governance Resource Allocation
     "AI-RISK.1",      # AI Risk Identification and Categorization
     "AI-IR.1",        # AI Incident Response Capability
+    # ── Meta-Governance ──
     "AI-METAGOV.1",   # Governance Infrastructure Attestation
     "AI-METAGOV.2",   # Governance Layer Registration
     "AI-METAGOV.3",   # Policy Downgrade Detection
@@ -83,23 +149,101 @@ AI_PROCEDURES = [
     "AI-METAGOV.6",   # Emergency Override Attestation
     "AI-METAGOV.7",   # Governance Sync Verification
     "AI-METAGOV.8",   # Attestation Purity Verification
-    "AI-EMRG.1",      # Emergency Override Lifecycle (v6.0)
-    "AI-DRIFT.2",     # Consequence-Mapped Drift (v6.0)
-    "AI-ASSESS.1",    # Champion-Challenger Assessment (v6.0)
-    "AI-COST.1",      # Resource Consumption Witnessing (v6.1)
-    "AI-ORCH.1",      # Orchestration Topology Attestation (v0.7.2)
-    "AI-ORCH.2",      # Inter-Agent Handoff Attestation (v0.7.2)
-    "AI-CTX.1",       # Context Window Management Attestation (v0.7.2)
-    "AI-SAND.1",      # Sandbox Enforcement Attestation (v0.7.2)
-    "AI-GATE.1",      # Eval Gate Decision Attestation (v0.7.2)
-    "AI-A2A.1",       # Task Delegation Lifecycle (v0.7.3)
-    "AI-A2A.2",       # Agent Card Discovery (v0.7.3)
-    "AI-A2A.3",       # Context Chain Linking (v0.7.3)
-    "AI-MCP.5",       # OAuth Token Binding (v0.7.3)
-    "AI-DIST.1",      # Knowledge Distillation Provenance (v0.7.4)
-    "AI-MCP.6",       # MCP Elicitation Consent (v0.7.4)
-    "AI-SHELL.1",     # Runtime Containment Attestation (v0.7.4)
-    "AI-TRUST.3",     # Trust Propagation Assertion (v0.7.5)
+    # ── Engineering / Design ──
+    "AI-ENG.1",       # Design Generation Provenance
+    "AI-ENG.2",       # Simulation Validation
+    "AI-ENG.3",       # Safety-Critical Review Gate
+    "AI-ENG.4",       # Material Specification Compliance
+    "AI-ENG.5",       # Design Revision Chain
+    "AI-ENG.6",       # Fabrication Release Attestation
+    # ── Agentic Infrastructure ──
+    "AI-FIN.1",       # Agent Transaction Witnessing
+    "AI-LCM.1",       # Agent Lifecycle Witnessing
+    "AI-JUR.1",       # Cross-Border Inference Routing
+    "AI-EMRG.1",      # Emergency Override Lifecycle
+    "AI-ASSESS.1",    # Champion-Challenger Assessment
+    "AI-COST.1",      # Resource Consumption Witnessing
+    "AI-DEL.1",       # Delegation Tree Witnessing
+    "AI-DEL.2",       # Delegation Boundary Attestation
+    "AI-DEL.3",       # Delegation Chain Integrity
+    # ── Lifecycle ──
+    "AI-REACH.1",     # Hazard Reachability Attestation
+    "AI-DECOM.1",     # Decommissioning Lifecycle Witness
+    "AI-RECOMM.1",    # Re-commissioning Validation Witness
+    "AI-FREEZE.1",    # Model Parameter Freeze Attestation
+    # ── Mobile / Edge ──
+    "AI-MOB.1",       # SIM-Bound Attestation
+    "AI-MOB.2",       # Roaming Attestation
+    "AI-MOB.3",       # Dual-SIM Policy Enforcement
+    "AI-MOB.4",       # Peer-to-Peer Trust Mesh
+    "AI-MOB.5",       # Bilateral Flush Correlation
+    "AI-MOB.6",       # Trajectory Decision Attestation
+    "AI-MOB.7",       # VLA Inference Witnessing
+    "AI-MOB.8",       # Network Slice Isolation Verification
+    # ── MCP ──
+    "AI-MCP.1",       # MCP Security Posture Attestation
+    "AI-MCP.2",       # Tool Integrity Attestation
+    "AI-MCP.3",       # Server Authentication Attestation
+    "AI-MCP.4",       # Server Discovery Attestation
+    "AI-MCP.5",       # OAuth Token Binding
+    "AI-MCP.6",       # MCP Elicitation Consent
+    # ── Orchestration ──
+    "AI-ORCH.1",      # Orchestration Topology Attestation
+    "AI-ORCH.2",      # Agent Handoff Attestation
+    "AI-CTX.1",       # Context Window Management Attestation
+    "AI-SAND.1",      # Sandbox Enforcement Attestation
+    "AI-SAND.2",      # Scope Boundary Attestation
+    "AI-GATE.1",      # Eval Gate Decision Attestation
+    # ── A2A Protocol ──
+    "AI-A2A.1",       # Task Delegation Lifecycle
+    "AI-A2A.2",       # Agent Card Discovery
+    "AI-A2A.3",       # Context Chain Linking
+    # ── Distillation / Containment ──
+    "AI-DIST.1",      # Knowledge Distillation Provenance
+    "AI-SHELL.1",     # Runtime Containment Attestation
+    # ── Vertical: Non-Human Identity (NHI) ──
+    "NHI-AGENT.1",    # Agent-to-Agent Credential Delegation
+    "NHI-CYCLE.1",    # Credential Lifecycle Event Witnessing
+    "NHI-PRIV.1",     # Privilege Change Witnessing
+    "NHI-REVOKE.1",   # Credential Revocation Attestation
+    "NHI-ROTATE.1",   # Credential Rotation Attestation
+    "NHI-SCOPE.1",    # Credential Scope Attestation
+    # ── Vertical: Hardware Bill of Materials (HBOM) ──
+    "HBOM-INV.1",     # Hardware Inventory Attestation
+    "HBOM-LIFE.1",    # Component Lifecycle Witnessing
+    "HBOM-PUE.1",     # Power Usage Effectiveness Attestation
+    "HBOM-SUPPLY.1",  # Hardware Supply Chain Provenance
+    "HBOM-THERM.1",   # Thermal Profile Attestation
+    "HBOM-WATER.1",   # Water Consumption Witnessing
+    # ── Vertical: Digital Product Passport (DPP) ──
+    "DPP-CHRG.1",     # Charge/Discharge Cycle Witnessing
+    "DPP-DEGRAD.1",   # Battery Degradation Event Witnessing
+    "DPP-EOL.1",      # End-of-Life / Recycling Handoff Witnessing
+    "DPP-SOH.1",      # Battery State of Health Attestation
+    # ── Vertical: Automated Demand Response (ADR) ──
+    "ADR-BASE.1",     # Baseline Consumption Attestation
+    "ADR-CARBON.1",   # Carbon Credit / REC Attestation
+    "ADR-CURT.1",     # Curtailment Verification
+    "ADR-EVENT.1",    # Demand Response Event Witnessing
+    "ADR-GRID.1",     # Grid Signal Correlation Attestation
+    "ADR-SETTLE.1",   # Settlement Data Attestation
+    "ADR-VOLT.1",     # Autonomous Voltage Regulation Witnessing
+    # ── Vertical: Financial Model Risk (FIN) ──
+    "FIN-GOV.1",      # Model Governance Committee Approval
+    "FIN-MON.1",      # Ongoing Performance Monitoring
+    "FIN-MRM.1",      # Model Inventory and Lineage
+    "FIN-OUT.1",      # Outcomes Analysis (Back-testing)
+    "FIN-VAL.1",      # Independent Model Validation
+    # ── Vertical: Construction (CON) ──
+    "CON-ENV.1",      # Environmental Monitoring
+    "CON-FIN.1",      # Payment Attestation
+    "CON-INS.1",      # Inspection Attestation
+    "CON-SAF.1",      # Safety Compliance
+    "CON-STR.1",      # Structural Verification
+    # ── Vertical: Healthcare / Clinical AI (HCF) ──
+    "HCF-DX.1",       # Diagnostic Accountability
+    "HCF-PRIV.1",     # PHI Access Audit
+    "HCF-RX.1",       # Prescription Safety
 ]
 
 # Revocation reason code mapping

@@ -2,7 +2,7 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 [![PyPI](https://img.shields.io/pypi/v/swt3-ai)](https://pypi.org/project/swt3-ai/)
 [![Downloads](https://img.shields.io/pypi/dm/swt3-ai)](https://pypi.org/project/swt3-ai/)
-[![PyPI Top 25%](https://img.shields.io/badge/PyPI-top%2025%25-brightgreen)](https://clickpy.clickhouse.com/dashboard/swt3-ai)
+[![PyPI Top 22%](https://img.shields.io/badge/PyPI-top%2022%25-brightgreen)](https://clickpy.clickhouse.com/dashboard/swt3-ai)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/tenova-labs/swt3-ai/blob/main/LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-io.tenova%2Fswt3--witness-blue)](https://www.npmjs.com/package/@tenova/swt3-mcp)
 
@@ -14,41 +14,58 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies published agent governance requirements in Q3-Q4 2026: NIST announced the AI Agent Interoperability Profile (Q4 2026), FIDO Alliance launched the Agentic Authentication Working Group with Google, Mastercard, Visa, and Stripe, the G7 published 50 minimum elements for AI SBOMs, Singapore updated its Agentic AI Governance Framework, and DORA entered its enforcement year for 22,000+ EU financial entities. Every one of these requires evidence that delegation chains are traceable, scope boundaries are monitored, and agents can be interrupted with a record of what happened.
 
-Three new crosswalk families bring energy, telecom, and machinery safety into SWT3 coverage.
+v0.7.6 adds three procedures that close the last evidence gaps before these standards bodies publish their first normative outputs. Two new adapters bring robotics and NVIDIA NemoClaw into the witness ecosystem.
 
-**Why this matters for Python:** `query_trust()` and `assert_trust()` let Python agent frameworks (LangChain, CrewAI, AutoGen) query an agent's trust score before delegating sensitive tasks and record the propagation decision into the witness chain. Both methods work with the existing `Witness` class and clearing engine.
+**Why this matters for Python:** When a LangChain orchestrator delegates to a CrewAI sub-agent that calls a tool, each hop is a governance event that regulators now expect evidence of. `witness_delegation_chain()` records the chain's completeness. `witness_scope_boundary()` records what happened when actions exceeded declared boundaries. `witness_agent_interrupt()` records that a kill switch was actually pulled and what the outcome was. The NemoClaw adapter consumes NVIDIA policy engine decisions. The ROSClaw adapter consumes ROS 2 robotics audit logs. Both follow the same passive consumer pattern as the OpenShell adapter -- zero external dependencies, zero enforcement, pure evidence collection.
 
 ```python
-score = witness.query_trust("downstream-agent-id")
-witness.assert_trust("downstream-agent-id", score=score)
+# Delegation chain: 5 hops, all linked, complete
+witness.witness_delegation_chain(chain_length=5, orphaned_hops=0, chain_status="complete")
+
+# Scope boundary: 100 actions, 3 flagged out-of-scope, all blocked
+witness.witness_scope_boundary(actions_attempted=100, out_of_scope_actions=3, boundary_response="blocked")
+
+# Agent interrupt: human operator pulled the kill switch, 2 actions suspended, state preserved
+witness.witness_agent_interrupt("human_operator", actions_suspended=2, state_preserved=True)
+
+# NemoClaw adapter: consume policy decisions from NVIDIA's governance stack
+from swt3_ai.adapters.nemoclaw import NemoClawWitness
+ncw = NemoClawWitness(witness=witness)
+ncw.process_event({"request_type": "tool_request", "decision": "deny", "resource": "rm_rf"})
+
+# ROSClaw adapter: consume robotics audit logs from ROS 2 executive layer
+from swt3_ai.adapters.rosclaw import ROSClawWitness
+rcw = ROSClawWitness(witness=witness)
+rcw.process_entry({"entry_type": "action_proposal", "decision": "blocked", "reason": "velocity_bound"})
 ```
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records the operator's report of a delegation chain's completeness -- how many hops, how many orphaned (unlinked) references, and whether the chain from root human authorization to leaf agent is complete, partial, or broken. FIDO Trusted Delegation and NIST AI Agent Standards both require verifiable authorization chains. This is the evidence that proves every hop in a multi-agent delegation was authorized.
+- **AI-SAND.2** (Scope Boundary Attestation): Records what the operator's system reported about actions attempted versus actions flagged as out-of-scope. Singapore IMDA Agentic Framework Dimension 1 requires "bounding risk by controlling the scope of actions agents may take." This procedure witnesses the boundary enforcement report -- not the boundary itself. The operator defines scope; SWT3 records whether it was respected.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records that an interrupt event actually occurred -- who triggered it (human operator, automated threshold, chain break, policy engine, external signal, or peer agent), how many actions were suspended, and whether agent state was preserved for review. EU AI Act Art. 14(4)(e) requires interruptibility. Singapore Consensus Principle 8 requires evidence of interrupt events. AI-SAFE.1 proves the mechanism exists; AI-SAFE.2 proves it was used.
 
-### New SDK Methods
+### 2 New Adapters
 
-- `query_trust()` -- query an agent's propagated trust score before delegating
-- `assert_trust()` -- record a trust propagation decision into the witness chain (AI-TRUST.3)
+- **NemoClaw** (`swt3_ai.adapters.nemoclaw`): Consumes NVIDIA NemoClaw policy engine decisions. NemoClaw sits above OpenShell -- it evaluates policy rules before actions reach the sandbox. This adapter witnesses what NemoClaw allowed, denied, and which rule governed each decision. Mints AI-TOOL.1, AI-SAND.1, AI-ACC.1, AI-TOOL.2, AI-DATA.1 depending on event type. Same passive consumer pattern as OpenShell. Python + TypeScript.
+- **ROSClaw** (`swt3_ai.adapters.rosclaw`): Consumes ROSClaw structured audit log entries from ROS 2 robotics environments. ROSClaw formalizes the boundary between cognition and actuation with an append-only audit log. This adapter witnesses action proposals (executed/blocked), safety violations (velocity bounds, keep-out zones), capability discovery, and observations. Zero ROS dependencies -- reads structured log output, does not import rospy. Python only.
 
-### New Crosswalks and Profiles
+### New Crosswalks and Frameworks
 
-- **NERC CIP** crosswalk (45 mappings) -- first energy grid AI governance crosswalk, CIP-002 through CIP-014
-- **EU Machinery Regulation** (2023/1230) crosswalk -- 18 procedures across 7 provisions, enforcement January 20, 2027
-- 3GPP R19 (16 mappings) + ITU-T AI (12 mappings) -- telecom network AI governance
-- SI Accord 2026 CLI profile (`--profile si-accord-2026`) -- international AI safety treaty compliance
-- Energy grid CLI profile (`--profile energy-grid`) -- sector-specific scanning for NERC CIP environments
+- **G7 AI-SBOM** (50 minimum elements across 7 clusters) -- maps the G7 Cybersecurity Working Group's May 2026 AI SBOM guidance to 18 SWT3 procedures. Every cluster covered: metadata, models, datasets, system properties, KPIs, security, infrastructure. This will appear in procurement requirements.
+- **DORA** (EU Digital Operational Resilience Act) -- 20 procedure mappings covering ICT risk management, incident reporting, third-party risk, and resilience testing for 22,000+ EU financial entities. ECB AI-Cyber supervisory letter (SSM-2026-0301) integrated as a subsection.
+- **Singapore IMDA Agentic MGF** -- 24 procedure mappings seeded across all 4 dimensions (risk bounding, human accountability, technical controls, end-user responsibility). World's first mandatory agentic AI governance framework.
+- **NIST Agent Profile** -- framework template pre-mapped to all 3 announced pillars (identity/auth, action logging, containment). Ready to populate same-day when the spec publishes Q4 2026.
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 75 MCP tools, 288 compliance guides, 84 regulatory frameworks
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html) | [EU Machinery Regulation](https://sovereign.tenova.io/guides/eu-machinery-regulation-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 75 MCP tools, 310 compliance guides, 85 regulatory frameworks, 43 adapters
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html) | [EU Art. 50 Watermarking](https://sovereign.tenova.io/guides/eu-article-50-code-of-practice.html)
 
 ## What's New in v0.7.4
 

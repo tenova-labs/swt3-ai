@@ -13,7 +13,7 @@ interface ProcedureEntry {
   namespace: string;
 }
 
-/** 115 AI procedures across 62 namespaces. */
+/** 173 AI/vertical procedures across 10 namespaces. Synced with uct-registry.json. */
 export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-INF.1", name: "Inference Provenance", namespace: "INF" },
   { id: "AI-INF.2", name: "Inference Latency", namespace: "INF" },
@@ -47,6 +47,7 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-DATA.4", name: "Data Retention Compliance", namespace: "DATA" },
   { id: "AI-HITL.1", name: "Human Override Capability", namespace: "HITL" },
   { id: "AI-HITL.2", name: "Human Review Trigger", namespace: "HITL" },
+  { id: "AI-HITL.3", name: "Overseer Identity Capture", namespace: "HITL" },
   { id: "AI-EXPL.1", name: "Explainability Report", namespace: "EXPL" },
   { id: "AI-EXPL.2", name: "Confidence Scoring", namespace: "EXPL" },
   { id: "AI-CHAIN.1", name: "Multi-Agent Chain Witnessing", namespace: "CHAIN" },
@@ -54,20 +55,24 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-VIO.1", name: "Policy Violation Recording", namespace: "VIO" },
   { id: "AI-CHR.1", name: "Agent Charter Attestation", namespace: "CHR" },
   { id: "AI-SAFE.1", name: "Safety Boundary Attestation", namespace: "SAFE" },
+  { id: "AI-SAFE.2", name: "Agent Interrupt Witnessing", namespace: "SAFE" },
   { id: "AI-HW.1", name: "Hardware Attestation", namespace: "HW" },
   { id: "AI-HW.3", name: "Key Attestation", namespace: "HW" },
   { id: "AI-TRUST.1", name: "Trust Credential Verification", namespace: "TRUST" },
   { id: "AI-TRUST.2", name: "Trust Credential Presentation", namespace: "TRUST" },
+  { id: "AI-TRUST.3", name: "Trust Propagation Assertion", namespace: "TRUST" },
   { id: "AI-ENV.1", name: "Environment Attestation", namespace: "ENV" },
   { id: "AI-ENV.2", name: "Runtime Isolation", namespace: "ENV" },
   { id: "AI-MARK.1", name: "Content Provenance Marking", namespace: "MARK" },
   { id: "AI-BASE.1", name: "Agent Behavioral Baseline", namespace: "BASE" },
   { id: "AI-LIC.1", name: "License Provenance", namespace: "LIC" },
+  { id: "AI-PROV.1", name: "Model Provenance Chain", namespace: "PROV" },
   { id: "AI-SBOM.1", name: "AI Bill of Materials", namespace: "SBOM" },
   { id: "AI-REDTEAM.1", name: "Adversarial Test Campaign", namespace: "REDTEAM" },
   { id: "AI-CONSENT.1", name: "Data Subject Consent", namespace: "CONSENT" },
   { id: "AI-MULTI.1", name: "Multi-Agent Delegation", namespace: "MULTI" },
   { id: "AI-DRIFT.1", name: "Model Drift Detection", namespace: "DRIFT" },
+  { id: "AI-DRIFT.2", name: "Consequence-Mapped Drift", namespace: "DRIFT" },
   { id: "AI-AUDIT.1", name: "Audit Log Integrity", namespace: "AUDIT" },
   { id: "AI-AUDIT.2", name: "External Timestamp Attestation", namespace: "AUDIT" },
   { id: "AI-INCIDENT.1", name: "Incident Reporting", namespace: "INCIDENT" },
@@ -82,9 +87,21 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-DUALUSE.1", name: "Dual-Use Model Classification", namespace: "DUALUSE" },
   { id: "AI-SUPPLY.1", name: "Supply Chain Risk", namespace: "SUPPLY" },
   { id: "AI-PMM.1", name: "Post-Market Monitoring", namespace: "PMM" },
+  { id: "AI-IMPACT.1", name: "Fundamental Rights Impact Assessment", namespace: "IMPACT" },
+  { id: "AI-LOG.1", name: "Logging Completeness Attestation", namespace: "LOG" },
+  { id: "AI-SAMPLE.1", name: "Probabilistic Witnessing Summary", namespace: "SAMPLE" },
+  { id: "AI-DENSITY.1", name: "Witnessing Density Attestation", namespace: "DENSITY" },
+  // Governance
+  { id: "AI-GOV.1", name: "Governance Framework Attestation", namespace: "GOV" },
+  { id: "AI-GOV.2", name: "Governance Review Cadence", namespace: "GOV" },
+  { id: "AI-GOV.3", name: "Governance Escalation Path", namespace: "GOV" },
+  { id: "AI-GOV.4", name: "Governance Update Tracking", namespace: "GOV" },
+  { id: "AI-GOV.5", name: "Governance Accountability Assignment", namespace: "GOV" },
   { id: "AI-GOV.6", name: "AI Risk Management Scope Definition", namespace: "GOV" },
+  { id: "AI-GOV.7", name: "AI Governance Resource Allocation", namespace: "GOV" },
   { id: "AI-RISK.1", name: "AI Risk Identification and Categorization", namespace: "RISK" },
   { id: "AI-IR.1", name: "AI Incident Response Capability", namespace: "IR" },
+  // Meta-Governance
   { id: "AI-METAGOV.1", name: "Governance Infrastructure Attestation", namespace: "METAGOV" },
   { id: "AI-METAGOV.2", name: "Governance Layer Registration", namespace: "METAGOV" },
   { id: "AI-METAGOV.3", name: "Policy Downgrade Detection", namespace: "METAGOV" },
@@ -93,58 +110,104 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-METAGOV.6", name: "Emergency Override Attestation", namespace: "METAGOV" },
   { id: "AI-METAGOV.7", name: "Governance Sync Verification", namespace: "METAGOV" },
   { id: "AI-METAGOV.8", name: "Attestation Purity Verification", namespace: "METAGOV" },
+  // Engineering / Design
   { id: "AI-ENG.1", name: "Design Generation Provenance", namespace: "ENG" },
   { id: "AI-ENG.2", name: "Simulation Validation", namespace: "ENG" },
   { id: "AI-ENG.3", name: "Safety-Critical Review Gate", namespace: "ENG" },
   { id: "AI-ENG.4", name: "Material Specification Compliance", namespace: "ENG" },
   { id: "AI-ENG.5", name: "Design Revision Chain", namespace: "ENG" },
   { id: "AI-ENG.6", name: "Fabrication Release Attestation", namespace: "ENG" },
-  // Frontier (v0.5.7: agentic infrastructure)
+  // Agentic Infrastructure
   { id: "AI-FIN.1", name: "Agent Transaction Witnessing", namespace: "FIN" },
   { id: "AI-TOOL.2", name: "Tool Permission Attestation", namespace: "TOOL" },
   { id: "AI-LCM.1", name: "Agent Lifecycle Witnessing", namespace: "LCM" },
   { id: "AI-JUR.1", name: "Cross-Border Inference Routing", namespace: "JUR" },
-  // Operational Governance (v6.0)
   { id: "AI-EMRG.1", name: "Emergency Override Lifecycle", namespace: "EMRG" },
-  { id: "AI-DRIFT.2", name: "Consequence-Mapped Drift", namespace: "DRIFT" },
   { id: "AI-ASSESS.1", name: "Champion-Challenger Assessment", namespace: "ASSESS" },
-  // Resource Governance (v6.1)
   { id: "AI-COST.1", name: "Resource Consumption Witnessing", namespace: "COST" },
   { id: "AI-DEL.1", name: "Delegation Tree Witnessing", namespace: "DEL" },
-  // Lifecycle Governance (v0.6.4)
+  { id: "AI-DEL.2", name: "Delegation Boundary Attestation", namespace: "DEL" },
+  { id: "AI-DEL.3", name: "Delegation Chain Integrity", namespace: "DEL" },
+  // Lifecycle
   { id: "AI-REACH.1", name: "Hazard Reachability Attestation", namespace: "REACH" },
   { id: "AI-DECOM.1", name: "Decommissioning Lifecycle Witness", namespace: "DECOM" },
   { id: "AI-RECOMM.1", name: "Re-commissioning Validation Witness", namespace: "RECOMM" },
   { id: "AI-FREEZE.1", name: "Model Parameter Freeze Attestation", namespace: "FREEZE" },
-  // Mobile Edge Governance (v0.6.3)
+  { id: "AI-MDL.4", name: "Feedback Loop Control", namespace: "MDL" },
+  { id: "AI-MDL.8", name: "Model Registry Attestation", namespace: "MDL" },
+  // Mobile / Edge
+  { id: "AI-MOB.1", name: "SIM-Bound Attestation", namespace: "MOB" },
+  { id: "AI-MOB.2", name: "Roaming Attestation", namespace: "MOB" },
+  { id: "AI-MOB.3", name: "Dual-SIM Policy Enforcement", namespace: "MOB" },
+  { id: "AI-MOB.4", name: "Peer-to-Peer Trust Mesh", namespace: "MOB" },
+  { id: "AI-MOB.5", name: "Bilateral Flush Correlation", namespace: "MOB" },
   { id: "AI-MOB.6", name: "Trajectory Decision Attestation", namespace: "MOB" },
   { id: "AI-MOB.7", name: "VLA Inference Witnessing", namespace: "MOB" },
-  // Delegation Governance (v0.6.6)
-  { id: "AI-DEL.2", name: "Delegation Boundary Attestation", namespace: "DEL" },
-  { id: "AI-DENSITY.1", name: "Witnessing Density Attestation", namespace: "DENSITY" },
+  { id: "AI-MOB.8", name: "Network Slice Isolation Verification", namespace: "MOB" },
+  // MCP
   { id: "AI-MCP.1", name: "MCP Security Posture Attestation", namespace: "MCP" },
   { id: "AI-MCP.2", name: "Tool Integrity Attestation", namespace: "MCP" },
   { id: "AI-MCP.3", name: "Server Authentication Attestation", namespace: "MCP" },
   { id: "AI-MCP.4", name: "Server Discovery Attestation", namespace: "MCP" },
-  { id: "AI-MCP.5", name: "OAuth Token Binding Attestation", namespace: "AI" },
-  { id: "AI-PROV.1", name: "Model Provenance Chain", namespace: "PROV" },
-  // Harness Governance (v0.7.2)
+  { id: "AI-MCP.5", name: "OAuth Token Binding Attestation", namespace: "MCP" },
+  { id: "AI-MCP.6", name: "MCP Elicitation Consent Witnessing", namespace: "MCP" },
+  // Orchestration
   { id: "AI-ORCH.1", name: "Orchestration Topology Attestation", namespace: "ORCH" },
   { id: "AI-ORCH.2", name: "Agent Handoff Attestation", namespace: "ORCH" },
   { id: "AI-CTX.1", name: "Context Window Management Attestation", namespace: "CTX" },
   { id: "AI-SAND.1", name: "Sandbox Enforcement Attestation", namespace: "SAND" },
+  { id: "AI-SAND.2", name: "Scope Boundary Attestation", namespace: "SAND" },
   { id: "AI-GATE.1", name: "Eval Gate Decision Attestation", namespace: "GATE" },
-  // A2A Protocol Governance (v0.7.3)
+  // A2A Protocol
   { id: "AI-A2A.1", name: "Task Delegation Lifecycle Attestation", namespace: "A2A" },
   { id: "AI-A2A.2", name: "Agent Card Discovery Attestation", namespace: "A2A" },
   { id: "AI-A2A.3", name: "Context Chain Linking Attestation", namespace: "A2A" },
-  // Distillation + MCP Elicitation (v0.7.4)
+  // Distillation / Containment
   { id: "AI-DIST.1", name: "Knowledge Distillation Provenance", namespace: "DIST" },
-  { id: "AI-MCP.6", name: "MCP Elicitation Consent Witnessing", namespace: "MCP" },
-  // Healthcare / Clinical AI (HCF)
+  { id: "AI-SHELL.1", name: "Runtime Containment Attestation", namespace: "SHELL" },
+  // Vertical: Non-Human Identity (NHI)
+  { id: "NHI-AGENT.1", name: "Agent-to-Agent Credential Delegation", namespace: "NHI" },
+  { id: "NHI-CYCLE.1", name: "Credential Lifecycle Event Witnessing", namespace: "NHI" },
+  { id: "NHI-PRIV.1", name: "Privilege Change Witnessing", namespace: "NHI" },
+  { id: "NHI-REVOKE.1", name: "Credential Revocation Attestation", namespace: "NHI" },
+  { id: "NHI-ROTATE.1", name: "Credential Rotation Attestation", namespace: "NHI" },
+  { id: "NHI-SCOPE.1", name: "Credential Scope Attestation", namespace: "NHI" },
+  // Vertical: Hardware Bill of Materials (HBOM)
+  { id: "HBOM-INV.1", name: "Hardware Inventory Attestation", namespace: "HBOM" },
+  { id: "HBOM-LIFE.1", name: "Component Lifecycle Witnessing", namespace: "HBOM" },
+  { id: "HBOM-PUE.1", name: "Power Usage Effectiveness Attestation", namespace: "HBOM" },
+  { id: "HBOM-SUPPLY.1", name: "Hardware Supply Chain Provenance", namespace: "HBOM" },
+  { id: "HBOM-THERM.1", name: "Thermal Profile Attestation", namespace: "HBOM" },
+  { id: "HBOM-WATER.1", name: "Water Consumption Witnessing", namespace: "HBOM" },
+  // Vertical: Digital Product Passport (DPP)
+  { id: "DPP-CHRG.1", name: "Charge/Discharge Cycle Witnessing", namespace: "DPP" },
+  { id: "DPP-DEGRAD.1", name: "Battery Degradation Event Witnessing", namespace: "DPP" },
+  { id: "DPP-EOL.1", name: "End-of-Life / Recycling Handoff Witnessing", namespace: "DPP" },
+  { id: "DPP-SOH.1", name: "Battery State of Health Attestation", namespace: "DPP" },
+  // Vertical: Automated Demand Response (ADR)
+  { id: "ADR-BASE.1", name: "Baseline Consumption Attestation", namespace: "ADR" },
+  { id: "ADR-CARBON.1", name: "Carbon Credit / REC Attestation", namespace: "ADR" },
+  { id: "ADR-CURT.1", name: "Curtailment Verification", namespace: "ADR" },
+  { id: "ADR-EVENT.1", name: "Demand Response Event Witnessing", namespace: "ADR" },
+  { id: "ADR-GRID.1", name: "Grid Signal Correlation Attestation", namespace: "ADR" },
+  { id: "ADR-SETTLE.1", name: "Settlement Data Attestation", namespace: "ADR" },
+  { id: "ADR-VOLT.1", name: "Autonomous Voltage Regulation Witnessing", namespace: "ADR" },
+  // Vertical: Financial Model Risk (FIN)
+  { id: "FIN-GOV.1", name: "Model Governance Committee Approval", namespace: "FIN" },
+  { id: "FIN-MON.1", name: "Ongoing Performance Monitoring", namespace: "FIN" },
+  { id: "FIN-MRM.1", name: "Model Inventory and Lineage", namespace: "FIN" },
+  { id: "FIN-OUT.1", name: "Outcomes Analysis (Back-testing)", namespace: "FIN" },
+  { id: "FIN-VAL.1", name: "Independent Model Validation", namespace: "FIN" },
+  // Vertical: Construction (CON)
+  { id: "CON-ENV.1", name: "Environmental Monitoring", namespace: "CON" },
+  { id: "CON-FIN.1", name: "Payment Attestation", namespace: "CON" },
+  { id: "CON-INS.1", name: "Inspection Attestation", namespace: "CON" },
+  { id: "CON-SAF.1", name: "Safety Compliance", namespace: "CON" },
+  { id: "CON-STR.1", name: "Structural Verification", namespace: "CON" },
+  // Vertical: Healthcare / Clinical AI (HCF)
   { id: "HCF-DX.1", name: "Diagnostic Accountability", namespace: "HCF" },
-  { id: "HCF-RX.1", name: "Prescription Safety", namespace: "HCF" },
   { id: "HCF-PRIV.1", name: "PHI Access Audit", namespace: "HCF" },
+  { id: "HCF-RX.1", name: "Prescription Safety", namespace: "HCF" },
 ];
 
 export function handleProcedures(opts: { namespace?: string; json?: boolean }): void {

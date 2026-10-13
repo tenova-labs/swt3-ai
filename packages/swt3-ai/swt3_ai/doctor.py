@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .schema import validate_schema
 
-VERSION = "0.7.5"
+VERSION = "0.7.6"
 
 
 @dataclass
@@ -248,7 +248,7 @@ def print_doctor_results(checks: List[DoctorCheck], use_json: bool = False, ci_m
 
     print(f"\n  {p} passed, {w} warnings, {fl} failures\n")
 
-    print("  \033[33mNew in v0.7.5:\033[0m Trust Propagation Engine, NERC CIP crosswalk, SI Accord 2026 profile.")
+    print("  \033[33mNew in v0.7.6:\033[0m Delegation chain integrity, scope boundary attestation, agent interrupt witnessing, NemoClaw + ROSClaw adapters.")
     print("  Configure: \033[36mswt3 init --profile eu-ai-act-high-risk\033[0m")
     print("  Docs: https://sovereign.tenova.io/docs/\n")
 

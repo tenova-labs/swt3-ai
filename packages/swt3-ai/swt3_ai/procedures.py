@@ -8,7 +8,7 @@ import json
 import sys
 from typing import Optional, List, Dict
 
-# 166 AI/vertical procedures across 10 namespaces
+# 176 AI/vertical procedures across 10 namespaces (INF controls are server-side only)
 PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-INF.1", "name": "Inference Provenance", "namespace": "INF"},
     {"id": "AI-INF.2", "name": "Inference Latency", "namespace": "INF"},
@@ -49,6 +49,7 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-VIO.1", "name": "Policy Violation Recording", "namespace": "VIO"},
     {"id": "AI-CHR.1", "name": "Agent Charter Attestation", "namespace": "CHR"},
     {"id": "AI-SAFE.1", "name": "Safety Boundary Attestation", "namespace": "SAFE"},
+    {"id": "AI-SAFE.2", "name": "Agent Interrupt Witnessing", "namespace": "SAFE"},
     {"id": "AI-HW.1", "name": "Hardware Attestation", "namespace": "HW"},
     {"id": "AI-HW.3", "name": "Key Attestation", "namespace": "HW"},
     {"id": "AI-TRUST.1", "name": "Trust Credential Verification", "namespace": "TRUST"},
@@ -124,6 +125,7 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-MOB.7", "name": "VLA Inference Witnessing", "namespace": "MOB"},
     # Delegation Governance (v0.6.6)
     {"id": "AI-DEL.2", "name": "Delegation Boundary Attestation", "namespace": "DEL"},
+    {"id": "AI-DEL.3", "name": "Delegation Chain Integrity", "namespace": "DEL"},
     {"id": "AI-DENSITY.1", "name": "Witnessing Density Attestation", "namespace": "DENSITY"},
     {"id": "AI-MCP.1", "name": "MCP Security Posture Attestation", "namespace": "MCP"},
     {"id": "AI-MCP.2", "name": "Tool Integrity Attestation", "namespace": "MCP"},
@@ -136,6 +138,7 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-ORCH.2", "name": "Agent Handoff Attestation", "namespace": "ORCH"},
     {"id": "AI-CTX.1", "name": "Context Window Management Attestation", "namespace": "CTX"},
     {"id": "AI-SAND.1", "name": "Sandbox Enforcement Attestation", "namespace": "SAND"},
+    {"id": "AI-SAND.2", "name": "Scope Boundary Attestation", "namespace": "SAND"},
     {"id": "AI-GATE.1", "name": "Eval Gate Decision Attestation", "namespace": "GATE"},
     # A2A Protocol Governance (v0.7.3)
     {"id": "AI-A2A.1", "name": "Task Delegation Lifecycle Attestation", "namespace": "A2A"},

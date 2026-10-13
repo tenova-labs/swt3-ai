@@ -2,8 +2,8 @@ apiVersion: v2
 name: swt3-witness
 description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 0.7.5
-appVersion: "0.7.5"
+version: 0.7.6
+appVersion: "0.7.6"
 keywords:
   - ai
   - compliance
@@ -33,12 +33,16 @@ annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/changes: |
     - kind: added
-      description: "Trust Propagation Engine: Bayesian-smoothed agent trust scoring with Sybil resistance and transitive decay"
+      description: "AI-DEL.3 Delegation Chain Integrity: verifiable multi-hop agent authorization chains"
     - kind: added
-      description: "AI-TRUST.3 Trust Propagation Assertion procedure with queryTrust/assertTrust SDK methods"
+      description: "AI-SAND.2 Scope Boundary Attestation: evidence of boundary enforcement for agentic AI"
     - kind: added
-      description: "SI Accord 2026 compliance profile for international safety standards"
+      description: "AI-SAFE.2 Agent Interrupt Witnessing: kill switch evidence with state preservation tracking"
     - kind: added
-      description: "NERC CIP (45 mappings), 3GPP R19 (16), ITU-T AI (12) crosswalks"
+      description: "NemoClaw adapter for NVIDIA policy engine decision witnessing"
+    - kind: added
+      description: "ROSClaw adapter for ROS 2 robotics audit log witnessing"
+    - kind: added
+      description: "G7 AI-SBOM, DORA, Singapore IMDA Agentic, NIST Agent Profile crosswalks"
     - kind: changed
-      description: "Underlying SDK updated to 0.7.5 with 279 procedures, 75 MCP tools, 288 compliance guides"
+      description: "Underlying SDK updated to 0.7.6 with 289 procedures, 75 MCP tools, 310 compliance guides"

@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.tenova/swt3-witness",
   "title": "SWT3 AI Witness",
-  "description": "Cryptographic AI governance and audit. 75 tools, 84 frameworks. EU AI Act, NIST, CMMC, MCP Top 10.",
+  "description": "Cryptographic AI governance and audit. 75 tools, 85 frameworks. EU AI Act, NIST, CMMC, DORA, G7 AI-SBOM, MCP Top 10.",
   "websiteUrl": "https://tenova.io",
   "repository": {
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "0.7.5",
+  "version": "0.7.6",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "0.7.5",
+      "version": "0.7.6",
       "transport": {
         "type": "stdio"
       },
@@ -106,7 +106,13 @@
         "trust-propagation",
         "nerc-cip",
         "energy-grid",
-        "si-accord-2026"
+        "si-accord-2026",
+        "delegation-chain-integrity",
+        "scope-boundary-attestation",
+        "agent-interrupt-witnessing",
+        "nemoclaw-adapter",
+        "dora",
+        "g7-ai-sbom"
       ],
       "frameworks": [
         "EU AI Act",
@@ -124,7 +130,11 @@
         "NERC CIP",
         "3GPP R19",
         "ITU-T AI",
-        "EU Machinery Regulation"
+        "EU Machinery Regulation",
+        "DORA",
+        "G7 AI-SBOM",
+        "Singapore IMDA Agentic",
+        "NIST Agent Profile"
       ]
     }
   }

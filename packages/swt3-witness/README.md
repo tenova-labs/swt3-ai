@@ -8,17 +8,17 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap with the Trust Propagation Engine and expands crosswalk coverage to energy, telecom, and international safety treaty frameworks.
+Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures (delegation chain integrity, scope boundary attestation, agent interrupt witnessing) and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for Kubernetes:** Hardware attestation anchors (AI-HW.1) now combine with trust propagation (AI-TRUST.3) to provide infrastructure-to-agent evidence chains. NERC CIP (45 mappings) and 3GPP R19 (16 mappings) crosswalks bring energy grid and telecom environments into SWT3 coverage -- sectors where K8s orchestration is the deployment standard.
+**Why this matters for Kubernetes:** Hardware attestation anchors (AI-HW.1) now combine with the new agent interrupt procedure (AI-SAFE.2) to provide infrastructure-to-agent evidence chains that include operational governance events. When a K8s operator kills an AI agent pod, AI-SAFE.2 records the interrupt with trigger source and state preservation status. G7 AI-SBOM crosswalk (50 elements, 7 clusters) maps supply chain transparency requirements relevant to containerized AI infrastructure. DORA crosswalk (20 mappings) brings EU operational resilience evidence to K8s-orchestrated fintech deployments.
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 84 regulatory frameworks, 288 compliance guides
-- [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html) | [EU Machinery Regulation](https://sovereign.tenova.io/guides/eu-machinery-regulation-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 85 regulatory frameworks, 310 compliance guides
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

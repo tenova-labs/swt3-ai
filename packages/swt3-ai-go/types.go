@@ -1,7 +1,7 @@
 package swt3
 
 // Version is the SDK version.
-const Version = "0.7.5"
+const Version = "0.7.6"
 
 // ClearingLevel defines the data sensitivity tier for witness anchors.
 type ClearingLevel int

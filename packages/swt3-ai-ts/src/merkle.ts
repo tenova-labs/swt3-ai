@@ -11,7 +11,7 @@
  *
  * Tiers:
  *   Session root  -- computed per flush (SDK-side, this file)
- *   Endpoint root -- computed per interval (server-side, daily_merkle_rollups)
+ *   Endpoint root -- computed per interval (server-side, server-side rollup table)
  *
  * Spec: SWT3-SPEC-v1.0.md, Section 6.3 (Enclave Integrity)
  * Patent pending.

@@ -12,21 +12,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for Swift:** AI-TRUST.3 verifies with the existing `SWT3.mintFingerprint()` function. Apple platform agents (Core ML, Secure Enclave) delegating tasks to server-side agents gain trust propagation attestation with the same cryptographic parity as server-side SDKs. NERC CIP (45 mappings) and 3GPP R19 (16 mappings) crosswalks expand coverage for Swift-based edge inference in energy and telecom environments. Zero package changes.
+**Why this matters for Swift:** All three new procedures verify with the existing `SWT3.mintFingerprint()` function -- zero package changes. Apple platform agents (Core ML, Secure Enclave) delegating tasks to server-side agents gain delegation chain and interrupt evidence with the same cryptographic parity as server-side SDKs. The agent interrupt procedure (AI-SAFE.2) is particularly relevant for on-device inference where kill switches must produce auditable evidence. Singapore IMDA Agentic Framework crosswalk coverage (24 mappings) expands APAC governance evidence for Swift-based edge deployments.
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records delegation chain completeness -- hops, orphaned references, chain status.
+- **AI-SAND.2** (Scope Boundary Attestation): Records the operator's boundary enforcement report -- actions attempted, out-of-scope flagged, response taken.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records interrupt events -- trigger source, actions suspended, state preservation.
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 84 regulatory frameworks, 288 compliance guides
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 85 regulatory frameworks, 310 compliance guides
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

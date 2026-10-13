@@ -11,21 +11,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for .NET:** AI-TRUST.3 verifies with the existing `MintFingerprint` function. .NET enterprise agent platforms (Azure AI Foundry, Semantic Kernel) delegating tasks across organizational boundaries gain trust propagation attestation with byte-identical output across all 10 SDK languages. NERC CIP crosswalk coverage (45 mappings) brings energy sector AI governance into .NET compliance pipelines. Zero package changes.
+**Why this matters for .NET:** All three new procedures verify with the existing `MintFingerprint` function -- zero package changes. Azure AI Foundry and Semantic Kernel orchestrators delegating tasks across agent boundaries now have cryptographic evidence of chain completeness, scope enforcement, and interrupt events. DORA crosswalk coverage (20 mappings) is directly relevant to .NET enterprise deployments at EU financial institutions. G7 AI-SBOM crosswalk maps supply chain transparency requirements relevant to any .NET service in a regulated AI pipeline.
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records delegation chain completeness -- hops, orphaned references, chain status.
+- **AI-SAND.2** (Scope Boundary Attestation): Records the operator's boundary enforcement report -- actions attempted, out-of-scope flagged, response taken.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records interrupt events -- trigger source, actions suspended, state preservation.
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 84 regulatory frameworks, 288 compliance guides
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 85 regulatory frameworks, 310 compliance guides
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

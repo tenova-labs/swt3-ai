@@ -103,6 +103,8 @@ PROCEDURE_HINTS: Dict[str, str] = {
     "AI-DRIFT.2": "witness_drift",
     # Delegation + cost
     "AI-DEL.1": "witness_delegation_tree",
+    "AI-DEL.2": "witness_delegation_boundary",
+    "AI-DEL.3": "witness_delegation_chain",
     "AI-COST.1": "witness_resource_consumption",
     # Security
     "AI-SEC.1": "witness_security_scan",
@@ -140,6 +142,7 @@ PROCEDURE_HINTS: Dict[str, str] = {
     "AI-CHR.1": "witness_charter",
     "AI-DUALUSE.1": "witness_dual_use",
     "AI-SAFE.1": "witness_safe_state",
+    "AI-SAFE.2": "witness_agent_interrupt",
     "AI-REDTEAM.1": "witness_red_team",
     "AI-SUPPLY.1": "witness_supply_chain_risk",
     "AI-MULTI.1": "witness_multi_agent_delegation",
@@ -153,6 +156,7 @@ PROCEDURE_HINTS: Dict[str, str] = {
     "AI-ORCH.2": "witness_orchestration_policy",
     "AI-CTX.1": "witness_context_boundary",
     "AI-SAND.1": "witness_sandbox_attestation",
+    "AI-SAND.2": "witness_scope_boundary",
     "AI-GATE.1": "witness_gate_decision",
     # Engineering (safety-critical domains)
     "AI-ENG.1": "witness_design_provenance",

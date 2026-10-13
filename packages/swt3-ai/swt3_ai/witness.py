@@ -2782,6 +2782,49 @@ class Witness:
         self._enqueue_sampled(payload)
         return payload
 
+    # ── Delegation Chain Integrity (AI-DEL.3) ───────────────────────────
+
+    DELEGATION_CHAIN_STATUS_CODES: Dict[str, int] = {"complete": 0, "partial": 1, "broken": 2}
+
+    def witness_delegation_chain(
+        self,
+        chain_length: int,
+        orphaned_hops: int,
+        chain_status: str = "complete",
+        *,
+        root_grant_fingerprint: Optional[str] = None,
+        leaf_grant_fingerprint: Optional[str] = None,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness delegation chain integrity report (AI-DEL.3).
+
+        Records the operator's report of a delegation chain's completeness.
+        Does not verify the chain -- records what the operator's system
+        reported about linkage between delegation hops.
+
+        FIDO Trusted Delegation, NIST AI Agent Standards Initiative,
+        EU AI Act Art. 9(9), Singapore IMDA Agentic Framework.
+        """
+        fa = float(max(chain_length, 0))
+        fb = float(max(orphaned_hops, 0))
+        fc = float(self.DELEGATION_CHAIN_STATUS_CODES.get(chain_status, 0))
+        payload = self._mint_and_sign("AI-DEL.3", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"delegation-chain-{chain_status}"
+            ctx: Dict[str, Any] = {
+                "provider": "delegation-chain",
+                "chain_status": chain_status,
+                "chain_complete": orphaned_hops == 0,
+            }
+            if root_grant_fingerprint:
+                ctx["root_grant_fingerprint"] = root_grant_fingerprint
+            if leaf_grant_fingerprint:
+                ctx["leaf_grant_fingerprint"] = leaf_grant_fingerprint
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
     # ── MCP Security Posture (AI-MCP.1) ──────────────────────────────────
 
     MCP_SECURITY_CHECKS: List[str] = [
@@ -4034,6 +4077,51 @@ class Witness:
         self._enqueue_sampled(payload)
         return payload
 
+    # ── Scope Boundary Attestation (AI-SAND.2) ─────────────────────────
+
+    BOUNDARY_RESPONSE_CODES: Dict[str, int] = {
+        "blocked": 0, "logged": 1, "escalated": 2, "allowed_with_override": 3,
+    }
+
+    def witness_scope_boundary(
+        self,
+        actions_attempted: int,
+        out_of_scope_actions: int,
+        boundary_response: str = "blocked",
+        *,
+        scope_definition_hash: Optional[str] = None,
+        observation_window_ms: int = 0,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness scope boundary attestation (AI-SAND.2).
+
+        Records what the operator's system reported about actions attempted
+        versus actions flagged as out-of-scope. Does not define the scope
+        boundary -- records the operator's boundary enforcement report.
+
+        Singapore IMDA Agentic Framework Dimension 1, NIST AI Agent Standards,
+        EU AI Act Art. 9(2)(a), OWASP Agentic A03.
+        """
+        fa = float(max(actions_attempted, 0))
+        fb = float(max(out_of_scope_actions, 0))
+        fc = float(self.BOUNDARY_RESPONSE_CODES.get(boundary_response, 0))
+        payload = self._mint_and_sign("AI-SAND.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"scope-{'clean' if out_of_scope_actions == 0 else boundary_response}"
+            ctx: Dict[str, Any] = {
+                "provider": "scope-governance",
+                "boundary_response": boundary_response,
+                "scope_clean": out_of_scope_actions == 0,
+            }
+            if scope_definition_hash:
+                ctx["scope_definition_hash"] = scope_definition_hash
+            if observation_window_ms > 0:
+                ctx["observation_window_ms"] = observation_window_ms
+            _merge_governance_metadata(ctx, governance_metadata)
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
     def witness_eval_gate(self, total_evals: int, evals_passed: int, *, gate_score: Optional[int] = None) -> WitnessPayload:
         """Witness eval gate decision (AI-GATE.1).
 
@@ -4330,6 +4418,51 @@ class Witness:
             }
             if mechanism_type:
                 ctx["mechanism_type"] = mechanism_type
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── Agent Interrupt Witnessing (AI-SAFE.2) ──────────────────────────
+
+    INTERRUPT_TRIGGER_CODES: Dict[str, int] = {
+        "human_operator": 0, "automated_threshold": 1, "chain_break": 2,
+        "policy_engine": 3, "external_signal": 4, "peer_agent": 5,
+    }
+
+    def witness_agent_interrupt(
+        self,
+        trigger_source: str,
+        actions_suspended: int = 0,
+        state_preserved: bool = True,
+        *,
+        interrupt_reason: Optional[str] = None,
+        resume_allowed: bool = False,
+        governance_metadata: Optional[Dict[str, Any]] = None,
+    ) -> WitnessPayload:
+        """Witness an agent interrupt event (AI-SAFE.2).
+
+        Records that an interrupt occurred, who/what triggered it, and the
+        operational outcome. Does not trigger the interrupt -- records what
+        the operator's system reported about the event.
+
+        EU AI Act Art. 14(4)(e), Singapore Consensus Principle 8,
+        NIST AI RMF MANAGE 4.1, ISO 42001 A.6.2.5.
+        """
+        fa = float(self.INTERRUPT_TRIGGER_CODES.get(trigger_source, 0))
+        fb = float(max(actions_suspended, 0))
+        fc = 1.0 if state_preserved else 0.0
+        payload = self._mint_and_sign("AI-SAFE.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"interrupt-{trigger_source}"
+            ctx: Dict[str, Any] = {
+                "provider": "interrupt-governance",
+                "trigger_source": trigger_source,
+                "state_preserved": state_preserved,
+                "resume_allowed": resume_allowed,
+            }
+            if interrupt_reason:
+                ctx["interrupt_reason"] = interrupt_reason
+            _merge_governance_metadata(ctx, governance_metadata)
             payload.ai_context = ctx
         self._enqueue_sampled(payload)
         return payload

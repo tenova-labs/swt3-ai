@@ -6,7 +6,7 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK for Go**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external dependencies -- standard library only.
 
-**280 procedures | 77 namespaces | 10 SDKs | Zero dependencies**
+**289 procedures | 10 namespaces | 10 SDKs | Zero dependencies**
 
 Go is the dominant language for backend infrastructure at scale. Kubernetes operators, API gateways, data pipelines, and inference orchestrators are overwhelmingly written in Go. This package gives infrastructure teams the same cryptographic witnessing primitives available in the Python, TypeScript, Rust, C#, Ruby, Swift, and Kotlin SDKs, with zero external dependencies and byte-identical output across all 10 implementations.
 
@@ -14,21 +14,23 @@ EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for Go:** AI-TRUST.3 verifies with the existing `MintFingerprint` function. Go API gateways and Kubernetes operators routing multi-agent traffic gain trust propagation attestation with byte-identical output across all 10 SDK languages. NERC CIP crosswalk coverage (45 mappings, CIP-002 through CIP-014) means Go-based grid control systems and SCADA middleware have a direct path to AI governance evidence. Zero module changes.
+**Why this matters for Go:** All three new procedures verify with the existing `MintFingerprint` function -- zero module changes. Go API gateways and Kubernetes operators routing multi-agent traffic gain delegation chain and interrupt evidence with byte-identical output across all 10 SDK languages. The ROSClaw adapter (Python) consumes ROS 2 audit logs from robotics environments -- Go-based control plane services that orchestrate ROS 2 robots can feed the same evidence chain. DORA crosswalk coverage (20 mappings) brings EU operational resilience evidence to Go fintech microservices. G7 AI-SBOM crosswalk maps supply chain transparency requirements to existing procedures.
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records delegation chain completeness -- hops, orphaned references, chain status.
+- **AI-SAND.2** (Scope Boundary Attestation): Records the operator's boundary enforcement report -- actions attempted, out-of-scope flagged, response taken.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records interrupt events -- trigger source, actions suspended, state preservation.
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 84 regulatory frameworks, 288 compliance guides
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 85 regulatory frameworks, 310 compliance guides
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

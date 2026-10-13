@@ -8,26 +8,30 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies converged on agent governance requirements in Q3-Q4 2026: NIST, FIDO Alliance, G7, Singapore IMDA, and the EU (DORA). v0.7.6 adds three procedures that close the last evidence gaps for delegation chain traceability, scope boundary monitoring, and agent interruptibility.
 
-**Why this matters for MCP:** Two new tools bring the total to 75. Any MCP client can query an agent's trust score before delegating sensitive tasks and record the decision as an AI-TRUST.3 anchor -- no SDK integration required.
+**Why this matters for MCP:** The MCP protocol is explicitly named in the NIST AI Agent Interoperability Profile as a "structural development that requires governance input before fragmentation sets in." Agent interrupt witnessing (AI-SAFE.2) and scope boundary attestation (AI-SAND.2) are directly relevant to MCP tool servers -- when an MCP client's tool call is blocked by policy, that's a governance event that auditors need evidence of. The NIST Agent Profile framework template is pre-mapped and ready to populate same-day when the spec publishes Q4 2026.
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records delegation chain completeness across multi-agent handoffs. When an MCP client delegates to a sub-agent, the chain's integrity is now witnessable.
+- **AI-SAND.2** (Scope Boundary Attestation): Records boundary enforcement reports. When a tool server restricts actions to a declared scope, this procedure witnesses compliance with those boundaries.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records kill switch events with trigger source, suspended actions, and state preservation. Directly maps to EU AI Act Art. 14(4)(e) interruptibility.
 
-### New MCP Tools
+### New Crosswalks
 
-- `query_trust` -- query an agent's propagated trust score before delegating
-- `assert_trust` -- record a trust propagation decision into the witness chain (AI-TRUST.3)
+- **G7 AI-SBOM** -- 50 minimum elements mapped to 18 SWT3 procedures
+- **DORA** -- 20 procedure mappings for EU financial entities
+- **Singapore IMDA Agentic MGF** -- 24 procedure mappings across 4 governance dimensions
+- **NIST Agent Profile** -- framework template pre-mapped to 3 pillars (identity, logging, containment)
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 75 MCP tools, 288 compliance guides, 84 regulatory frameworks
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html)
+- 289 procedures across 10 namespaces
+- 75 MCP tools, 310 compliance guides, 85 regulatory frameworks
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

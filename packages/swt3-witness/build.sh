@@ -2,7 +2,7 @@
 # Build the SWT3 Witness container image.
 #
 # Usage:
-#   ./build.sh              # builds ghcr.io/tenova-labs/swt3-witness:0.7.2
+#   ./build.sh              # builds ghcr.io/tenova-labs/swt3-witness:0.7.6
 #   ./build.sh 1.0.0        # builds with custom tag
 #
 # Prerequisites:
@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-TAG="${1:-0.7.2}"
+TAG="${1:-0.7.6}"
 IMAGE="ghcr.io/tenova-labs/swt3-witness:${TAG}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 STAGE=$(mktemp -d)

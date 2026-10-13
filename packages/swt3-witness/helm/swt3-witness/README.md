@@ -10,10 +10,10 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 ```bash
 # Local mode -- anchors emit as structured JSON to stdout
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.6
 
 # Cloud mode -- anchors flush to the SWT3 clearing house
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2 \
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.6 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT

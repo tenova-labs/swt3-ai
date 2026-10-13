@@ -15,41 +15,53 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
-## What's New in v0.7.5
+## What's New in v0.7.6
 
-Multi-agent systems propagate trust decisions across organizational boundaries with no cryptographic record of why. v0.7.5 closes that gap. The Trust Propagation Engine records how trust was established, how it decays across delegation hops, and maps trust scores to clearing levels -- all witnessed as AI-TRUST.3 anchors.
+Five standards bodies published agent governance requirements in Q3-Q4 2026: NIST announced the AI Agent Interoperability Profile, FIDO Alliance launched the Agentic Authentication Working Group, the G7 published 50 minimum elements for AI SBOMs, Singapore updated its Agentic AI Governance Framework, and DORA entered its enforcement year for EU financial entities. Every one of these requires evidence that delegation chains are traceable, scope boundaries are monitored, and agents can be interrupted with a record of what happened.
 
-Three new crosswalk families bring energy, telecom, and machinery safety into SWT3 coverage.
+v0.7.6 adds three procedures that close the last evidence gaps before these standards bodies publish their first normative outputs. Two new adapters bring robotics and NVIDIA NemoClaw into the witness ecosystem.
 
-**Why this matters for TypeScript:** `queryTrust()` and `assertTrust()` let TypeScript agent frameworks (Vercel AI SDK, LangChain.js, MCP clients) query an agent's trust score before delegating sensitive tasks and record the propagation decision into the witness chain. Both methods work with the existing `Witness` class and clearing engine.
+**Why this matters for TypeScript:** Vercel AI SDK agents, LangChain.js orchestrators, and MCP clients now have three new witness methods for the governance events regulators are converging on. `witnessDelegationChain()` records chain completeness across multi-agent handoffs. `witnessScopeBoundary()` records boundary enforcement reports. `witnessAgentInterrupt()` records kill switch events with full operational context. The NemoClaw adapter (`NemoClawWitness`) consumes NVIDIA policy engine decisions with the same passive pattern as `OpenShellWitness`.
 
 ```typescript
-const score = await witness.queryTrust("downstream-agent-id");
-await witness.assertTrust("downstream-agent-id", { score });
+// Delegation chain: 5 hops, all linked, complete
+witness.witnessDelegationChain({ chainLength: 5, orphanedHops: 0, chainStatus: "complete" });
+
+// Scope boundary: 100 actions, 3 flagged out-of-scope, all blocked
+witness.witnessScopeBoundary({ actionsAttempted: 100, outOfScopeActions: 3, boundaryResponse: "blocked" });
+
+// Agent interrupt: human operator, 2 actions suspended, state preserved
+witness.witnessAgentInterrupt({ triggerSource: "human_operator", actionsSuspended: 2 });
+
+// NemoClaw adapter
+import { NemoClawWitness } from "@tenova/swt3-ai/adapters/nemoclaw";
+const ncw = new NemoClawWitness(witness);
+ncw.processEvent({ request_type: "tool_request", decision: "deny", resource: "rm_rf" });
 ```
 
-### 1 New Procedure
+### 3 New Procedures
 
-- **AI-TRUST.3** (Trust Propagation Assertion): Records trust scores with Sybil resistance and transitive decay across multi-agent delegation chains.
+- **AI-DEL.3** (Delegation Chain Integrity): Records the operator's report of a delegation chain's completeness -- how many hops, how many orphaned references, and whether the chain is complete, partial, or broken. FIDO Trusted Delegation and NIST AI Agent Standards both require verifiable authorization chains.
+- **AI-SAND.2** (Scope Boundary Attestation): Records what the operator's system reported about actions attempted versus actions flagged as out-of-scope. Singapore IMDA Agentic Framework requires bounding risk by controlling the scope of agent actions. The operator defines scope; SWT3 records whether it was respected.
+- **AI-SAFE.2** (Agent Interrupt Witnessing): Records that an interrupt event occurred, who triggered it, how many actions were suspended, and whether agent state was preserved. AI-SAFE.1 proves the mechanism exists; AI-SAFE.2 proves it was used.
 
-### New SDK Methods
+### 2 New Adapters
 
-- `queryTrust()` -- query an agent's propagated trust score before delegating
-- `assertTrust()` -- record a trust propagation decision into the witness chain (AI-TRUST.3)
+- **NemoClaw** (`@tenova/swt3-ai/adapters/nemoclaw`): Consumes NVIDIA NemoClaw policy engine decisions. Witnesses what NemoClaw allowed, denied, and which rule governed each decision. Same passive consumer pattern as OpenShell.
+- **ROSClaw** (Python only): Consumes ROSClaw structured audit log entries from ROS 2 robotics environments. Zero ROS dependencies.
 
-### New Crosswalks and Profiles
+### New Crosswalks and Frameworks
 
-- **NERC CIP** crosswalk (45 mappings) -- first energy grid AI governance crosswalk, CIP-002 through CIP-014
-- **EU Machinery Regulation** (2023/1230) crosswalk -- 18 procedures across 7 provisions, enforcement January 20, 2027
-- 3GPP R19 (16 mappings) + ITU-T AI (12 mappings) -- telecom network AI governance
-- SI Accord 2026 CLI profile (`--profile si-accord-2026`) -- international AI safety treaty compliance
-- Energy grid CLI profile (`--profile energy-grid`) -- sector-specific scanning for NERC CIP environments
+- **G7 AI-SBOM** -- 50 minimum elements across 7 clusters mapped to 18 SWT3 procedures
+- **DORA** -- 20 procedure mappings for EU financial entities, ECB AI-Cyber letter integrated
+- **Singapore IMDA Agentic MGF** -- 24 procedure mappings across all 4 governance dimensions
+- **NIST Agent Profile** -- framework template pre-mapped, ready for same-day population
 
 ### Updated Coverage
 
-- 279 procedures across 10 namespaces
-- 75 MCP tools, 288 compliance guides, 84 regulatory frameworks
-- [Trust Propagation Guide](https://sovereign.tenova.io/guides/agent-trust-propagation.html) | [NERC CIP Crosswalk](https://sovereign.tenova.io/guides/nerc-cip-crosswalk.html) | [EU Machinery Regulation](https://sovereign.tenova.io/guides/eu-machinery-regulation-crosswalk.html)
+- 289 procedures across 10 namespaces
+- 75 MCP tools, 310 compliance guides, 85 regulatory frameworks, 43 adapters
+- [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 

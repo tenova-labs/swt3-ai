@@ -4322,6 +4322,56 @@ export class Witness {
     return payload;
   }
 
+  // ── Scope Boundary Attestation (AI-SAND.2) ─────────────────────────
+
+  /** Boundary response codes for AI-SAND.2. */
+  static readonly BOUNDARY_RESPONSE_CODES: Record<string, number> = {
+    blocked: 0, logged: 1, escalated: 2, allowed_with_override: 3,
+  };
+
+  /**
+   * Witness scope boundary attestation (AI-SAND.2).
+   *
+   * Records what the operator's system reported about actions attempted
+   * versus actions flagged as out-of-scope. Does not define the scope
+   * boundary -- records the operator's boundary enforcement report.
+   */
+  witnessScopeBoundary(options: {
+    actionsAttempted: number;
+    outOfScopeActions: number;
+    boundaryResponse?: string;
+    scopeDefinitionHash?: string;
+    observationWindowMs?: number;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = Math.max(options.actionsAttempted, 0);
+    const fb = Math.max(options.outOfScopeActions, 0);
+    const fc = Witness.BOUNDARY_RESPONSE_CODES[options.boundaryResponse ?? "blocked"] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-SAND.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-SAND.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `scope-${options.outOfScopeActions === 0 ? "clean" : (options.boundaryResponse ?? "blocked")}`;
+      const ctx: Record<string, unknown> = {
+        provider: "scope-governance",
+        boundary_response: options.boundaryResponse ?? "blocked",
+        scope_clean: options.outOfScopeActions === 0,
+      };
+      if (options.scopeDefinitionHash) ctx.scope_definition_hash = options.scopeDefinitionHash;
+      if (options.observationWindowMs && options.observationWindowMs > 0) ctx.observation_window_ms = options.observationWindowMs;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
   /**
    * Witness eval gate decision (AI-GATE.1).
    *
@@ -4638,6 +4688,57 @@ export class Witness {
         provider: "safe-state", mechanism_exists: mechanismExists, safe_state_confirmed: safeStateConfirmed,
       };
       if (options?.mechanismType) ctx.mechanism_type = options.mechanismType;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Agent Interrupt Witnessing (AI-SAFE.2) ────────────────────────
+
+  /** Interrupt trigger codes for AI-SAFE.2. */
+  static readonly INTERRUPT_TRIGGER_CODES: Record<string, number> = {
+    human_operator: 0, automated_threshold: 1, chain_break: 2,
+    policy_engine: 3, external_signal: 4, peer_agent: 5,
+  };
+
+  /**
+   * Witness an agent interrupt event (AI-SAFE.2).
+   *
+   * Records that an interrupt occurred, who/what triggered it, and the
+   * operational outcome. Does not trigger the interrupt -- records what
+   * the operator's system reported about the event.
+   */
+  witnessAgentInterrupt(options: {
+    triggerSource: string;
+    actionsSuspended?: number;
+    statePreserved?: boolean;
+    interruptReason?: string;
+    resumeAllowed?: boolean;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = Witness.INTERRUPT_TRIGGER_CODES[options.triggerSource] ?? 0;
+    const fb = Math.max(options.actionsSuspended ?? 0, 0);
+    const fc = (options.statePreserved ?? true) ? 1 : 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-SAFE.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-SAFE.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `interrupt-${options.triggerSource}`;
+      const ctx: Record<string, unknown> = {
+        provider: "interrupt-governance",
+        trigger_source: options.triggerSource,
+        state_preserved: options.statePreserved ?? true,
+        resume_allowed: options.resumeAllowed ?? false,
+      };
+      if (options.interruptReason) ctx.interrupt_reason = options.interruptReason;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
@@ -5187,6 +5288,56 @@ export class Witness {
       };
       if (options.delegatorId) ctx.delegator_id = options.delegatorId;
       if (options.parentGrantFingerprint) ctx.parent_grant_fingerprint = options.parentGrantFingerprint;
+      mergeGovernanceMetadata(ctx, options.governanceMetadata);
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── Delegation Chain Integrity (AI-DEL.3) ──────────────────────────
+
+  /** Chain status codes for AI-DEL.3. */
+  static readonly DELEGATION_CHAIN_STATUS_CODES: Record<string, number> = {
+    complete: 0, partial: 1, broken: 2,
+  };
+
+  /**
+   * Witness delegation chain integrity report (AI-DEL.3).
+   *
+   * Records the operator's report of a delegation chain's completeness.
+   * Does not verify the chain -- records what the operator's system
+   * reported about linkage between delegation hops.
+   */
+  witnessDelegationChain(options: {
+    chainLength: number;
+    orphanedHops: number;
+    chainStatus?: string;
+    rootGrantFingerprint?: string;
+    leafGrantFingerprint?: string;
+    governanceMetadata?: Record<string, unknown>;
+  }): WitnessPayload {
+    const fa = Math.max(options.chainLength, 0);
+    const fb = Math.max(options.orphanedHops, 0);
+    const fc = Witness.DELEGATION_CHAIN_STATUS_CODES[options.chainStatus ?? "complete"] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-DEL.3", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-DEL.3", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `delegation-chain-${options.chainStatus ?? "complete"}`;
+      const ctx: Record<string, unknown> = {
+        provider: "delegation-chain",
+        chain_status: options.chainStatus ?? "complete",
+        chain_complete: options.orphanedHops === 0,
+      };
+      if (options.rootGrantFingerprint) ctx.root_grant_fingerprint = options.rootGrantFingerprint;
+      if (options.leafGrantFingerprint) ctx.leaf_grant_fingerprint = options.leafGrantFingerprint;
       mergeGovernanceMetadata(ctx, options.governanceMetadata);
       payload.ai_context = ctx;
     }
