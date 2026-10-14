@@ -86,7 +86,8 @@ export interface NemoClawStats {
 
 function getProcedure(event: NemoClawEvent): string | null {
   const requestType = event.request_type ?? "";
-  const decision = (event.decision ?? "allow").toLowerCase();
+  if (event.decision == null) return null;
+  const decision = event.decision.toLowerCase();
 
   const mapping = NEMOCLAW_TO_PROCEDURE[requestType];
   if (!mapping) return null;
@@ -135,7 +136,7 @@ export class NemoClawWitness {
     this.eventsProcessed++;
 
     const timestampMs = event.timestamp ?? Date.now();
-    const decision = (event.decision ?? "allow").toLowerCase();
+    const decision = (event.decision ?? "unknown").toLowerCase();
     const denied = DENIED_DECISIONS.has(decision);
     const resource = event.resource ?? event.request_type ?? "unknown";
     const policyRule = event.policy_rule ?? "default";
@@ -187,17 +188,28 @@ export class NemoClawWitness {
 
     // Dynamic import for Node.js-only modules
     const fs = await import("node:fs");
+    const path = await import("node:path");
     const readline = await import("node:readline");
 
+    // Path validation
+    const resolved = path.resolve(logPath);
+    if (!resolved.endsWith(".jsonl") && !resolved.endsWith(".log")) {
+      throw new Error(`Refusing to tail non-log file: ${resolved}`);
+    }
+
     // Wait for file to exist
-    while (!fs.existsSync(logPath)) {
+    while (!fs.existsSync(resolved)) {
       if (signal?.aborted) return;
       await new Promise((r) => setTimeout(r, pollMs));
     }
 
-    const stream = fs.createReadStream(logPath, {
+    if (!fs.statSync(resolved).isFile()) {
+      throw new Error(`Path is not a regular file: ${resolved}`);
+    }
+
+    const stream = fs.createReadStream(resolved, {
       encoding: "utf-8",
-      start: fs.statSync(logPath).size, // seek to end
+      start: fs.statSync(resolved).size, // seek to end
     });
 
     const rl = readline.createInterface({ input: stream });

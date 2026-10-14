@@ -78,7 +78,9 @@ _DENIED_DECISIONS = {"deny", "fail", "blocked"}
 def _get_procedure(event: Dict[str, Any]) -> Optional[str]:
     """Map a NemoClaw policy event to an SWT3 procedure ID."""
     request_type = event.get("request_type", "")
-    decision = event.get("decision", "allow")
+    decision = event.get("decision")
+    if decision is None:
+        return None
 
     if isinstance(decision, str):
         decision = decision.lower()
@@ -200,6 +202,8 @@ class NemoClawWitness:
             The SWT3 procedure ID that was witnessed, or None if skipped.
         """
         if self._witness is None:
+            self._events_skipped += 1
+            logger.warning("NemoClaw event dropped: witness not configured")
             return None
 
         procedure = _get_procedure(event)
@@ -212,7 +216,7 @@ class NemoClawWitness:
         from ..types import InferenceRecord
 
         timestamp_ms = event.get("timestamp", int(time.time() * 1000))
-        decision = event.get("decision", "allow")
+        decision = event.get("decision", "unknown")
         denied = decision.lower() in _DENIED_DECISIONS if isinstance(decision, str) else False
         resource = event.get("resource", event.get("request_type", "unknown"))
         policy_rule = event.get("policy_rule", "default")
@@ -249,10 +253,16 @@ class NemoClawWitness:
             log_path: Path to the NemoClaw .jsonl decision log.
             poll_interval: Seconds between poll cycles (default 0.5s).
         """
+        log_path = os.path.realpath(log_path)
+        if not log_path.endswith(".jsonl") and not log_path.endswith(".log"):
+            raise ValueError(f"Refusing to tail non-log file: {log_path}")
         logger.info("Watching NemoClaw log: %s", log_path)
 
         while not os.path.exists(log_path):
             await asyncio.sleep(poll_interval)
+
+        if not os.path.isfile(log_path):
+            raise ValueError(f"Path is not a regular file: {log_path}")
 
         with open(log_path, "r") as f:
             f.seek(0, 2)

@@ -92,7 +92,9 @@ def _get_procedure(entry: Dict[str, Any]) -> Optional[str]:
     """Map a ROSClaw audit log entry to an SWT3 procedure ID."""
     entry_type = entry.get("entry_type", "")
     # Decision field varies: d_t for action_proposal, reason for safety_violation
-    decision = entry.get("decision", entry.get("reason", entry.get("status", "")))
+    decision = entry.get("decision", entry.get("reason", entry.get("status")))
+    if decision is None:
+        return None
 
     if isinstance(decision, str):
         decision = decision.lower()
@@ -215,6 +217,8 @@ class ROSClawWitness:
             The SWT3 procedure ID that was witnessed, or None if skipped.
         """
         if self._witness is None:
+            self._entries_skipped += 1
+            logger.warning("ROSClaw entry dropped: witness not configured")
             return None
 
         procedure = _get_procedure(entry)
@@ -227,7 +231,7 @@ class ROSClawWitness:
         from ..types import InferenceRecord
 
         timestamp_ms = entry.get("timestamp", int(time.time() * 1000))
-        decision = entry.get("decision", entry.get("reason", entry.get("status", "unknown")))
+        decision = entry.get("decision", entry.get("reason", entry.get("status"))) or "unknown"
         blocked = decision.lower() in _BLOCKED_DECISIONS if isinstance(decision, str) else False
         action_name = entry.get("action_name", entry.get("entry_type", "unknown"))
         agent_id = entry.get("agent_id", "unknown")
@@ -264,10 +268,16 @@ class ROSClawWitness:
             log_path: Path to the ROSClaw .jsonl audit log.
             poll_interval: Seconds between poll cycles (default 0.5s).
         """
+        log_path = os.path.realpath(log_path)
+        if not log_path.endswith(".jsonl") and not log_path.endswith(".log"):
+            raise ValueError(f"Refusing to tail non-log file: {log_path}")
         logger.info("Watching ROSClaw log: %s", log_path)
 
         while not os.path.exists(log_path):
             await asyncio.sleep(poll_interval)
+
+        if not os.path.isfile(log_path):
+            raise ValueError(f"Path is not a regular file: {log_path}")
 
         with open(log_path, "r") as f:
             f.seek(0, 2)

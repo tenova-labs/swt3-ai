@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .schema import validate_schema
 
-VERSION = "0.7.6"
+VERSION = "0.7.7"
 
 
 @dataclass
