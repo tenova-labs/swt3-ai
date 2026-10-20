@@ -8,6 +8,23 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.8
+
+Six new adapters unify evidence collection across IBM watsonx, AWS Bedrock, AWS Strands, and Mistral AI. Organizations running models across multiple cloud providers no longer need to reconcile separate audit trails -- every inference and policy decision produces a witness anchor in the same format regardless of provider.
+
+| Provider | Adapter | What it witnesses | Why it matters |
+|----------|---------|-------------------|----------------|
+| IBM watsonx.ai | `wrap_granite` | `generate()`, `generate_text()`, streaming | Enterprise AI on IBM's regulated cloud -- banks and insurers run Granite for document processing |
+| AWS Bedrock Guardrails | `wrap_bedrock_guardrails` | `apply_guardrail()` policy decisions (AI-GRD.1) | Content filtering audit trail -- proves guardrails were active, not just configured |
+| AWS Strands | `wrap_strands` | Agent callable invocations (AI-INF.1) | AWS agent orchestration framework -- 120+ enterprise customers with zero built-in audit |
+| Mistral AI | `wrap_mistral` | `chat.complete()`, `chat.stream()`, async | European sovereign AI -- Mistral runs on EU infrastructure, GPAI compliance required since Aug 2 |
+| NVIDIA NemoClaw | `NemoClawWitness` | Policy engine decisions (AI-GRD.1) | Hardware-level AI governance -- NeMo Guardrails policy decisions witnessed independently |
+| NVIDIA ROSClaw | `ROSClawWitness` | ROS 2 robotics audit log events | Robotics compliance -- EU Machinery Regulation (Jan 2027) requires AI decision evidence in safety-critical robots |
+
+Guides: [IBM Granite Adapter](https://sovereign.tenova.io/guides/ibm-granite-watsonx-crosswalk.html) | [AWS Bedrock Guardrails](https://sovereign.tenova.io/guides/aws-bedrock-guardrails-crosswalk.html) | [Mistral AI Adapter](https://sovereign.tenova.io/guides/mistral-ai-governance-crosswalk.html) | [NVIDIA NemoClaw](https://sovereign.tenova.io/guides/nvidia-nemoclaw-governance-crosswalk.html)
+
+**Why this matters for MCP:** MCP servers orchestrate tool calls across providers. When a Granite model triggers a Bedrock Guardrail that gates a Strands agent, the MCP server now has visibility into the full decision chain through a single witness stream. The 6 new adapters mean MCP-connected tools running on any major cloud AI platform produce anchors that the MCP server can aggregate, query, and export without provider-specific integration work.
+
 ## What's New in v0.7.6
 
 Five standards bodies converged on agent governance requirements in Q3-Q4 2026: NIST, FIDO Alliance, G7, Singapore IMDA, and the EU (DORA). v0.7.6 adds three procedures that close the last evidence gaps for delegation chain traceability, scope boundary monitoring, and agent interruptibility.
@@ -596,7 +613,7 @@ Every anchor maps to specific regulatory obligations:
 - **SR 11-7**: Model risk management for financial services
 - **ISO 42001**: Annex A AI management controls
 
-## Tools (68)
+## Tools (75)
 
 **Witnessing:**
 `witness_inference` -- mint a cryptographic anchor for any AI inference. Prompt and response are hashed locally, never sent to the server. Returns verdict (PASS/FAIL), anchor token, and verification URL.
@@ -646,7 +663,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (118 procedures, 64 namespaces).
+`list_procedures` -- browse the UCT procedure registry (293 procedures, 10 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

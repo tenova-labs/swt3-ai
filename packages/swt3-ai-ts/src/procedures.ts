@@ -45,6 +45,7 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-DATA.2", name: "Data Quality Attestation", namespace: "DATA" },
   { id: "AI-DATA.3", name: "Data Lineage Tracking", namespace: "DATA" },
   { id: "AI-DATA.4", name: "Data Retention Compliance", namespace: "DATA" },
+  { id: "AI-DATA.5", name: "Synthetic Data Provenance", namespace: "DATA" },
   { id: "AI-HITL.1", name: "Human Override Capability", namespace: "HITL" },
   { id: "AI-HITL.2", name: "Human Review Trigger", namespace: "HITL" },
   { id: "AI-HITL.3", name: "Overseer Identity Capture", namespace: "HITL" },
@@ -164,7 +165,11 @@ export const PROCEDURE_CATALOG: ProcedureEntry[] = [
   { id: "AI-A2A.3", name: "Context Chain Linking Attestation", namespace: "A2A" },
   // Distillation / Containment
   { id: "AI-DIST.1", name: "Knowledge Distillation Provenance", namespace: "DIST" },
+  { id: "AI-DIST.2", name: "Distillation Lineage Attestation", namespace: "DIST" },
   { id: "AI-SHELL.1", name: "Runtime Containment Attestation", namespace: "SHELL" },
+  // Federated Learning
+  { id: "AI-FL.1", name: "Federated Round Provenance", namespace: "FL" },
+  { id: "AI-FL.2", name: "Federated Session Admission", namespace: "FL" },
   // Vertical: Non-Human Identity (NHI)
   { id: "NHI-AGENT.1", name: "Agent-to-Agent Credential Delegation", namespace: "NHI" },
   { id: "NHI-CYCLE.1", name: "Credential Lifecycle Event Witnessing", namespace: "NHI" },

@@ -14,6 +14,62 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.8
+
+The three largest cloud AI platforms -- IBM watsonx, AWS Bedrock, and Mistral -- each added governance controls in 2026 but left a gap: their policy decisions produce logs that only live inside their own consoles. If you run Granite on watsonx AND Mistral on-prem AND Bedrock Guardrails for content filtering, you have three separate audit trails with no common evidence format. An assessor reviewing your AI governance posture has to log into three dashboards, export three report formats, and manually correlate timestamps. v0.7.8 closes that gap with four new inference adapters and two new governance decision adapters.
+
+**Why this matters for Python:** IBM, AWS, and Mistral each have Python-first SDKs that most teams already use. The new adapters wrap the native SDK objects you already have in your code -- `ModelInference` for Granite, `boto3.client("bedrock-runtime")` for Guardrails, Strands `Agent` for AWS agent orchestration, and `Mistral()` for Mistral's API. Three lines of code, zero dependency additions, and every inference or policy decision gets a witness anchor in the same format as your OpenAI, Anthropic, and Cohere calls. When an auditor asks "show me every AI decision your system made last quarter," you hand them one evidence export instead of three vendor dashboards.
+
+```python
+# IBM Granite via watsonx.ai
+from swt3_ai.adapters.granite import wrap_granite
+model = ModelInference(model_id="ibm/granite-3-8b-instruct", ...)
+witnessed = wrap_granite(model, witness)
+response = witnessed.generate(prompt="Summarize this document.")
+
+# AWS Bedrock Guardrails -- witness policy decisions (AI-GRD.1)
+from swt3_ai.adapters.bedrock_guardrails import wrap_bedrock_guardrails
+bedrock = boto3.client("bedrock-runtime")
+witnessed = wrap_bedrock_guardrails(bedrock, witness)
+result = witnessed.apply_guardrail(guardrailIdentifier="my-guardrail", ...)
+
+# AWS Strands Agent -- witness agent invocations
+from swt3_ai.adapters.strands import wrap_strands
+agent = Agent(tools=[...])
+witnessed = wrap_strands(agent, witness)
+result = witnessed("What is the current account balance?")
+
+# Mistral -- chat, streaming, and async
+from swt3_ai.adapters.mistral import wrap_mistral
+client = Mistral(api_key="...")
+witnessed = wrap_mistral(client, witness)
+response = witnessed.chat.complete(model="mistral-large-latest", messages=[...])
+```
+
+New adapters in v0.7.8:
+
+| Provider | Adapter | What it witnesses |
+|----------|---------|-------------------|
+| IBM watsonx.ai | `wrap_granite(model, witness)` | `generate()`, `generate_text()`, streaming |
+| AWS Bedrock | `wrap_bedrock_guardrails(client, witness)` | `apply_guardrail()` policy decisions (AI-GRD.1) |
+| AWS Strands | `wrap_strands(agent, witness)` | Agent `__call__` invocations (AI-INF.1) |
+| Mistral AI | `wrap_mistral(client, witness)` | `chat.complete()`, `chat.stream()`, async |
+| NVIDIA NemoClaw | `NemoClawWitness(witness)` | Policy engine decisions (AI-GRD.1) |
+| NVIDIA ROSClaw | `ROSClawWitness(witness)` | ROS 2 robotics audit log events |
+
+**New procedures in v0.7.8:**
+
+v0.7.8 also adds 4 procedures that address governance gaps no existing standard covers:
+
+| Procedure | What it solves | Why it matters now |
+|-----------|---------------|-------------------|
+| `AI-DIST.2` Distillation Lineage Attestation | Records authorization status, generation depth, and adversarial extraction flags for model distillation chains | The White House NSTM-4 memo (April 2026) treats unauthorized distillation of American AI models as a national security concern. EU AI Act Art. 53 requires GPAI providers to document model derivation. No standard exists for proving that a model's weights were not derived from an adversarially extracted source. This procedure creates that proof. |
+| `AI-FL.1` Federated Round Provenance | Records aggregation method, round number, and participating client count for each federated learning round | Cross-silo federated learning is deployed in production (healthcare drug discovery, cross-bank fraud detection) but has zero audit standards. No participant in an FL session can see what the other participants contributed. This procedure witnesses the governance envelope around each round without inspecting the gradients, preserving the privacy guarantee while closing the audit gap. |
+| `AI-FL.2` Federated Session Admission | Records consent status, organization count, and data isolation verification for cross-org FL sessions | Under GDPR Art. 26, all participants in a cross-silo FL session are joint controllers who must have documented arrangements. But FL architecturally prevents any single party from seeing the others' data. This procedure records who was admitted, whether consent was verified, and whether data isolation was confirmed -- the evidence joint controllers need but FL alone cannot provide. |
+| `AI-DATA.5` Synthetic Data Provenance | Records synthetic fraction, generation depth, and contamination check results for training datasets | When an AI model trains on the outputs of another AI model, the resulting weights contain recursive assumptions no human validated. This is "model collapse" and it is already happening at scale. EU AI Act Art. 10 requires documenting training data quality including synthetic components. This procedure answers the question every auditor will eventually ask: "How many generations of AI output are baked into your training set?" |
+
+Guides: [Distillation Lineage Governance](https://sovereign.tenova.io/guides/distillation-lineage-governance-crosswalk.html) | [Federated Learning Governance](https://sovereign.tenova.io/guides/federated-learning-governance-crosswalk.html) | [Synthetic Data Provenance](https://sovereign.tenova.io/guides/synthetic-data-provenance-governance-crosswalk.html)
+
 ## What's New in v0.7.6
 
 Five standards bodies published agent governance requirements in Q3-Q4 2026: NIST announced the AI Agent Interoperability Profile (Q4 2026), FIDO Alliance launched the Agentic Authentication Working Group with Google, Mastercard, Visa, and Stripe, the G7 published 50 minimum elements for AI SBOMs, Singapore updated its Agentic AI Governance Framework, and DORA entered its enforcement year for 22,000+ EU financial entities. Every one of these requires evidence that delegation chains are traceable, scope boundaries are monitored, and agents can be interrupted with a record of what happened.
@@ -1469,7 +1525,7 @@ Each inference produces anchors for these checks. Every check maps to a regulati
 
 ### EU AI Act Article Mapping
 
-SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (275 procedures total):
+SWT3 AI witnessing procedures map to specific EU AI Act obligations. Sample mapping (293 procedures total):
 
 | Procedure | EU AI Act Article | Obligation | Demo | Production |
 |-----------|-------------------|------------|------|------------|
@@ -1613,7 +1669,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-77 frameworks bundled. 275 procedures mapped. Updated with each SDK release.
+86 frameworks bundled. 293 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1707,6 +1763,12 @@ docker save axiom-sovereign-engine:latest | gzip > axiom-sovereign.tar.gz
 | Microsoft Foundry | `wrap_foundry(agent)` | Supported (Azure AI Foundry, duck-typed) |
 | Microsoft AGT | `wrap_agt(engine)` | Supported (Agent Governance Toolkit, duck-typed) |
 | LangGraph | `wrap_langgraph(graph)` | Supported (state graph orchestration) |
+| IBM Granite | `wrap_granite(model)` | Supported (watsonx.ai ModelInference) |
+| AWS Bedrock Guardrails | `wrap_bedrock_guardrails(client)` | Supported (guardrail policy decisions) |
+| AWS Strands | `wrap_strands(agent)` | Supported (agent orchestration) |
+| Mistral AI | `wrap_mistral(client)` | Supported (V2 API, streaming, async) |
+| NVIDIA NemoClaw | `NemoClawWitness(witness)` | Supported (policy engine decisions) |
+| NVIDIA ROSClaw | `ROSClawWitness(witness)` | Supported (ROS 2 audit logs) |
 
 
 ### LiteLLM (100+ Providers)
@@ -1955,8 +2017,8 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://swt3.ai/registry) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 77 frameworks
-- [All 250 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 86 frameworks
+- [All 324 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 

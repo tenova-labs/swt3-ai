@@ -8,6 +8,25 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.8
+
+Six new adapters unify evidence collection across IBM watsonx, AWS Bedrock, AWS Strands, and Mistral AI. Organizations running models across multiple cloud providers no longer need to reconcile separate audit trails -- every inference and policy decision produces a witness anchor in the same format regardless of provider.
+
+New adapters: IBM Granite (`wrap_granite`), AWS Bedrock Guardrails (`wrap_bedrock_guardrails`), AWS Strands (`wrap_strands`), Mistral AI (`wrap_mistral`), NVIDIA NemoClaw, and NVIDIA ROSClaw.
+
+| Provider | Adapter | What it witnesses | Why it matters |
+|----------|---------|-------------------|----------------|
+| IBM watsonx.ai | `wrap_granite` | `generate()`, `generate_text()`, streaming | Enterprise AI on IBM's regulated cloud -- banks and insurers run Granite for document processing |
+| AWS Bedrock Guardrails | `wrap_bedrock_guardrails` | `apply_guardrail()` policy decisions (AI-GRD.1) | Content filtering audit trail -- proves guardrails were active, not just configured |
+| AWS Strands | `wrap_strands` | Agent callable invocations (AI-INF.1) | AWS agent orchestration framework -- 120+ enterprise customers with zero built-in audit |
+| Mistral AI | `wrap_mistral` | `chat.complete()`, `chat.stream()`, async | European sovereign AI -- Mistral runs on EU infrastructure, GPAI compliance required since Aug 2 |
+| NVIDIA NemoClaw | `NemoClawWitness` | Policy engine decisions (AI-GRD.1) | Hardware-level AI governance -- NeMo Guardrails policy decisions witnessed independently |
+| NVIDIA ROSClaw | `ROSClawWitness` | ROS 2 robotics audit log events | Robotics compliance -- EU Machinery Regulation (Jan 2027) requires AI decision evidence in safety-critical robots |
+
+Guides: [IBM Granite Adapter](https://sovereign.tenova.io/guides/ibm-granite-watsonx-crosswalk.html) | [AWS Bedrock Guardrails](https://sovereign.tenova.io/guides/aws-bedrock-guardrails-crosswalk.html) | [Mistral AI Adapter](https://sovereign.tenova.io/guides/mistral-ai-governance-crosswalk.html) | [NVIDIA NemoClaw](https://sovereign.tenova.io/guides/nvidia-nemoclaw-governance-crosswalk.html)
+
+**Why this matters for the Witness Agent:** The Kubernetes witness agent collects anchors from workloads across the cluster. With 6 new adapters covering IBM watsonx, AWS Bedrock, AWS Strands, and Mistral, pods running any major cloud AI SDK now produce witness anchors that the agent can collect, batch, and forward without provider-specific configuration. v0.7.8 brings all SDKs back to version lockstep.
+
 ## What's New in v0.7.6
 
 Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures (delegation chain integrity, scope boundary attestation, agent interrupt witnessing) and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
@@ -70,10 +89,10 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ```bash
 # Local mode -- anchors emit as structured JSON to stdout
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.8
 
 # Cloud mode -- anchors flush to the SWT3 clearing house
-helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.2 \
+helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.8 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
   --set cloud.tenantId=YOUR_TENANT
@@ -131,7 +150,7 @@ Returns:
 ```json
 {
   "status": "ok",
-  "version": "0.7.2",
+  "version": "0.7.8",
   "mode": "local",
   "silicon_vendor": "nvidia",
   "topology": "single",
@@ -151,7 +170,7 @@ Returns:
 ## Container Image
 
 ```bash
-docker pull ghcr.io/tenova-labs/swt3-witness:0.7.2
+docker pull ghcr.io/tenova-labs/swt3-witness:0.7.8
 ```
 
 ## License

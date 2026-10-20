@@ -60,7 +60,7 @@ describe("loadConfig", () => {
   });
 
   it("throws on invalid API key prefix", () => {
-    process.env.SWT3_API_KEY = "axm_test_mock_key";
+    process.env.SWT3_API_KEY = "invalid_prefix_key";
     process.env.SWT3_TENANT_ID = "MY_TENANT";
     expect(() => loadConfig()).toThrow("must start with 'axm_'");
   });

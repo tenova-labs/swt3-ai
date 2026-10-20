@@ -22,4 +22,8 @@ Adapters:
     langgraph   - LangGraph CompiledGraph invoke/stream witness (duck-typed)
     skillspector - NVIDIA SkillSpector scan result witness (static analysis, AI-SEC.1)
     jev         - Jev (TypeSafe AI) typed decision witness (duck-typed, System One Model)
+    granite     - IBM watsonx.ai ModelInference (ibm-watsonx-ai SDK)
+    mistral     - Mistral chat.complete/stream witness (V2 API)
+    bedrock_guardrails - AWS Bedrock Guardrails apply_guardrail() witness (AI-GRD.1)
+    strands     - AWS Strands Agent __call__ witness (duck-typed)
 """

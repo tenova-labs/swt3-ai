@@ -6,13 +6,42 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 **SWT3 AI Witness SDK for Go**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external dependencies -- standard library only.
 
-**289 procedures | 10 namespaces | 10 SDKs | Zero dependencies**
+**293 procedures | 10 namespaces | 10 SDKs | Zero dependencies**
 
 Go is the dominant language for backend infrastructure at scale. Kubernetes operators, API gateways, data pipelines, and inference orchestrators are overwhelmingly written in Go. This package gives infrastructure teams the same cryptographic witnessing primitives available in the Python, TypeScript, Rust, C#, Ruby, Swift, and Kotlin SDKs, with zero external dependencies and byte-identical output across all 10 implementations.
 
 EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.8
+
+The three largest cloud AI platforms -- IBM watsonx, AWS Bedrock, and Mistral -- each added governance controls in 2026 but left a gap: their policy decisions produce logs that only live inside their own consoles. v0.7.8 closes that gap with six new adapters (Python + TypeScript) and four new procedures that address governance gaps no existing standard covers.
+
+**Why this matters for Go:** All four new procedure IDs (AI-DIST.2, AI-FL.1, AI-FL.2, AI-DATA.5) verify with the existing `MintFingerprint` function -- zero module changes. Go-based federated learning orchestrators gain round provenance and session admission evidence. Go data pipelines that prepare synthetic training data can verify AI-DATA.5 anchors inline. The six new adapters (Granite, Bedrock Guardrails, Strands, Mistral, NemoClaw, ROSClaw) produce anchors in the Python and TypeScript SDKs that Go infrastructure verifies with byte-identical output.
+
+### 6 New Adapters (Python + TypeScript)
+
+| Provider | What it witnesses |
+|----------|-------------------|
+| IBM watsonx.ai (Granite) | `generate()`, streaming |
+| AWS Bedrock Guardrails | `applyGuardrail()` policy decisions (AI-GRD.1) |
+| AWS Strands | Agent callable invocations (AI-INF.1) |
+| Mistral AI | `chat.complete()`, `chat.stream()`, async |
+| NVIDIA NemoClaw | Policy engine decisions (AI-GRD.1) |
+| NVIDIA ROSClaw | ROS 2 robotics audit log events |
+
+### 4 New Procedures
+
+- **AI-DIST.2** (Distillation Lineage Attestation): Records authorization status, generation depth, and adversarial extraction flags for model distillation chains. NSTM-4 + EU AI Act Art. 53.
+- **AI-FL.1** (Federated Round Provenance): Records aggregation method, round number, and participating client count for each federated learning round.
+- **AI-FL.2** (Federated Session Admission): Records consent status, organization count, and data isolation verification for cross-org FL sessions. GDPR Art. 26 joint controller evidence.
+- **AI-DATA.5** (Synthetic Data Provenance): Records synthetic fraction, generation depth, and contamination check results. EU AI Act Art. 10 training data quality.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces, 86 regulatory frameworks, 324 compliance guides
+- [Distillation Lineage Governance](https://sovereign.tenova.io/guides/distillation-lineage-governance-crosswalk.html) | [Federated Learning Governance](https://sovereign.tenova.io/guides/federated-learning-governance-crosswalk.html) | [Synthetic Data Provenance](https://sovereign.tenova.io/guides/synthetic-data-provenance-governance-crosswalk.html)
 
 ## What's New in v0.7.6
 

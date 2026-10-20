@@ -962,6 +962,7 @@ class Witness:
             - Ollama via OpenAI client with base_url :11434 (auto-detected)
             - anthropic.Anthropic / anthropic.AsyncAnthropic (auto-detected)
             - boto3 BedrockRuntimeClient (auto-detected)
+            - Mistral (auto-detected)
             - litellm module (auto-detected)
             - vLLM via wrap_vllm() (explicit -- port 8000 too generic)
             - LangChain via SWT3CallbackHandler (callback, not proxy)
@@ -993,10 +994,19 @@ class Witness:
             from .adapters.bedrock import wrap_bedrock
             return wrap_bedrock(client, self)
 
+        if "ibm_watsonx_ai" in client_type:
+            from .adapters.granite import wrap_granite
+            return wrap_granite(client, self)
+
+        if "mistralai" in client_type:
+            from .adapters.mistral import wrap_mistral
+            return wrap_mistral(client, self)
+
         raise TypeError(
             f"Unsupported client type: {type(client).__name__}. "
             f"Supported: openai.OpenAI, Ollama (via OpenAI), anthropic.Anthropic, "
-            f"boto3 BedrockRuntimeClient, litellm, vLLM (via wrap_vllm)."
+            f"boto3 BedrockRuntimeClient, Mistral, ibm-watsonx-ai ModelInference, "
+            f"litellm, vLLM (via wrap_vllm)."
         )
 
     def gate_check(self, messages: Any = None, model: str = "unknown") -> str:

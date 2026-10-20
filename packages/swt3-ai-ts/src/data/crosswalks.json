@@ -483,6 +483,19 @@
         "VN"
       ],
       "binding": "mandatory"
+    },
+    "FSB-AI-SOUND-PRACTICES": {
+      "name": "Sound Practices for Responsible Adoption of AI",
+      "authority": "Financial Stability Board (FSB)",
+      "document": "Sound Practices for Responsible Adoption of AI: Final Report",
+      "version": "2026-10",
+      "url": "https://www.fsb.org/2026/10/sound-practices-for-responsible-adoption-of-artificial-intelligence-ai-final-report/",
+      "procedure_count": 31,
+      "requirement_count": 12,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "advisory"
     }
   },
   "procedures": {
@@ -516,7 +529,8 @@
         "NIS-2": "Art.21(2)(g)",
         "NYC-LL144": "Sec.5-304",
         "TX-TRAIGA": "Sec.7",
-        "VN-LAW-134": "Art.13"
+        "VN-LAW-134": "Art.13",
+        "FSB-AI-SOUND-PRACTICES": "SP3"
       }
     },
     "AI-AUDIT.2": {
@@ -655,7 +669,8 @@
         "NIST-800-53": "CA-2",
         "NIST-AI-RMF": "MANAGE 2.2",
         "NIST-CSF": "Core",
-        "NIS-2": "Art.21(2)(a)"
+        "NIS-2": "Art.21(2)(a)",
+        "FSB-AI-SOUND-PRACTICES": "SP11"
       }
     },
     "AI-DATA.1": {
@@ -673,7 +688,8 @@
         "SR-11-7": "III.B",
         "JP-AI-PROMOTION": "Art.12",
         "NYC-LL144": "Sec.5-301(d)",
-        "VN-LAW-134": "Art.11"
+        "VN-LAW-134": "Art.11",
+        "FSB-AI-SOUND-PRACTICES": "SP7"
       }
     },
     "AI-DATA.2": {
@@ -683,7 +699,8 @@
         "EU-AI-ACT": "Art.10(2)(a)",
         "FIVE-EYES-AGENTIC": "FE-14",
         "ISO-42001": "A.8.4",
-        "NIST-AI-RMF": "GOVERN 1.7"
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "FSB-AI-SOUND-PRACTICES": "SP7"
       }
     },
     "AI-DATA.3": {
@@ -708,6 +725,45 @@
         "NIST-AI-RMF": "MAP 3.5"
       }
     },
+    "AI-DATA.5": {
+      "title": "Synthetic Data Provenance",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.10(2)",
+        "GDPR": "Art.35",
+        "NIST-AI-RMF": "MAP 2.3",
+        "ISO-42001": "A.8.4"
+      }
+    },
+    "AI-DIST.2": {
+      "title": "Distillation Lineage Attestation",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.53(1)",
+        "NIST-AI-RMF": "GOVERN 1.5",
+        "ISO-42001": "A.7.5"
+      }
+    },
+    "AI-FL.1": {
+      "title": "Federated Round Provenance",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.10(2)",
+        "GDPR": "Art.26",
+        "NIST-AI-RMF": "MAP 2.3",
+        "ISO-42001": "A.8.4"
+      }
+    },
+    "AI-FL.2": {
+      "title": "Federated Session Admission",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-AI-ACT": "Art.10(2)",
+        "GDPR": "Art.26",
+        "NIST-AI-RMF": "GOVERN 1.7",
+        "ISO-42001": "A.8.4"
+      }
+    },
     "AI-DEL.1": {
       "title": "Delegation Tree Witnessing",
       "namespace": "AI",
@@ -715,7 +771,8 @@
         "EU-AI-ACT": "Art. 14",
         "NIST-AI-RMF": "GOVERN 1.3",
         "SG-IMDA-AGENTIC": "Sec.4.3",
-        "GPAI-CoP": "Rule 12"
+        "GPAI-CoP": "Rule 12",
+        "FSB-AI-SOUND-PRACTICES": "SP10"
       }
     },
     "AI-DPIA.1": {
@@ -740,7 +797,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "FSB-AI-SOUND-PRACTICES": "SP4, SP9"
       }
     },
     "AI-DUALUSE.1": {
@@ -865,7 +923,8 @@
         "JP-AI-PROMOTION": "Art.13",
         "NYC-LL144": "Sec.5-302(b)",
         "TW-AI-BASIC": "Art.3(5)",
-        "TX-TRAIGA": "Sec.4(c)"
+        "TX-TRAIGA": "Sec.4(c)",
+        "FSB-AI-SOUND-PRACTICES": "SP8"
       }
     },
     "AI-EXPL.2": {
@@ -877,7 +936,8 @@
         "FIVE-EYES-AGENTIC": "FE-9",
         "ISO-42001": "A.8.3",
         "NIST-AI-RMF": "MAP 2.3",
-        "SR-11-7": "IV.B"
+        "SR-11-7": "IV.B",
+        "FSB-AI-SOUND-PRACTICES": "SP8"
       }
     },
     "AI-FAIR.1": {
@@ -897,7 +957,8 @@
         "NYC-LL144": "Sec.5-301(a)",
         "TW-AI-BASIC": "Art.3(6)",
         "TX-TRAIGA": "Sec.5(a)",
-        "VN-LAW-134": "Art.18"
+        "VN-LAW-134": "Art.18",
+        "FSB-AI-SOUND-PRACTICES": "SP3, SP8"
       }
     },
     "AI-FAIR.2": {
@@ -932,7 +993,8 @@
         "EU-AI-ACT": "Art. 14",
         "NIST-AI-RMF": "MANAGE 2.2",
         "SR-11-7": "III.B",
-        "GPAI-CoP": "Rule 17"
+        "GPAI-CoP": "Rule 17",
+        "FSB-AI-SOUND-PRACTICES": "SP5, SP10"
       }
     },
     "AI-GOV.1": {
@@ -949,7 +1011,8 @@
         "NIS-2": "Art.20",
         "SG-IMDA-AGENTIC": "Sec.1.1",
         "TX-TRAIGA": "Sec.3",
-        "VN-LAW-134": "Art.8"
+        "VN-LAW-134": "Art.8",
+        "FSB-AI-SOUND-PRACTICES": "SP1, SP2"
       }
     },
     "AI-GOV.2": {
@@ -971,7 +1034,8 @@
         "FIVE-EYES-AGENTIC": "FE-11",
         "ISO-42001": "A.6.2.4",
         "NIST-800-53": "CM-8",
-        "NIST-AI-RMF": "MAP 1.1"
+        "NIST-AI-RMF": "MAP 1.1",
+        "FSB-AI-SOUND-PRACTICES": "SP2"
       }
     },
     "AI-GOV.4": {
@@ -992,7 +1056,8 @@
         "ISO-42001": "A.6.2.7",
         "NIST-800-53": "SA-4",
         "NIST-AI-RMF": "GOVERN 6.1",
-        "SR-11-7": "V.A"
+        "SR-11-7": "V.A",
+        "FSB-AI-SOUND-PRACTICES": "SP1, SP12"
       }
     },
     "AI-GOV.6": {
@@ -1026,7 +1091,8 @@
         "NIST-AI-RMF": "GOVERN 1.5",
         "OWASP-AGENTIC": "MCP-03",
         "SG-IMDA-AGENTIC": "Sec.3.1",
-        "TW-AI-BASIC": "Art.3(4)"
+        "TW-AI-BASIC": "Art.3(4)",
+        "FSB-AI-SOUND-PRACTICES": "SP11"
       }
     },
     "AI-GRD.2": {
@@ -1066,7 +1132,8 @@
         "NYC-LL144": "Sec.5-303",
         "SG-IMDA-AGENTIC": "Sec.3.2",
         "TX-TRAIGA": "Sec.5(b)",
-        "VN-LAW-134": "Art.14"
+        "VN-LAW-134": "Art.14",
+        "FSB-AI-SOUND-PRACTICES": "SP2, SP10"
       }
     },
     "AI-HITL.2": {
@@ -1077,7 +1144,8 @@
         "EU-AI-ACT": "Art.14(4)(d)",
         "FIVE-EYES-AGENTIC": "FE-5",
         "ISO-42001": "A.8.5",
-        "NIST-AI-RMF": "MANAGE 4.1"
+        "NIST-AI-RMF": "MANAGE 4.1",
+        "FSB-AI-SOUND-PRACTICES": "SP10"
       }
     },
     "AI-HITL.3": {
@@ -1123,7 +1191,8 @@
         "NIST-AI-RMF": "MAP 1.1",
         "OWASP-AGENTIC": "MCP-01,MCP-07",
         "CA-SB-942": "Sec.6(a)",
-        "SG-IMDA-AGENTIC": "Sec.2.1"
+        "SG-IMDA-AGENTIC": "Sec.2.1",
+        "FSB-AI-SOUND-PRACTICES": "SP2"
       }
     },
     "AI-IMPACT.1": {
@@ -1260,7 +1329,8 @@
         "NIST-AI-RMF": "MANAGE 1.3",
         "OWASP-AGENTIC": "MCP-04",
         "SR-11-7": "III.B",
-        "VN-LAW-134": "Art.12"
+        "VN-LAW-134": "Art.12",
+        "FSB-AI-SOUND-PRACTICES": "SP6"
       }
     },
     "AI-MDL.2": {
@@ -1280,7 +1350,8 @@
         "EU-AI-ACT": "Art.72(1)",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "FSB-AI-SOUND-PRACTICES": "SP6"
       }
     },
     "AI-MDL.4": {
@@ -1302,7 +1373,8 @@
         "ISO-42001": "A.6.2.4",
         "NIST-AI-RMF": "GOVERN 1.2",
         "OWASP-AGENTIC": "MCP-04",
-        "SR-11-7": "III.B"
+        "SR-11-7": "III.B",
+        "FSB-AI-SOUND-PRACTICES": "SP6"
       }
     },
     "AI-MDL.6": {
@@ -1415,7 +1487,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.5",
         "NIST-AI-RMF": "MEASURE 2.5",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "FSB-AI-SOUND-PRACTICES": "SP4, SP9"
       }
     },
     "AI-PMM.1": {
@@ -1435,7 +1508,8 @@
         "EU-AI-ACT": "Art.13",
         "ISO-42001": "A.8.4",
         "NIST-AI-RMF": "MAP 2.3",
-        "OWASP-AGENTIC": "MCP-10"
+        "OWASP-AGENTIC": "MCP-10",
+        "FSB-AI-SOUND-PRACTICES": "SP7"
       }
     },
     "AI-RAG.2": {
@@ -1482,7 +1556,8 @@
         "NIST-AI-RMF": "MAP 2.1",
         "SR-11-7": "II.A",
         "NIS-2": "Art.21(1)",
-        "TX-TRAIGA": "Sec.4(b)"
+        "TX-TRAIGA": "Sec.4(b)",
+        "FSB-AI-SOUND-PRACTICES": "SP3, SP5"
       }
     },
     "AI-ROBUST.1": {
@@ -1493,7 +1568,8 @@
         "IL-SB-315": "Sec.25",
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MEASURE 2.6",
-        "SR-11-7": "IV.A"
+        "SR-11-7": "IV.A",
+        "FSB-AI-SOUND-PRACTICES": "SP9"
       }
     },
     "AI-SAFE.1": {
@@ -1507,7 +1583,8 @@
         "KR-AI-BASIC": "Art.26",
         "NIST-AI-RMF": "MANAGE 2.3",
         "JP-AI-PROMOTION": "Art.14",
-        "SG-IMDA-AGENTIC": "Sec.3.3"
+        "SG-IMDA-AGENTIC": "Sec.3.3",
+        "FSB-AI-SOUND-PRACTICES": "SP3"
       }
     },
     "AI-SBOM.1": {
@@ -1534,7 +1611,8 @@
         "ISO-42001": "A.6.2.6",
         "NIST-AI-RMF": "MANAGE 2.3",
         "OWASP-AGENTIC": "MCP-03",
-        "NIS-2": "Art.21(2)(b)"
+        "NIS-2": "Art.21(2)(b)",
+        "FSB-AI-SOUND-PRACTICES": "SP11"
       }
     },
     "AI-SEC.2": {
@@ -1591,7 +1669,8 @@
         "NIST-800-53": "SA-4",
         "NIST-AI-RMF": "MEASURE 3.1",
         "NIS-2": "Art.22",
-        "TW-AI-BASIC": "Art.7"
+        "TW-AI-BASIC": "Art.7",
+        "FSB-AI-SOUND-PRACTICES": "SP12"
       }
     },
     "AI-TOOL.1": {
@@ -1603,7 +1682,8 @@
         "ISO-42001": "A.8.5",
         "NIST-AI-RMF": "GOVERN 1.7",
         "OWASP-AGENTIC": "MCP-02,MCP-05",
-        "SG-IMDA-AGENTIC": "Sec.5.1"
+        "SG-IMDA-AGENTIC": "Sec.5.1",
+        "FSB-AI-SOUND-PRACTICES": "SP11"
       }
     },
     "AI-TOOL.2": {
@@ -1635,7 +1715,8 @@
         "NYC-LL144": "Sec.5-302(a)",
         "TW-AI-BASIC": "Art.3(5)",
         "TX-TRAIGA": "Sec.4(a)",
-        "VN-LAW-134": "Art.15"
+        "VN-LAW-134": "Art.15",
+        "FSB-AI-SOUND-PRACTICES": "SP8"
       }
     },
     "AI-TRUST.1": {
@@ -1886,7 +1967,10 @@
         "AI-CONSENT.1"
       ],
       "Art.10(2)": [
-        "AI-ENG.1"
+        "AI-ENG.1",
+        "AI-DATA.5",
+        "AI-FL.1",
+        "AI-FL.2"
       ],
       "Art.10(2)(a)": [
         "AI-DATA.1",
@@ -2013,6 +2097,9 @@
       ],
       "Art.53": [
         "AI-REACH.1"
+      ],
+      "Art.53(1)": [
+        "AI-DIST.2"
       ],
       "Art.53(1)(d)": [
         "AI-LIC.1"
@@ -2204,8 +2291,13 @@
       "Art.30": [
         "AI-AUDIT.1"
       ],
+      "Art.26": [
+        "AI-FL.1",
+        "AI-FL.2"
+      ],
       "Art.35": [
-        "AI-DPIA.1"
+        "AI-DPIA.1",
+        "AI-DATA.5"
       ],
       "Art.6/7": [
         "AI-CONSENT.1"
@@ -2580,7 +2672,8 @@
         "AI-METAGOV.6",
         "AI-TOOL.2",
         "AI-TRUST.1",
-        "AI-TRUST.2"
+        "AI-TRUST.2",
+        "AI-DIST.2"
       ],
       "GOVERN 1.7": [
         "AI-CHR.1",
@@ -2594,7 +2687,8 @@
         "AI-TOOL.1",
         "AI-TRANS.1",
         "AI-WATERMARK.1",
-        "AI-DECOM.1"
+        "AI-DECOM.1",
+        "AI-FL.2"
       ],
       "GOVERN 2.1": [
         "AI-GOV.2",
@@ -2664,7 +2758,9 @@
         "AI-FAIR.3",
         "AI-INF.1",
         "AI-MDL.2",
-        "AI-RAG.1"
+        "AI-RAG.1",
+        "AI-DATA.5",
+        "AI-FL.1"
       ],
       "MAP 3.5": [
         "AI-DATA.1",
@@ -2785,6 +2881,71 @@
         "AI-HITL.1"
       ],
       "V.A": [
+        "AI-GOV.5"
+      ]
+    },
+    "FSB-AI-SOUND-PRACTICES": {
+      "SP1": [
+        "AI-GOV.1",
+        "AI-GOV.5"
+      ],
+      "SP2": [
+        "AI-GOV.1",
+        "AI-GOV.3",
+        "AI-ID.1",
+        "AI-HITL.1"
+      ],
+      "SP3": [
+        "AI-RISK.1",
+        "AI-SAFE.1",
+        "AI-AUDIT.1",
+        "AI-FAIR.1"
+      ],
+      "SP4": [
+        "AI-DRIFT.1",
+        "AI-PERF.1"
+      ],
+      "SP5": [
+        "AI-RISK.1",
+        "AI-CLR.1",
+        "AI-FIN.1"
+      ],
+      "SP6": [
+        "AI-MDL.1",
+        "AI-MDL.3",
+        "AI-MDL.5"
+      ],
+      "SP7": [
+        "AI-DATA.1",
+        "AI-DATA.2",
+        "AI-RAG.1"
+      ],
+      "SP8": [
+        "AI-EXPL.1",
+        "AI-EXPL.2",
+        "AI-TRANS.1",
+        "AI-FAIR.1"
+      ],
+      "SP9": [
+        "AI-PERF.1",
+        "AI-DRIFT.1",
+        "AI-ROBUST.1"
+      ],
+      "SP10": [
+        "AI-HITL.1",
+        "AI-HITL.2",
+        "AI-DEL.1",
+        "AI-FIN.1"
+      ],
+      "SP11": [
+        "AI-CYBER.1",
+        "AI-GRD.1",
+        "AI-SEC.1",
+        "AI-TOOL.1"
+      ],
+      "SP12": [
+        "AI-SUPPLY.1",
+        "HBOM-INV.1",
         "AI-GOV.5"
       ]
     }

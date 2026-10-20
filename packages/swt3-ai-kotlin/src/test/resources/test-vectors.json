@@ -972,5 +972,43 @@
         "superseded": 5
       }
     }
+  ],
+  "trust_assertion_vectors": [
+    {
+      "id": 1,
+      "description": "Trust assertion fingerprint: high-trust direct relationship",
+      "formula": "SHA256('SWT3:TRUST:{asserter}:{subject}:{score_int}:{txn_count}:{ts_ms}').hex()[:12]",
+      "asserter": "did:web:agent-a.example.com",
+      "subject": "did:web:agent-b.example.com",
+      "score": 0.94,
+      "score_int": 940,
+      "transaction_count": 847,
+      "timestamp_ms": 1790000000000,
+      "expected_fingerprint": "d7c3061d05b3"
+    },
+    {
+      "id": 2,
+      "description": "Trust assertion fingerprint: medium-trust relationship",
+      "formula": "SHA256('SWT3:TRUST:{asserter}:{subject}:{score_int}:{txn_count}:{ts_ms}').hex()[:12]",
+      "asserter": "did:web:agent-a.example.com",
+      "subject": "did:web:agent-b.example.com",
+      "score": 0.5,
+      "score_int": 500,
+      "transaction_count": 847,
+      "timestamp_ms": 1790000000000,
+      "expected_fingerprint": "5213a1c6b224"
+    },
+    {
+      "id": 3,
+      "description": "Trust assertion fingerprint: zero-trust cold start",
+      "formula": "SHA256('SWT3:TRUST:{asserter}:{subject}:{score_int}:{txn_count}:{ts_ms}').hex()[:12]",
+      "asserter": "self",
+      "subject": "agent-test-1234",
+      "score": 0,
+      "score_int": 0,
+      "transaction_count": 0,
+      "timestamp_ms": 1790000000000,
+      "expected_fingerprint": "7f76491554f8"
+    }
   ]
 }

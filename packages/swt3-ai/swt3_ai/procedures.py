@@ -8,7 +8,7 @@ import json
 import sys
 from typing import Optional, List, Dict
 
-# 176 AI/vertical procedures across 10 namespaces (INF controls are server-side only)
+# 180 AI/vertical procedures across 10 namespaces (INF controls are server-side only)
 PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-INF.1", "name": "Inference Provenance", "namespace": "INF"},
     {"id": "AI-INF.2", "name": "Inference Latency", "namespace": "INF"},
@@ -40,6 +40,7 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-DATA.2", "name": "Data Quality Attestation", "namespace": "DATA"},
     {"id": "AI-DATA.3", "name": "Data Lineage Tracking", "namespace": "DATA"},
     {"id": "AI-DATA.4", "name": "Data Retention Compliance", "namespace": "DATA"},
+    {"id": "AI-DATA.5", "name": "Synthetic Data Provenance", "namespace": "DATA"},
     {"id": "AI-HITL.1", "name": "Human Override Capability", "namespace": "HITL"},
     {"id": "AI-HITL.2", "name": "Human Review Trigger", "namespace": "HITL"},
     {"id": "AI-EXPL.1", "name": "Explainability Report", "namespace": "EXPL"},
@@ -146,6 +147,7 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-A2A.3", "name": "Context Chain Linking Attestation", "namespace": "A2A"},
     # Distillation + MCP Elicitation (v0.7.4)
     {"id": "AI-DIST.1", "name": "Knowledge Distillation Provenance", "namespace": "DIST"},
+    {"id": "AI-DIST.2", "name": "Distillation Lineage Attestation", "namespace": "DIST"},
     {"id": "AI-MCP.6", "name": "MCP Elicitation Consent Witnessing", "namespace": "MCP"},
     # Runtime Containment (v0.7.4)
     {"id": "AI-SHELL.1", "name": "Runtime Containment Attestation", "namespace": "SHELL"},
@@ -163,6 +165,9 @@ PROCEDURE_CATALOG: List[Dict[str, str]] = [
     {"id": "AI-MOB.5", "name": "Bilateral Flush Correlation", "namespace": "MOB"},
     {"id": "AI-MOB.8", "name": "Network Slice Isolation Verification", "namespace": "MOB"},
     {"id": "AI-SAMPLE.1", "name": "Probabilistic Witnessing Summary", "namespace": "SAMPLE"},
+    # Federated Learning (v0.7.9)
+    {"id": "AI-FL.1", "name": "Federated Round Provenance", "namespace": "FL"},
+    {"id": "AI-FL.2", "name": "Federated Session Admission", "namespace": "FL"},
     # Non-Human Identity (NHI)
     {"id": "NHI-AGENT.1", "name": "Agent-to-Agent Credential Delegation", "namespace": "NHI"},
     {"id": "NHI-CYCLE.1", "name": "Credential Lifecycle Event Witnessing", "namespace": "NHI"},

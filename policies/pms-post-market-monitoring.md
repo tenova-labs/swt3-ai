@@ -86,7 +86,7 @@ ________________________________________________________________________________
 
    Daily Merkle rollups aggregate all procedure evaluations into a single
    tamper-evident root hash per tenant per day, stored in the
-   daily_merkle_rollups ledger. This provides cryptographic proof that all
+   compliance rollup ledger. This provides cryptographic proof that all
    required procedures were evaluated within the monitoring window.
 
    4.2 Performance Tracking

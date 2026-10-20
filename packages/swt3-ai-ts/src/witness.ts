@@ -42,6 +42,8 @@ import {
   type TrustCredential, type TrustResult,
 } from "./trust.js";
 import { createVercelOnFinish, type VercelOnFinishOptions } from "./adapters/vercel-ai.js";
+import { wrapGranite } from "./adapters/granite.js";
+import { wrapMistral } from "./adapters/mistral.js";
 import type {
   WitnessConfig, WitnessPayload, WitnessReceipt, InferenceRecord,
   RagChunk, RagContextOptions, ModelWeightInfo, AdapterInfo, SkillInfo, MemorySource,
@@ -910,8 +912,18 @@ export class Witness {
       return wrapBedrock(client, this);
     }
 
+    // IBM watsonx: ModelInference has generate() + model_id but no chat
+    if (name === "ModelInference" || (obj?.generate && obj?.model_id && !obj?.chat)) {
+      return wrapGranite(client, this);
+    }
+
+    // Mistral: has client.chat.complete (two-level, like Anthropic)
+    if (name === "Mistral" || name === "MistralClient") {
+      return wrapMistral(client, this);
+    }
+
     throw new TypeError(
-      `Unsupported client: ${name || "unknown"}. Supported: OpenAI, Ollama, Anthropic, BedrockRuntimeClient, vLLM (via wrapVllm).`,
+      `Unsupported client: ${name || "unknown"}. Supported: OpenAI, Ollama, Anthropic, BedrockRuntimeClient, Mistral, ibm-watsonx-ai ModelInference, vLLM (via wrapVllm).`,
     );
   }
 

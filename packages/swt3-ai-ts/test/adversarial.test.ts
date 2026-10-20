@@ -259,7 +259,7 @@ describe("clearing level enforcement", () => {
 describe("injection resistance", () => {
   it("SQL injection in tenantId is passed through as-is (server must validate)", () => {
     // The SDK should not crash -- server-side validation is the guard
-    const w = mkWitness({ tenantId: "'; DROP TABLE evidence_table; --" });
+    const w = mkWitness({ tenantId: "'; DROP TABLE compliance_records; --" });
     w.witnessSecurityScan(100);
     expect(w.pending).toBeGreaterThan(0);
   });

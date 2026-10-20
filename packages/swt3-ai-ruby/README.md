@@ -13,6 +13,23 @@ EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## What's New in v0.7.8
+
+Six new adapters unify evidence collection across IBM watsonx, AWS Bedrock, AWS Strands, and Mistral AI. Organizations running models across multiple cloud providers no longer need to reconcile separate audit trails -- every inference and policy decision produces a witness anchor in the same format regardless of provider.
+
+| Provider | Adapter | What it witnesses | Why it matters |
+|----------|---------|-------------------|----------------|
+| IBM watsonx.ai | `wrap_granite` | `generate()`, `generate_text()`, streaming | Enterprise AI on IBM's regulated cloud -- banks and insurers run Granite for document processing |
+| AWS Bedrock Guardrails | `wrap_bedrock_guardrails` | `apply_guardrail()` policy decisions (AI-GRD.1) | Content filtering audit trail -- proves guardrails were active, not just configured |
+| AWS Strands | `wrap_strands` | Agent callable invocations (AI-INF.1) | AWS agent orchestration framework -- 120+ enterprise customers with zero built-in audit |
+| Mistral AI | `wrap_mistral` | `chat.complete()`, `chat.stream()`, async | European sovereign AI -- Mistral runs on EU infrastructure, GPAI compliance required since Aug 2 |
+| NVIDIA NemoClaw | `NemoClawWitness` | Policy engine decisions (AI-GRD.1) | Hardware-level AI governance -- NeMo Guardrails policy decisions witnessed independently |
+| NVIDIA ROSClaw | `ROSClawWitness` | ROS 2 robotics audit log events | Robotics compliance -- EU Machinery Regulation (Jan 2027) requires AI decision evidence in safety-critical robots |
+
+Guides: [IBM Granite Adapter](https://sovereign.tenova.io/guides/ibm-granite-watsonx-crosswalk.html) | [AWS Bedrock Guardrails](https://sovereign.tenova.io/guides/aws-bedrock-guardrails-crosswalk.html) | [Mistral AI Adapter](https://sovereign.tenova.io/guides/mistral-ai-governance-crosswalk.html) | [NVIDIA NemoClaw](https://sovereign.tenova.io/guides/nvidia-nemoclaw-governance-crosswalk.html)
+
+**Why this matters for Ruby:** Ruby applications that aggregate compliance data from multiple AI providers -- common in fintech and regulated SaaS -- can now verify witness anchors from IBM Granite, AWS Bedrock, and Mistral inferences alongside existing OpenAI and Anthropic anchors. Cross-language fingerprint parity means a Ruby verification service trusts anchors from any SDK language. v0.7.8 brings all SDKs back to version lockstep.
+
 ## What's New in v0.7.6
 
 Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
@@ -336,10 +353,10 @@ All SWT3 SDKs produce identical fingerprints from the same inputs. A unified aud
 
 | Your Stack | SDK | What You Get |
 |-----------|-----|-------------|
-| Python ML pipeline | [swt3-ai (PyPI)](https://pypi.org/project/swt3-ai/) | Full witness pipeline: `wrap(client)`, buffer management, clearing engine, 21 adapters (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LiteLLM, LangChain, CrewAI, etc.) |
+| Python ML pipeline | [swt3-ai (PyPI)](https://pypi.org/project/swt3-ai/) | Full witness pipeline: `wrap(client)`, buffer management, clearing engine, 49 adapters (OpenAI, Anthropic, Bedrock, vLLM, Ollama, LiteLLM, LangChain, CrewAI, etc.) |
 | TypeScript/Node API | [@tenova/swt3-ai (npm)](https://www.npmjs.com/package/@tenova/swt3-ai) | ES6 Proxy wrapping, streaming support, Vercel AI SDK adapter, OTel export |
 | Rails, Sidekiq, Grape, Hanami | **swt3-ai (this gem)** | Fingerprint, signing, and verification primitives. Embed witnessing into controllers, workers, middleware, or rake tasks |
-| MCP-enabled agents | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | 37 MCP tools, transport middleware for zero-code witnessing |
+| MCP-enabled agents | [@tenova/swt3-mcp](https://www.npmjs.com/package/@tenova/swt3-mcp) | 75 MCP tools, transport middleware for zero-code witnessing |
 
 Your Python team trains the model and wraps inference with the full pipeline. Your Ruby infrastructure witnesses every downstream decision, API call, and background job that touches the model's output. Same fingerprints, same anchors, same audit trail.
 
