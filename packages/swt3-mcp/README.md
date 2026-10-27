@@ -2,11 +2,46 @@
 
 > Listed on the [MCP Registry](https://github.com/modelcontextprotocol/servers) as `io.tenova/swt3-witness`
 
-MCP server for the SWT3 AI Witness protocol. Adds cryptographic compliance attestation to any MCP-compatible AI agent.
+MCP server for the SWT3™ AI Witness protocol. Adds cryptographic compliance attestation to any MCP-compatible AI agent.
 
 SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outputs locally, extracting numeric factors (latency, token count, guardrail status), and anchoring them into a cryptographic fingerprint that anyone can independently verify. Your prompts and responses never leave your machine. The auditor gets tamper-proof evidence. You keep your data.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. The four platforms that developers actually deploy on every day -- Groq for speed, Together AI for open-weight hosting, DeepSeek for cost-effective reasoning, and Azure OpenAI for enterprise cloud -- now have native witness adapters with full auto-detection in both Python and TypeScript. Six new provider-specific witnessing guides walk through setup from first install to production deployment. The adapter ecosystem now covers 47 providers across 10 SDK languages.
+
+**Why this matters for MCP:** The MCP server is the integration point where all of this converges. When a Claude Desktop user invokes an MCP tool that calls Groq for fast inference and Azure OpenAI for a secondary check, both calls produce witness anchors in the same format. The MCP server's `swt3_query_anchors` tool lets the user inspect, filter, and export those anchors without knowing which provider handled which call. With v0.7.9, every major commercial inference provider -- OpenAI, Anthropic, Google Vertex, AWS Bedrock, IBM Granite, Mistral, Groq, Together AI, DeepSeek, Azure OpenAI, Cohere, and NVIDIA -- produces anchors that flow through the MCP server's 75 tools. No provider-specific configuration. No separate audit dashboards. One MCP server, one evidence stream.
+
+The six new guides cover the most common MCP deployment patterns:
+
+| Guide | What it covers |
+|-------|---------------|
+| [OpenAI GPT Witnessing](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | GPT-4o, o1, o3 with streaming and system fingerprint capture |
+| [Anthropic Claude Witnessing](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | Claude with streaming, tool use chains, and extended thinking |
+| [Google Vertex/Gemini Witnessing](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | Vertex AI via OpenAI-compatible endpoint + Google ADK agent witnessing |
+| [DeepSeek GPAI Witnessing](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | R1 reasoning chain capture, GPAI Code of Practice mapping |
+| [Groq Witnessing](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html) | LPU inference with latency attestation |
+| [LangChain/LangGraph Witnessing](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | Callback handler + proxy adapter for chain and graph orchestration |
+
+### New Adapters in v0.7.9
+
+| Adapter | Provider Tag | Notes |
+|---------|-------------|-------|
+| `wrap_groq` / `wrapGroq` | `groq` | LPU inference with latency capture |
+| `wrap_together` / `wrapTogether` | `together` | Open-weight model serving |
+| `wrap_deepseek` / `wrapDeepSeek` | `deepseek` | R1 reasoning chain witnessing |
+| `wrap_azure_openai` / `wrapAzureOpenAI` | `azure-openai` | Deployment name preservation, content filter detection |
+
+### Discovery File Sync
+
+v0.7.9 also aligns all MCP discovery metadata. The `mcp.json`, `agent-card.json`, `llms.txt`, and `server.json` files now report identical version numbers, framework counts, and guide counts. MCP crawlers and agent discovery bots see consistent metadata across every endpoint.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces
+- 75 MCP tools, 340 compliance guides, 78 regulatory frameworks, 47 adapters, 10 SDK languages
 
 ## What's New in v0.7.8
 
@@ -46,8 +81,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026: 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 75 MCP tools, 310 compliance guides, 85 regulatory frameworks
+- 293 procedures across 10 namespaces
+- 75 MCP tools, 340 compliance guides, 78 regulatory frameworks
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -663,7 +698,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT procedure registry (293 procedures, 10 namespaces).
+`list_procedures` -- browse the UCT™ procedure registry (293 procedures, 10 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.
@@ -707,6 +742,6 @@ Raw prompt and response text never leaves your machine at any clearing level.
 
 Apache 2.0. Patent pending.
 
-Built by [TeNova](https://tenova.io). Questions: engineering@tenovaai.com
+Built by [TeNova™](https://tenova.io). Questions: engineering@tenovaai.com
 
-SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. MCP (Model Context Protocol) is a trademark of Anthropic PBC. All other third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC. This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. MCP (Model Context Protocol) is a trademark of Anthropic PBC. All other third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

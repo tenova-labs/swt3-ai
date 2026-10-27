@@ -5,11 +5,33 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 # swt3-ai
 
-**SWT3 AI Witness SDK for Kotlin/Android**: mint, verify, and sign SWT3 witness anchors with cross-language parity. One dependency. Zero data retention. Your prompts and responses never leave your infrastructure.
+**SWT3™ AI Witness SDK for Kotlin/Android**: mint, verify, and sign SWT3 witness anchors with cross-language parity. One dependency. Zero data retention. Your prompts and responses never leave your infrastructure.
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## Ecosystem: v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
+
+| Adapter | Provider Tag | Notes |
+|---------|-------------|-------|
+| `wrap_groq` / `wrapGroq` | `groq` | LPU inference with latency capture |
+| `wrap_together` / `wrapTogether` | `together` | Open-weight model serving |
+| `wrap_deepseek` / `wrapDeepSeek` | `deepseek` | R1 reasoning chain witnessing |
+| `wrap_azure_openai` / `wrapAzureOpenAI` | `azure-openai` | Deployment name preservation, content filter detection |
+
+New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**Why this matters for Kotlin:** Android and JVM applications orchestrating inference across Groq, Together AI, DeepSeek, and Azure OpenAI can verify witness anchors with byte-identical output across all 10 SDK languages -- zero dependency changes via `Fingerprint.mint()`. Kotlin/JVM backends acting as MCP middleware can verify anchors collected by the `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) from any of the 47 adapters. Android apps combining on-device ML Kit inference with cloud calls get a unified attestation chain.
+
+v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
 
 ## Ecosystem: v0.7.8
 
@@ -42,8 +64,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 85 regulatory frameworks, 310 compliance guides
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## Ecosystem: v0.7.4
@@ -285,18 +307,21 @@ The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}
 
 ## Regulatory Coverage
 
-293 procedures across 10 namespaces. 86 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
+293 procedures across 10 namespaces. 78 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
 
 ## Resources
 
 - [SDK Documentation](https://sovereign.tenova.io/docs/) -- quickstart, provider matrix, API reference
-- [UCT Registry](https://swt3.ai/registry) -- 293 procedures, searchable
+- [UCT™ Registry](https://swt3.ai/registry) -- 293 procedures, searchable
 - [Public Verifier](https://swt3.ai/verify) -- verify any anchor in your browser
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable to hand your auditor during assessment meetings
-- [All 324 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [All 330 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ## License
 
 Apache 2.0. Verification is free, forever.
 
 Copyright (c) 2026 Tenable Nova LLC. Patent pending.
+
+---
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC.

@@ -5,11 +5,33 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 # swt3-ai
 
-**SWT3 AI Witness SDK for Rust**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external runtime dependencies beyond `sha2`, `hmac`, and `hex`.
+**SWT3™ AI Witness SDK for Rust**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external runtime dependencies beyond `sha2`, `hmac`, and `hex`.
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
+
+| Adapter | Provider Tag | Notes |
+|---------|-------------|-------|
+| `wrap_groq` / `wrapGroq` | `groq` | LPU inference with latency capture |
+| `wrap_together` / `wrapTogether` | `together` | Open-weight model serving |
+| `wrap_deepseek` / `wrapDeepSeek` | `deepseek` | R1 reasoning chain witnessing |
+| `wrap_azure_openai` / `wrapAzureOpenAI` | `azure-openai` | Deployment name preservation, content filter detection |
+
+New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**Why this matters for Rust:** All 47 adapter-produced anchors verify with the existing `mint_fingerprint` function -- zero crate changes. Rust API gateways and Kubernetes operators verifying anchors from mixed-provider environments (Groq for speed, Azure OpenAI for enterprise, DeepSeek for cost) get byte-identical fingerprints. If you're building an MCP server in Rust, the `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) aggregates anchors from all 47 adapters -- and every anchor it collects verifies against this crate.
+
+v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
 
 ## What's New in v0.7.8
 
@@ -42,8 +64,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026: 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 85 regulatory frameworks, 310 compliance guides
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -270,6 +292,6 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
-SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
 
 This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

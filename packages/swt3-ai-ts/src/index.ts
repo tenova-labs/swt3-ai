@@ -67,6 +67,10 @@ export { wrapBedrockGuardrails } from "./adapters/bedrock_guardrails.js";
 export { wrapStrands } from "./adapters/strands.js";
 export { OpenShellWitness } from "./adapters/openshell.js";
 export type { OcsfEvent, OpenShellStats } from "./adapters/openshell.js";
+export { wrapGroq, isGroqClient, isGroqURL } from "./adapters/groq.js";
+export { wrapTogether, isTogetherClient, isTogetherURL } from "./adapters/together.js";
+export { wrapDeepSeek, isDeepSeekClient } from "./adapters/deepseek.js";
+export { wrapAzureOpenAI, isAzureOpenAIClient } from "./adapters/azure-openai.js";
 export { queryHardware, detectTopology, topologyCode, TOPOLOGY_CODES, queryTPM, parseTPMPcrOutput, ZERO_PCR_HASH, queryGoogleTPU, queryAmdRocm, queryAwsNeuron, queryIntelGaudi, queryPciFallback } from "./hardware.js";
 export type { GpuInfo, HardwareSnapshot, TPMSnapshot, PcrRegister, AcceleratorInfo, SiliconVendor } from "./hardware.js";
 export {

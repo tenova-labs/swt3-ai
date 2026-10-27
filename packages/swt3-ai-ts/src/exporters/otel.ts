@@ -27,6 +27,7 @@ const GENAI_SYSTEM_MAP: Record<string, string> = {
   claude: "anthropic",
   bedrock: "aws.bedrock",
   aws: "aws.bedrock",
+  "azure-openai": "az.ai.openai",
   azure: "az.ai.inference",
   gemini: "google.gemini",
   google: "google.gemini",
@@ -38,6 +39,9 @@ const GENAI_SYSTEM_MAP: Record<string, string> = {
   cohere: "cohere",
   replicate: "replicate",
   huggingface: "huggingface",
+  groq: "groq",
+  together: "together_ai",
+  deepseek: "deepseek",
 };
 
 function inferGenaiSystem(provider?: string, modelId?: string): string | undefined {

@@ -152,22 +152,23 @@ export class ROSClawWitness {
     const modelId = `rosclaw-${actionName}`;
 
     const record: InferenceRecord = {
-      model_id: modelId,
-      model_hash: sha256Truncated(modelId, 16),
-      prompt_hash: sha256Truncated(`${agentId}:${actionName}:${timestampMs}`, 16),
-      response_hash: sha256Truncated(`${decision}:${outcome ?? "none"}:${timestampMs}`, 16),
-      latency_ms: entry.execution_ms ?? 0,
+      modelId,
+      modelHash: sha256Truncated(modelId, 16),
+      promptHash: sha256Truncated(`${agentId}:${actionName}:${timestampMs}`, 16),
+      responseHash: sha256Truncated(`${decision}:${outcome ?? "none"}:${timestampMs}`, 16),
+      latencyMs: entry.execution_ms ?? 0,
       provider: "rosclaw",
-      has_refusal: blocked,
-      guardrails_active: procedure === "AI-SAFE.1" ? 1 : 0,
-      guardrails_required: procedure === "AI-SAFE.1" ? 1 : 0,
-      guardrail_passed: !blocked,
-      tool_name: TOOL_PROCEDURES.has(procedure) ? actionName : undefined,
-      access_target: undefined,
-      access_granted: !blocked,
+      hasRefusal: blocked,
+      guardrailsActive: procedure === "AI-SAFE.1" ? 1 : 0,
+      guardrailsRequired: procedure === "AI-SAFE.1" ? 1 : 0,
+      guardrailPassed: !blocked,
+      guardrailNames: [],
+      toolName: TOOL_PROCEDURES.has(procedure) ? actionName : undefined,
+      accessTarget: undefined,
+      accessGranted: !blocked,
     };
 
-    this.witness.record(record, { procedures: [procedure] });
+    this.witness.record(record, procedure);
     return procedure;
   }
 

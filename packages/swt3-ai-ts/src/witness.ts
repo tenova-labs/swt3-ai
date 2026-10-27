@@ -33,6 +33,10 @@ import { wrapAnthropic } from "./adapters/anthropic.js";
 import { wrapBedrock } from "./adapters/bedrock.js";
 import { wrapOllama, isOllamaClient } from "./adapters/ollama.js";
 import { wrapVllm } from "./adapters/vllm.js";
+import { wrapGroq, isGroqClient, isGroqURL } from "./adapters/groq.js";
+import { wrapTogether, isTogetherClient, isTogetherURL } from "./adapters/together.js";
+import { wrapDeepSeek, isDeepSeekClient } from "./adapters/deepseek.js";
+import { wrapAzureOpenAI, isAzureOpenAIClient } from "./adapters/azure-openai.js";
 import { queryHardware as queryHw, topologyCode as topoCode, queryTPM as queryTpm, ZERO_PCR_HASH } from "./hardware.js";
 import type { TPMSnapshot } from "./hardware.js";
 import { queryEnvironment as queryEnv, NODE_TYPE_CODES } from "./environment.js";
@@ -73,6 +77,15 @@ export const REACHABILITY_METHOD_CODES: Record<string, number> = { manual: 0, au
 export const DISPOSAL_METHOD_CODES: Record<string, number> = { archived: 0, destroyed: 1, isolated: 2, transferred: 3 };
 export const RECOMMISSION_TYPE_CODES: Record<string, number> = { full_validation: 0, shadow_mode: 1, limited_scope: 2 };
 export const LOCK_SCOPE_CODES: Record<string, number> = { weights_only: 0, config_and_params: 1, full_stack: 2 };
+
+// ── CON: Construction / Physical AI Governance Codes (v0.8.0) ────────
+export const CON_VERIFICATION_METHOD_CODES: Record<string, number> = { sensor: 0, ai_vision: 1, inspector: 2, laser: 3, caliper: 4, destructive_test: 5 };
+export const CON_INSPECTION_TYPE_CODES: Record<string, number> = { structural: 0, electrical: 1, fire: 2, mechanical: 3, plumbing: 4, general: 5 };
+export const CON_OUTCOME_CODES: Record<string, number> = { completed: 0, failed: 1, aborted: 2, partial: 3 };
+export const CON_TOOL_TYPE_CODES: Record<string, number> = { saw: 0, fastener: 1, router: 2, conveyor: 3, welder: 4, robot_arm: 5, printer_3d: 6, other: 7 };
+export const CON_STATE_CODES: Record<string, number> = { idle: 0, calibrating: 1, production_ready: 2, active_fabrication: 3, tool_change: 4, maintenance: 5, material_loading: 6, emergency_stop: 7 };
+export const CON_TRANSITION_BY_CODES: Record<string, number> = { ai: 0, human: 1, interlock: 2, scheduled: 3 };
+export const CON_UPDATE_SOURCE_CODES: Record<string, number> = { ota_remote: 0, local_deploy: 1, rollback: 2, hotfix: 3 };
 
 // ── Chain Density Enforcement ──────────────────────────────────────────
 
@@ -893,11 +906,34 @@ export class Witness {
     const name = proto?.constructor?.name ?? "";
     const obj = client as Record<string, unknown>;
 
-    // OpenAI: has client.chat.completions
-    if (name === "OpenAI" || obj?.chat) {
-      // Check for Ollama before defaulting to OpenAI
+    // Groq SDK (own class, OAI-compatible)
+    if (isGroqClient(client)) {
+      return wrapGroq(client, this);
+    }
+
+    // Together AI SDK (own class, OAI-compatible)
+    if (isTogetherClient(client)) {
+      return wrapTogether(client, this);
+    }
+
+    // OpenAI / AzureOpenAI / OAI-compatible: has client.chat.completions
+    if (name === "OpenAI" || name === "AzureOpenAI" || obj?.chat) {
+      // Check specialized providers before defaulting to OpenAI
       if (isOllamaClient(client)) {
         return wrapOllama(client, this);
+      }
+      if (isDeepSeekClient(client)) {
+        return wrapDeepSeek(client, this);
+      }
+      if (isAzureOpenAIClient(client)) {
+        return wrapAzureOpenAI(client, this);
+      }
+      // Fallback: OpenAI SDK pointed at alternative providers
+      if (isGroqURL(client)) {
+        return wrapGroq(client, this);
+      }
+      if (isTogetherURL(client)) {
+        return wrapTogether(client, this);
       }
       return wrapOpenAI(client, this);
     }
@@ -923,7 +959,7 @@ export class Witness {
     }
 
     throw new TypeError(
-      `Unsupported client: ${name || "unknown"}. Supported: OpenAI, Ollama, Anthropic, BedrockRuntimeClient, Mistral, ibm-watsonx-ai ModelInference, vLLM (via wrapVllm).`,
+      `Unsupported client: ${name || "unknown"}. Supported: OpenAI, AzureOpenAI, Ollama, DeepSeek, Groq, Together, Anthropic, BedrockRuntimeClient, Mistral, ibm-watsonx-ai ModelInference, vLLM (via wrapVllm).`,
     );
   }
 
@@ -3917,6 +3953,256 @@ export class Witness {
     if (this.config.clearingLevel <= 1) {
       payload.ai_model_id = `hbom-supply-${options.provenanceVerified ? "verified" : "unverified"}`;
       const ctx: Record<string, unknown> = { provider: "hbom-governance", supplier_id_hash: sha256Truncated(options.supplierId, 8), provenance_verified: options.provenanceVerified, country_of_origin: options.countryOfOrigin };
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  // ── CON: Construction / Physical AI Governance (v0.8.0) ────────
+
+  /** Witness structural verification of AI-determined parameters (CON-STR.1). IBC Table 2308.5.1, EU Machinery Reg Art. 3. */
+  witnessStructuralVerification(options: {
+    requirementValue: number;
+    computedValue: number;
+    verificationMethod: string;
+    codeRequirement?: string;
+    codeEdition?: string;
+    loadCondition?: string;
+    structuralElement?: string;
+    unit?: string;
+    componentId?: string;
+  }): WitnessPayload {
+    const fa = options.requirementValue;
+    const fb = options.computedValue;
+    const fc = CON_VERIFICATION_METHOD_CODES[options.verificationMethod] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "CON-STR.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "CON-STR.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-structural-${options.structuralElement ?? "verification"}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        verification_method: options.verificationMethod,
+        requirement_value: options.requirementValue,
+        computed_value: options.computedValue,
+      };
+      if (options.codeRequirement) ctx.code_requirement = options.codeRequirement;
+      if (options.codeEdition) ctx.code_edition = options.codeEdition;
+      if (options.loadCondition) ctx.load_condition = options.loadCondition;
+      if (options.structuralElement) ctx.structural_element = options.structuralElement;
+      if (options.unit) ctx.unit = options.unit;
+      if (options.componentId) ctx.component_id = options.componentId;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness inspection attestation for AI-fabricated components (CON-INS.1). OSHA 1926.20(b)(2), IBC. */
+  witnessInspection(options: {
+    itemsRequired: number;
+    itemsPassed: number;
+    inspectorId?: string;
+    inspectionType?: string;
+    componentId?: string;
+    permitNumber?: string;
+    failedItems?: string[];
+  }): WitnessPayload {
+    const fa = options.itemsRequired;
+    const fb = options.itemsPassed;
+    const fc = CON_INSPECTION_TYPE_CODES[options.inspectionType ?? "general"] ?? 5;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "CON-INS.1", fa, fb, fc, ts);
+    const inspectorHash = options.inspectorId ? sha256Truncated(options.inspectorId, 16) : undefined;
+    const payload: WitnessPayload = {
+      procedure_id: "CON-INS.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-inspection-${options.inspectionType ?? "general"}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        items_required: options.itemsRequired,
+        items_passed: options.itemsPassed,
+      };
+      if (inspectorHash) ctx.inspector_id_hash = inspectorHash;
+      if (options.inspectionType) ctx.inspection_type = options.inspectionType;
+      if (options.componentId) ctx.component_id = options.componentId;
+      if (options.permitNumber) ctx.permit_number = options.permitNumber;
+      payload.ai_context = ctx;
+    }
+    if (this.config.clearingLevel === 0) {
+      if (!payload.ai_context) payload.ai_context = {};
+      if (options.failedItems) (payload.ai_context as Record<string, unknown>).failed_items = options.failedItems;
+      if (options.inspectorId) (payload.ai_context as Record<string, unknown>).inspector_id_raw = options.inspectorId;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness environmental conditions at a manufacturing or deployment site (CON-ENV.1). EU Machinery Reg Art. 3, ISO 10218 Cl. 5.10. */
+  witnessSiteEnvironment(options: {
+    conditionsMonitored: number;
+    conditionsNominal: number;
+    temperatureC?: number;
+    humidityPct?: number;
+    siteId?: string;
+    powerStable?: boolean;
+    vibrationLevel?: number;
+  }): WitnessPayload {
+    const fa = options.conditionsMonitored;
+    const fb = options.conditionsNominal;
+    const fc = 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "CON-ENV.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "CON-ENV.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-environment-${options.siteId ?? "site"}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        conditions_monitored: options.conditionsMonitored,
+        conditions_nominal: options.conditionsNominal,
+      };
+      if (options.temperatureC != null) ctx.temperature_c = options.temperatureC;
+      if (options.humidityPct != null) ctx.humidity_pct = options.humidityPct;
+      if (options.siteId) ctx.site_id = options.siteId;
+      if (options.powerStable != null) ctx.power_stable = options.powerStable;
+      if (options.vibrationLevel != null) ctx.vibration_level_mm_s_rms = options.vibrationLevel;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness a manufacturing command issued to a physical actuator (AI-TOOL.1). EU Machinery Reg Art. 3, IBC fabrication audit. */
+  witnessFabricationCommand(options: {
+    toolName: string;
+    outcome: string;
+    designId?: string;
+    deviceId?: string;
+    productionRunId?: string;
+    executionMs?: number;
+    programId?: string;
+  }): WitnessPayload {
+    const fa = options.executionMs ?? 1;
+    const fb = CON_OUTCOME_CODES[options.outcome] ?? 0;
+    const toolKey = options.toolName.includes("_") ? options.toolName.split("_")[0] : options.toolName;
+    const fc = CON_TOOL_TYPE_CODES[toolKey] ?? 7;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-TOOL.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-TOOL.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-fabrication-${options.toolName}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        tool_name: options.toolName,
+        outcome: options.outcome,
+      };
+      if (options.designId) ctx.design_id = options.designId;
+      if (options.deviceId) ctx.device_id = options.deviceId;
+      if (options.productionRunId) ctx.production_run_id = options.productionRunId;
+      if (options.executionMs != null) ctx.execution_ms = options.executionMs;
+      if (options.programId) ctx.program_id = options.programId;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness a factory cell state transition (AI-SAFE.1). EU Machinery Reg Art. 3, ISO 10218 Cl. 5.4. */
+  witnessConstructionSafety(options: {
+    previousState: string;
+    nextState: string;
+    transitionBy?: string;
+    interlocksVerified?: boolean;
+    cellId?: string;
+    durationMs?: number;
+  }): WitnessPayload {
+    const fa = CON_STATE_CODES[options.previousState] ?? 0;
+    const fb = CON_STATE_CODES[options.nextState] ?? 0;
+    const fc = CON_TRANSITION_BY_CODES[options.transitionBy ?? "ai"] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-SAFE.1", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-SAFE.1", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-safety-${options.previousState}-to-${options.nextState}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        previous_state: options.previousState,
+        next_state: options.nextState,
+      };
+      if (options.transitionBy) ctx.transition_by = options.transitionBy;
+      if (options.interlocksVerified != null) ctx.interlocks_verified = options.interlocksVerified;
+      if (options.cellId) ctx.cell_id = options.cellId;
+      if (options.durationMs != null) ctx.duration_ms = options.durationMs;
+      payload.ai_context = ctx;
+    }
+    const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;
+    this._applyOperationalMetadata(payload, policyHash);
+    this._enqueueSampled(payload);
+    return payload;
+  }
+
+  /** Witness an AI model version update on manufacturing equipment (AI-MDL.2). EU Machinery Reg Art. 18, PLD Art. 7. */
+  witnessModelVersion(options: {
+    versionBefore: string;
+    versionAfter: string;
+    deviceId?: string;
+    updateSource?: string;
+    foreseenChange?: boolean;
+    behavioralDelta?: string;
+  }): WitnessPayload {
+    const beforeHash = parseInt(sha256Truncated(options.versionBefore, 16).slice(0, 8), 16);
+    const afterHash = parseInt(sha256Truncated(options.versionAfter, 16).slice(0, 8), 16);
+    const fa = beforeHash;
+    const fb = afterHash;
+    const fc = CON_UPDATE_SOURCE_CODES[options.updateSource ?? "ota_remote"] ?? 0;
+    const [ts, epoch] = timestampMs();
+    const fp = mintFingerprint(this.config.tenantId, "AI-MDL.2", fa, fb, fc, ts);
+    const payload: WitnessPayload = {
+      procedure_id: "AI-MDL.2", factor_a: fa, factor_b: fb, factor_c: fc,
+      clearing_level: this.config.clearingLevel,
+      anchor_fingerprint: fp, anchor_epoch: epoch, fingerprint_timestamp_ms: ts,
+    };
+    if (this.config.clearingLevel <= 1) {
+      payload.ai_model_id = `con-model-update-${options.versionAfter}`;
+      const ctx: Record<string, unknown> = {
+        provider: "physical-ai",
+        version_before: options.versionBefore,
+        version_after: options.versionAfter,
+      };
+      if (options.deviceId) ctx.device_id = options.deviceId;
+      if (options.updateSource) ctx.update_source = options.updateSource;
+      if (options.foreseenChange != null) ctx.foreseen_change = options.foreseenChange;
+      if (options.behavioralDelta) ctx.behavioral_delta = options.behavioralDelta;
       payload.ai_context = ctx;
     }
     const policyHash = this.config.policyVersion ? sha256Truncated(this.config.policyVersion, 12) : undefined;

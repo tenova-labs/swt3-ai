@@ -145,22 +145,23 @@ export class NemoClawWitness {
     const modelId = `nemoclaw-${policyRule}`;
 
     const record: InferenceRecord = {
-      model_id: modelId,
-      model_hash: sha256Truncated(modelId, 16),
-      prompt_hash: sha256Truncated(`${agentId}:${resource}:${timestampMs}`, 16),
-      response_hash: sha256Truncated(`${decision}:${timestampMs}`, 16),
-      latency_ms: event.evaluation_ms ?? 0,
+      modelId,
+      modelHash: sha256Truncated(modelId, 16),
+      promptHash: sha256Truncated(`${agentId}:${resource}:${timestampMs}`, 16),
+      responseHash: sha256Truncated(`${decision}:${timestampMs}`, 16),
+      latencyMs: event.evaluation_ms ?? 0,
       provider: "nvidia-nemoclaw",
-      has_refusal: denied,
-      guardrails_active: 1,
-      guardrails_required: 1,
-      guardrail_passed: !denied,
-      tool_name: TOOL_PROCEDURES.has(procedure) ? resource : undefined,
-      access_target: ACCESS_PROCEDURES.has(procedure) ? resource : undefined,
-      access_granted: !denied,
+      hasRefusal: denied,
+      guardrailsActive: 1,
+      guardrailsRequired: 1,
+      guardrailPassed: !denied,
+      guardrailNames: [policyRule],
+      toolName: TOOL_PROCEDURES.has(procedure) ? resource : undefined,
+      accessTarget: ACCESS_PROCEDURES.has(procedure) ? resource : undefined,
+      accessGranted: !denied,
     };
 
-    this.witness.record(record, { procedures: [procedure] });
+    this.witness.record(record, procedure);
     return procedure;
   }
 

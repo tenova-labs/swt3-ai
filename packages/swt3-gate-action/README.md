@@ -1,6 +1,6 @@
 # SWT3 Governance Gate - GitHub Action
 
-Evaluate AI governance compliance gates in your CI/CD pipeline using SWT3 witness anchors.
+Evaluate AI governance compliance gates in your CI/CD pipeline using SWT3™ witness anchors.
 
 ## Usage
 
@@ -55,3 +55,6 @@ The `sdk-version` input pins the exact `@tenova/swt3-ai` version installed durin
 ## License
 
 Apache-2.0. SWT3 is a trademark of Tenable Nova LLC. Patent pending.
+
+---
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC.

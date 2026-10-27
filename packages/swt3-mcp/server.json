@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.tenova/swt3-witness",
   "title": "SWT3 AI Witness",
-  "description": "Cryptographic AI governance and audit. 75 tools, 86 frameworks. EU AI Act, NIST, CMMC, DORA, G7 AI-SBOM, MCP Top 10.",
+  "description": "Cryptographic AI governance and audit. 75 tools, 78 frameworks, 47 provider adapters. EU AI Act, NIST AI RMF, CMMC, DORA, G7 AI-SBOM, MCP Top 10, EU Machinery Regulation, ISO 10218. Adapters for OpenAI, Anthropic, Google Vertex, AWS Bedrock, Mistral, Groq, Together, DeepSeek, Azure OpenAI, IBM Granite, NVIDIA, Cohere, LangChain.",
   "websiteUrl": "https://tenova.io",
   "repository": {
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "0.7.8",
+  "version": "0.7.9",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "0.7.8",
+      "version": "0.7.9",
       "transport": {
         "type": "stdio"
       },
@@ -116,7 +116,22 @@
         "strands-agent-adapter",
         "cohere-adapter",
         "dora",
-        "g7-ai-sbom"
+        "g7-ai-sbom",
+        "voice-ai-compliance",
+        "synthetic-speech-governance",
+        "bipa-voiceprint",
+        "deepfake-audio",
+        "tcpa-ai-voice",
+        "c2pa-audio-provenance",
+        "openai-adapter",
+        "anthropic-adapter",
+        "google-vertex-adapter",
+        "groq-adapter",
+        "together-adapter",
+        "deepseek-adapter",
+        "azure-openai-adapter",
+        "langchain-adapter",
+        "ecosystem-adapters"
       ],
       "frameworks": [
         "EU AI Act",
@@ -138,7 +153,18 @@
         "DORA",
         "G7 AI-SBOM",
         "Singapore IMDA Agentic",
-        "NIST Agent Profile"
+        "NIST Agent Profile",
+        "GDPR",
+        "ISO 10218",
+        "EU Product Liability Directive",
+        "FSB AI Sound Practices",
+        "GPAI Code of Practice",
+        "Five Eyes Agentic AI",
+        "ISO 23894",
+        "NIST AI 600-1",
+        "EU Energy Efficiency Directive",
+        "EU Battery Regulation",
+        "EU Cyber Resilience Act"
       ]
     }
   }

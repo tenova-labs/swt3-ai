@@ -8,11 +8,49 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 # swt3-ai
 
-**SWT3 AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
+**SWT3™ AI Witness SDK**: tamper-proof evidence that your AI is doing what you say it does. Every inference hashed. Every tool call recorded. Every resource access checked against scope. No prompts or responses ever leave your infrastructure.
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the evidence chain for both.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.9
+
+v0.7.8 brought six cloud-infrastructure adapters. v0.7.9 finishes the story: the four platforms that developers actually deploy on every day -- Groq for speed, Together AI for open-weight hosting, DeepSeek for cost-effective reasoning, and Azure OpenAI for enterprise cloud -- now have native witness adapters with full auto-detection. Every adapter produces the same InferenceRecord format. An assessor reviewing your AI governance posture sees one unified evidence stream regardless of which providers your team chose.
+
+**Why this matters for Python:** Groq, Together, and DeepSeek all expose OpenAI-compatible APIs, but using `wrap_openai` on them loses provider attribution in your audit trail. The new adapters tag every anchor with the correct provider -- `groq`, `together`, `deepseek`, or `azure-openai` -- so your OTel dashboards, compliance exports, and SOC 2 evidence packages show exactly which provider handled each inference. Auto-detection works with both native SDKs (`Groq()`, `Together()`) and OpenAI SDK pointed at alternative base URLs. Zero new dependencies, zero config changes.
+
+```python
+# Groq -- native SDK or OpenAI-compatible
+from groq import Groq
+client = witness.wrap(Groq())  # auto-detected by module name
+# Or: OpenAI(base_url="https://api.groq.com/openai/v1")  # auto-detected by URL
+
+# Together AI -- open-weight model serving
+from together import Together
+client = witness.wrap(Together())  # auto-detected
+
+# DeepSeek -- R1 reasoning chains included in response hash
+from openai import OpenAI
+client = witness.wrap(OpenAI(base_url="https://api.deepseek.com", api_key="sk-..."))
+
+# Azure OpenAI -- deployment names preserved as model_id
+from openai import AzureOpenAI
+client = witness.wrap(AzureOpenAI(azure_endpoint="https://myresource.openai.azure.com", ...))
+```
+
+| Adapter | Function | Provider Tag | Notes |
+|---------|----------|-------------|-------|
+| Groq | `wrap_groq` | `groq` | LPU inference with latency capture |
+| Together AI | `wrap_together` | `together` | Open-weight model serving |
+| DeepSeek | `wrap_deepseek` | `deepseek` | R1 reasoning chain witnessing |
+| Azure OpenAI | `wrap_azure_openai` | `azure-openai` | Deployment name preservation, content filter detection |
+
+New witnessing guides: [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**MCP integration:** The `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) aggregates anchors from all 47 Python and TypeScript adapters. MCP-connected AI assistants (Claude Desktop, ChatGPT, Cursor) can query, verify, and export compliance evidence from any provider without leaving the conversation. v0.7.9 also syncs all MCP discovery files (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts -- agent crawlers and MCP registries see consistent metadata everywhere.
+
+**Coverage:** 293 procedures | 78 frameworks | 340 compliance guides | 47 adapters | 18 CLI profiles
 
 ## What's New in v0.7.8
 
@@ -119,8 +157,8 @@ rcw.process_entry({"entry_type": "action_proposal", "decision": "blocked", "reas
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 75 MCP tools, 310 compliance guides, 85 regulatory frameworks, 43 adapters
+- 293 procedures across 10 namespaces
+- 75 MCP tools, 340 compliance guides, 78 regulatory frameworks, 47 adapters
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html) | [EU Art. 50 Watermarking](https://sovereign.tenova.io/guides/eu-article-50-code-of-practice.html)
 
 ## What's New in v0.7.4
@@ -1669,7 +1707,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-86 frameworks bundled. 293 procedures mapped. Updated with each SDK release.
+78 frameworks bundled. 293 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -1714,12 +1752,12 @@ Multi-provider routing, model allowlist (advisory or strict), streaming support,
 
 [Gateway Documentation](https://github.com/tenova-labs/swt3-ai/tree/main/packages/swt3-gateway)
 
-### Axiom Sovereign Engine (Full Platform)
+### Axiom Sovereign Engine™ (Full Platform)
 
-The complete compliance platform as a container: dashboard, adjudicator, evidence chain, Merkle rollups.
+The complete compliance platform as a container: dashboard, witness engine, evidence chain.
 
 ```bash
-# Three-service deployment (dashboard + adjudicator + postgres)
+# Three-service deployment (dashboard + witness engine + postgres)
 docker compose up -d
 
 # Air-gap export for disconnected environments
@@ -2008,7 +2046,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [NVIDIA Dynamo Guide](https://sovereign.tenova.io/guides/dynamo-integration.html) -- infrastructure-layer witnessing
 - [SWT3 Protocol Spec](https://swt3.ai/spec) -- formal specification with ABNF grammar
 - [Design Rationale](https://sovereign.tenova.io/guides/swt3-design-rationale.html) -- why every protocol decision was made
-- [UCT Registry](https://swt3.ai/registry) -- full procedure catalog with factor definitions
+- [UCT™ Registry](https://swt3.ai/registry) -- full procedure catalog with factor definitions
 - [Anchor Verifier](https://swt3.ai/verify) -- verify any anchor, zero server calls
 - [Before & After](https://sovereign.tenova.io/guides/developer-before-after.html) -- manual audit evidence vs. cryptographic witness anchors
 - [Integration Patterns](https://sovereign.tenova.io/guides/developer-integration-patterns.html) -- 8 instrumentation patterns mapped to regulatory requirements
@@ -2017,13 +2055,13 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://swt3.ai/registry) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 86 frameworks
-- [All 324 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 78 frameworks
+- [All 330 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---
 
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
-SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
 
 This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners: OpenAI and GPT (OpenAI, Inc.); Claude and Anthropic (Anthropic PBC); Google, Gemini, Vertex AI, and ADK (Google LLC); Azure, Foundry, and Microsoft (Microsoft Corporation); AWS and Bedrock (Amazon Web Services, Inc.); NVIDIA and Dynamo (NVIDIA Corporation); Meta and Llama (Meta Platforms, Inc.); Ollama (Ollama, Inc.); LangChain (LangChain, Inc.); CrewAI (CrewAI, Inc.); MCP (Anthropic PBC); LiteLLM (BerriAI); vLLM (vLLM Project); Cerebras (Cerebras Systems, Inc.); LangGraph and LangChain (LangChain, Inc.). Use of these names is for identification and interoperability purposes only.

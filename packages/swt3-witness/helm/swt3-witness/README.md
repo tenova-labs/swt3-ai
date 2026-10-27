@@ -6,6 +6,12 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 (NVIDIA GPU, Google TPU, AMD MI, AWS Trainium/Inferentia, Intel Gaudi) and
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total to 47 adapters across 78 regulatory frameworks.
+
+**Why this matters:** The Helm chart deploys the DaemonSet that collects anchors from all SDK-instrumented workloads. With 47 adapters covering every major cloud AI provider, no chart configuration changes are required -- new adapters work automatically with existing witness agent deployments. The `@tenova/swt3-mcp` MCP server can query anchors collected by the witness agent, giving MCP-connected AI assistants cluster-wide governance visibility.
+
 ## What's New in v0.7.8
 
 Six new adapters unify evidence collection across IBM watsonx, AWS Bedrock, AWS Strands, and Mistral AI. Organizations running models across multiple cloud providers no longer need to reconcile separate audit trails -- every inference and policy decision produces a witness anchor in the same format regardless of provider.

@@ -843,6 +843,78 @@
       "fingerprint_timestamp_ms": 1774800015000,
       "clearing_level": 1,
       "expected_fingerprint": "8ead3df6087d"
+    },
+    {
+      "id": 71,
+      "description": "CON-STR.1 Structural Verification - PASS (15.8 within 16.0 limit, sensor method)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "CON-STR.1",
+      "factor_a": 16.0,
+      "factor_b": 15.8,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800016000,
+      "clearing_level": 1,
+      "expected_fingerprint": "0ee1649ccbbe"
+    },
+    {
+      "id": 72,
+      "description": "CON-INS.1 Inspection Attestation - PASS (12/12 structural)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "CON-INS.1",
+      "factor_a": 12,
+      "factor_b": 12,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800017000,
+      "clearing_level": 1,
+      "expected_fingerprint": "c076ff286627"
+    },
+    {
+      "id": 73,
+      "description": "CON-ENV.1 Site Environment - all nominal (5/5 conditions within range)",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "CON-ENV.1",
+      "factor_a": 5,
+      "factor_b": 5,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800018000,
+      "clearing_level": 1,
+      "expected_fingerprint": "16d419b8f6e8"
+    },
+    {
+      "id": 74,
+      "description": "AI-TOOL.1 Fabrication Command - panel saw completed in 450ms",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-TOOL.1",
+      "factor_a": 450,
+      "factor_b": 0,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800019000,
+      "clearing_level": 1,
+      "expected_fingerprint": "cddaad5efba1"
+    },
+    {
+      "id": 75,
+      "description": "AI-SAFE.1 Construction Safety - calibrating to active_fabrication, AI-initiated",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-SAFE.1",
+      "factor_a": 1,
+      "factor_b": 3,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800020000,
+      "clearing_level": 1,
+      "expected_fingerprint": "e3515ef1aa6d"
+    },
+    {
+      "id": 76,
+      "description": "AI-MDL.2 Model Version - OTA update v2.3.1 to v2.4.0",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-MDL.2",
+      "factor_a": 2857152932.0,
+      "factor_b": 3826105389.0,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800021000,
+      "clearing_level": 1,
+      "expected_fingerprint": "e878eec3563e"
     }
   ],
   "signing_vectors": [

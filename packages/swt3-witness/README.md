@@ -1,4 +1,4 @@
-# SWT3 Witness Agent
+# SWT3™ Witness Agent
 
 Cross-silicon hardware attestation for Kubernetes AI infrastructure.
 
@@ -7,6 +7,21 @@ Runs as a **DaemonSet** -- one pod per node. Discovers accelerator hardware
 mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
+
+New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**Why this matters for Kubernetes:** The witness agent DaemonSet collects anchors from all SDK-instrumented workloads across the cluster. With 47 adapters, pods running Groq for low-latency inference, Azure OpenAI for enterprise workloads, DeepSeek for cost-optimized batch jobs, and Together AI for open-weight models all produce anchors the agent collects, batches, and forwards -- zero provider-specific configuration. The `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) can query anchors collected by the witness agent, giving MCP-connected AI assistants real-time visibility into cluster-wide AI governance posture.
+
+v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
 
 ## What's New in v0.7.8
 
@@ -35,8 +50,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 85 regulatory frameworks, 310 compliance guides
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -178,3 +193,6 @@ docker pull ghcr.io/tenova-labs/swt3-witness:0.7.8
 Apache-2.0. Copyright 2026 Tenable Nova LLC.
 
 Part of the [SWT3 AI Witness Protocol](https://swt3.ai/spec).
+
+---
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC.

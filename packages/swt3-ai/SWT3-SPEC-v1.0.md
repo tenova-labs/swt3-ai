@@ -238,7 +238,7 @@ fingerprint   = 12HEXDIG                          ; truncated SHA-256
 Implementations MUST accept the above grammar for well-formed anchors.
 Implementations SHOULD additionally accept `INHERITED`, `LAPSED`, and
 `UNKNOWN` as informative verdict values in contexts where these verdicts
-originate from platform-level adjudication (not protocol-level witnessing).
+originate from platform-level evaluation (not protocol-level witnessing).
 
 ## 4. Fingerprint Algorithm
 

@@ -4,13 +4,35 @@ Witness your AI at the edge. Prove it followed the rules. Cryptographic accounta
 
 # swt3-ai
 
-**SWT3 AI Witness SDK for Swift**: mint, verify, and sign SWT3 witness anchors on Apple platforms and Linux. Zero external dependencies on Apple platforms. CryptoKit for hashing and HMAC, Foundation for timestamps.
+**SWT3™ AI Witness SDK for Swift**: mint, verify, and sign SWT3 witness anchors on Apple platforms and Linux. Zero external dependencies on Apple platforms. CryptoKit for hashing and HMAC, Foundation for timestamps.
 
 Your models run on-device. Your attestation stays on-device until you choose to transmit. Only irreversible hashes leave the device -- never prompts, responses, or model weights.
 
 EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. Edge inference is not exempt.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
+
+| Adapter | Provider Tag | Notes |
+|---------|-------------|-------|
+| `wrap_groq` / `wrapGroq` | `groq` | LPU inference with latency capture |
+| `wrap_together` / `wrapTogether` | `together` | Open-weight model serving |
+| `wrap_deepseek` / `wrapDeepSeek` | `deepseek` | R1 reasoning chain witnessing |
+| `wrap_azure_openai` / `wrapAzureOpenAI` | `azure-openai` | Deployment name preservation, content filter detection |
+
+New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**Why this matters for Swift:** iOS and macOS applications combining on-device Core ML inference with cloud AI calls now have a complete picture. An app that runs a local model via Core ML (witnessed by this Swift package) and falls back to Azure OpenAI or Groq for complex queries (witnessed by the Python/TypeScript adapters) produces anchors that verify with the same `SWT3.mintFingerprint()` function on both sides. The `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) aggregates anchors from all 47 cloud adapters alongside Swift's on-device attestations, giving auditors a single evidence stream across device and cloud. Secure Enclave signing on Apple Silicon produces anchors with hardware-bound keys that no cloud provider can replicate.
+
+v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
+
+### Updated Coverage
+
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
 
 ## What's New in v0.7.8
 
@@ -43,8 +65,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 85 regulatory frameworks, 310 compliance guides
+- 293 procedures across 10 namespaces
+- 78 regulatory frameworks, 340 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -366,6 +388,6 @@ For Core ML predictions, the SDK hashes feature provider descriptions (names and
 
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
-SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
 
 This project uses Apple's CryptoKit framework and Secure Enclave APIs. Apple, CryptoKit, Core ML, ARKit, RealityKit, Vision Pro, iOS, macOS, watchOS, tvOS, and visionOS are trademarks of Apple Inc. This project is not affiliated with, endorsed by, or sponsored by Apple Inc. or any other third-party AI provider. All third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

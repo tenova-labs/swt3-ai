@@ -213,6 +213,13 @@ BENCHMARK_TYPE_CODES: Dict[str, int] = {"accuracy": 0, "precision": 1, "recall":
 PERTURBATION_TYPE_CODES: Dict[str, int] = {"noise": 0, "corruption": 1, "missing_data": 2, "out_of_distribution": 3, "edge_case": 4, "adversarial_input": 5}
 CYBER_FRAMEWORK_CODES: Dict[str, int] = {"nist_csf": 0, "iso27001": 1, "owasp": 2, "cis": 3, "custom": 4}
 SAFETY_CLASSIFICATION_CODES: Dict[str, int] = {"reserved": 0, "nominal": 1, "cautionary": 2, "degraded": 3, "emergency": 4, "abort": 5}
+CON_VERIFICATION_METHOD_CODES: Dict[str, int] = {"sensor": 0, "ai_vision": 1, "inspector": 2, "laser": 3, "caliper": 4, "destructive_test": 5}
+CON_INSPECTION_TYPE_CODES: Dict[str, int] = {"structural": 0, "electrical": 1, "fire": 2, "mechanical": 3, "plumbing": 4, "general": 5}
+CON_OUTCOME_CODES: Dict[str, int] = {"completed": 0, "failed": 1, "aborted": 2, "partial": 3}
+CON_TOOL_TYPE_CODES: Dict[str, int] = {"saw": 0, "fastener": 1, "router": 2, "conveyor": 3, "welder": 4, "robot_arm": 5, "printer_3d": 6, "other": 7}
+CON_STATE_CODES: Dict[str, int] = {"idle": 0, "calibrating": 1, "production_ready": 2, "active_fabrication": 3, "tool_change": 4, "maintenance": 5, "material_loading": 6, "emergency_stop": 7}
+CON_TRANSITION_BY_CODES: Dict[str, int] = {"ai": 0, "human": 1, "interlock": 2, "scheduled": 3}
+CON_UPDATE_SOURCE_CODES: Dict[str, int] = {"ota_remote": 0, "local_deploy": 1, "rollback": 2, "hotfix": 3}
 DISCLOSURE_TYPE_CODES: Dict[str, int] = {"ai_usage": 0, "data_processing": 1, "automated_decision": 2, "profiling": 3, "capability_limitation": 4}
 RECIPIENT_TYPE_CODES: Dict[str, int] = {"deployer": 0, "end_user": 1, "data_subject": 2, "authority": 3}
 DETECTION_METHOD_CODES: Dict[str, int] = {"c2pa_verify": 0, "synthid_check": 1, "metadata_scan": 2, "spectral_analysis": 3, "classifier": 4}
@@ -959,10 +966,15 @@ class Witness:
 
         Supported clients:
             - openai.OpenAI / openai.AsyncOpenAI (auto-detected)
+            - openai.AzureOpenAI / openai.AsyncAzureOpenAI (auto-detected)
             - Ollama via OpenAI client with base_url :11434 (auto-detected)
+            - DeepSeek via OpenAI client with base_url deepseek.com (auto-detected)
+            - Groq (auto-detected)
+            - Together AI (auto-detected)
             - anthropic.Anthropic / anthropic.AsyncAnthropic (auto-detected)
             - boto3 BedrockRuntimeClient (auto-detected)
             - Mistral (auto-detected)
+            - IBM watsonx ModelInference (auto-detected)
             - litellm module (auto-detected)
             - vLLM via wrap_vllm() (explicit -- port 8000 too generic)
             - LangChain via SWT3CallbackHandler (callback, not proxy)
@@ -977,12 +989,39 @@ class Witness:
 
         client_type = type(client).__module__
 
+        # Groq SDK (own module, OAI-compatible)
+        if "groq" in client_type:
+            from .adapters.groq import wrap_groq
+            return wrap_groq(client, self)
+
+        # Together AI SDK (own module, OAI-compatible)
+        if "together" in client_type:
+            from .adapters.together_ai import wrap_together
+            return wrap_together(client, self)
+
         if "openai" in client_type:
-            # Check for Ollama before defaulting to OpenAI
+            # Check specialized providers before defaulting to OpenAI
             from .adapters.ollama import is_ollama_client
             if is_ollama_client(client):
                 from .adapters.ollama import wrap_ollama
                 return wrap_ollama(client, self)
+            from .adapters.deepseek import is_deepseek_client
+            if is_deepseek_client(client):
+                from .adapters.deepseek import wrap_deepseek
+                return wrap_deepseek(client, self)
+            from .adapters.azure_openai import is_azure_openai_client
+            if is_azure_openai_client(client):
+                from .adapters.azure_openai import wrap_azure_openai
+                return wrap_azure_openai(client, self)
+            # Fallback: OpenAI SDK pointed at alternative providers
+            from .adapters.groq import is_groq_url
+            if is_groq_url(client):
+                from .adapters.groq import wrap_groq
+                return wrap_groq(client, self)
+            from .adapters.together_ai import is_together_url
+            if is_together_url(client):
+                from .adapters.together_ai import wrap_together
+                return wrap_together(client, self)
             from .adapters.openai import wrap_openai
             return wrap_openai(client, self)
 
@@ -1004,9 +1043,9 @@ class Witness:
 
         raise TypeError(
             f"Unsupported client type: {type(client).__name__}. "
-            f"Supported: openai.OpenAI, Ollama (via OpenAI), anthropic.Anthropic, "
-            f"boto3 BedrockRuntimeClient, Mistral, ibm-watsonx-ai ModelInference, "
-            f"litellm, vLLM (via wrap_vllm)."
+            f"Supported: openai.OpenAI, AzureOpenAI, Ollama, DeepSeek, Groq, Together, "
+            f"anthropic.Anthropic, boto3 BedrockRuntimeClient, Mistral, "
+            f"ibm-watsonx-ai ModelInference, litellm, vLLM (via wrap_vllm)."
         )
 
     def gate_check(self, messages: Any = None, model: str = "unknown") -> str:
@@ -3880,6 +3919,381 @@ class Witness:
         if self._config.clearing_level <= 1:
             payload.ai_model_id = f"hbom-supply-{'verified' if provenance_verified else 'unverified'}"
             payload.ai_context = {"provider": "hbom-governance", "supplier_hash": supplier_hash, "provenance_verified": provenance_verified, "country_hash": country_hash}
+        self._enqueue_sampled(payload)
+        return payload
+
+    # ── CON: Construction / Physical AI Governance (v0.8.0) ──────────
+
+    def witness_structural_verification(
+        self,
+        requirement_value: float,
+        computed_value: float,
+        verification_method: str,
+        *,
+        code_requirement: Optional[str] = None,
+        code_edition: Optional[str] = None,
+        load_condition: Optional[str] = None,
+        structural_element: Optional[str] = None,
+        unit: Optional[str] = None,
+        component_id: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness structural verification of AI-determined parameters (CON-STR.1).
+
+        Records the comparison between a building code requirement and the
+        AI's computed value for a structural parameter. EU Machinery Reg
+        Art. 3, IBC Table 2308.5.1, IRC Table R602.3(5).
+
+        Args:
+            requirement_value: Numeric code threshold (e.g., 16.0 for 16-inch max).
+            computed_value: AI-computed value (e.g., 15.8).
+            verification_method: How the value was verified. One of: sensor,
+                ai_vision, inspector, laser, caliper, destructive_test.
+            code_requirement: Full text of the code requirement (L1 context only).
+            code_edition: Code edition in effect (e.g., "IBC-2024", "IRC-2018").
+            load_condition: Load bearing classification (e.g., "roof_plus_one_floor").
+            structural_element: Element type (e.g., "stud_spacing", "fastener_pattern").
+            unit: Measurement unit (e.g., "inches", "mm"). Explicit to avoid
+                metric/imperial confusion.
+            component_id: Lot or element identifier for the component being verified.
+
+        Example:
+            witness.witness_structural_verification(
+                16.0, 15.8, "sensor",
+                code_edition="IRC-2018",
+                load_condition="roof_plus_one_floor",
+                unit="inches",
+            )
+        """
+        fa = float(requirement_value)
+        fb = float(computed_value)
+        fc = float(CON_VERIFICATION_METHOD_CODES.get(verification_method, 0))
+        payload = self._mint_and_sign("CON-STR.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-structural-{structural_element or 'verification'}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "verification_method": verification_method,
+                "requirement_value": requirement_value,
+                "computed_value": computed_value,
+            }
+            if code_requirement:
+                ctx["code_requirement"] = code_requirement
+            if code_edition:
+                ctx["code_edition"] = code_edition
+            if load_condition:
+                ctx["load_condition"] = load_condition
+            if structural_element:
+                ctx["structural_element"] = structural_element
+            if unit:
+                ctx["unit"] = unit
+            if component_id:
+                ctx["component_id"] = component_id
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_inspection(
+        self,
+        items_required: int,
+        items_passed: int,
+        *,
+        inspector_id: Optional[str] = None,
+        inspection_type: Optional[str] = None,
+        component_id: Optional[str] = None,
+        permit_number: Optional[str] = None,
+        failed_items: Optional[List[str]] = None,
+    ) -> "WitnessPayload":
+        """Witness inspection attestation for AI-fabricated components (CON-INS.1).
+
+        Records the inspection event including checklist results, inspector
+        identity (auto-hashed for privacy), and pass rate. OSHA 29 CFR
+        1926.20(b)(2), IBC certificate of occupancy.
+
+        Args:
+            items_required: Total checklist items evaluated.
+            items_passed: Number of items that passed.
+            inspector_id: Inspector identifier. Auto-hashed before storage
+                to protect PII. Raw value only in L0 context.
+            inspection_type: One of: structural, electrical, fire, mechanical,
+                plumbing, general.
+            component_id: Lot or element identifier for the inspected component.
+            permit_number: Jurisdiction permit number.
+            failed_items: List of failed checklist item descriptions (L0 context only).
+
+        Example:
+            witness.witness_inspection(
+                12, 12,
+                inspector_id="badge-4421",
+                inspection_type="structural",
+                component_id="lot-2027-01-15-panel-007",
+            )
+        """
+        fa = float(items_required)
+        fb = float(items_passed)
+        fc = float(CON_INSPECTION_TYPE_CODES.get(inspection_type or "general", 5))
+        payload = self._mint_and_sign("CON-INS.1", fa, fb, fc)
+        inspector_hash = sha256_truncated(inspector_id, 16) if inspector_id else None
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-inspection-{inspection_type or 'general'}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "items_required": items_required,
+                "items_passed": items_passed,
+            }
+            if inspector_hash:
+                ctx["inspector_id_hash"] = inspector_hash
+            if inspection_type:
+                ctx["inspection_type"] = inspection_type
+            if component_id:
+                ctx["component_id"] = component_id
+            if permit_number:
+                ctx["permit_number"] = permit_number
+            payload.ai_context = ctx
+        if self._config.clearing_level == 0 and failed_items:
+            if payload.ai_context is None:
+                payload.ai_context = {}
+            payload.ai_context["failed_items"] = failed_items
+            if inspector_id:
+                payload.ai_context["inspector_id_raw"] = inspector_id
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_site_environment(
+        self,
+        conditions_monitored: int,
+        conditions_nominal: int,
+        *,
+        temperature_c: Optional[float] = None,
+        humidity_pct: Optional[float] = None,
+        site_id: Optional[str] = None,
+        power_stable: Optional[bool] = None,
+        vibration_level: Optional[float] = None,
+    ) -> "WitnessPayload":
+        """Witness environmental conditions at a manufacturing or deployment site (CON-ENV.1).
+
+        Records environmental factors that affect component quality in
+        offsite manufacturing. EU Machinery Reg Art. 3, ISO 10218 Cl. 5.10.
+
+        Args:
+            conditions_monitored: Number of environmental conditions being tracked.
+            conditions_nominal: Number of conditions within acceptable range.
+            temperature_c: Ambient temperature in degrees Celsius.
+            humidity_pct: Relative humidity as a percentage (0-100).
+            site_id: Factory cell or construction site identifier.
+            power_stable: Whether power supply is within tolerance.
+            vibration_level: Vibration measurement in mm/s RMS.
+
+        Example:
+            witness.witness_site_environment(
+                5, 5,
+                temperature_c=22.5,
+                humidity_pct=45.0,
+                site_id="factory-cell-gilbert-01",
+            )
+        """
+        fa = float(conditions_monitored)
+        fb = float(conditions_nominal)
+        fc = 0.0
+        payload = self._mint_and_sign("CON-ENV.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-environment-{site_id or 'site'}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "conditions_monitored": conditions_monitored,
+                "conditions_nominal": conditions_nominal,
+            }
+            if temperature_c is not None:
+                ctx["temperature_c"] = temperature_c
+            if humidity_pct is not None:
+                ctx["humidity_pct"] = humidity_pct
+            if site_id:
+                ctx["site_id"] = site_id
+            if power_stable is not None:
+                ctx["power_stable"] = power_stable
+            if vibration_level is not None:
+                ctx["vibration_level_mm_s_rms"] = vibration_level
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_fabrication_command(
+        self,
+        tool_name: str,
+        outcome: str,
+        *,
+        design_id: Optional[str] = None,
+        device_id: Optional[str] = None,
+        production_run_id: Optional[str] = None,
+        execution_ms: Optional[int] = None,
+        program_id: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness a manufacturing command issued to a physical actuator (AI-TOOL.1).
+
+        Extends the standard AI-TOOL.1 tool witnessing to physical
+        hardware actions. Each command to a robotic arm, saw, fastener,
+        or conveyor is a decision with physical consequences.
+        EU Machinery Reg Art. 3, IBC fabrication decision audit.
+
+        Args:
+            tool_name: Name of the actuator or command target (e.g., "panel_saw").
+            outcome: Result of the command. One of: completed, failed, aborted, partial.
+            design_id: Design file reference being executed.
+            device_id: Physical actuator or robot identifier.
+            production_run_id: Batch identifier linking multi-device operations.
+                Use this instead of cycle_id to avoid collision with Witness
+                constructor config.
+            execution_ms: Command execution duration in milliseconds.
+            program_id: Robot program identifier (e.g., KUKA $PRO_NAME).
+
+        Example:
+            witness.witness_fabrication_command(
+                "panel_fabrication", "completed",
+                design_id="DH-PHX-1142",
+                device_id="kuka-kr240-01",
+                production_run_id="lot-2027-01-15-042",
+            )
+        """
+        fa = float(execution_ms) if execution_ms is not None else 1.0
+        fb = float(CON_OUTCOME_CODES.get(outcome, 0))
+        fc = float(CON_TOOL_TYPE_CODES.get(tool_name.split("_")[0] if "_" in tool_name else tool_name, 7))
+        payload = self._mint_and_sign("AI-TOOL.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-fabrication-{tool_name}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "tool_name": tool_name,
+                "outcome": outcome,
+            }
+            if design_id:
+                ctx["design_id"] = design_id
+            if device_id:
+                ctx["device_id"] = device_id
+            if production_run_id:
+                ctx["production_run_id"] = production_run_id
+            if execution_ms is not None:
+                ctx["execution_ms"] = execution_ms
+            if program_id:
+                ctx["program_id"] = program_id
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_construction_safety(
+        self,
+        previous_state: str,
+        next_state: str,
+        *,
+        transition_by: Optional[str] = None,
+        interlocks_verified: Optional[bool] = None,
+        cell_id: Optional[str] = None,
+        duration_ms: Optional[int] = None,
+    ) -> "WitnessPayload":
+        """Witness a factory cell state transition (AI-SAFE.1).
+
+        Records operational mode transitions in robotic manufacturing
+        environments. EU Machinery Reg Art. 3, ISO 10218 Cl. 5.4.
+
+        Args:
+            previous_state: State before transition. One of: idle, calibrating,
+                production_ready, active_fabrication, tool_change, maintenance,
+                material_loading, emergency_stop.
+            next_state: State after transition (same enum as previous_state).
+            transition_by: Who initiated the transition. One of: ai, human,
+                interlock, scheduled.
+            interlocks_verified: Whether safety interlocks were verified before
+                the transition completed.
+            cell_id: Factory cell identifier.
+            duration_ms: Time taken for the transition in milliseconds.
+
+        Example:
+            witness.witness_construction_safety(
+                "calibrating", "active_fabrication",
+                transition_by="ai",
+                interlocks_verified=True,
+                cell_id="factory-cell-gilbert-01",
+            )
+        """
+        fa = float(CON_STATE_CODES.get(previous_state, 0))
+        fb = float(CON_STATE_CODES.get(next_state, 0))
+        fc = float(CON_TRANSITION_BY_CODES.get(transition_by or "ai", 0))
+        payload = self._mint_and_sign("AI-SAFE.1", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-safety-{previous_state}-to-{next_state}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "previous_state": previous_state,
+                "next_state": next_state,
+            }
+            if transition_by:
+                ctx["transition_by"] = transition_by
+            if interlocks_verified is not None:
+                ctx["interlocks_verified"] = interlocks_verified
+            if cell_id:
+                ctx["cell_id"] = cell_id
+            if duration_ms is not None:
+                ctx["duration_ms"] = duration_ms
+            payload.ai_context = ctx
+        self._enqueue_sampled(payload)
+        return payload
+
+    def witness_model_version(
+        self,
+        version_before: str,
+        version_after: str,
+        *,
+        device_id: Optional[str] = None,
+        update_source: Optional[str] = None,
+        foreseen_change: Optional[bool] = None,
+        behavioral_delta: Optional[str] = None,
+    ) -> "WitnessPayload":
+        """Witness an AI model version update on manufacturing equipment (AI-MDL.2).
+
+        Records OTA or local model updates to physical manufacturing
+        systems. Every update is a candidate substantial modification
+        event under EU Machinery Reg Art. 18. PLD Art. 7 holds the entity
+        responsible for post-deployment changes.
+
+        Args:
+            version_before: Model version or hash before the update.
+            version_after: Model version or hash after the update.
+            device_id: Identifier of the device that received the update.
+            update_source: How the update was delivered. One of: ota_remote,
+                local_deploy, rollback, hotfix.
+            foreseen_change: Whether this update was anticipated in the original
+                conformity assessment (PCCP-equivalent documentation).
+            behavioral_delta: Description of what behavioral changes the update
+                introduces.
+
+        Example:
+            witness.witness_model_version(
+                "v2.3.1", "v2.4.0",
+                device_id="kuka-kr240-01",
+                update_source="ota_remote",
+                foreseen_change=False,
+            )
+        """
+        before_hash = int(sha256_truncated(version_before, 16)[:8], 16)
+        after_hash = int(sha256_truncated(version_after, 16)[:8], 16)
+        fa = float(before_hash)
+        fb = float(after_hash)
+        fc = float(CON_UPDATE_SOURCE_CODES.get(update_source or "ota_remote", 0))
+        payload = self._mint_and_sign("AI-MDL.2", fa, fb, fc)
+        if self._config.clearing_level <= 1:
+            payload.ai_model_id = f"con-model-update-{version_after}"
+            ctx: Dict[str, Any] = {
+                "provider": "physical-ai",
+                "version_before": version_before,
+                "version_after": version_after,
+            }
+            if device_id:
+                ctx["device_id"] = device_id
+            if update_source:
+                ctx["update_source"] = update_source
+            if foreseen_change is not None:
+                ctx["foreseen_change"] = foreseen_change
+            if behavioral_delta:
+                ctx["behavioral_delta"] = behavioral_delta
+            payload.ai_context = ctx
         self._enqueue_sampled(payload)
         return payload
 

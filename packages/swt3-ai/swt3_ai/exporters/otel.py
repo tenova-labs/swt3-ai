@@ -35,6 +35,7 @@ _GENAI_SYSTEM_MAP: Dict[str, str] = {
     "claude": "anthropic",
     "bedrock": "aws.bedrock",
     "aws": "aws.bedrock",
+    "azure-openai": "az.ai.openai",
     "azure": "az.ai.inference",
     "gemini": "google.gemini",
     "google": "google.gemini",
@@ -46,6 +47,9 @@ _GENAI_SYSTEM_MAP: Dict[str, str] = {
     "cohere": "cohere",
     "replicate": "replicate",
     "huggingface": "huggingface",
+    "groq": "groq",
+    "together": "together_ai",
+    "deepseek": "deepseek",
 }
 
 
