@@ -11,6 +11,16 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+---
+
+## v0.8.0 -- Full Stack Governance
+
+v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+
+**Why this matters for C#:** `MintFingerprint` now verifies anchors from three evidence domains -- AI inference, infrastructure, and construction -- with byte-identical output. .NET services that verify SWT3 anchors from mixed-language environments (Python SDK inferences, Go infrastructure binary, TypeScript MCP tools) get cross-domain coverage with zero code changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+
+---
+
 ## What's New in v0.7.9
 
 v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
@@ -24,14 +34,14 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
+**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -64,15 +74,15 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 78 regulatory frameworks, 340 compliance guides
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
 
 NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.
 
-**Why this matters for .NET:** All three new procedure IDs (AI-SHELL.1, AI-DIST.1, AI-MCP.6) verify with the existing `MintFingerprint` function. AI-SHELL.1 runtime containment attestation works with zero dependency changes -- .NET ML pipelines performing knowledge distillation (ML.NET, ONNX Runtime) can attest containment policy enforcement and teacher-to-student lineage with byte-identical output across all 10 SDK languages.
+**Why this matters for .NET:** All three new procedure IDs (AI-SHELL.1, AI-DIST.1, AI-MCP.6) verify with the existing `MintFingerprint` function. AI-SHELL.1 runtime containment attestation works with zero dependency changes -- .NET ML pipelines performing knowledge distillation (ML.NET, ONNX Runtime) can attest containment policy enforcement and teacher-to-student lineage with byte-identical output across all 11 SDK languages.
 
 ### 3 New Procedures
 
@@ -127,7 +137,7 @@ Two gaps closed in one release: harness-layer governance and zero-code MCP compl
 
 - 280 procedures across 77 namespaces (was 275/77)
 - 68 MCP tools (was 63)
-- 10 SDK languages with byte-identical output
+- 11 SDK languages with byte-identical output
 - 77 framework crosswalks, 265 compliance guides
 - ~3,000 tests passing across 10 languages
 
@@ -155,7 +165,7 @@ AI does not run in a vacuum. It authenticates with service accounts, runs on har
 
 - 266 procedures across 75 namespaces (was 118/64)
 - 59 MCP tools (was 37)
-- 10 SDK languages with byte-identical output
+- 11 SDK languages with byte-identical output
 - 36 framework crosswalks, 237 compliance guides
 - ~2,950 tests passing across 5 languages
 
@@ -190,7 +200,7 @@ The 10th language in the SWT3 ecosystem. Zero dependencies. All 65 test vectors 
 ### Updated Coverage
 
 - 114 procedures across 62 namespaces (AI-SAMPLE.1 added)
-- 10 SDK languages with byte-identical output
+- 11 SDK languages with byte-identical output
 - 36 framework crosswalks, 215 compliance guides
 - 2,515 tests passing across 5 languages
 

@@ -11,6 +11,16 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+---
+
+## v0.8.0 -- Full Stack Governance
+
+v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+
+**Why this matters for Kotlin:** `mintFingerprint` now verifies anchors from three evidence domains with byte-identical output. Android apps and JVM services that verify SWT3 anchors get cross-domain coverage with zero dependency changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+
+---
+
 ## Ecosystem: v0.7.9
 
 v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
@@ -24,14 +34,14 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for Kotlin:** Android and JVM applications orchestrating inference across Groq, Together AI, DeepSeek, and Azure OpenAI can verify witness anchors with byte-identical output across all 10 SDK languages -- zero dependency changes via `Fingerprint.mint()`. Kotlin/JVM backends acting as MCP middleware can verify anchors collected by the `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) from any of the 47 adapters. Android apps combining on-device ML Kit inference with cloud calls get a unified attestation chain.
+**Why this matters for Kotlin:** Android and JVM applications orchestrating inference across Groq, Together AI, DeepSeek, and Azure OpenAI can verify witness anchors with byte-identical output across all 11 SDK languages -- zero dependency changes via `Fingerprint.mint()`. Kotlin/JVM backends acting as MCP middleware can verify anchors collected by the `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) from any of the 47 adapters. Android apps combining on-device ML Kit inference with cloud calls get a unified attestation chain.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
 
 ## Ecosystem: v0.7.8
 
@@ -54,7 +64,7 @@ Guides: [IBM Granite Adapter](https://sovereign.tenova.io/guides/ibm-granite-wat
 
 Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for Kotlin:** All three new procedures verify with the existing `Fingerprint.mint()` function -- zero dependency changes. Kotlin/Android ML pipelines and JVM agent frameworks gain delegation chain and interrupt evidence with byte-identical output across all 10 SDK languages. DORA crosswalk coverage (20 mappings) is directly relevant to JVM-based fintech platforms at EU institutions. Singapore IMDA crosswalk (24 mappings) expands APAC governance evidence for Kotlin deployments.
+**Why this matters for Kotlin:** All three new procedures verify with the existing `Fingerprint.mint()` function -- zero dependency changes. Kotlin/Android ML pipelines and JVM agent frameworks gain delegation chain and interrupt evidence with byte-identical output across all 11 SDK languages. DORA crosswalk coverage (20 mappings) is directly relevant to JVM-based fintech platforms at EU institutions. Singapore IMDA crosswalk (24 mappings) expands APAC governance evidence for Kotlin deployments.
 
 ### 3 New Procedures
 
@@ -64,15 +74,15 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 78 regulatory frameworks, 340 compliance guides
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## Ecosystem: v0.7.4
 
 NVIDIA shipped OpenShell to 120+ partners. Agent containment is now infrastructure. But containment without evidence is a black box -- an auditor cannot verify that a sandbox policy was enforced last Tuesday at 14:00 UTC by looking at enforcement logs alone. v0.7.4 adds runtime containment attestation (AI-SHELL.1), model distillation provenance (AI-DIST.1), MCP elicitation detection (AI-MCP.6), and incident lifecycle chains. Four governance gaps closed in one release.
 
-**Why this matters for Kotlin:** All three new procedure IDs (AI-SHELL.1, AI-DIST.1, AI-MCP.6) verify with the existing `Fingerprint.mint()` function. Kotlin/Android ML pipelines and JVM agent frameworks running in sandboxed environments gain containment attestation, distillation lineage, and elicitation detection with byte-identical output across all 10 SDK languages. Zero dependency changes required.
+**Why this matters for Kotlin:** All three new procedure IDs (AI-SHELL.1, AI-DIST.1, AI-MCP.6) verify with the existing `Fingerprint.mint()` function. Kotlin/Android ML pipelines and JVM agent frameworks running in sandboxed environments gain containment attestation, distillation lineage, and elicitation detection with byte-identical output across all 11 SDK languages. Zero dependency changes required.
 
 ### 3 New Procedures
 
@@ -185,7 +195,7 @@ Your auditor never sees your prompts, responses, or model outputs. They see:
 - Numeric factors (latency within threshold, guardrails active, model hash matches)
 - A clearing level controlling how much metadata survives
 
-They can verify any anchor independently -- in their browser, from their terminal, or with any of the 10 SDKs. No vendor dependency. No trust required.
+They can verify any anchor independently -- in their browser, from their terminal, or with any of the 11 SDKs. No vendor dependency. No trust required.
 
 ## Privacy Architecture
 
@@ -218,7 +228,7 @@ val result = witness.wrap(
     outputTokens = 89,
 )
 
-println(result.fingerprint)  // 12-char hex, matches all 10 SDKs
+println(result.fingerprint)  // 12-char hex, matches all 11 SDKs
 val receipts = witness.flush()
 ```
 
@@ -289,7 +299,7 @@ SWT3-E-CLOUD-AI-AIINF1-PASS-1773316622-96b7d56c0245
      +----------------------------------------- Deployment tier
 ```
 
-The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}:{fc}:{ts_ms}")`. This formula is locked and identical across all 10 SDK languages.
+The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}:{fc}:{ts_ms}")`. This formula is locked and identical across all 11 SDK languages.
 
 ## Run the Demo
 
@@ -307,12 +317,12 @@ The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}
 
 ## Regulatory Coverage
 
-293 procedures across 10 namespaces. 78 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
+294 procedures across 10 namespaces. 93 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
 
 ## Resources
 
 - [SDK Documentation](https://sovereign.tenova.io/docs/) -- quickstart, provider matrix, API reference
-- [UCT™ Registry](https://swt3.ai/registry) -- 293 procedures, searchable
+- [UCT™ Registry](https://swt3.ai/registry) -- 294 procedures, searchable
 - [Public Verifier](https://swt3.ai/verify) -- verify any anchor in your browser
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable to hand your auditor during assessment meetings
 - [All 330 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides

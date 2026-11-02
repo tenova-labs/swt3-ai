@@ -8,9 +8,21 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+---
+
+## v0.8.0 -- Full Stack Governance
+
+v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains: AI decisions (from SDK/MCP tools, AI namespace), infrastructure changes (from CloudTrail via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness), INF namespace), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace -- the evidence subject is the AI system's behavior, not the machine's mechanics. A single proof covers all domains.
+
+**Why this matters for MCP:** When an AI agent uses MCP tools to deploy infrastructure, the MCP server witnesses the tool call (AI-TOOL.1, AI-MCP.1) and the Go binary witnesses the resulting CloudTrail event (INF-OCSF.1). Both anchors share the same Merkle root. An auditor can now trace from "agent decided to create a VPC" (MCP tool witness) through "VPC was actually created" (CloudTrail witness) in one cryptographic tree.
+
+**New:** 294 procedures, 93 frameworks (5 new: EU Machinery Reg, ISO 10218, OSHA 1926, EU PLD, IBC/IRC), CON (Construction) namespace live, `swt3 watch` + `swt3 test` CLI commands. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+
+---
+
 ## What's New in v0.7.9
 
-v0.7.9 is the ecosystem adapter release. The four platforms that developers actually deploy on every day -- Groq for speed, Together AI for open-weight hosting, DeepSeek for cost-effective reasoning, and Azure OpenAI for enterprise cloud -- now have native witness adapters with full auto-detection in both Python and TypeScript. Six new provider-specific witnessing guides walk through setup from first install to production deployment. The adapter ecosystem now covers 47 providers across 10 SDK languages.
+v0.7.9 is the ecosystem adapter release. The four platforms that developers actually deploy on every day -- Groq for speed, Together AI for open-weight hosting, DeepSeek for cost-effective reasoning, and Azure OpenAI for enterprise cloud -- now have native witness adapters with full auto-detection in both Python and TypeScript. Six new provider-specific witnessing guides walk through setup from first install to production deployment. The adapter ecosystem now covers 47 providers across 11 SDK languages.
 
 **Why this matters for MCP:** The MCP server is the integration point where all of this converges. When a Claude Desktop user invokes an MCP tool that calls Groq for fast inference and Azure OpenAI for a secondary check, both calls produce witness anchors in the same format. The MCP server's `swt3_query_anchors` tool lets the user inspect, filter, and export those anchors without knowing which provider handled which call. With v0.7.9, every major commercial inference provider -- OpenAI, Anthropic, Google Vertex, AWS Bedrock, IBM Granite, Mistral, Groq, Together AI, DeepSeek, Azure OpenAI, Cohere, and NVIDIA -- produces anchors that flow through the MCP server's 75 tools. No provider-specific configuration. No separate audit dashboards. One MCP server, one evidence stream.
 
@@ -40,8 +52,8 @@ v0.7.9 also aligns all MCP discovery metadata. The `mcp.json`, `agent-card.json`
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 75 MCP tools, 340 compliance guides, 78 regulatory frameworks, 47 adapters, 10 SDK languages
+- 294 procedures across 10 namespaces
+- 75 MCP tools, 348 compliance guides, 93 regulatory frameworks, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -81,8 +93,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026: 
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces
-- 75 MCP tools, 340 compliance guides, 78 regulatory frameworks
+- 294 procedures across 10 namespaces
+- 75 MCP tools, 348 compliance guides, 93 regulatory frameworks
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -698,7 +710,7 @@ Every anchor maps to specific regulatory obligations:
 `coverage_report` -- report framework coverage for procedures witnessed in the current audit session. Shows covered/remaining procedures with a coverage percentage.
 
 **Discovery:**
-`list_procedures` -- browse the UCT™ procedure registry (293 procedures, 10 namespaces).
+`list_procedures` -- browse the UCT™ procedure registry (294 procedures, 10 namespaces).
 `suggest_procedures` -- get recommended procedures based on your use case.
 `check_posture` -- check current tenant compliance posture.
 `signup` -- create a free account without leaving your editor.

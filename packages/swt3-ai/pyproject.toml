@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "swt3-ai"
-version = "0.7.9"
-description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference and infrastructure governance. 293 procedures, 10 namespaces, 10 languages, 78 frameworks, 47 adapters. EU AI Act, NIST AI RMF, OWASP MCP Top 10, CMMC, SR 11-7, NIS-2, DORA, G7 AI-SBOM."
+version = "0.8.0"
+description = "SWT3 AI Witness SDK: cryptographic attestation for AI inference and infrastructure governance. 294 procedures, 10 namespaces, 11 languages, 93 frameworks, 47 adapters. EU AI Act, NIST AI RMF, EU Machinery Regulation, OWASP MCP Top 10, CMMC, SR 11-7, NIS-2, DORA, G7 AI-SBOM."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"
