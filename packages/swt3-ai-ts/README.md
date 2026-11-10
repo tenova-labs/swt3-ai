@@ -17,28 +17,59 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 is the release where SWT3 grows beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains:
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
+
+The new three-tier architecture: **Structure > Phase > Milestone**. Each tier has its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure -- three levels of cryptographic commitment in one proof.
+
+**Why this matters for TypeScript:** Your AI agents don't make one decision -- they execute workflows. A Vercel AI SDK agent that processes an insurance claim has stages: intake, investigation, adjustment, settlement. A LangChain pipeline that onboards a customer has phases: identity verification, risk scoring, account provisioning. Flat daily Merkle roots treat every anchor as equal -- they cannot express "the risk model cannot score until identity verification passes." The new `MilestoneAccumulator` class models these phased processes natively. Each stage becomes a phase, each check becomes a milestone, and the phase gate enforces completion requirements cryptographically. When a regulator asks "prove that identity verification completed before the credit decision," the answer is a Merkle inclusion proof -- not a log query across three microservices.
+
+```typescript
+import { MilestoneAccumulator } from "@tenova/swt3-ai";
+
+const acc = new MilestoneAccumulator("ST-building-7th-ave");
+
+// Define phases
+acc.addPhase("PH-foundation", { name: "Foundation", sequence: 1 });
+acc.addPhase("PH-framing", { name: "Framing", sequence: 2 });
+
+// Define milestones with required procedures
+acc.addMilestone("MS-soil", "PH-foundation", {
+  name: "Soil compaction test",
+  requiredProcedures: ["CON-STR.1", "CON-ENV.1"],
+});
+
+// Add attestation leaves as evidence arrives
+acc.addLeaf("MS-soil", { fingerprint: "a1b2c3d4e5f6", procedureId: "CON-STR.1", verdict: "PASS" });
+acc.addLeaf("MS-soil", { fingerprint: "f6e5d4c3b2a1", procedureId: "CON-ENV.1", verdict: "PASS" });
+
+// Phase gate check: can we move to framing?
+const gate = acc.checkGate("PH-foundation");
+// gate.passed = false -- MS-rebar still has missing procedures
+
+// Structure root updates progressively as milestones complete
+const root = acc.structureRoot; // SHA-256 of the full three-tier tree
+```
+
+**New in this release:**
+- `MilestoneAccumulator` class (TypeScript + Python SDK parity)
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- `swt3 exposure` CLI -- zero-network regulatory exposure calculator
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 is the release where SWT3 grows beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains:
 
 1. **AI inference** -- model decisions, guardrails, drift, robotics behavior (this SDK, AI namespace)
 2. **Infrastructure** -- CloudTrail API calls witnessed by [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness), a zero-dependency Go binary (INF namespace)
 3. **Construction** -- site safety, structural verification, inspections (CON [Construction] namespace, 5 new procedures)
 
-A single Merkle membership proof can now verify that a specific AI decision and a specific infrastructure change coexisted in the same cryptographic commitment. No other system on the market can produce this proof.
-
-**Why this matters for TypeScript:** Your `witness.wrap(client)` calls produce anchors that now sit alongside infrastructure evidence in the same Merkle tree. The OCSF witness endpoint uses the same canonical JSON algorithm as this SDK's internal hashing -- cross-language parity verified byte-for-byte between TypeScript and Go. When a Vercel AI SDK app deploys infrastructure via an AI agent, both the inference anchor (from this SDK) and the infrastructure anchor (from the Go binary reading CloudTrail) share the same daily Merkle root. Zero code changes on your side.
-
-Robotics and machinery (EU Machinery Regulation, ISO 10218) are witnessed through AI-namespace procedures -- the evidence subject is the AI system's behavior. Construction (OSHA 1926, IBC/IRC) has its own CON namespace -- the evidence subject is the construction process. Both land in the same tree.
-
-**New in this release:**
-- 5 framework crosswalks: EU Machinery Regulation, ISO 10218, OSHA 1926, EU Product Liability Directive, IBC/IRC
-- CON (Construction) namespace activated (5 procedures: CON-SAF.1, CON-STR.1, CON-ENV.1, CON-FIN.1, CON-INS.1)
-- `swt3 watch` (live WAL tail), `swt3 test` (pipeline smoke test), colored CLI help
-- [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness) Go binary for CloudTrail evidence (CLI + server modes)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
-
-Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance) (the infra witness is Go-native).
+294 procedures, 93 frameworks, 47 adapters, 11 SDK languages. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -1100,6 +1131,14 @@ When your AI makes a call, the SDK:
 6. **Returns** your original response completely untouched
 
 For streaming: chunks arrive to the developer in real-time. The SDK accumulates content in the background and witnesses after the stream completes.
+
+### Signed Witness Receipts
+
+Every receipt returned by the witness API is Ed25519-signed by TeNova. This means you hold cryptographic proof that an independent party received and validated your evidence -- without having to call us back to confirm it. The signature is verifiable against the public key published in our DID document at `did:web:sovereign.tenova.io`.
+
+Each receipt also includes a `proof_chain` showing how your anchor will be rolled into a daily Merkle tree and independently timestamped by an RFC 3161 Timestamp Authority. Three layers of evidence: who witnessed it (Ed25519 signature), that it belongs to a tamper-evident set (Merkle inclusion), and when that set was sealed (RFC 3161 timestamp).
+
+See the [Witness Receipt Verification Guide](https://sovereign.tenova.io/guides/witness-receipt-verification.html) for step-by-step verification instructions with Python and TypeScript code examples.
 
 ## Witness Agent Tool Calls
 

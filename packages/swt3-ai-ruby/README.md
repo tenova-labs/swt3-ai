@@ -15,11 +15,25 @@ EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
 
-**Why this matters for Ruby:** `mint_fingerprint` now verifies anchors from three evidence domains with byte-identical output. Ruby on Rails compliance dashboards and audit tools that consume SWT3 anchors from any SDK language get cross-domain coverage with zero gem changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+The new three-tier architecture: **Structure > Phase > Milestone**. Each tier has its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure -- three levels of cryptographic commitment in one proof.
+
+**Why this matters for Ruby:** Rails backends that orchestrate multi-step regulated workflows -- insurance claims processing, KYC onboarding pipelines, pharmaceutical batch records -- now get cryptographic phase gates for free. Your Sidekiq worker completes a step, calls `SWT3.mint_fingerprint` with the milestone's procedure, and the hierarchical tree records exactly which step passed and when. When the compliance team asks "prove that identity verification completed before the credit pull," the answer is a Merkle inclusion proof from the milestone leaf to the structure root. No log correlation across services. No timestamp-matching across queues. One proof, mathematically verified through Ruby's `openssl` standard library.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

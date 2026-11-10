@@ -4,7 +4,7 @@
 # Local mode (default): anchors emit as structured JSON to stdout.
 #   helm install swt3 tenova/swt3-witness
 #
-# Cloud mode: anchors flush to the SWT3 clearing house.
+# Cloud mode: anchors flush to the SWT3 cloud endpoint.
 #   helm install swt3 tenova/swt3-witness \
 #     --set config.mode=cloud \
 #     --set cloud.apiKey=axm_YOUR_KEY \
@@ -12,11 +12,11 @@
 
 image:
   repository: ghcr.io/tenova-labs/swt3-witness
-  tag: "0.7.9"
+  tag: "8.1.0"
   pullPolicy: IfNotPresent
 
 config:
-  # Mode: "local" (stdout JSON, default) or "cloud" (flush to clearing house).
+  # Mode: "local" (stdout JSON, default) or "cloud" (flush to cloud endpoint).
   mode: local
   # Seconds between hardware attestation cycles.
   interval: 3600
@@ -29,7 +29,7 @@ config:
 
 # Cloud mode settings. Required when config.mode=cloud.
 cloud:
-  # API key for SWT3 clearing house (starts with axm_).
+  # API key for SWT3 cloud endpoint (starts with axm_).
   apiKey: ""
   # Tenant identifier.
   tenantId: ""

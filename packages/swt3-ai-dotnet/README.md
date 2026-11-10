@@ -13,11 +13,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
 
-**Why this matters for C#:** `MintFingerprint` now verifies anchors from three evidence domains -- AI inference, infrastructure, and construction -- with byte-identical output. .NET services that verify SWT3 anchors from mixed-language environments (Python SDK inferences, Go infrastructure binary, TypeScript MCP tools) get cross-domain coverage with zero code changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+**Why this matters for C#:** Enterprise .NET backends orchestrate the phased workflows that regulators actually audit. A loan origination system built on ASP.NET has stages: application intake, credit verification, underwriting review, closing. An Azure-hosted manufacturing execution system gates batch production: raw material QC, mixing, curing, final inspection. These are not hypothetical -- they are the systems where `MintFingerprint` runs today. v8.1.0 adds hierarchical Merkle hashing with domain-separated prefixes, phase-gate enforcement, and multi-tier inclusion proofs. Your existing .NET verification service that validates anchors from Python SDK inferences, Go infrastructure binaries, and TypeScript MCP tools now verifies three-tier proofs with zero code changes. When an OCC examiner asks a bank "prove that credit verification completed before the underwriting model ran," the answer is a Merkle path from the credit-pull milestone leaf through the verification phase root to the loan structure root -- verified by the same `System.Security.Cryptography` primitives already in production.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

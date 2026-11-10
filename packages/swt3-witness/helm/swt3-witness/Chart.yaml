@@ -2,8 +2,8 @@ apiVersion: v2
 name: swt3-witness
 description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 0.7.9
-appVersion: "0.7.9"
+version: 8.1.0
+appVersion: "8.1.0"
 keywords:
   - ai
   - compliance
@@ -31,16 +31,19 @@ maintainers:
     email: engineering@tenovaai.com
 annotations:
   artifacthub.io/license: Apache-2.0
+  artifacthub.io/containsSecurityUpdates: "false"
+  artifacthub.io/images: |
+    - name: swt3-witness
+      image: ghcr.io/tenova-labs/swt3-witness:8.1.0
+      whitelisted: true
   artifacthub.io/changes: |
     - kind: added
-      description: "Groq adapter for LPU inference witnessing with latency capture"
+      description: "Infrastructure witnessing via swt3-infra-witness (CloudTrail, Azure, GCP, OCSF)"
     - kind: added
-      description: "Together AI adapter for open-weight model serving witnessing"
+      description: "CON (Construction) namespace activated with 5 procedures"
     - kind: added
-      description: "DeepSeek adapter with R1 reasoning chain witnessing"
+      description: "5 new frameworks: EU Machinery Reg, ISO 10218, OSHA 1926, EU PLD, IBC/IRC"
     - kind: added
-      description: "Azure OpenAI adapter with deployment name preservation and content filter detection"
-    - kind: added
-      description: "6 new witnessing guides: Anthropic Claude, OpenAI GPT, LangChain/LangGraph, Google Vertex/Gemini, DeepSeek, Groq"
+      description: "CLI DX: swt3 watch (live WAL tail), swt3 test (pipeline smoke test)"
     - kind: changed
-      description: "Underlying SDK updated to 0.7.9 with 293 procedures, 75 MCP tools, 330 compliance guides, 47 adapters"
+      description: "Underlying SDK updated to 0.8.0 with 294 procedures, 93 frameworks, 75 MCP tools, 348 guides, 47 adapters"

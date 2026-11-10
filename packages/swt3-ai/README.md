@@ -16,9 +16,102 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 is the release where SWT3 grows beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains:
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
+
+The new three-tier architecture: **Structure > Phase > Milestone**. Each tier has its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure -- three levels of cryptographic commitment in one proof.
+
+**Why this matters for Python:** The new `MilestoneAccumulator` class lets you model any phased process -- construction phase gates, loan underwriting stages, battery passport lifecycle checkpoints, clinical trial milestones -- and enforce completion requirements before phase transitions. When an auditor asks "prove that all structural inspections passed before you poured the second floor," the proof is a single Merkle path from the inspection anchor to the structure root. No log correlation. No timestamp matching. Mathematical proof.
+
+```python
+from swt3_ai.milestone_merkle import MilestoneAccumulator
+
+acc = MilestoneAccumulator(structure_id="ST-building-7th-ave")
+
+# Define phases
+acc.add_phase("PH-foundation", name="Foundation", sequence=1)
+acc.add_phase("PH-framing", name="Framing", sequence=2)
+
+# Define milestones with required procedures
+acc.add_milestone("MS-soil", phase_id="PH-foundation",
+    name="Soil compaction test",
+    required_procedures=["CON-STR.1", "CON-ENV.1"])
+
+acc.add_milestone("MS-rebar", phase_id="PH-foundation",
+    name="Rebar placement inspection",
+    required_procedures=["CON-STR.1"])
+
+# Add attestation leaves as evidence arrives
+acc.add_leaf("MS-soil", fingerprint="a1b2c3d4e5f6",
+    procedure_id="CON-STR.1", verdict="PASS")
+acc.add_leaf("MS-soil", fingerprint="f6e5d4c3b2a1",
+    procedure_id="CON-ENV.1", verdict="PASS")
+
+# Phase gate check: can we move to framing?
+gate = acc.check_gate("PH-foundation")
+# gate["passed"] = False -- MS-rebar still has missing procedures
+
+# Structure root updates progressively as milestones complete
+root = acc.structure_root  # SHA-256 of the full three-tier tree
+```
+
+The same pattern works for any phased process:
+
+| Domain | Structure | Phases | Milestones |
+|--------|-----------|--------|------------|
+| Construction | Building project | Foundation, Framing, MEP, Finish | Soil test, Rebar, Pour, Cure |
+| Lending | Loan application | Intake, Underwriting, Closing | Credit pull, Income verify, Appraisal |
+| Manufacturing | Battery cell | Electrode, Assembly, Formation, QC | Slurry mix, Calendering, Electrolyte fill |
+| Clinical | Drug trial | Phase I, Phase II, Phase III | Enrollment, Dosing, Adverse event review |
+
+Phase gates enforce that all required procedures within all milestones of a phase have passing attestations before the next phase can begin. Emergency overrides are recorded as override leaves -- the gate opens, but the override is permanently visible in the tree. Scope amendments (adding or removing required procedures mid-lifecycle) are recorded as amendment leaves -- the original scope and the change are both cryptographically committed.
+
+**New in this release:**
+- `MilestoneAccumulator` class (Python + TypeScript SDK parity)
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- Cross-phase consistency checks
+- `swt3 exposure` CLI -- zero-network regulatory exposure calculator (see below)
+
+### `swt3 exposure` -- Know your regulatory surface in one command
+
+```bash
+swt3 exposure --jurisdiction EU
+swt3 exposure --jurisdiction US --industry fintech
+swt3 exposure --jurisdiction SG --json
+swt3 exposure --jurisdiction EU --binding mandatory --markdown
+```
+
+Zero network calls. Reads the bundled crosswalks to determine which frameworks apply to your jurisdiction and industry, how many procedures each requires, and how many days until enforcement deadlines. Output formats: terminal table (color, ANSI), JSON (machine-readable), Markdown (paste into docs). Supports 14 jurisdictions and 11 industry filters.
+
+```
+  SWT3 Exposure Report
+  --------------------------------------------------------------------------
+  Jurisdiction: EU
+  8 applicable frameworks (8 mandatory)
+  172 total procedures
+  --------------------------------------------------------------------------
+
+  Framework                                Binding     Deadline                Procs
+  General Data Protection Regulation       mandatory   2018-05-25 (overdue)        9
+  Digital Operational Resilience Act       mandatory   2025-01-17 (overdue)       20
+  EU Product Liability Directive           mandatory   2026-12-09 (30d)            4
+  EU Machinery Regulation                  mandatory   2027-01-20 (72d)           10
+  EU Artificial Intelligence Act           mandatory   2027-12-02 (388d)         109
+  ...
+
+  Zero network calls. Offline analysis from bundled crosswalks.json.
+```
+
+**Coverage:** 294 procedures | 93 frameworks | 374 compliance guides | 47 adapters | 18 CLI commands
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 is the release where SWT3 grows beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains:
 
 1. **AI inference** -- model decisions, guardrails, drift, robotics behavior (this SDK, AI namespace)
 2. **Infrastructure** -- CloudTrail API calls witnessed by [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness), a zero-dependency Go binary (INF namespace)
@@ -1057,6 +1150,14 @@ When your AI makes a call, the SDK:
 6. **Returns** your original response completely untouched
 
 The result: an immutable record that your AI ran the right model, with the right guardrails, within the right boundaries. Without the auditor ever seeing the data.
+
+### Signed Witness Receipts
+
+Every receipt returned by the witness API is Ed25519-signed by TeNova. This means you hold cryptographic proof that an independent party received and validated your evidence -- without having to call us back to confirm it. The signature is verifiable against the public key published in our DID document at `did:web:sovereign.tenova.io`.
+
+Each receipt also includes a `proof_chain` showing how your anchor will be rolled into a daily Merkle tree and independently timestamped by an RFC 3161 Timestamp Authority. Three layers of evidence: who witnessed it (Ed25519 signature), that it belongs to a tamper-evident set (Merkle inclusion), and when that set was sealed (RFC 3161 timestamp).
+
+See the [Witness Receipt Verification Guide](https://sovereign.tenova.io/guides/witness-receipt-verification.html) for step-by-step verification instructions with Python and TypeScript code examples.
 
 ## Witness Agent Tool Calls
 

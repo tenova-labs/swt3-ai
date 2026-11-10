@@ -8,12 +8,12 @@
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "0.8.0",
+  "version": "8.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "0.8.0",
+      "version": "8.1.0",
       "transport": {
         "type": "stdio"
       },

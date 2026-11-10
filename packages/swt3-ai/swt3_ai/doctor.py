@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .schema import validate_schema
 
-VERSION = "0.7.9"
+VERSION = "8.1.0"
 
 
 @dataclass
@@ -84,7 +84,8 @@ def _check_profile(path: str) -> DoctorCheck:
         profile = raw.get("profile")
         if not profile:
             return DoctorCheck("Profile", "pass", "none (custom config)")
-        valid = {"eu-ai-act-high-risk", "nist-ai-rmf", "minimal"}
+        from .cli import PROFILES
+        valid = set(PROFILES.keys())
         if profile in valid:
             return DoctorCheck("Profile", "pass", profile)
         return DoctorCheck("Profile", "fail", f"unknown: {profile}")

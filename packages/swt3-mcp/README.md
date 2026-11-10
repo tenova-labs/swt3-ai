@@ -10,13 +10,23 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers three evidence domains: AI decisions (from SDK/MCP tools, AI namespace), infrastructure changes (from CloudTrail via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness), INF namespace), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace -- the evidence subject is the AI system's behavior, not the machine's mechanics. A single proof covers all domains.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
 
-**Why this matters for MCP:** When an AI agent uses MCP tools to deploy infrastructure, the MCP server witnesses the tool call (AI-TOOL.1, AI-MCP.1) and the Go binary witnesses the resulting CloudTrail event (INF-OCSF.1). Both anchors share the same Merkle root. An auditor can now trace from "agent decided to create a VPC" (MCP tool witness) through "VPC was actually created" (CloudTrail witness) in one cryptographic tree.
+**Why this matters for MCP:** MCP agents don't execute single actions -- they execute workflows. A coding agent reviews code, runs tests, creates a PR, and waits for CI. A compliance agent gathers evidence, runs checks, generates a report, and files it. Each workflow is a phased process with dependencies. With hierarchical milestone trees, the MCP server can now witness each tool call as a milestone leaf within a phase, enforce that prerequisite phases completed before downstream tools execute, and produce a single proof that covers the entire agent workflow from first tool call to final output. When an AI agent orchestrates a multi-step deployment -- provision infrastructure (Phase 1), deploy application (Phase 2), run smoke tests (Phase 3) -- the MCP server witnesses each tool call as a milestone, the `swt3-infra-witness` binary captures the CloudTrail events, and the hierarchical tree enforces that Phase 2 cannot begin until all Phase 1 milestones pass. One proof. Three evidence domains. Ordered phases with cryptographic gate enforcement.
 
-**New:** 294 procedures, 93 frameworks (5 new: EU Machinery Reg, ISO 10218, OSHA 1926, EU PLD, IBC/IRC), CON (Construction) namespace live, `swt3 watch` + `swt3 test` CLI commands. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 75 MCP tools, 47 adapters
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree: AI decisions (SDK/MCP), infrastructure changes (CloudTrail via `swt3-infra-witness`), and construction process accountability (CON namespace). 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

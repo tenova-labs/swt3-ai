@@ -8,20 +8,23 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
+
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
+
+**Why this matters for Kubernetes:** GPU clusters run phased ML pipelines: data preparation, training, evaluation, deployment. Each phase has completion criteria -- training loss converged, evaluation metrics exceeded the champion, canary deployment passed health checks. The DaemonSet already collects AI-HW.1 hardware attestation anchors from every node. With hierarchical milestone trees, those hardware anchors now land inside phase-aware structures. A model retraining pipeline becomes a Structure with phases (Prep > Train > Eval > Deploy), each phase has milestones (data hash verified, checkpoint saved, A/B test passed), and each milestone contains witness anchor leaves from both the SDK (inference evidence) and the DaemonSet (hardware evidence). The phase gate enforces that training cannot begin until data preparation milestones complete -- cryptographically, not just through pipeline orchestration. When an auditor asks "prove that the model was evaluated on validated data before it was deployed to production nodes with attested GPUs," the answer is a single Merkle path through three tiers of commitment.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
 ## What's New in v0.7.9
 
-v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
-
-New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
-
-**Why this matters for Kubernetes:** The witness agent DaemonSet collects anchors from all SDK-instrumented workloads across the cluster. With 47 adapters, pods running Groq for low-latency inference, Azure OpenAI for enterprise workloads, DeepSeek for cost-optimized batch jobs, and Together AI for open-weight models all produce anchors the agent collects, batches, and forwards -- zero provider-specific configuration. The `@tenova/swt3-mcp` MCP server (75 tools, 78 frameworks) can query anchors collected by the witness agent, giving MCP-connected AI assistants real-time visibility into cluster-wide AI governance posture.
-
-v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
-
-### Updated Coverage
-
-- 293 procedures across 10 namespaces
-- 78 regulatory frameworks, 340 compliance guides, 47 adapters, 10 SDK languages
+v0.7.9 is the ecosystem adapter release. 47 adapters, 293 procedures, 78 frameworks.
 
 ## What's New in v0.7.8
 
@@ -106,7 +109,7 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 # Local mode -- anchors emit as structured JSON to stdout
 helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.8
 
-# Cloud mode -- anchors flush to the SWT3 clearing house
+# Cloud mode -- anchors flush to the SWT3 cloud endpoint
 helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.8 \
   --set config.mode=cloud \
   --set cloud.apiKey=axm_YOUR_KEY \
@@ -117,14 +120,14 @@ helm install swt3 oci://ghcr.io/tenova-labs/charts/swt3-witness --version 0.7.8 
 
 ```
 Node boot --> DaemonSet pod starts --> queryHardware() discovers accelerators
---> mintFingerprint() creates AI-HW.1 anchor --> emit to stdout or clearing house
+--> mintFingerprint() creates AI-HW.1 anchor --> emit to stdout or cloud endpoint
 --> repeat every interval (default: 1 hour)
 ```
 
 **Local mode** (default): Anchors print as structured JSON to stdout. Scrape
 with Fluentd, Promtail, or any log pipeline. Filter: `jq 'select(.swt3_witness == true)'`
 
-**Cloud mode**: Anchors flush directly to the SWT3 clearing house via the
+**Cloud mode**: Anchors flush directly to the SWT3 cloud endpoint via the
 `Witness` class from `@tenova/swt3-ai`. Requires an API key and tenant ID.
 
 ## Silicon Coverage
@@ -142,12 +145,12 @@ with Fluentd, Promtail, or any log pipeline. Filter: `jq 'select(.swt3_witness =
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `config.mode` | `local` | `local` (stdout) or `cloud` (clearing house) |
+| `config.mode` | `local` | `local` (stdout) or `cloud` (cloud endpoint) |
 | `config.interval` | `3600` | Seconds between attestation cycles |
 | `config.clearingLevel` | `1` | 0=analytics, 1=standard, 2=sensitive, 3=classified |
 | `config.agentId` | auto | Agent identity tag (auto-generates from pod hostname) |
 | `config.healthPort` | `9090` | Health endpoint port |
-| `cloud.apiKey` | `""` | API key for clearing house (required in cloud mode) |
+| `cloud.apiKey` | `""` | API key for cloud endpoint (required in cloud mode) |
 | `cloud.tenantId` | `""` | Tenant ID (required in cloud mode) |
 | `cloud.signingKey` | `""` | HMAC-SHA256 signing key (optional) |
 | `cloud.endpoint` | `https://sovereign.tenova.io` | Clearing house URL |

@@ -13,11 +13,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
 
-**Why this matters for Kotlin:** `mintFingerprint` now verifies anchors from three evidence domains with byte-identical output. Android apps and JVM services that verify SWT3 anchors get cross-domain coverage with zero dependency changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+**Why this matters for Kotlin:** JVM backends power the enterprise systems where phased workflows are the norm. A Spring Boot loan origination service has stages: application, credit check, underwriting, closing. An Android banking app that orchestrates KYC has phases: document capture, identity verification, risk assessment. `mintFingerprint` produces milestone leaves that land inside phase-aware structures. With hierarchical Merkle trees, a Kotlin verification service can now prove that every prerequisite step completed before a downstream decision was made -- not because the orchestrator says so, but because the cryptographic structure enforces it. When an OCC examiner asks "prove the credit check completed before the underwriting model scored the application," the answer is a Merkle path through three tiers of commitment, verified with `java.security.MessageDigest` -- zero external dependencies.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

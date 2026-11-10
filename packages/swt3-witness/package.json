@@ -1,6 +1,6 @@
 {
   "name": "@tenova/swt3-witness",
-  "version": "0.8.0",
+  "version": "8.1.0",
   "description": "SWT3 Witness - Cross-silicon hardware attestation for Kubernetes AI infrastructure",
   "type": "module",
   "main": "dist/entrypoint.js",

@@ -14,11 +14,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
 
-**Why this matters for Swift:** `mintFingerprint` now verifies anchors from three evidence domains with byte-identical output. iOS/macOS apps and Apple platform services that verify SWT3 anchors -- including Core ML inference witnesses signed with Secure Enclave -- get cross-domain coverage with zero package changes. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+**Why this matters for Swift:** Apple devices are where phased AI workflows meet the real world. An iOS health app that orchestrates a clinical decision pipeline has stages: symptom intake, risk scoring, triage recommendation, physician review. A visionOS spatial computing app that manages a factory floor has phases: safety zone verification, robotic arm clearance, quality inspection. Core ML inferences at each stage produce witness anchors signed by Secure Enclave. With hierarchical milestone trees, those anchors now land inside ordered phases with cryptographic gate enforcement. When an FDA auditor asks "prove that the risk model was evaluated before the triage recommendation was generated," the answer is a Merkle path from the risk-scoring milestone leaf through the assessment phase root to the clinical-decision structure root -- signed by the device's Secure Enclave, verified by any platform.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

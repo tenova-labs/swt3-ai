@@ -13,11 +13,23 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
-## v0.8.0 -- Full Stack Governance
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
-v0.8.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). Robotics and machinery (EU Machinery Reg, ISO 10218) stay in the AI namespace.
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
 
-**Why this matters for Rust:** `mint_fingerprint` now verifies anchors from three evidence domains -- AI inference, infrastructure, and construction -- with byte-identical output. An INF-OCSF.1 anchor from the Go infrastructure binary and an AI-INF.1 anchor from the Python SDK both verify through the same Rust function. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+**Why this matters for Rust:** Rust verification services sit at the trust boundary. When a Python SDK mints a milestone leaf and a TypeScript MCP server computes the phase root, the Rust verifier needs to reconstruct the full three-tier proof and confirm it in constant time. `mint_fingerprint` already verifies anchors from three evidence domains with byte-identical output. v8.1.0 adds hierarchical Merkle hashing with domain-separated prefixes (`SWT3:MILESTONE:`, `SWT3:PHASE:`, `SWT3:STRUCTURE:`), phase-gate enforcement, and multi-tier inclusion proofs. A milestone proof computed in Python, the phase root computed in TypeScript, and the structure root computed in Go all verify byte-for-byte through the same Rust function. No allocations in the hot path. No runtime dependencies. The same zero-copy verification that makes Rust the right choice for high-throughput anchor verification now extends to hierarchical proofs.
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

@@ -4,15 +4,172 @@ Witness your AI. Prove it followed the rules. Cryptographic accountability for e
 
 # swt3-ai-go
 
-**SWT3 AI Witness SDK for Go**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external dependencies -- standard library only.
+**SWT3™ AI Witness SDK for Go**: mint, verify, and sign SWT3 witness anchors with cross-language parity. Zero external dependencies -- standard library only.
 
-**293 procedures | 10 namespaces | 10 SDKs | Zero dependencies**
+**294 procedures | 10 namespaces | 93 frameworks | 11 SDKs | Zero dependencies**
 
 Go is the dominant language for backend infrastructure at scale. Kubernetes operators, API gateways, data pipelines, and inference orchestrators are overwhelmingly written in Go. This package gives infrastructure teams the same cryptographic witnessing primitives available in the Python, TypeScript, Rust, C#, Ruby, Swift, and Kotlin SDKs, with zero external dependencies and byte-identical output across all 10 implementations.
 
-EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. This SDK gives you the cryptographic primitives for both.
+EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-risk enforcement follows **December 2, 2027**. EU Machinery Regulation 2023/1230 applies to AI-driven physical systems. This SDK gives you the cryptographic primitives for all three.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
+
+---
+
+## v8.1.0 -- Hierarchical Milestone Merkle Trees
+
+v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
+
+The new three-tier architecture: **Structure > Phase > Milestone**. Each tier has its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure -- three levels of cryptographic commitment in one proof.
+
+**Why this matters for Go:** Go is the control plane language for the systems where phased processes actually run. Kubernetes operators that orchestrate ML training pipelines, manufacturing execution systems that gate production stages, and construction management platforms that enforce inspection sequences -- all Go. The hierarchical Merkle tree maps directly to what these systems already model: ordered stages with completion requirements. A Kubernetes operator managing a model retraining pipeline calls `MintFingerprint` at each stage gate. The three-tier proof says "data validation passed, training completed within drift bounds, and the champion-challenger evaluation approved deployment" -- in one cryptographic commitment that any auditor can verify without access to the cluster. The `swt3-infra-witness` binary's infrastructure anchors now sit inside milestone trees alongside AI inference anchors, so a single proof can span from "agent decided to scale the cluster" through "CloudTrail confirmed the scaling" through "the model served its first inference on the new capacity."
+
+```
+Hierarchical Milestone Merkle Tree (v8.1.0)
+  Structure Root (SHA-256)
+    |-- Phase: Foundation
+    |     |-- Milestone: Soil Test
+    |     |     |-- CON-STR.1 PASS (leaf)
+    |     |     |-- CON-ENV.1 PASS (leaf)
+    |     |-- Milestone: Rebar Inspection
+    |           |-- CON-STR.1 PASS (leaf)
+    |-- Phase: Framing
+          |-- Milestone: Steel Erection
+          |     |-- CON-STR.1 PASS (leaf)
+          |     |-- CON-SAF.1 PASS (leaf)
+          |-- [GATE: all Foundation milestones must pass]
+```
+
+**New in this release:**
+- Three-tier Merkle hashing with domain-separated prefixes (`SWT3:MILESTONE:`, `SWT3:PHASE:`, `SWT3:STRUCTURE:`)
+- Phase-gate enforcement with emergency override and scope amendment support
+- Multi-tier inclusion proofs (milestone > phase > structure)
+- Cross-phase consistency checks
+- `swt3 exposure` CLI -- zero-network regulatory exposure calculator
+- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+
+---
+
+## v8.0.0 -- Full Stack Governance
+
+v8.0.0 is the release where SWT3 grows beyond AI inference into full stack governance.
+
+Until now, SWT3 witnessed one thing: AI inference. Your model made a decision, the SDK hashed it, an anchor landed in the ledger. That evidence stream covered what the AI decided but not what happened next. If the AI agent deployed a VPC, modified a security group, or spun up an instance, that infrastructure action lived in a separate audit trail (CloudTrail, Azure Activity Log) with no cryptographic link back to the AI decision that caused it.
+
+v8.0.0 closes the loop. A new companion binary -- [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness) -- reads cloud audit logs, extracts 6 canonical fields, computes deterministic hashes, and sends the evidence to the same SWT3 endpoint. Infrastructure anchors land in the same ledger and the same daily Merkle root as AI inference anchors. One tree. Both evidence streams.
+
+This release also extends SWT3 into physical AI governance. Five new framework crosswalks (EU Machinery Regulation, ISO 10218, OSHA 1926, EU Product Liability Directive, International Building Code) and the activation of the CON (Construction) namespace bring autonomous robotics, AI-driven manufacturing, and physical infrastructure under the same evidence protocol.
+
+### What changed
+
+#### Infrastructure Evidence (NEW)
+
+The [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness) binary is a zero-dependency Go binary (9MB, static) that reads CloudTrail JSON, extracts 6 canonical fields (operation, actor, resource, time, status, region), computes a deterministic canonical hash, and witnesses the evidence via SWT3.
+
+```bash
+# Verify parsing works (no API key needed)
+swt3-infra-witness --dry-run --format cloudtrail --input cloudtrail-events.json
+
+# Witness for real
+export SWT3_API_KEY=axm_live_xxx
+swt3-infra-witness --format cloudtrail --input cloudtrail-events.json
+```
+
+The infrastructure anchor format uses the AUD (Audit & Accountability) UCT code:
+
+```
+SWT3-E-VULTR-AUD-INF-OCSF.1-PASS-1730380800-63bc4d83d6b9
+```
+
+Raw audit data never leaves your account. Only the canonical hash and a human-readable summary are transmitted. The canonical hash uses SWT3 Deterministic Canonical JSON -- cross-language parity verified between Go and TypeScript with byte-identical output.
+
+**Why this exists:** CloudTrail IS already an independent witness to infrastructure changes. SWT3 does not replace it. SWT3 adds value by putting AI inference evidence and infrastructure evidence in the same Merkle root. No other system can produce a single proof that a specific AI decision and a specific infrastructure change coexisted in the same cryptographic commitment. That is the moat.
+
+**Multi-cloud:** Phase 1 ships the CloudTrail adapter (every AWS customer has CloudTrail). Azure Activity Log and GCP Audit Log adapters follow in Phase 2 -- the binary's pluggable adapter architecture means adding a cloud is ~100 lines, not a rewrite. The canonical hash is cloud-agnostic: the same 6 fields, the same SHA-256, the same anchor format regardless of source.
+
+**Verification:** Infrastructure anchors verify through the same `/verify` endpoint and the same `swt3 verify` CLI command as AI anchors. An INF-OCSF.1 anchor and an AI-INF.1 anchor are structurally identical in the ledger -- same fingerprint formula, same Merkle inclusion, same verification path. If you can verify one, you can verify the other.
+
+#### Physical AI Governance (5 frameworks)
+
+Two distinct domains, different namespaces, same Merkle tree:
+
+**Robotics and machinery** are witnessed through **AI-namespace** procedures because the evidence subject is the AI system's behavior -- did the model respect safety constraints, what hardware is it running on, where did its decision originate. The machine's mechanical safety (physical guards, emergency stops, torque limits) is outside SWT3's scope.
+
+**Construction** has its own **CON (Construction) namespace** because the evidence subject is the construction process itself -- site safety, structural verification, inspections. AI may drive these decisions, but the regulatory audience (OSHA inspectors, building officials, insurance adjusters) evaluates the construction outcome, not the model.
+
+| Framework | Domain | Namespace | Key procedures |
+|-----------|--------|-----------|---------------|
+| EU Machinery Regulation 2023/1230 | Robotics, cobots, autonomous manufacturing | AI, HBOM | AI-PROV.1, AI-SAFE.1, HBOM-INV.1 |
+| ISO 10218:2025 | Robot safety, collaborative operation, OTA updates | AI | AI-SAFE.1, AI-HW.1 |
+| OSHA 29 CFR 1926 | Construction site accountability | CON | CON-SAF.1, CON-STR.1, CON-ENV.1 |
+| EU Product Liability Directive 2024/2853 | AI-driven product defect traceability | AI | AI-EXPL.1, AI-CHAIN.1 |
+| International Building Code (IBC/IRC) | Structural AI decision provenance | CON | CON-STR.1, CON-INS.1 |
+
+The CON namespace is now active with 5 verdict rules live: CON-SAF.1 (site safety), CON-STR.1 (structural), CON-ENV.1 (environmental), CON-FIN.1 (financial draws), CON-INS.1 (inspection). Insurance gap (Verisk CG 35 08) and legal precedent (Garcia, Jimenez, PLD Art. 7, China SPC) documented in the [ISO 10218 crosswalk guide](https://sovereign.tenova.io/guides/iso-10218-robot-safety-crosswalk.html).
+
+**Where they overlap:** A robot operating on a construction site triggers both. The cobot's AI behavior is witnessed via AI-SAFE.1 (ISO 10218). The construction milestone it contributes to is witnessed via CON-STR.1 (OSHA 1926). Both anchors land in the same Merkle tree but serve different regulatory audiences with different evidence expectations.
+
+**Why this matters for Go:** Go is the control plane language for robotics (ROS 2 bridges), manufacturing (OPC UA gateways), and construction tech (BIM integration). `MintFingerprint` verifies all CON and AI procedure anchors with zero module changes. The `swt3-infra-witness` binary shares the same inlined fingerprint formula -- infrastructure evidence from cloud audit logs, robot behavior from AI-SAFE.1, and construction milestones from CON-STR.1 all use the same hash, the same tree, the same verification path.
+
+#### CLI DX
+
+- `swt3 watch` -- live WAL tail (stream witness events as they're buffered)
+- `swt3 test` -- 6-step pipeline smoke test (config, connectivity, witness, verify, clear, report)
+- Colored grouped help with per-command usage for all 14 commands
+- 3 bug fixes: profile validation, WAL path resolution, quickstart template
+
+#### The Unified Tree
+
+```
+Daily Merkle Root (v8.0.0)
+  |-- AI-INF.1   (model inference -- SDK)
+  |-- AI-GRD.1   (guardrail check -- SDK)
+  |-- AI-HW.1    (hardware attestation -- SDK)
+  |-- CON-SAF.1  (construction safety -- SDK)          <-- NEW
+  |-- INF-OCSF.1 (CloudTrail RunInstances -- binary)   <-- NEW
+  |-- INF-OCSF.1 (CloudTrail CreateSecurityGroup)      <-- NEW
+  |-- One root, three evidence domains
+```
+
+A single Merkle membership proof now covers AI decisions, physical AI governance, and infrastructure changes. That is the v8.0.0 story.
+
+### Updated Coverage
+
+- 294 procedures across 10 namespaces (INF-OCSF.1 is the first infrastructure evidence procedure in the witness ledger)
+- 91 regulatory frameworks (5 new: EU-MACHINERY-REG, ISO-10218, OSHA-1926, EU-PLD, IBC-IRC)
+- 47 adapters, 11 SDK languages, 340+ compliance guides
+- [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness): zero-dependency Go binary for CloudTrail evidence (CLI + server modes, Phase 1)
+
+### What's next
+
+- AWS Terraform module for automated CloudTrail evidence collection (Lambda + SQS + S3 trigger)
+- Azure Activity Log and GCP Audit Log adapters
+- CloudTrail Digest cross-referencing (chains back to AWS-signed ground truth)
+- Heartbeat/liveness monitoring for evidence pipeline completeness
+
+---
+
+## What's New in v0.7.9
+
+v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Together AI, DeepSeek, Azure OpenAI) and six witnessing guides bring the total adapter count to 47. Every major commercial inference provider now produces witness anchors in the same format -- one evidence stream regardless of which cloud your team chose.
+
+| Adapter | Provider Tag | Notes |
+|---------|-------------|-------|
+| `wrap_groq` / `wrapGroq` | `groq` | LPU inference with latency capture |
+| `wrap_together` / `wrapTogether` | `together` | Open-weight model serving |
+| `wrap_deepseek` / `wrapDeepSeek` | `deepseek` | R1 reasoning chain witnessing |
+| `wrap_azure_openai` / `wrapAzureOpenAI` | `azure-openai` | Deployment name preservation, content filter detection |
+
+New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
+
+**Why this matters for Go:** Go API gateways, Kubernetes operators, and webhook receivers that verify anchors from mixed-provider environments now cover 47 adapters -- zero module changes via `MintFingerprint`. Go is the natural language for infrastructure that sits between the `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) and downstream consumers: an envoy sidecar verifying anchors, a Kubernetes admission controller gating deployments on compliance evidence, or a webhook receiver aggregating anchor streams from multiple MCP servers. Every adapter-produced fingerprint is byte-identical to this module's output.
+
+v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
+
+### Updated Coverage
+
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -40,14 +197,14 @@ The three largest cloud AI platforms -- IBM watsonx, AWS Bedrock, and Mistral --
 
 ### Updated Coverage
 
-- 293 procedures across 10 namespaces, 86 regulatory frameworks, 324 compliance guides
+- 294 procedures across 10 namespaces, 93 regulatory frameworks, 348 compliance guides
 - [Distillation Lineage Governance](https://sovereign.tenova.io/guides/distillation-lineage-governance-crosswalk.html) | [Federated Learning Governance](https://sovereign.tenova.io/guides/federated-learning-governance-crosswalk.html) | [Synthetic Data Provenance](https://sovereign.tenova.io/guides/synthetic-data-provenance-governance-crosswalk.html)
 
 ## What's New in v0.7.6
 
 Five standards bodies converged on agent governance requirements in Q3-Q4 2026. v0.7.6 adds three procedures -- delegation chain integrity, scope boundary attestation, and agent interrupt witnessing -- and aligns crosswalks to G7 AI-SBOM, DORA, Singapore Agentic MGF, and the upcoming NIST Agent Profile.
 
-**Why this matters for Go:** All three new procedures verify with the existing `MintFingerprint` function -- zero module changes. Go API gateways and Kubernetes operators routing multi-agent traffic gain delegation chain and interrupt evidence with byte-identical output across all 10 SDK languages. The ROSClaw adapter (Python) consumes ROS 2 audit logs from robotics environments -- Go-based control plane services that orchestrate ROS 2 robots can feed the same evidence chain. DORA crosswalk coverage (20 mappings) brings EU operational resilience evidence to Go fintech microservices. G7 AI-SBOM crosswalk maps supply chain transparency requirements to existing procedures.
+**Why this matters for Go:** All three new procedures verify with the existing `MintFingerprint` function -- zero module changes. Go API gateways and Kubernetes operators routing multi-agent traffic gain delegation chain and interrupt evidence with byte-identical output across all 11 SDK languages. The ROSClaw adapter (Python) consumes ROS 2 audit logs from robotics environments -- Go-based control plane services that orchestrate ROS 2 robots can feed the same evidence chain. DORA crosswalk coverage (20 mappings) brings EU operational resilience evidence to Go fintech microservices. G7 AI-SBOM crosswalk maps supply chain transparency requirements to existing procedures.
 
 ### 3 New Procedures
 
@@ -57,8 +214,8 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 
 ### Updated Coverage
 
-- 289 procedures across 10 namespaces
-- 85 regulatory frameworks, 310 compliance guides
+- 294 procedures across 10 namespaces
+- 93 regulatory frameworks, 348 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -120,7 +277,7 @@ Two gaps closed in one release: harness-layer governance and zero-code MCP compl
 
 - 280 procedures across 77 namespaces (was 275/77)
 - 68 MCP tools (was 63)
-- 10 SDK languages with byte-identical output
+- 11 SDK languages with byte-identical output
 - 77 framework crosswalks, 265 compliance guides
 - ~3,000 tests passing across 10 languages
 
@@ -154,7 +311,7 @@ AI does not run in a vacuum. It authenticates with service accounts, runs on har
 
 - 266 procedures across 75 namespaces (was 118/64)
 - 59 MCP tools (was 37)
-- 10 SDK languages with byte-identical output
+- 11 SDK languages with byte-identical output
 - 36 framework crosswalks, 237 compliance guides
 - ~2,950 tests passing across 5 languages
 
@@ -289,6 +446,6 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 
 *SWT3: Sovereign Witness Traceability. We don't run your models. We witness them.*
 
-SWT3 and Sovereign Witness Traceability are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
+SWT3, swt3-ai, TeNova, Axiom Sovereign Engine, UCT, and Sovereign Score are trademarks of Tenable Nova LLC. Patent pending. Apache 2.0 licensed.
 
 This project is not affiliated with, endorsed by, or sponsored by any third-party AI provider. All third-party trademarks are the property of their respective owners. Use of these names is for identification and interoperability purposes only.

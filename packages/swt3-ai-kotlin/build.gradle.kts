@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.tenova"
-version = "0.8.0"
+version = "8.1.0"
 
 repositories {
     mavenCentral()
