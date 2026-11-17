@@ -2,8 +2,8 @@ apiVersion: v2
 name: swt3-witness
 description: Cryptographic AI compliance evidence for Kubernetes. DaemonSet witnesses hardware attestation, inference provenance, and model integrity across NVIDIA, AMD, TPU, Trainium, and Gaudi silicon. EU AI Act, NIST AI RMF, and CMMC evidence automation.
 type: application
-version: 8.1.0
-appVersion: "8.1.0"
+version: 8.2.0
+appVersion: "8.2.0"
 keywords:
   - ai
   - compliance
@@ -34,16 +34,18 @@ annotations:
   artifacthub.io/containsSecurityUpdates: "false"
   artifacthub.io/images: |
     - name: swt3-witness
-      image: ghcr.io/tenova-labs/swt3-witness:8.1.0
+      image: ghcr.io/tenova-labs/swt3-witness:8.2.0
       whitelisted: true
   artifacthub.io/changes: |
     - kind: added
-      description: "Infrastructure witnessing via swt3-infra-witness (CloudTrail, Azure, GCP, OCSF)"
+      description: "5 Terraform modules: AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function"
     - kind: added
-      description: "CON (Construction) namespace activated with 5 procedures"
+      description: "Passive tail sidecar for log-based witnessing without SDK changes"
     - kind: added
-      description: "5 new frameworks: EU Machinery Reg, ISO 10218, OSHA 1926, EU PLD, IBC/IRC"
+      description: "Kustomize sidecar overlay for non-Helm injection"
     - kind: added
-      description: "CLI DX: swt3 watch (live WAL tail), swt3 test (pipeline smoke test)"
+      description: "CloudWatch/Prometheus alarms and PrometheusRule"
+    - kind: added
+      description: "5 new CLI commands: verify-chain, mock-server, profile list/show/compare, upgrade"
     - kind: changed
-      description: "Underlying SDK updated to 0.8.0 with 294 procedures, 93 frameworks, 75 MCP tools, 348 guides, 47 adapters"
+      description: "Underlying SDK updated to 8.2.0 with 294 procedures, 98 frameworks, 75 MCP tools, 381 guides, 47 adapters"

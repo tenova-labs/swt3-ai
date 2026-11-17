@@ -8,6 +8,20 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+v8.2.0 is the enterprise deployment release. The DaemonSet already covers hardware attestation on every node. This release adds the missing deployment patterns for teams that need governance across their entire Kubernetes and cloud footprint.
+
+**Passive tail sidecar.** A sidecar container that reads structured JSON logs via shared volume mount and witnesses them without any SDK integration. One `kubectl apply` adds governance to every pod in a namespace. Solves the 50-microservice problem: you cannot add SDK calls to every service, but you can mount a sidecar that reads stdout logs.
+
+**Kustomize overlay.** For teams that do not use Helm, a Kustomize overlay injects the witness sidecar into existing deployments. `kustomize build` with the overlay patches adds the sidecar container and shared volume to any Deployment or StatefulSet.
+
+**Terraform modules.** 5 modules for AWS (Lambda/ECS/EKS), Azure (Function), and GCP (Cloud Function). `terraform apply` deploys infrastructure witnesses that read cloud audit logs and anchor them via the SWT3 protocol. Raw audit data never leaves your cloud account.
+
+**Alarms and observability.** PrometheusRule for witness anchor drift, plus CloudWatch alarms for Lambda error rate, SQS dead-letter depth, and invocation throttling. SRE runbook included.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
@@ -18,13 +32,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## What's New in v0.7.9
 
-v0.7.9 is the ecosystem adapter release. 47 adapters, 293 procedures, 78 frameworks.
+v0.7.9 is the ecosystem adapter release. 47 adapters, 294 procedures, 98 frameworks.
 
 ## What's New in v0.7.8
 

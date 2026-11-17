@@ -15,6 +15,14 @@ EU AI Act GPAI transparency obligations enforced since **August 2, 2026**. High-
 
 ---
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes.
+
+**Why this matters for Ruby:** Your Rails app calls `SWT3.mint_fingerprint` to witness AI decisions. But the infrastructure running it -- the ECS task, the ALB health checks, the CloudTrail events from your Capistrano deployments -- was invisible. Now a platform engineer adds a Terraform module and every AWS API call gets witnessed into the same Merkle tree as your Ruby SDK anchors. For Sidekiq workers and background jobs, the passive tail sidecar reads structured JSON logs without any gem changes. Infrastructure evidence and application evidence in one protocol, verified with the same `openssl` primitives.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
@@ -27,13 +35,13 @@ The new three-tier architecture: **Structure > Phase > Milestone**. Each tier ha
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -50,7 +58,7 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for Ruby:** Rails API backends and Sidekiq workers that aggregate compliance data from multiple providers can now verify anchors from 47 adapters with cross-language fingerprint parity -- zero gem changes. The `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) collects anchors from all providers, and every anchor it produces verifies against `SWT3.mint_fingerprint` in this gem. Ruby is the natural choice for compliance dashboards and webhook receivers that consume the MCP server's evidence stream.
+**Why this matters for Ruby:** Rails API backends and Sidekiq workers that aggregate compliance data from multiple providers can now verify anchors from 47 adapters with cross-language fingerprint parity -- zero gem changes. The `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) collects anchors from all providers, and every anchor it produces verifies against `SWT3.mint_fingerprint` in this gem. Ruby is the natural choice for compliance dashboards and webhook receivers that consume the MCP server's evidence stream.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 

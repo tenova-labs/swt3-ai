@@ -13,6 +13,14 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes. Kustomize overlays inject the sidecar into existing Kubernetes deployments. CloudWatch and Prometheus alarms provide production observability.
+
+**Why this matters for Rust:** Rust verification services validate anchors from every evidence domain -- Python SDK inferences, TypeScript MCP tool calls, Go infrastructure binaries, and now Terraform-deployed cloud witnesses. The new Terraform modules mint anchors using the same fingerprint formula verified by `mint_fingerprint`. A CloudTrail event witnessed by an AWS Lambda module and an AI inference witnessed by the Python SDK both produce anchors that verify byte-for-byte through the same Rust function. The verification surface expanded from "SDK-instrumented code" to "every cloud API call in your AWS/Azure/GCP account" -- without changing a single line of Rust verification logic.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
@@ -23,13 +31,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -46,7 +54,7 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for Rust:** All 47 adapter-produced anchors verify with the existing `mint_fingerprint` function -- zero crate changes. Rust API gateways and Kubernetes operators verifying anchors from mixed-provider environments (Groq for speed, Azure OpenAI for enterprise, DeepSeek for cost) get byte-identical fingerprints. If you're building an MCP server in Rust, the `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) aggregates anchors from all 47 adapters -- and every anchor it collects verifies against this crate.
+**Why this matters for Rust:** All 47 adapter-produced anchors verify with the existing `mint_fingerprint` function -- zero crate changes. Rust API gateways and Kubernetes operators verifying anchors from mixed-provider environments (Groq for speed, Azure OpenAI for enterprise, DeepSeek for cost) get byte-identical fingerprints. If you're building an MCP server in Rust, the `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all 47 adapters -- and every anchor it collects verifies against this crate.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 

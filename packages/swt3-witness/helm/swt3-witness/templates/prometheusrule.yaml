@@ -1,0 +1,60 @@
+{{- if .Values.prometheus.rules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "swt3-witness.fullname" . }}
+  {{- if .Values.prometheus.rules.namespace }}
+  namespace: {{ .Values.prometheus.rules.namespace }}
+  {{- end }}
+  labels:
+    {{- include "swt3-witness.labels" . | nindent 4 }}
+    {{- with .Values.prometheus.rules.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: swt3-witness
+      rules:
+        - alert: SWT3EventsStale
+          expr: time() - swt3_last_witnessed_timestamp > 3600
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SWT3 witness has not processed events in over 1 hour"
+
+        - alert: SWT3HighErrorRate
+          expr: >
+            rate(swt3_events_errors_total[5m])
+            / (rate(swt3_events_processed_total[5m]) + 0.001)
+            > 0.1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "SWT3 witness error rate exceeds 10%"
+
+        - alert: SWT3BatchLatencyHigh
+          expr: swt3_last_batch_latency_ms > 5000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SWT3 witness batch latency exceeds 5 seconds"
+
+        - alert: SWT3RecentRestart
+          expr: swt3_uptime_seconds < 60 and swt3_uptime_seconds > 0
+          for: 1m
+          labels:
+            severity: info
+          annotations:
+            summary: "SWT3 witness recently restarted"
+
+        - alert: SWT3TailNoFiles
+          expr: swt3_tail_files_watched == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SWT3 tail mode is watching zero files in watch directory"
+{{- end }}

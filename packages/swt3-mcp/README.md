@@ -10,6 +10,16 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 ---
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+Enterprise AI governance has a last-mile problem. MCP agents orchestrate tool calls, but the infrastructure those tools touch -- CloudTrail events, container orchestration, serverless functions -- was invisible to the witness protocol. Teams running 50+ microservices cannot add SDK calls to every service.
+
+v8.2.0 closes this gap with 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function), a passive tail sidecar for log-based witnessing without SDK changes, Kustomize overlay for non-Helm injection, and CloudWatch/Prometheus alarms.
+
+**Why this matters for MCP:** When an MCP agent calls a tool that provisions infrastructure, the agent tool call is witnessed by `@tenova/swt3-mcp`. But the downstream CloudTrail event was invisible. Now a platform engineer runs `terraform apply` and every infrastructure API call gets witnessed into the same Merkle tree as the MCP tool call anchors. The MCP server witnesses the agent's decisions. The Terraform modules witness the infrastructure's state changes. The hierarchical Merkle tree from v8.1.0 ties them together: agent decision (Phase 1) -> infrastructure change (Phase 2) -> validation (Phase 3), with cryptographic gate enforcement at each transition. One protocol, from MCP tool call to CloudTrail event.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
@@ -20,13 +30,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 93 frameworks, 75 MCP tools, 47 adapters
+- 294 procedures, 98 frameworks, 75 MCP tools, 47 adapters
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree: AI decisions (SDK/MCP), infrastructure changes (CloudTrail via `swt3-infra-witness`), and construction process accountability (CON namespace). 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree: AI decisions (SDK/MCP), infrastructure changes (CloudTrail via `swt3-infra-witness`), and construction process accountability (CON namespace). 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 

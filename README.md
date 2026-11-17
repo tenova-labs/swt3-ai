@@ -22,6 +22,36 @@ SWT3 (Sovereign Witness Traceability) is a deterministic witness protocol for AI
 - **Zero data retention.** Configurable clearing levels strip sensitive content before it leaves your environment.
 - **Framework-mapped.** Every anchor maps to EU AI Act articles, NIST AI RMF functions, and federal controls.
 
+## What's New in v8.2
+
+v8.2.0 is the **Terraform Enterprise Deployment** release. SWT3 now deploys into AWS, Azure, and GCP with native infrastructure-as-code modules, production-grade observability, and zero-SDK witnessing for teams that cannot modify application code.
+
+**5 Terraform Modules** -- Infrastructure witnesses that read cloud audit logs (CloudTrail, Activity Log, Cloud Audit Log), extract canonical fields, compute deterministic hashes, and anchor them via the SWT3 protocol. Raw audit data never leaves your cloud account.
+
+| Module | Cloud | Pattern |
+|--------|-------|---------|
+| `aws-lambda-cloudtrail` | AWS | S3 -> SQS -> Lambda |
+| `aws-ecs-sidecar` | AWS | ECS task sidecar container |
+| `aws-eks-daemonset` | AWS | Helm DaemonSet on every EKS node |
+| `azure-function` | Azure | Event Grid -> Function |
+| `gcp-cloud-function` | GCP | Log Router -> Pub/Sub -> Function |
+
+**5 New CLI Commands** -- `swt3 verify-chain` (local chain integrity verification with tamper detection), `swt3 mock-server` (local test endpoint returning SWT3-MOCK- anchors), `swt3 profile list|show|compare` (governance profile management), `swt3 upgrade` (version check against PyPI/npm).
+
+**Passive Tail Sidecar** -- Log-based witnessing for the 50-microservice problem. A sidecar container reads structured JSON logs via shared volume mount and witnesses them without any SDK integration. One `kubectl apply` adds governance to every pod in a namespace.
+
+**Kustomize Sidecar Overlay** -- For teams that do not use Helm, a Kustomize overlay injects the witness sidecar into existing deployments with `kustomize build`.
+
+**CloudWatch and Prometheus Alarms** -- PrometheusRule for witness anchor drift, CloudWatch alarms for Lambda error rate, SQS dead-letter depth, and invocation throttling. SRE runbook included.
+
+**Docker Compose Dev Environment** -- `docker compose up` spins up a local witness endpoint, mock receiver, and Prometheus/Grafana stack for development and integration testing.
+
+### Why This Matters
+
+Enterprise AI governance has a last-mile problem. The SDK covers application code, but regulated infrastructure -- CloudTrail events, container orchestration, serverless functions, hardware attestation -- requires a different deployment model. Teams running 50+ microservices cannot add SDK calls to every service. Platform engineers need Terraform modules, not code changes.
+
+v8.2 closes this gap. A platform team can `terraform apply` a CloudTrail witness, `kubectl apply` a Kustomize sidecar overlay, and get continuous compliance evidence from infrastructure that was previously unmonitored. Combined with the existing SDK and K8s DaemonSet, SWT3 now witnesses AI governance from silicon to serverless in a single protocol.
+
 ## Try It (10 Seconds, No Account)
 
 **Python**
@@ -224,6 +254,7 @@ packages/swt3-ai-go/     Go SDK (github.com/tenova-labs/swt3-ai-go)
 packages/swt3-mcp/       MCP Server (npm: @tenova/swt3-mcp)
 packages/swt3-witness/   K8s DaemonSet (GHCR + Helm)
 packages/swt3-infra-witness/ Infrastructure witness (Go binary)
+packages/terraform-swt3-modules/ Terraform modules (AWS/Azure/GCP)
 packages/libswt3/        Protocol reference implementation
 config/                  Control definitions and framework crosswalks
 ```

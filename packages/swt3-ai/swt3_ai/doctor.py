@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .schema import validate_schema
 
-VERSION = "8.1.0"
+VERSION = "8.2.0"
 
 
 @dataclass
@@ -188,6 +188,44 @@ def _check_mcp_config() -> DoctorCheck:
     return DoctorCheck("MCP", "pass", "not configured (optional)")
 
 
+def _check_mock_endpoint(config_path: Optional[str] = None) -> DoctorCheck:
+    """Warn if SWT3 endpoint points to a mock server."""
+    mock_patterns = ("localhost:9999", "127.0.0.1:9999", "SWT3-MOCK")
+    endpoint = os.environ.get("SWT3_ENDPOINT", "")
+    if any(p in endpoint for p in mock_patterns):
+        return DoctorCheck(
+            "Mock endpoint", "warn",
+            f"SWT3_ENDPOINT={endpoint}",
+            tip="Mock server detected. Do not use in production.",
+        )
+    if config_path:
+        try:
+            import yaml
+            with open(config_path, "r") as f:
+                raw = yaml.safe_load(f) or {}
+            ep = raw.get("endpoint", "")
+            if any(p in str(ep) for p in mock_patterns):
+                return DoctorCheck(
+                    "Mock endpoint", "warn",
+                    f"endpoint={ep} in config",
+                    tip="Mock server detected. Do not use in production.",
+                )
+        except Exception:
+            pass
+    return DoctorCheck("Mock endpoint", "pass", "no mock endpoint detected")
+
+
+def _check_env_example() -> DoctorCheck:
+    """Hint to copy .env.example if .env is missing."""
+    if Path(".env.example").is_file() and not Path(".env").is_file():
+        return DoctorCheck(
+            "Environment", "warn",
+            ".env.example found but .env missing",
+            tip="Copy .env.example to .env and fill in your values.",
+        )
+    return DoctorCheck("Environment", "pass", "ok")
+
+
 def run_doctor_checks(config_path: Optional[str] = None) -> List[DoctorCheck]:
     checks: List[DoctorCheck] = []
 
@@ -197,23 +235,25 @@ def run_doctor_checks(config_path: Optional[str] = None) -> List[DoctorCheck]:
             path: Optional[str] = config_path
         else:
             checks.append(DoctorCheck("Config file", "fail", f"not found: {config_path}", tip="Run: swt3 init"))
-            return checks
+            path = None
     else:
         yaml_check = _check_yaml_found()
         checks.append(yaml_check)
         path = yaml_check.message.replace("./", "") if yaml_check.status == "pass" else None
 
-    if not path:
-        return checks
+    if path:
+        checks.append(_check_yaml_valid(path))
+        checks.append(_check_env_vars(path))
+        checks.append(_check_profile(path))
+        checks.append(_check_sections(path))
+        checks.append(_check_extends(path))
+        checks.append(_check_tpm(path))
+        checks.append(_check_runtime_profile(path))
 
-    checks.append(_check_yaml_valid(path))
-    checks.append(_check_env_vars(path))
-    checks.append(_check_profile(path))
-    checks.append(_check_sections(path))
-    checks.append(_check_extends(path))
-    checks.append(_check_tpm(path))
-    checks.append(_check_runtime_profile(path))
+    # These checks run regardless of config file presence
     checks.append(_check_mcp_config())
+    checks.append(_check_mock_endpoint(path))
+    checks.append(_check_env_example())
 
     return checks
 

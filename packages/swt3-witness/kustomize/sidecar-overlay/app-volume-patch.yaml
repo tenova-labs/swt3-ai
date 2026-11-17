@@ -1,0 +1,20 @@
+# App Volume Mount Patch
+#
+# Add this to your application container so it can write AI telemetry
+# to the shared volume. Replace YOUR_APP_CONTAINER with your container name.
+#
+# Your app writes one JSON object per line to any .jsonl file in /shared/swt3/:
+#   {"model":"gpt-4","tokens_in":500,"tokens_out":200,"latency_ms":1200,"status":"ok","timestamp":"2026-11-14T12:00:00Z"}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: PLACEHOLDER
+spec:
+  template:
+    spec:
+      containers:
+        - name: YOUR_APP_CONTAINER  # <-- replace with your container name
+          volumeMounts:
+            - name: swt3-telemetry
+              mountPath: /shared/swt3

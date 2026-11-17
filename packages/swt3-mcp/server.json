@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.tenova/swt3-witness",
   "title": "SWT3 AI Witness",
-  "description": "Cryptographic AI governance and audit. 75 tools, 93 frameworks, 47 provider adapters. EU AI Act, NIST AI RMF, ISO 27090, IEEE 2863, CMMC, DORA, G7 AI-SBOM, MCP Top 10, EU Machinery Regulation, ISO 10218, EU PLD, BSA/AML, MAS SAFR, OWASP LLM Top 10 2026. Adapters for OpenAI, Anthropic, Google Vertex, AWS Bedrock, Mistral, Groq, Together, DeepSeek, Azure OpenAI, IBM Granite, NVIDIA, Cohere, LangChain.",
+  "description": "Cryptographic AI governance and audit. 75 tools, 98 frameworks, 5 Terraform modules (AWS/Azure/GCP). EU AI Act, NIST, CMMC, MCP Top 10.",
   "websiteUrl": "https://tenova.io",
   "repository": {
     "url": "https://github.com/tenova-labs/swt3-ai",
     "source": "github"
   },
-  "version": "8.1.0",
+  "version": "8.2.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@tenova/swt3-mcp",
-      "version": "8.1.0",
+      "version": "8.2.0",
       "transport": {
         "type": "stdio"
       },
@@ -136,7 +136,11 @@
         "ieee-2863",
         "owasp-llm-top10-2026",
         "bsa-aml",
-        "mas-ai-guidelines"
+        "mas-ai-guidelines",
+        "terraform",
+        "kustomize",
+        "infrastructure-as-code",
+        "sidecar-witness"
       ],
       "frameworks": [
         "EU AI Act",

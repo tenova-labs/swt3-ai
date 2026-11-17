@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.tenova"
-version = "8.1.0"
+version = "8.2.0"
 
 repositories {
     mavenCentral()
@@ -47,7 +47,7 @@ publishing {
 
             pom {
                 name.set("SWT3 AI Witness SDK")
-                description.set("Cryptographic attestation for AI inference. 293 procedures, 10 namespaces, 10 languages, 78 frameworks. EU AI Act, NIST AI RMF, CMMC, SR 11-7, DORA, OWASP MCP Top 10.")
+                description.set("Cryptographic attestation for AI inference. 294 procedures, 10 namespaces, 11 languages, 98 frameworks. EU AI Act, NIST AI RMF, CMMC, SR 11-7, DORA, OWASP MCP Top 10.")
                 url.set("https://sovereign.tenova.io")
                 licenses {
                     license {

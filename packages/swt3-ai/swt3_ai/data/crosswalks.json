@@ -3,9 +3,9 @@
   "protocol": "SWT3",
   "publisher": "Tenable Nova LLC",
   "license": "Apache-2.0",
-  "generated_at": "2026-10-13T02:30:00Z",
+  "generated_at": "2026-10-28T04:00:00Z",
   "source": "uct-registry.json",
-  "description": "Bidirectional crosswalk between 138 SWT3 procedures and 40 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
+  "description": "Bidirectional crosswalk between 145 SWT3 procedures and 57 regulatory frameworks. Machine-readable, designed for CI/CD pipelines, compliance scanners, and GRC integrations.",
   "citation": "When referencing these procedures in automated tools or derivative works, cite as: UCT Registry v1.0, Tenable Nova LLC (https://sovereign.tenova.io/registry/). SWT3 and Universal Control Taxonomy are trademarks of Tenable Nova LLC. Patent pending.",
   "frameworks": {
     "CA-SB-942": {
@@ -267,6 +267,20 @@
       ],
       "binding": "mandatory"
     },
+    "ISO-27090": {
+      "name": "AI Security Threats and Compromises",
+      "authority": "ISO/IEC JTC 1/SC 27",
+      "document": "ISO/IEC 27090:2026",
+      "version": "2026-10",
+      "url": "https://www.iso.org/standard/56581.html",
+      "enforcement_date": "2026-10-14",
+      "procedure_count": 19,
+      "requirement_count": 9,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "voluntary"
+    },
     "ISO-42001": {
       "name": "AI Management System",
       "authority": "ISO/IEC",
@@ -469,7 +483,7 @@
       "binding": "advisory"
     },
     "SR-11-7": {
-      "name": "Model Risk Management",
+      "name": "Model Risk Management (Superseded by SR 26-2)",
       "authority": "Federal Reserve, OCC",
       "document": "SR 11-7 / OCC 2011-12",
       "version": "2011",
@@ -479,7 +493,25 @@
       "jurisdictions": [
         "US"
       ],
-      "binding": "mandatory"
+      "binding": "mandatory",
+      "status": "superseded",
+      "superseded_by": "SR-26-2",
+      "note": "SR 26-2 (April 2026) replaced SR 11-7 for model risk management. SR 11-7 still applies to traditional statistical models but explicitly excludes generative and agentic AI."
+    },
+    "SR-26-2": {
+      "name": "Revised Model Risk Management Guidance",
+      "authority": "Federal Reserve, OCC, FDIC",
+      "document": "SR 26-2 / OCC Bulletin 2026-13",
+      "version": "2026",
+      "url": "https://www.federalreserve.gov/supervisionreg/srletters/sr2602.htm",
+      "enforcement_date": "2026-04-17",
+      "procedure_count": 22,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "non-binding guidance",
+      "note": "Replaces SR 11-7. Risk-based, principles-driven. Explicitly excludes generative and agentic AI from scope. Agencies plan separate AI-specific RFI."
     },
     "TW-AI-BASIC": {
       "name": "Taiwan AI Basic Act",
@@ -494,6 +526,21 @@
         "TW"
       ],
       "binding": "mandatory"
+    },
+    "UNECE-ADS-2026": {
+      "name": "UNECE Global Regulation on Automated Driving Systems",
+      "authority": "UNECE WP.29 World Forum for Harmonization of Vehicle Regulations",
+      "document": "UN GTR on Automated Driving Systems (Level 4)",
+      "version": "2026",
+      "url": "https://unece.org/sustainable-development/press/unece-adopts-first-ever-global-rules-allowing-fully-autonomous",
+      "enforcement_date": "2026-06-24",
+      "procedure_count": 14,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "mandatory",
+      "note": "First global binding regulation for Level 4 fully autonomous vehicles. Requires audited safety management systems, lifecycle monitoring, continuous performance reporting, structured safety cases, and in-service occurrence reporting."
     },
     "TX-TRAIGA": {
       "name": "Texas Responsible AI Governance Act",
@@ -618,222 +665,6 @@
       ],
       "binding": "voluntary"
     },
-    "ORACLE-26AI": {
-      "name": "Oracle Database 26ai AI Governance",
-      "authority": "Oracle Corporation",
-      "document": "Oracle AI Database 26ai New Features Guide",
-      "version": "26ai",
-      "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/nfcoa/all-nfg.html",
-      "procedure_count": 16,
-      "requirement_count": 12,
-      "jurisdictions": [
-        "Global"
-      ],
-      "binding": "vendor-platform",
-      "guide": "oracle-26ai-governance-crosswalk.html",
-      "procedures": [
-        "AI-RAG.1",
-        "AI-EXPL.1",
-        "AI-INF.1",
-        "AI-MDL.3",
-        "AI-MDL.4",
-        "AI-MDL.5",
-        "AI-ACC.1",
-        "AI-DATA.1",
-        "AI-FAIR.1",
-        "AI-GRD.1",
-        "AI-AUDIT.1",
-        "AI-SEC.1",
-        "AI-DATA.2",
-        "AI-GOV.5",
-        "AI-SBOM.1",
-        "AI-TRANS.1"
-      ],
-      "by_framework": {
-        "AI Vector Search": [
-          "AI-RAG.1",
-          "AI-AUDIT.1",
-          "AI-SEC.1"
-        ],
-        "Select AI": [
-          "AI-EXPL.1",
-          "AI-INF.1",
-          "AI-AUDIT.1"
-        ],
-        "AI Pipelines": [
-          "AI-MDL.3",
-          "AI-AUDIT.1"
-        ],
-        "Oracle Machine Learning": [
-          "AI-MDL.4",
-          "AI-MDL.5",
-          "AI-INF.1",
-          "AI-SBOM.1",
-          "AI-SEC.1"
-        ],
-        "Database Vault": [
-          "AI-ACC.1",
-          "AI-AUDIT.1"
-        ],
-        "Data Safe": [
-          "AI-DATA.1",
-          "AI-FAIR.1"
-        ],
-        "SQL Firewall": [
-          "AI-GRD.1",
-          "AI-AUDIT.1"
-        ],
-        "Unified Auditing": [
-          "AI-AUDIT.1",
-          "AI-RAG.1",
-          "AI-EXPL.1",
-          "AI-ACC.1",
-          "AI-GRD.1",
-          "AI-GOV.5",
-          "AI-TRANS.1"
-        ],
-        "TDE Encryption": [
-          "AI-SEC.1"
-        ],
-        "Property Graphs": [
-          "AI-DATA.2"
-        ],
-        "AI-Optimized SQL": [
-          "AI-GOV.5"
-        ],
-        "JSON Relational Duality": [
-          "AI-TRANS.1"
-        ]
-      }
-    },
-    "IBM-GRANITE-OW": {
-      "name": "IBM Granite Open-Weight Governance",
-      "authority": "IBM",
-      "document": "Granite Model Card + Apache 2.0 License",
-      "version": "4.2",
-      "url": "https://www.ibm.com/granite",
-      "procedure_count": 16,
-      "requirement_count": 10,
-      "jurisdictions": [
-        "Global"
-      ],
-      "binding": "voluntary",
-      "guide": "ibm-granite-open-weight-governance-crosswalk.html",
-      "procedures": [
-        "AI-INF.1",
-        "AI-MDL.5",
-        "AI-MDL.6",
-        "AI-MDL.7",
-        "AI-GRD.1",
-        "AI-GRD.2",
-        "AI-SEC.1",
-        "AI-HW.1",
-        "AI-LIC.1",
-        "AI-SBOM.1",
-        "AI-FAIR.1",
-        "AI-DRIFT.1",
-        "AI-DATA.1",
-        "AI-ENV.2",
-        "AI-MARK.1",
-        "AI-SUPPLY.1"
-      ],
-      "by_framework": {
-        "Granite 4.2 Inference": [
-          "AI-INF.1",
-          "AI-MDL.5",
-          "AI-MDL.7",
-          "AI-HW.1"
-        ],
-        "Granite Guardian": [
-          "AI-GRD.1",
-          "AI-GRD.2",
-          "AI-SEC.1"
-        ],
-        "Fine-Tuning Pipeline": [
-          "AI-MDL.6",
-          "AI-DATA.1",
-          "AI-SBOM.1"
-        ],
-        "Deployment Governance": [
-          "AI-ENV.2",
-          "AI-LIC.1",
-          "AI-SUPPLY.1",
-          "AI-MARK.1"
-        ],
-        "Monitoring": [
-          "AI-FAIR.1",
-          "AI-DRIFT.1"
-        ]
-      }
-    },
-    "IBM-WATSONX-ORCH": {
-      "name": "IBM watsonx Orchestrate Agent Governance",
-      "authority": "IBM",
-      "document": "watsonx Orchestrate Documentation",
-      "version": "2026",
-      "url": "https://www.ibm.com/products/watsonx-orchestrate",
-      "procedure_count": 18,
-      "requirement_count": 8,
-      "jurisdictions": [
-        "Global"
-      ],
-      "binding": "voluntary",
-      "guide": "watsonx-orchestrate-agent-governance-crosswalk.html",
-      "procedures": [
-        "AI-INF.1",
-        "AI-ID.1",
-        "AI-SKILL.1",
-        "AI-SKILL.2",
-        "AI-TOOL.1",
-        "AI-ACC.1",
-        "AI-CHAIN.1",
-        "AI-DEL.1",
-        "AI-HITL.1",
-        "AI-HITL.2",
-        "AI-GRD.1",
-        "AI-SAFE.1",
-        "AI-SAFE.2",
-        "AI-BASE.1",
-        "AI-DRIFT.1",
-        "AI-FAIR.1",
-        "AI-AUDIT.1",
-        "AI-VIO.1"
-      ],
-      "by_framework": {
-        "Agent Orchestration": [
-          "AI-INF.1",
-          "AI-ID.1",
-          "AI-CHAIN.1",
-          "AI-DEL.1",
-          "AI-BASE.1",
-          "AI-DRIFT.1",
-          "AI-FAIR.1"
-        ],
-        "Skill Composition": [
-          "AI-SKILL.1",
-          "AI-SKILL.2",
-          "AI-TOOL.1",
-          "AI-ACC.1"
-        ],
-        "Safety Controls": [
-          "AI-GRD.1",
-          "AI-SAFE.1",
-          "AI-SAFE.2",
-          "AI-HITL.1",
-          "AI-HITL.2",
-          "AI-VIO.1",
-          "AI-ACC.1"
-        ],
-        "Audit Trail": [
-          "AI-AUDIT.1",
-          "AI-HITL.1",
-          "AI-HITL.2",
-          "AI-DRIFT.1",
-          "AI-FAIR.1",
-          "AI-VIO.1"
-        ]
-      }
-    },
     "FSB-AI-SOUND-PRACTICES": {
       "name": "Sound Practices for Responsible Adoption of AI",
       "authority": "Financial Stability Board (FSB)",
@@ -846,6 +677,231 @@
         "*"
       ],
       "binding": "advisory"
+    },
+    "EU-MACHINERY-REG": {
+      "name": "EU Machinery Regulation",
+      "authority": "European Parliament and Council",
+      "document": "Regulation (EU) 2023/1230",
+      "version": "2023",
+      "url": "https://eur-lex.europa.eu/eli/reg/2023/1230/oj",
+      "enforcement_date": "2027-01-20",
+      "procedure_count": 10,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "EU"
+      ],
+      "binding": "mandatory"
+    },
+    "ISO-10218": {
+      "name": "ISO 10218:2025 Robot Safety",
+      "authority": "ISO/TC 299 Robotics",
+      "document": "ISO 10218-1:2025 + ISO 10218-2:2025",
+      "version": "2025",
+      "url": "https://www.iso.org/standard/78423.html",
+      "procedure_count": 5,
+      "requirement_count": 6,
+      "jurisdictions": [
+        "INT"
+      ],
+      "binding": "voluntary"
+    },
+    "OSHA-1926": {
+      "name": "OSHA Construction Safety Standards",
+      "authority": "US Department of Labor / OSHA",
+      "document": "29 CFR 1926",
+      "version": "2024",
+      "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1926",
+      "procedure_count": 4,
+      "requirement_count": 5,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory"
+    },
+    "EU-PLD": {
+      "name": "EU Product Liability Directive",
+      "authority": "European Parliament and Council",
+      "document": "Directive (EU) 2024/2853",
+      "version": "2024",
+      "url": "https://eur-lex.europa.eu/eli/dir/2024/2853/oj",
+      "enforcement_date": "2026-12-09",
+      "procedure_count": 4,
+      "requirement_count": 7,
+      "jurisdictions": [
+        "EU"
+      ],
+      "binding": "mandatory"
+    },
+    "EU-EED": {
+      "name": "EU Energy Efficiency Directive (recast)",
+      "authority": "European Parliament and Council",
+      "document": "Directive (EU) 2023/1791",
+      "version": "2023",
+      "url": "https://eur-lex.europa.eu/eli/dir/2023/1791/oj/eng",
+      "enforcement_date": "2024-09-15",
+      "procedure_count": 20,
+      "requirement_count": 12,
+      "jurisdictions": [
+        "EU"
+      ],
+      "binding": "mandatory"
+    },
+    "IBC-IRC": {
+      "name": "International Building Code / International Residential Code",
+      "authority": "International Code Council (ICC)",
+      "document": "IBC 2024 + IRC 2024",
+      "version": "2024",
+      "url": "https://codes.iccsafe.org/codes/international-building-code",
+      "procedure_count": 5,
+      "requirement_count": 4,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory"
+    },
+    "MAS-AI-GUIDELINES": {
+      "name": "MAS Guidelines on AI Risk Management",
+      "authority": "Monetary Authority of Singapore (MAS)",
+      "document": "Guidelines on Artificial Intelligence Risk Management + SAFR White Paper",
+      "version": "2026-10",
+      "url": "https://www.mas.gov.sg/news/media-releases/2026/mas-sets-out-supervisory-expectations-on-responsible-ai-adoption-by-financial-institutions",
+      "enforcement_date": "2027-10-07",
+      "procedure_count": 18,
+      "requirement_count": 12,
+      "jurisdictions": [
+        "SG"
+      ],
+      "binding": "mandatory"
+    },
+    "OWASP-LLM-2026": {
+      "name": "OWASP Top 10 for LLM Applications 2026",
+      "authority": "OWASP",
+      "document": "Top 10 for Large Language Model Applications",
+      "version": "2026",
+      "url": "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+      "procedure_count": 22,
+      "requirement_count": 10,
+      "jurisdictions": [
+        "*"
+      ],
+      "binding": "voluntary"
+    },
+    "US-EO-14409": {
+      "name": "Promoting Advanced AI Innovation and Security",
+      "authority": "White House / Executive Office of the President",
+      "document": "EO 14409 (91 FR 34565)",
+      "version": "2026-06",
+      "url": "https://www.federalregister.gov/documents/2026/06/05/2026-11415/promoting-advanced-artificial-intelligence-innovation-and-security",
+      "enforcement_date": "2026-06-02",
+      "procedure_count": 8,
+      "requirement_count": 5,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory",
+      "note": "Third Trump AI EO. Treats frontier models as defensive cyber infrastructure. Voluntary 30-day pre-release review. AI cybersecurity clearinghouse via CISA. Classified benchmarking for covered frontier models."
+    },
+    "US-EO-14434": {
+      "name": "Executive Order 14434: Inaugurating the Era of Super Intelligence",
+      "authority": "White House / Executive Office of the President",
+      "document": "EO 14434 (91 FR 63129)",
+      "version": "2026-09",
+      "url": "https://www.federalregister.gov/documents/2026/10/02/2026-20321/inaugurating-the-era-of-super-intelligence",
+      "procedure_count": 12,
+      "requirement_count": 6,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory"
+    },
+    "HIPAA-AI-SEC": {
+      "name": "HIPAA AI Security Rule (Proposed)",
+      "authority": "HHS Office for Civil Rights",
+      "document": "HIPAA Security Rule NPRM (AI Provisions)",
+      "version": "2025",
+      "url": "https://www.hhs.gov/hipaa/for-professionals/security/index.html",
+      "enforcement_date": "TBD",
+      "procedure_count": 12,
+      "requirement_count": 12,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory"
+    },
+    "FDA-SAMD": {
+      "name": "FDA AI/ML Software as a Medical Device",
+      "authority": "U.S. Food and Drug Administration",
+      "document": "FDA GMLP Framework, PCCP Guidance, 21 CFR Part 820",
+      "version": "2024",
+      "url": "https://www.fda.gov/medical-devices/software-medical-device-samd/artificial-intelligence-and-machine-learning-aiml-software-medical-device",
+      "enforcement_date": "active",
+      "procedure_count": 10,
+      "requirement_count": 10,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "mandatory"
+    },
+    "AMA-AGENTIC": {
+      "name": "AMA Agentic Clinical AI Framework",
+      "authority": "American Medical Association",
+      "document": "AMA Augmented Intelligence Policy, RUAIH Standards",
+      "version": "2026",
+      "url": "https://www.ama-assn.org/practice-management/digital/augmented-intelligence-ai",
+      "enforcement_date": "voluntary",
+      "procedure_count": 17,
+      "requirement_count": 12,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "voluntary"
+    },
+    "HEALTH-INS-AI": {
+      "name": "Health Insurance AI Regulations (Multi-State)",
+      "authority": "State Legislatures (IN, AL, UT, WA, IA, GA)",
+      "document": "IN HEA 1304, UT SB 149, WA SB 5518 + state rules",
+      "version": "2025-2026",
+      "url": "https://sovereign.tenova.io/guides/health-insurance-ai-crosswalk.html",
+      "enforcement_date": "varies by state",
+      "procedure_count": 14,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "US-IN",
+        "US-AL",
+        "US-UT",
+        "US-WA",
+        "US-IA",
+        "US-GA"
+      ],
+      "binding": "mandatory"
+    },
+    "NAIC-AI-BULLETIN": {
+      "name": "NAIC Model AI Bulletin and AIS Program",
+      "authority": "National Association of Insurance Commissioners",
+      "document": "NAIC Model Bulletin on AI, AIS Program Guidelines",
+      "version": "2024",
+      "url": "https://content.naic.org/sites/default/files/inline-files/2023-12-4-Model-Bulletin_Adopted_0.pdf",
+      "enforcement_date": "adopted by states individually",
+      "procedure_count": 14,
+      "requirement_count": 10,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "guidance"
+    },
+    "OCC-2026-54": {
+      "name": "OCC AI Risk Management Examination Framework",
+      "authority": "Office of the Comptroller of the Currency",
+      "document": "OCC Bulletin 2026-54, Comptroller's Handbook AI Supplement",
+      "version": "2026",
+      "url": "https://www.occ.treas.gov/topics/supervision-and-examination/index-supervision-and-examination.html",
+      "enforcement_date": "active",
+      "procedure_count": 12,
+      "requirement_count": 8,
+      "jurisdictions": [
+        "US"
+      ],
+      "binding": "guidance"
     }
   },
   "procedures": {
@@ -853,42 +909,48 @@
       "title": "Baseline Consumption Measurement",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "MOD-031-3 R1"
+        "NERC-CIP": "MOD-031-3 R1",
+        "EU-EED": "Del. Reg 2024/1364 Annex II (total energy consumption)"
       }
     },
     "ADR-CARBON.1": {
       "title": "Carbon Credit Attestation",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "FAC-001-3 R1"
+        "NERC-CIP": "FAC-001-3 R1",
+        "EU-EED": "Art.12(1), Del. Reg Annex II (GoOs, PPAs, on-site), Annex III (REF)"
       }
     },
     "ADR-CURT.1": {
       "title": "Curtailment Verification",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "TOP-001-5 R3"
+        "NERC-CIP": "TOP-001-5 R3",
+        "EU-EED": "Del. Reg Annex II (grid services)"
       }
     },
     "ADR-EVENT.1": {
       "title": "Demand Response Event Witnessing",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "TOP-001-5 R1"
+        "NERC-CIP": "TOP-001-5 R1",
+        "EU-EED": "Art.12(1), Del. Reg Annex II (grid services)"
       }
     },
     "ADR-GRID.1": {
       "title": "Grid Signal Correlation",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "BAL-001-2"
+        "NERC-CIP": "BAL-001-2",
+        "EU-EED": "Del. Reg Annex II (grid services), Rating Scheme (grid flexibility)"
       }
     },
     "ADR-SETTLE.1": {
       "title": "Settlement Data Recording",
       "namespace": "ADR",
       "frameworks": {
-        "NERC-CIP": "BAL-005-1 R1"
+        "NERC-CIP": "BAL-005-1 R1",
+        "EU-EED": "Del. Reg Annex II (grid services)"
       }
     },
     "AI-ACC.1": {
@@ -924,7 +986,8 @@
         "TX-TRAIGA": "Sec.7",
         "VN-LAW-134": "Art.13",
         "NERC-CIP": "CIP-003-9 R4, CIP-008-6 R3",
-        "FSB-AI-SOUND-PRACTICES": "SP3"
+        "FSB-AI-SOUND-PRACTICES": "SP3",
+        "EU-EED": "Art.11 (energy audit compliance)"
       }
     },
     "AI-AUDIT.2": {
@@ -1002,7 +1065,9 @@
         "SG-IMDA-AGENTIC": "Sec.4.1",
         "NERC-CIP": "CIP-012-1 R1",
         "3GPP-R19": "TS 28.310 Sec.7",
-        "ITU-T-AI": "Y.3172 Sec.7"
+        "ITU-T-AI": "Y.3172 Sec.7",
+        "ISO-10218": "Cl.5.10 (multi-robot coordination)",
+        "EU-MACHINERY-REG": "Art.3 (coordinated machinery)"
       }
     },
     "AI-CHAIN.2": {
@@ -1125,16 +1190,6 @@
         "NIST-AI-RMF": "MAP 3.5"
       }
     },
-    "AI-DATA.5": {
-      "title": "Synthetic Data Provenance",
-      "namespace": "AI",
-      "frameworks": {
-        "EU-AI-ACT": "Art.10(2)",
-        "GDPR": "Art.35",
-        "NIST-AI-RMF": "MAP 2.3",
-        "ISO-42001": "A.8.4"
-      }
-    },
     "AI-DEL.1": {
       "title": "Delegation Tree Witnessing",
       "namespace": "AI",
@@ -1143,7 +1198,8 @@
         "NIST-AI-RMF": "GOVERN 1.3",
         "SG-IMDA-AGENTIC": "Sec.4.3",
         "GPAI-CoP": "Rule 12",
-        "FSB-AI-SOUND-PRACTICES": "SP10"
+        "FSB-AI-SOUND-PRACTICES": "SP10",
+        "EU-PLD": "Art.7 (defectiveness), Art.10 (disclosure)"
       }
     },
     "AI-DEL.2": {
@@ -1193,7 +1249,10 @@
         "NERC-CIP": "CIP-010-4 R1",
         "3GPP-R19": "TS 23.288 Sec.6.9",
         "ITU-T-AI": "Y.3172 Sec.9",
-        "FSB-AI-SOUND-PRACTICES": "SP4, SP9"
+        "FSB-AI-SOUND-PRACTICES": "SP4, SP9",
+        "EU-MACHINERY-REG": "Art.18 (accumulated behavioral change), Art.10 (post-market)",
+        "EU-PLD": "Art.7(2)(c) (continue to learn)",
+        "EU-EED": "Art.11 (EMS monitoring, ISO 50001)"
       }
     },
     "AI-DUALUSE.1": {
@@ -1289,7 +1348,8 @@
         "NIST-AI-RMF": "GOVERN 1.2",
         "NIS-2": "Art.21(2)(e)",
         "NERC-CIP": "CIP-005-7 R3",
-        "3GPP-R19": "TS 28.310 Sec.5"
+        "3GPP-R19": "TS 28.310 Sec.5",
+        "EU-EED": "Del. Reg Annex II (infrastructure classification)"
       }
     },
     "AI-ENV.2": {
@@ -1416,7 +1476,8 @@
         "NERC-CIP": "CIP-003-9 R1",
         "3GPP-R19": "TS 28.908 Sec.5",
         "ITU-T-AI": "Y.3172 Sec.5",
-        "FSB-AI-SOUND-PRACTICES": "SP1, SP2"
+        "FSB-AI-SOUND-PRACTICES": "SP1, SP2",
+        "EU-EED": "Art.12(4) (Code of Conduct), Rating Scheme (certification level)"
       }
     },
     "AI-GOV.2": {
@@ -1577,7 +1638,8 @@
         "NIST-800-53": "SI-7",
         "NIST-AI-RMF": "GOVERN 1.2",
         "TW-AI-BASIC": "Art.7",
-        "NERC-CIP": "CIP-014-3 R1"
+        "NERC-CIP": "CIP-014-3 R1",
+        "EU-EED": "Del. Reg Annex II (server capacity, ICT KPIs)"
       }
     },
     "AI-HW.3": {
@@ -1753,7 +1815,9 @@
         "EU-AI-ACT": "Art.12(2)(b)",
         "FIVE-EYES-AGENTIC": "FE-4",
         "ISO-42001": "A.6.2.4",
-        "NIST-AI-RMF": "MAP 2.3"
+        "NIST-AI-RMF": "MAP 2.3",
+        "EU-MACHINERY-REG": "Art.18 (substantial modification)",
+        "EU-PLD": "Art.7(2)(e) (post-deployment changes)"
       }
     },
     "AI-MDL.3": {
@@ -1904,7 +1968,8 @@
         "NERC-CIP": "CIP-010-4 R3",
         "3GPP-R19": "TS 23.288 Sec.6.1",
         "ITU-T-AI": "Y.3172 Sec.8",
-        "FSB-AI-SOUND-PRACTICES": "SP4, SP9"
+        "FSB-AI-SOUND-PRACTICES": "SP4, SP9",
+        "EU-EED": "Del. Reg Annex II (data traffic KPIs)"
       }
     },
     "AI-PMM.1": {
@@ -2004,7 +2069,9 @@
         "SG-IMDA-AGENTIC": "Sec.3.3",
         "NERC-CIP": "CIP-002-7 R1, CIP-014-3 R5",
         "ITU-T-AI": "Y.3176 Sec.9",
-        "FSB-AI-SOUND-PRACTICES": "SP3"
+        "FSB-AI-SOUND-PRACTICES": "SP3",
+        "EU-MACHINERY-REG": "Art.3 (safety functions), Annex III 1.2.1",
+        "ISO-10218": "Cl.5.4 (safety control systems)"
       }
     },
     "AI-SAFE.2": {
@@ -2129,7 +2196,9 @@
         "NIST-AI-RMF": "GOVERN 1.7",
         "OWASP-AGENTIC": "MCP-02,MCP-05",
         "SG-IMDA-AGENTIC": "Sec.5.1",
-        "FSB-AI-SOUND-PRACTICES": "SP11"
+        "FSB-AI-SOUND-PRACTICES": "SP11",
+        "EU-MACHINERY-REG": "Art.3 (safety component traceability)",
+        "IBC-IRC": "fabrication decision audit"
       }
     },
     "AI-TOOL.2": {
@@ -2454,35 +2523,6 @@
         "OWASP-AGENTIC": "MCP-03"
       }
     },
-    "AI-DIST.2": {
-      "title": "Distillation Lineage Attestation",
-      "namespace": "AI",
-      "frameworks": {
-        "EU-AI-ACT": "Art.53(1)",
-        "NIST-AI-RMF": "GOVERN 1.5",
-        "ISO-42001": "A.7.5"
-      }
-    },
-    "AI-FL.1": {
-      "title": "Federated Round Provenance",
-      "namespace": "AI",
-      "frameworks": {
-        "EU-AI-ACT": "Art.10(2)",
-        "GDPR": "Art.26",
-        "NIST-AI-RMF": "MAP 2.3",
-        "ISO-42001": "A.8.4"
-      }
-    },
-    "AI-FL.2": {
-      "title": "Federated Session Admission",
-      "namespace": "AI",
-      "frameworks": {
-        "EU-AI-ACT": "Art.10(2)",
-        "GDPR": "Art.26",
-        "NIST-AI-RMF": "GOVERN 1.7",
-        "ISO-42001": "A.8.4"
-      }
-    },
     "HBOM-SBOM.1": {
       "title": "Hardware and Software Bill of Materials",
       "namespace": "HBOM",
@@ -2506,6 +2546,69 @@
         "3GPP-R19": "TS 28.310 Sec.5",
         "EU-AI-ACT": "Art.15(3)",
         "NIST-AI-RMF": "MANAGE 2.4"
+      }
+    },
+    "CON-STR.1": {
+      "title": "Structural Verification of AI-Determined Parameters",
+      "namespace": "CON",
+      "frameworks": {
+        "IBC-IRC": "Table 2308.5.1, R602.3",
+        "EU-MACHINERY-REG": "Art.3 (safety component), Annex III 1.2.1",
+        "OSHA-1926": "1926.20(b)(2)"
+      }
+    },
+    "CON-INS.1": {
+      "title": "Inspection Attestation for AI-Fabricated Components",
+      "namespace": "CON",
+      "frameworks": {
+        "IBC-IRC": "Sec.3113 (relocatable buildings), certificate of occupancy",
+        "OSHA-1926": "1926.20(b)(2)"
+      }
+    },
+    "CON-ENV.1": {
+      "title": "Environmental Monitoring at Deployment Site",
+      "namespace": "CON",
+      "frameworks": {
+        "EU-MACHINERY-REG": "Art.3 (safety), Annex III 1.1.1",
+        "ISO-10218": "Cl.5.10 (collaborative workspace conditions)",
+        "OSHA-1926": "1926.20(b)(1)"
+      }
+    },
+    "CON-SAF.1": {
+      "title": "Construction Site Safety for AI-Operated Equipment",
+      "namespace": "CON",
+      "frameworks": {
+        "EU-MACHINERY-REG": "Art.3 (safety functions), Art.18 (substantial modification)",
+        "ISO-10218": "Cl.5.4 (safety control systems), Cl.5.1.16 (cybersecurity)",
+        "OSHA-1926": "1926.20(b), General Duty Clause 5(a)(1)"
+      }
+    },
+    "CON-FIN.1": {
+      "title": "Financial Verification for AI-Fabricated Construction",
+      "namespace": "CON",
+      "frameworks": {
+        "IBC-IRC": "Sec.3113 (data plate, manufacturer identification)"
+      }
+    },
+    "AI-PROV.1": {
+      "title": "Model Provenance Chain",
+      "namespace": "AI",
+      "frameworks": {
+        "EU-MACHINERY-REG": "Art.18 (substantial modification traceability)",
+        "EU-PLD": "Art.7 (defectiveness determination)",
+        "IBC-IRC": "fabrication traceability",
+        "NIST-AI-RMF": "MAP 1.5",
+        "EU-AI-ACT": "Art.12(1)"
+      }
+    },
+    "HBOM-INV.1": {
+      "title": "Hardware Inventory Attestation",
+      "namespace": "HBOM",
+      "frameworks": {
+        "EU-MACHINERY-REG": "Art.3 (technical documentation)",
+        "ISO-10218": "Cl.5.2 (robot identification)",
+        "EU-AI-ACT": "Art.11 (technical documentation)",
+        "EU-EED": "Art.12(1), Del. Reg Annex II (installed IT capacity)"
       }
     }
   },
@@ -2591,6 +2694,49 @@
         "AI-REDTEAM.1"
       ]
     },
+    "US-EO-14409": {
+      "Sec.3 (Frontier Model Review)": [
+        "AI-REDTEAM.1",
+        "AI-DUALUSE.1",
+        "AI-CYBER.1"
+      ],
+      "Sec.4 (Cybersecurity Clearinghouse)": [
+        "AI-SUPPLY.1",
+        "AI-SBOM.1",
+        "AI-ENV.2"
+      ],
+      "Sec.5 (Critical Infrastructure)": [
+        "AI-GOV.1",
+        "AI-INCIDENT.1"
+      ]
+    },
+    "UNECE-ADS-2026": {
+      "Safety Management System": [
+        "AI-GOV.1",
+        "AI-RISK.1",
+        "AI-AUDIT.1"
+      ],
+      "Safety Case (Claims/Arguments/Evidence)": [
+        "AI-EXPL.1",
+        "AI-REDTEAM.1",
+        "AI-ROBUST.1"
+      ],
+      "In-Service Monitoring": [
+        "AI-DRIFT.1",
+        "AI-PERF.1",
+        "AI-INF.1",
+        "AI-INCIDENT.1"
+      ],
+      "Lifecycle Controls": [
+        "AI-MDL.5",
+        "AI-CHAIN.1",
+        "AI-HW.1"
+      ],
+      "Data Recording": [
+        "AI-DATA.1",
+        "AI-LCM.1"
+      ]
+    },
     "EU-AI-ACT": {
       "Art. 10(5)": [
         "AI-JUR.1"
@@ -2617,10 +2763,7 @@
         "AI-CONSENT.1"
       ],
       "Art.10(2)": [
-        "AI-ENG.1",
-        "AI-DATA.5",
-        "AI-FL.1",
-        "AI-FL.2"
+        "AI-ENG.1"
       ],
       "Art.10(2)(a)": [
         "AI-DATA.1",
@@ -2750,9 +2893,6 @@
       ],
       "Art.53": [
         "AI-REACH.1"
-      ],
-      "Art.53(1)": [
-        "AI-DIST.2"
       ],
       "Art.53(1)(d)": [
         "AI-LIC.1"
@@ -2951,13 +3091,8 @@
       "Art.30": [
         "AI-AUDIT.1"
       ],
-      "Art.26": [
-        "AI-FL.1",
-        "AI-FL.2"
-      ],
       "Art.35": [
-        "AI-DPIA.1",
-        "AI-DATA.5"
+        "AI-DPIA.1"
       ],
       "Art.6/7": [
         "AI-CONSENT.1"
@@ -2972,9 +3107,7 @@
       ],
       "Rule 5": [
         "AI-JUR.1"
-      ]
-    },
-    "GPAI-CoP": {
+      ],
       "Art.55": [
         "AI-PMM.1"
       ],
@@ -3031,6 +3164,67 @@
       ],
       "Part 8 Ch.8": [
         "AI-ENG.5"
+      ]
+    },
+    "ISO-27090": {
+      "Clause 5.1": [
+        "AI-GOV.1",
+        "AI-GOV.6"
+      ],
+      "Clause 5 (Threat Modelling)": [
+        "AI-REDTEAM.1",
+        "AI-SEC.1"
+      ],
+      "Clause 5 (Supply Chain)": [
+        "AI-SUPPLY.1",
+        "AI-SBOM.1"
+      ],
+      "Clause 5 (Monitoring)": [
+        "AI-AUDIT.1",
+        "AI-DRIFT.1",
+        "AI-INCIDENT.1"
+      ],
+      "Clause 6.1 (Data Poisoning)": [
+        "AI-DATA.1",
+        "AI-DATA.2",
+        "AI-DATA.5"
+      ],
+      "Clause 6.2 (Model Exfiltration)": [
+        "AI-MDL.5",
+        "AI-MDL.1",
+        "AI-SUPPLY.1"
+      ],
+      "Clause 6.3 (Evasion)": [
+        "AI-SEC.1",
+        "AI-ROBUST.1",
+        "AI-GRD.1"
+      ],
+      "Clause 6.4 (Membership Inference)": [
+        "AI-DATA.3",
+        "AI-FAIR.1"
+      ],
+      "Clause 6.5 (Model Inversion)": [
+        "AI-DATA.3",
+        "AI-SEC.1"
+      ],
+      "Clause 6.6 (Direct Model Poisoning)": [
+        "AI-MDL.5",
+        "AI-SUPPLY.1",
+        "AI-REDTEAM.1"
+      ],
+      "Clause 6.7 (Sensitive Output)": [
+        "AI-GRD.1",
+        "AI-CLR.2"
+      ],
+      "Clause 6.8 (Prompt Injection)": [
+        "AI-SEC.2",
+        "AI-SEC.1",
+        "AI-GRD.3"
+      ],
+      "Clause 6.9 (Output Injection)": [
+        "AI-GRD.1",
+        "AI-SEC.2",
+        "AI-CHAIN.1"
       ]
     },
     "ISO-42001": {
@@ -3347,8 +3541,7 @@
         "AI-METAGOV.6",
         "AI-TOOL.2",
         "AI-TRUST.1",
-        "AI-TRUST.2",
-        "AI-DIST.2"
+        "AI-TRUST.2"
       ],
       "GOVERN 1.7": [
         "AI-CHR.1",
@@ -3362,8 +3555,7 @@
         "AI-TOOL.1",
         "AI-TRANS.1",
         "AI-WATERMARK.1",
-        "AI-DECOM.1",
-        "AI-FL.2"
+        "AI-DECOM.1"
       ],
       "GOVERN 2.1": [
         "AI-GOV.2",
@@ -3434,9 +3626,7 @@
         "AI-FAIR.3",
         "AI-INF.1",
         "AI-MDL.2",
-        "AI-RAG.1",
-        "AI-DATA.5",
-        "AI-FL.1"
+        "AI-RAG.1"
       ],
       "MAP 3.5": [
         "AI-DATA.1",
@@ -3562,6 +3752,38 @@
       ],
       "V.A": [
         "AI-GOV.5"
+      ]
+    },
+    "SR-26-2": {
+      "Sec.III (Model Development)": [
+        "AI-DATA.1",
+        "AI-FAIR.1",
+        "AI-FAIR.2",
+        "AI-FAIR.3",
+        "AI-MDL.1",
+        "AI-MDL.4",
+        "AI-MDL.5"
+      ],
+      "Sec.V (Validation)": [
+        "AI-RISK.1",
+        "AI-PERF.1",
+        "AI-ROBUST.1"
+      ],
+      "Sec.VI (Ongoing Monitoring)": [
+        "AI-DRIFT.1",
+        "AI-INF.1",
+        "AI-INF.2",
+        "AI-MDL.3",
+        "AI-RAG.2"
+      ],
+      "Sec.VII (Outcomes Analysis)": [
+        "AI-EXPL.1",
+        "AI-EXPL.2",
+        "AI-HITL.1"
+      ],
+      "Sec.VIII (Governance)": [
+        "AI-GOV.5",
+        "AI-FIN.1"
       ]
     },
     "SG-IMDA-AGENTIC": {
@@ -3986,6 +4208,374 @@
         "HBOM-INV.1",
         "AI-GOV.5"
       ]
+    },
+    "EU-MACHINERY-REG": {
+      "Art.3 (coordinated machinery)": [
+        "AI-CHAIN.1"
+      ],
+      "Art.18 (accumulated behavioral change), Art.10 (post-market)": [
+        "AI-DRIFT.1"
+      ],
+      "Art.18 (substantial modification)": [
+        "AI-MDL.2"
+      ],
+      "Art.3 (safety functions), Annex III 1.2.1": [
+        "AI-SAFE.1"
+      ],
+      "Art.3 (safety component traceability)": [
+        "AI-TOOL.1"
+      ],
+      "Art.3 (safety component), Annex III 1.2.1": [
+        "CON-STR.1"
+      ],
+      "Art.3 (safety), Annex III 1.1.1": [
+        "CON-ENV.1"
+      ],
+      "Art.3 (safety functions), Art.18 (substantial modification)": [
+        "CON-SAF.1"
+      ],
+      "Art.18 (substantial modification traceability)": [
+        "AI-PROV.1"
+      ],
+      "Art.3 (technical documentation)": [
+        "HBOM-INV.1"
+      ]
+    },
+    "ISO-10218": {
+      "Cl.5.10 (multi-robot coordination)": [
+        "AI-CHAIN.1"
+      ],
+      "Cl.5.4 (safety control systems)": [
+        "AI-SAFE.1"
+      ],
+      "Cl.5.10 (collaborative workspace conditions)": [
+        "CON-ENV.1"
+      ],
+      "Cl.5.4 (safety control systems), Cl.5.1.16 (cybersecurity)": [
+        "CON-SAF.1"
+      ],
+      "Cl.5.2 (robot identification)": [
+        "HBOM-INV.1"
+      ]
+    },
+    "OSHA-1926": {
+      "1926.20(b)(2)": [
+        "CON-STR.1",
+        "CON-INS.1"
+      ],
+      "1926.20(b)(1)": [
+        "CON-ENV.1"
+      ],
+      "1926.20(b), General Duty Clause 5(a)(1)": [
+        "CON-SAF.1"
+      ]
+    },
+    "EU-PLD": {
+      "Art.7 (defectiveness), Art.10 (disclosure)": [
+        "AI-DEL.1"
+      ],
+      "Art.7(2)(c) (continue to learn)": [
+        "AI-DRIFT.1"
+      ],
+      "Art.7(2)(e) (post-deployment changes)": [
+        "AI-MDL.2"
+      ],
+      "Art.7 (defectiveness determination)": [
+        "AI-PROV.1"
+      ]
+    },
+    "IBC-IRC": {
+      "fabrication decision audit": [
+        "AI-TOOL.1"
+      ],
+      "Table 2308.5.1, R602.3": [
+        "CON-STR.1"
+      ],
+      "Sec.3113 (relocatable buildings), certificate of occupancy": [
+        "CON-INS.1"
+      ],
+      "Sec.3113 (data plate, manufacturer identification)": [
+        "CON-FIN.1"
+      ],
+      "fabrication traceability": [
+        "AI-PROV.1"
+      ]
+    },
+    "EU-EED": {
+      "Art.12(1) (data centre reporting)": [
+        "HBOM-PUE.1",
+        "HBOM-WATER.1",
+        "HBOM-THERM.1",
+        "HBOM-INV.1",
+        "ADR-CARBON.1",
+        "ADR-EVENT.1"
+      ],
+      "Art.12(4) (Code of Conduct)": [
+        "AI-GOV.1"
+      ],
+      "Art.11 (energy audit)": [
+        "AI-AUDIT.1",
+        "AI-DRIFT.1"
+      ],
+      "Del. Reg 2024/1364 Annex II (24 KPIs)": [
+        "HBOM-PUE.1",
+        "HBOM-WATER.1",
+        "HBOM-THERM.1",
+        "HBOM-INV.1",
+        "HBOM-LIFE.1",
+        "HBOM-SUPPLY.1",
+        "ADR-CARBON.1",
+        "ADR-BASE.1",
+        "ADR-EVENT.1",
+        "DPP-SOH.1",
+        "DPP-CHRG.1",
+        "AI-HW.1",
+        "AI-ENV.1",
+        "AI-PERF.1"
+      ],
+      "Del. Reg 2024/1364 Annex III (PUE, WUE, ERF, REF)": [
+        "HBOM-PUE.1",
+        "HBOM-WATER.1",
+        "ADR-CARBON.1"
+      ],
+      "Rating Scheme C(2026) 3472": [
+        "HBOM-PUE.1",
+        "HBOM-WATER.1",
+        "ADR-CARBON.1",
+        "ADR-GRID.1",
+        "AI-GOV.1"
+      ],
+      "Grid services": [
+        "ADR-EVENT.1",
+        "ADR-BASE.1",
+        "ADR-CURT.1",
+        "ADR-SETTLE.1",
+        "ADR-GRID.1",
+        "DPP-SOH.1",
+        "DPP-CHRG.1"
+      ]
+    },
+    "HIPAA-AI-SEC": {
+      "AI technology asset inventory": [
+        "AI-INF.1"
+      ],
+      "AI risk analysis": [
+        "AI-SEC.1"
+      ],
+      "De-identification for AI training": [
+        "AI-DATA.1"
+      ],
+      "Access control for AI systems": [
+        "AI-ACC.1"
+      ],
+      "Audit trail for AI operations": [
+        "AI-AUDIT.1"
+      ],
+      "BAA compliance for AI vendors": [
+        "AI-GOV.1"
+      ],
+      "Patient notice of AI use": [
+        "AI-TRANS.1"
+      ],
+      "Clinical oversight of AI decisions": [
+        "AI-HITL.1"
+      ],
+      "AI component inventory (SBOM)": [
+        "AI-SBOM.1"
+      ],
+      "Authentication for AI endpoints": [
+        "AI-ID.1"
+      ],
+      "AI system lifecycle evaluation": [
+        "AI-LCM.1"
+      ],
+      "Authorization for ePHI in AI training": [
+        "AI-CONSENT.1"
+      ]
+    },
+    "FDA-SAMD": {
+      "GMLP: Representative data": [
+        "AI-DATA.1"
+      ],
+      "GMLP: Human oversight": [
+        "AI-HITL.1"
+      ],
+      "GMLP: Performance monitoring": [
+        "AI-DRIFT.1"
+      ],
+      "GMLP: Safety and risk management": [
+        "AI-SAFE.1"
+      ],
+      "GMLP: Audit trail and design controls": [
+        "AI-AUDIT.1"
+      ],
+      "GMLP: Model versioning (PCCP)": [
+        "AI-MDL.5"
+      ],
+      "GMLP: Clinical validation": [
+        "AI-ROBUST.1"
+      ],
+      "GMLP: Transparency and labeling": [
+        "AI-TRANS.1"
+      ],
+      "GMLP: Fairness and subgroup performance": [
+        "AI-FAIR.1"
+      ],
+      "GMLP: Hardware attestation": [
+        "AI-HW.1"
+      ]
+    },
+    "AMA-AGENTIC": {
+      "Function: Agent registration": [
+        "AI-TOOL.1"
+      ],
+      "Function: Skill manifest": [
+        "AI-SKILL.1"
+      ],
+      "Function: Diagnostic AI": [
+        "HCF-DX.1"
+      ],
+      "Function: Prescribing AI": [
+        "HCF-RX.1"
+      ],
+      "Evidence: Performance validation": [
+        "AI-PERF.1"
+      ],
+      "Evidence: Robustness testing": [
+        "AI-ROBUST.1"
+      ],
+      "Evidence: Drift monitoring": [
+        "AI-DRIFT.1"
+      ],
+      "Evidence: Data governance": [
+        "AI-DATA.1"
+      ],
+      "Evidence: Fairness testing": [
+        "AI-FAIR.1"
+      ],
+      "Authority: Access control": [
+        "AI-ACC.1"
+      ],
+      "Authority: Clinical oversight": [
+        "AI-HITL.1"
+      ],
+      "Authority: Delegation boundary": [
+        "AI-DEL.1"
+      ],
+      "Authority: Patient consent": [
+        "HCF-PRIV.1"
+      ],
+      "Authority: AI governance policy": [
+        "AI-GOV.1"
+      ],
+      "Accountability: Audit trail": [
+        "AI-AUDIT.1"
+      ],
+      "Accountability: Explainability": [
+        "AI-EXPL.1"
+      ],
+      "Accountability: Incident reporting": [
+        "AI-INCIDENT.1"
+      ]
+    },
+    "NAIC-AI-BULLETIN": {
+      "Governance and risk management": [
+        "AI-GOV.1",
+        "AI-SEC.1"
+      ],
+      "Transparency and disclosure": [
+        "AI-TRANS.1"
+      ],
+      "Fairness and non-discrimination": [
+        "AI-FAIR.1"
+      ],
+      "Data governance": [
+        "AI-DATA.1"
+      ],
+      "Human oversight": [
+        "AI-HITL.1"
+      ],
+      "Explainability of decisions": [
+        "AI-EXPL.1"
+      ],
+      "Audit and accountability": [
+        "AI-AUDIT.1"
+      ],
+      "Third-party vendor oversight": [
+        "AI-SUPPLY.1",
+        "AI-GOV.1"
+      ],
+      "Consumer consent and notification": [
+        "AI-CONSENT.1",
+        "AI-AUTO.1"
+      ],
+      "Model drift and performance monitoring": [
+        "AI-DRIFT.1",
+        "AI-DRIFT.2"
+      ]
+    },
+    "OCC-2026-54": {
+      "Model risk management (SR 11-7 alignment)": [
+        "AI-MDL.5",
+        "AI-MDL.2"
+      ],
+      "AI governance framework": [
+        "AI-GOV.1"
+      ],
+      "Bias and fair lending": [
+        "AI-FAIR.1"
+      ],
+      "Explainability for consumers": [
+        "AI-EXPL.1"
+      ],
+      "Audit trail and recordkeeping": [
+        "AI-AUDIT.1"
+      ],
+      "Data quality and provenance": [
+        "AI-DATA.1"
+      ],
+      "Third-party risk management": [
+        "AI-SUPPLY.1",
+        "AI-TRUST.1"
+      ],
+      "Operational resilience": [
+        "AI-INCIDENT.1",
+        "AI-DRIFT.1"
+      ]
+    },
+    "HEALTH-INS-AI": {
+      "Prior authorization transparency": [
+        "AI-TRANS.1",
+        "AI-EXPL.1"
+      ],
+      "Claims automation fairness": [
+        "AI-FAIR.1",
+        "AI-FAIR.3"
+      ],
+      "Underwriting bias testing": [
+        "AI-FAIR.1",
+        "AI-DATA.1"
+      ],
+      "Pricing model governance": [
+        "AI-AUDIT.1",
+        "AI-DRIFT.1"
+      ],
+      "Policyholder consent and notice": [
+        "AI-CONSENT.1",
+        "AI-AUTO.1"
+      ],
+      "State enforcement compliance": [
+        "AI-EXPL.2",
+        "AI-HITL.1"
+      ],
+      "Healthcare data protection": [
+        "HCF-DX.1",
+        "HCF-PRIV.1"
+      ],
+      "Clinical decision support oversight": [
+        "HCF-RX.1",
+        "AI-EXPL.1"
+      ]
     }
   },
   "profiles": [
@@ -4065,16 +4655,23 @@
       "id": "healthcare-clinical",
       "name": "Healthcare Clinical AI (HIPAA + FDA AI/ML + EU MDR)",
       "frameworks": [
-        "NIST-AI-RMF"
+        "NIST-AI-RMF",
+        "HIPAA-AI-SEC",
+        "FDA-SAMD",
+        "AMA-AGENTIC"
       ],
-      "procedure_count": 18,
+      "procedure_count": 27,
       "clearing_level": 3
     },
     {
       "id": "insurance-underwriting",
       "name": "Insurance Underwriting AI (NAIC + State Regs + GDPR)",
       "frameworks": [
-        "NIST-AI-RMF"
+        "NIST-AI-RMF",
+        "NAIC-AI-BULLETIN",
+        "OCC-2026-54",
+        "SR-11-7",
+        "HEALTH-INS-AI"
       ],
       "procedure_count": 14,
       "clearing_level": 2

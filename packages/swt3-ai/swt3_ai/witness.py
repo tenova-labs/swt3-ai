@@ -583,6 +583,21 @@ class Witness:
         if not api_key:
             raise ValueError("api_key is required (or use Witness() with no args for local mode)")
 
+        # Red team #5: Warn on non-production API keys
+        _non_prod = (
+            api_key.startswith("swt3_dev_")
+            or api_key.startswith("axm_dev_")
+            or api_key.startswith("axm_mock_")
+            or "REPLACE" in api_key
+            or "YOUR_KEY" in api_key
+        ) if api_key else False
+        if _non_prod:
+            logger.warning(
+                "[swt3-ai] Non-production API key detected. "
+                "Anchors will NOT be persisted to the ledger. "
+                "Get a real key at https://sovereign.tenova.io/signup"
+            )
+
         # Validate handoff config
         if factor_handoff and factor_handoff != "file":
             raise ValueError("factor_handoff must be 'file'")

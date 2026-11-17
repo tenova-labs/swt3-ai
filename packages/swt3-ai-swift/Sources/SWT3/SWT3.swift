@@ -23,5 +23,5 @@
 /// ```
 public enum SWT3 {
     /// SDK version. Matches Python, TypeScript, Rust, C#, Ruby releases.
-    public static let version = "8.1.0"
+    public static let version = "8.2.0"
 }

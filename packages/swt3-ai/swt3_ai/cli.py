@@ -1,11 +1,45 @@
 """SWT3 CLI -- governance tooling for AI systems.
 
-Commands:
+Setup:
     swt3 init              Interactive governance setup
     swt3 init --profile X  Non-interactive (CI/CD friendly)
+    swt3 quickstart        Generate a working example script
     swt3 demo              Run the zero-friction demo
     swt3 doctor            Diagnose config health
+
+Observe:
+    swt3 status            Compliance posture at a glance
+    swt3 diff --since 7d   Posture delta over time
+    swt3 watch             Live tail of witness anchors
+
+Verify:
+    swt3 verify            Offline anchor fingerprint verification
+    swt3 verify-chain      Verify local witness trail integrity
+    swt3 crosswalk <proc>  Framework mappings for a procedure
+    swt3 procedures        List all UCT procedures
+    swt3 gate              Evaluate compliance gate
+
+Export:
+    swt3 audit             Forensic chain timeline (html/json)
+    swt3 reconstruct       Forensic timeline reconstruction
+
+Config:
+    swt3 profile list      List all config profiles
+    swt3 profile show X    Show a profile's YAML
+    swt3 profile compare   Diff two profiles
+
+Assess:
+    swt3 exposure          Regulatory exposure calculator
+
+Maintain:
+    swt3 upgrade           Check for SDK and binary updates
+
+Test:
+    swt3 test              End-to-end pipeline smoke test
+    swt3 mock-server       Local mock witness endpoint
+
     swt3 help              Show usage
+    swt3 help <command>    Show flags and examples
 """
 
 from __future__ import annotations
@@ -13,7 +47,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-VERSION = "8.1.0"
+VERSION = "8.2.0"
 
 PROFILES = {
     "eu-ai-act-high-risk": "EU AI Act Article 6, Annex III (strict, signing required)",
@@ -71,6 +105,7 @@ def _print_help() -> None:
         "",
         f"  {BOLD}Verify{RESET}",
         f"    {GREEN}verify{RESET}            {DIM}Offline anchor fingerprint verification{RESET}",
+        f"    {GREEN}verify-chain{RESET}      {DIM}Verify local witness trail integrity{RESET}",
         f"    {GREEN}crosswalk <proc>{RESET}  {DIM}Framework mappings for a procedure{RESET}",
         f"    {GREEN}procedures{RESET}        {DIM}List all UCT procedures{RESET}",
         f"    {GREEN}gate{RESET}              {DIM}Evaluate compliance gate{RESET}",
@@ -79,11 +114,20 @@ def _print_help() -> None:
         f"    {GREEN}audit{RESET}             {DIM}Forensic chain timeline (html/json){RESET}",
         f"    {GREEN}reconstruct{RESET}       {DIM}Forensic timeline reconstruction{RESET}",
         "",
+        f"  {BOLD}Config{RESET}",
+        f"    {GREEN}profile list{RESET}      {DIM}List all config profiles{RESET}",
+        f"    {GREEN}profile show X{RESET}    {DIM}Show a profile's YAML{RESET}",
+        f"    {GREEN}profile compare{RESET}   {DIM}Diff two profiles{RESET}",
+        "",
         f"  {BOLD}Assess{RESET}",
         f"    {GREEN}exposure{RESET}          {DIM}Regulatory exposure calculator{RESET}",
         "",
+        f"  {BOLD}Maintain{RESET}",
+        f"    {GREEN}upgrade{RESET}           {DIM}Check for SDK and binary updates{RESET}",
+        "",
         f"  {BOLD}Test{RESET}",
         f"    {GREEN}test{RESET}              {DIM}End-to-end pipeline smoke test{RESET}",
+        f"    {GREEN}mock-server{RESET}       {DIM}Local mock witness endpoint for testing{RESET}",
         "",
         f"  {DIM}Run{RESET} {WHITE}swt3 help <command>{RESET} {DIM}for flags and examples.{RESET}",
         "",
@@ -105,7 +149,7 @@ _COMMAND_HELP = {
         "flags": [
             ("--profile <name>", "Use a named profile (non-interactive)"),
             ("--expand", "Include full profile template in output"),
-            ("--ci-template", "Dump GitHub Action workflow to stdout"),
+            ("--ci-template [platform]", "Dump CI template (github, gitlab, azure-pipelines)"),
             ("--tenant <id>", "Set tenant ID"),
             ("--agent <id>", "Set agent ID"),
             ("--force", "Overwrite existing swt3.yaml"),
@@ -115,6 +159,8 @@ _COMMAND_HELP = {
             "swt3 init --profile eu-ai-act-high-risk",
             "swt3 init --profile defense-govcon --tenant my-org --agent my-agent",
             "swt3 init --ci-template > .github/workflows/swt3.yml",
+            "swt3 init --ci-template gitlab > .gitlab-ci-swt3.yml",
+            "swt3 init --ci-template azure-pipelines > azure-pipelines-swt3.yml",
         ],
         "profiles": True,
     },
@@ -316,6 +362,63 @@ _COMMAND_HELP = {
             "swt3 quickstart && python swt3_quickstart.py",
         ],
     },
+    "verify-chain": {
+        "desc": "Verify local witness trail integrity. Reads WAL and handoff files, checks chain contiguity, timestamps, Merkle proofs, and detects tampering.",
+        "usage": "swt3 verify-chain [flags]",
+        "flags": [
+            ("--wal-path <dir>", "WAL directory (default: $TMPDIR/swt3-wal/)"),
+            ("--handoff-path <dir>", "Handoff directory (default: ./swt3-local/)"),
+            ("--tenant <id>", "Tenant ID for WAL file lookup"),
+            ("--json", "Machine-readable JSON output"),
+            ("--strict", "Exit 1 on any warning (CI mode)"),
+        ],
+        "examples": [
+            "swt3 verify-chain",
+            "swt3 verify-chain --wal-path /var/swt3/wal --json",
+            "swt3 verify-chain --strict",
+        ],
+    },
+    "mock-server": {
+        "desc": "Start a local mock witness endpoint for testing. Returns SWT3-MOCK- prefixed anchors. DO NOT use in production.",
+        "usage": "swt3 mock-server [flags]",
+        "flags": [
+            ("--port <n>", "HTTP port (default: 9999)"),
+            ("--timeout <seconds>", "Idle auto-shutdown (default: 1800 = 30 min)"),
+            ("--no-timeout", "Disable idle auto-shutdown"),
+            ("--verbose", "Log each request to stderr"),
+        ],
+        "examples": [
+            "swt3 mock-server",
+            "swt3 mock-server --port 8888",
+            "swt3 mock-server --no-timeout",
+        ],
+    },
+    "profile": {
+        "desc": "Manage and compare config profiles.",
+        "usage": "swt3 profile <subcommand>",
+        "flags": [
+            ("list", "List all 18 available profiles"),
+            ("show <name>", "Show full YAML content of a profile"),
+            ("compare <a> <b>", "Colored diff of two profiles"),
+            ("--json", "Machine-readable output (list only)"),
+        ],
+        "examples": [
+            "swt3 profile list",
+            "swt3 profile show eu-ai-act-high-risk",
+            "swt3 profile compare minimal defense-govcon",
+        ],
+    },
+    "upgrade": {
+        "desc": "Check for SDK and binary updates across PyPI and npm.",
+        "usage": "swt3 upgrade [flags]",
+        "flags": [
+            ("--json", "Machine-readable JSON output"),
+        ],
+        "examples": [
+            "swt3 upgrade",
+            "swt3 upgrade --json",
+        ],
+    },
 }
 
 
@@ -405,17 +508,39 @@ def _get_flag(args: list, flag: str) -> str:
         return ""
 
 
-def _handle_ci_template() -> None:
-    template_path = Path(__file__).parent / "templates" / "github-action.yml"
+_CI_TEMPLATES = {
+    "github": "github-action.yml",
+    "gitlab": "gitlab-ci.yml",
+    "azure-pipelines": "azure-pipelines.yml",
+}
+
+
+def _handle_ci_template(args: list) -> None:
+    # Determine platform: --ci-template [platform]
+    platform = "github"
+    try:
+        idx = args.index("--ci-template")
+        if idx + 1 < len(args) and not args[idx + 1].startswith("-"):
+            platform = args[idx + 1]
+    except ValueError:
+        pass
+
+    filename = _CI_TEMPLATES.get(platform)
+    if not filename:
+        supported = ", ".join(sorted(_CI_TEMPLATES.keys()))
+        print(f"Unknown CI platform: {platform}. Supported: {supported}", file=sys.stderr)
+        sys.exit(1)
+
+    template_path = Path(__file__).parent / "templates" / filename
     if not template_path.is_file():
-        print("GitHub Action template not found in package.", file=sys.stderr)
+        print(f"{platform} CI template not found in package.", file=sys.stderr)
         sys.exit(1)
     print(template_path.read_text(encoding="utf-8"))
 
 
 def handle_init(args: list) -> None:
     if "--ci-template" in args:
-        _handle_ci_template()
+        _handle_ci_template(args)
         return
 
     output_path = Path.cwd() / "swt3.yaml"
@@ -839,6 +964,18 @@ def main() -> None:
     elif cmd == "test":
         from .test_pipeline import handle_test
         handle_test(args[1:])
+    elif cmd == "verify-chain":
+        from .verify_chain import handle_verify_chain
+        handle_verify_chain(args[1:])
+    elif cmd == "mock-server":
+        from .mock_server import handle_mock_server
+        handle_mock_server(args[1:])
+    elif cmd == "profile":
+        from .profile_cli import handle_profile
+        handle_profile(args[1:])
+    elif cmd == "upgrade":
+        from .upgrade import handle_upgrade
+        handle_upgrade(args[1:])
     elif cmd in ("help", "--help", "-h", None):
         _print_help()
     else:

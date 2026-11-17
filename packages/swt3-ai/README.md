@@ -16,6 +16,16 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+Enterprise AI governance has a last-mile problem. The SDK covers application code, but regulated infrastructure -- CloudTrail events, container orchestration, serverless functions -- requires a different deployment model. Teams running 50+ microservices cannot add `witness.wrap()` calls to every service. Platform engineers need Terraform modules, not code changes.
+
+v8.2.0 closes this gap with 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function), a passive tail sidecar for log-based witnessing without SDK changes, Kustomize overlay for non-Helm injection, CloudWatch/Prometheus alarms, and 5 new CLI commands (`swt3 verify-chain`, `swt3 mock-server`, `swt3 profile list|show|compare`, `swt3 upgrade`).
+
+**Why this matters for Python:** Your `witness.wrap(OpenAI())` call witnesses the inference. But the infrastructure that runs it -- the ECS task, the Lambda function, the CloudTrail event log -- was invisible. Now a platform engineer runs `terraform apply` and every CloudTrail API call in your AWS account gets witnessed into the same Merkle tree as your Python SDK anchors. The `swt3 verify-chain` command lets you verify the entire local anchor chain offline, detecting tampered WAL files and non-monotonic timestamps. `swt3 mock-server` gives you a local test endpoint that returns `SWT3-MOCK-` anchors so your CI pipeline never touches production. `swt3 profile list|show|compare` manages governance profiles across environments. One protocol, from `pip install` to `terraform apply`.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. A $12M commercial build has phases. A loan underwriting pipeline has stages. A battery manufacturing line has checkpoints. Flat daily Merkle roots cannot express "Phase 2 cannot begin until every milestone in Phase 1 has a passing attestation." Hierarchical milestone trees can.
@@ -105,7 +115,7 @@ Zero network calls. Reads the bundled crosswalks to determine which frameworks a
   Zero network calls. Offline analysis from bundled crosswalks.json.
 ```
 
-**Coverage:** 294 procedures | 93 frameworks | 374 compliance guides | 47 adapters | 18 CLI commands
+**Coverage:** 294 procedures | 98 frameworks | 374 compliance guides | 47 adapters | 18 CLI commands
 
 ---
 
@@ -128,7 +138,7 @@ Robotics and machinery (EU Machinery Regulation, ISO 10218) are witnessed throug
 - CON (Construction) namespace activated (5 procedures: CON-SAF.1, CON-STR.1, CON-ENV.1, CON-FIN.1, CON-INS.1)
 - `swt3 watch` (live WAL tail), `swt3 test` (pipeline smoke test), colored CLI help
 - [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness) Go binary for CloudTrail evidence (CLI + server modes)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
 
 Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance) (the infra witness is Go-native).
 
@@ -168,9 +178,9 @@ client = witness.wrap(AzureOpenAI(azure_endpoint="https://myresource.openai.azur
 
 New witnessing guides: [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**MCP integration:** The `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) aggregates anchors from all 47 Python and TypeScript adapters. MCP-connected AI assistants (Claude Desktop, ChatGPT, Cursor) can query, verify, and export compliance evidence from any provider without leaving the conversation. v0.7.9 also syncs all MCP discovery files (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts -- agent crawlers and MCP registries see consistent metadata everywhere.
+**MCP integration:** The `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all 47 Python and TypeScript adapters. MCP-connected AI assistants (Claude Desktop, ChatGPT, Cursor) can query, verify, and export compliance evidence from any provider without leaving the conversation. v0.7.9 also syncs all MCP discovery files (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts -- agent crawlers and MCP registries see consistent metadata everywhere.
 
-**Coverage:** 294 procedures | 93 frameworks | 348 compliance guides | 47 adapters | 18 CLI profiles
+**Coverage:** 294 procedures | 98 frameworks | 348 compliance guides | 47 adapters | 18 CLI profiles
 
 ## What's New in v0.7.8
 
@@ -1835,7 +1845,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-93 frameworks bundled. 294 procedures mapped. Updated with each SDK release.
+98 frameworks bundled. 294 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -2183,7 +2193,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://swt3.ai/registry) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 93 frameworks
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 98 frameworks
 - [All 330 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---

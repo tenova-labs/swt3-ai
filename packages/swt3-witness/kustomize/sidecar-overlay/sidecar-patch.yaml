@@ -1,0 +1,74 @@
+# SWT3 Witness Sidecar -- Strategic Merge Patch
+#
+# Adds a passive witness sidecar that reads AI telemetry from a shared
+# emptyDir volume. No traffic interception. The app writes JSONL telemetry
+# to /shared/swt3/ and the sidecar observes and witnesses it.
+#
+# Prerequisites:
+#   1. Create the swt3-api-key Secret in the target namespace:
+#      kubectl create secret generic swt3-api-key --from-literal=api-key=axm_live_xxx
+#   2. Your app writes AI telemetry JSONL to /shared/swt3/
+#      (see README.md for the JSON schema)
+#
+# The app volume mount must be added separately -- see app-volume-patch.yaml.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: PLACEHOLDER
+spec:
+  template:
+    spec:
+      containers:
+        - name: swt3-witness-sidecar
+          image: ghcr.io/tenova-labs/swt3-infra-witness:8.1.0
+          args:
+            - "--mode"
+            - "tail"
+            - "--watch-dir"
+            - "/shared/swt3"
+            - "--metrics-port"
+            - "9091"
+          ports:
+            - name: swt3-metrics
+              containerPort: 9091
+              protocol: TCP
+          env:
+            - name: SWT3_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: swt3-api-key
+                  key: api-key
+            - name: SWT3_CLEARING_LEVEL
+              value: "1"
+            - name: SWT3_AGENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: swt3-telemetry
+              mountPath: /shared/swt3
+              readOnly: true
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: swt3-metrics
+            initialDelaySeconds: 5
+            periodSeconds: 30
+      volumes:
+        - name: swt3-telemetry
+          emptyDir:
+            sizeLimit: 100Mi

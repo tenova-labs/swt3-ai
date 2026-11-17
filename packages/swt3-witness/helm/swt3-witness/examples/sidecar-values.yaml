@@ -1,0 +1,65 @@
+# SWT3 Witness Sidecar -- Helm extraContainers Example
+#
+# Add these values to any Helm chart that supports extraContainers,
+# extraVolumes, and extraVolumeMounts (most modern charts do).
+#
+# The sidecar runs in tail mode, watching a shared volume for AI
+# telemetry JSONL files. No traffic interception -- pure observation.
+#
+# Prerequisites:
+#   kubectl create secret generic swt3-api-key --from-literal=api-key=axm_live_xxx
+#
+# Your app writes telemetry to /shared/swt3/:
+#   {"model":"gpt-4","tokens_in":500,"tokens_out":200,"latency_ms":1200,"status":"ok","timestamp":"2026-11-14T12:00:00Z"}
+
+extraContainers:
+  - name: swt3-witness-sidecar
+    image: ghcr.io/tenova-labs/swt3-infra-witness:8.1.0
+    args:
+      - "--mode"
+      - "tail"
+      - "--watch-dir"
+      - "/shared/swt3"
+      - "--metrics-port"
+      - "9091"
+    ports:
+      - name: swt3-metrics
+        containerPort: 9091
+        protocol: TCP
+    env:
+      - name: SWT3_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: swt3-api-key
+            key: api-key
+      - name: SWT3_CLEARING_LEVEL
+        value: "1"
+      - name: SWT3_AGENT_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+    volumeMounts:
+      - name: swt3-telemetry
+        mountPath: /shared/swt3
+        readOnly: true
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+    securityContext:
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+
+extraVolumes:
+  - name: swt3-telemetry
+    emptyDir:
+      sizeLimit: 100Mi
+
+# Your app container also needs the volume mount.
+# Add to your app's volumeMounts:
+#   - name: swt3-telemetry
+#     mountPath: /shared/swt3

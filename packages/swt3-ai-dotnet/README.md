@@ -13,6 +13,14 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.2.0 -- Terraform Enterprise Deployment
+
+v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes. Kustomize overlays inject the sidecar into existing Kubernetes deployments.
+
+**Why this matters for C#:** Enterprise .NET backends often run on Azure behind managed infrastructure. Your ASP.NET service calls `MintFingerprint` to witness AI inferences, but the Azure Activity Log events that show your App Service scaling, your Key Vault access, and your Function App invocations were invisible. Now a platform engineer adds the `azure-function` Terraform module and every Azure Activity Log event gets witnessed into the same Merkle tree as your C# SDK anchors. For teams running on ECS or EKS, the sidecar container reads structured JSON logs from your .NET containers via shared volume mount -- zero code changes. When an auditor asks for infrastructure evidence alongside your AI governance evidence, both come from the same protocol with the same verification method.
+
+---
+
 ## v8.1.0 -- Hierarchical Milestone Merkle Trees
 
 v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tree. v8.1.0 gives that tree hierarchical structure. The new three-tier architecture -- **Structure > Phase > Milestone** -- lets each tier carry its own domain-separated Merkle root. A single inclusion proof can verify that a specific witness anchor exists within a specific milestone, within a specific phase, within the overall structure.
@@ -23,13 +31,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 93 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 93 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -46,7 +54,7 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 93 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
+**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 

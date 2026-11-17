@@ -12,7 +12,7 @@
 
 image:
   repository: ghcr.io/tenova-labs/swt3-witness
-  tag: "8.1.0"
+  tag: "8.2.0"
   pullPolicy: IfNotPresent
 
 config:
@@ -68,3 +68,13 @@ extraVolumeMounts: []
 extraVolumes: []
 podAnnotations: {}
 podLabels: {}
+
+# Prometheus alerting rules (requires prometheus-operator / kube-prometheus-stack).
+prometheus:
+  rules:
+    # Create a PrometheusRule CR with SWT3 alerting rules.
+    enabled: false
+    # Override the namespace for the PrometheusRule (default: release namespace).
+    namespace: ""
+    # Extra labels for the PrometheusRule (e.g., to match Prometheus ruleSelector).
+    labels: {}
