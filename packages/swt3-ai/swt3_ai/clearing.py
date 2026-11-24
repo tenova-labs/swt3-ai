@@ -30,7 +30,7 @@ from .fingerprint import mint_fingerprint, sha256_truncated, timestamp_ms
 
 # All SWT3 procedures recognized by the clearing engine.
 # Kept in sync with uct-registry.json and procedures.py.
-# INF-namespace (NIST 800-53) procedures are evaluated server-side, not in the SDK.
+# INF-namespace (NIST 800-53) procedures are adjudicated server-side, not in the SDK.
 AI_PROCEDURES = [
     # ── Core Inference ──
     "AI-INF.1",       # Inference Provenance
@@ -64,6 +64,8 @@ AI_PROCEDURES = [
     "AI-ACC.1",       # Resource Access Witnessing
     "AI-TOOL.1",      # Tool Call Witnessing
     "AI-TOOL.2",      # Tool Permission Attestation
+    # ── Task ──
+    "AI-TASK.1",      # Task Outcome Attestation
     # ── Revocation ──
     "AI-REV.1",       # Anchor Revocation
     # ── Fairness ──

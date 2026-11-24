@@ -58,3 +58,7 @@ Every module outputs a `deployment_fingerprint` (SHA-256 of the deployment confi
 - Protocol spec: https://swt3.ai/spec
 - SDK docs: https://sovereign.tenova.io/docs
 - Procedure registry: https://swt3.ai/registry
+
+## Trademarks
+
+Terraform is a trademark of HashiCorp. OpenTofu is a trademark of the Linux Foundation. These modules are not endorsed by or affiliated with HashiCorp or the Linux Foundation.

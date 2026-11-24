@@ -57,8 +57,8 @@ class FingerprintTest {
     }
 
     @Test
-    fun `all 47 fingerprint vectors match`() {
-        assert(vectors.size == 47) { "Expected 47 vectors, got ${vectors.size}" }
+    fun `all fingerprint vectors match`() {
+        assert(vectors.size >= 47) { "Expected at least 47 vectors, got ${vectors.size}" }
 
         for (v in vectors) {
             val actual = Fingerprint.mintFingerprint(

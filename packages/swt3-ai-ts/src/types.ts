@@ -210,6 +210,7 @@ export const AI_PROCEDURES = new Set([
   "AI-SEC.1", "AI-SEC.2", "AI-SHELL.1",
   "AI-SKILL.1", "AI-SKILL.2", "AI-SKILL.3",
   "AI-SUPPLY.1",
+  "AI-TASK.1",
   "AI-TOOL.1", "AI-TOOL.2", "AI-TRANS.1",
   "AI-TRUST.1", "AI-TRUST.2", "AI-TRUST.3",
   "AI-VIO.1", "AI-WATERMARK.1",
@@ -673,4 +674,47 @@ export interface LoadedConfig {
   merkle: MerkleConfig | null;
   policy: PolicyConfig | null;
   configHash: string;
+}
+
+// ── AI-TASK.1 Task Outcome Attestation (v8.3) ──────────────────────────
+
+/** Task type codes for AI-TASK.1. */
+export const TASK_TYPE_CODES: Record<string, number> = {
+  inference: 0,
+  workflow: 1,
+  agent_loop: 2,
+  code_generation: 3,
+  research: 4,
+  assessment: 5,
+  transformation: 6,
+  orchestration: 7,
+  custom: 8,
+};
+
+/** Task outcome status codes for AI-TASK.1. */
+export const TASK_OUTCOME_CODES: Record<string, number> = {
+  completed: 0,
+  partial: 1,
+  failed: 2,
+  timeout: 3,
+  abandoned: 4,
+};
+
+/** Cost data source trust level codes for AI-TASK.1. */
+export const COST_SOURCE_CODES: Record<string, number> = {
+  manual: 0,
+  sdk_estimated: 1,
+  provider_api: 2,
+  invoice_verified: 3,
+};
+
+/** Receipt returned after a task is finalized (AI-TASK.1). */
+export interface TaskReceipt {
+  taskId: string;
+  merkleRoot: string;
+  stepCount: number;
+  chainId: string;
+  durationMs: number;
+  costRatio: number | null;
+  anchor: WitnessPayload;
 }

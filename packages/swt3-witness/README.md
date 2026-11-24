@@ -8,6 +8,18 @@ mints AI-HW.1 Witness Anchors on a configurable interval.
 
 > **Protocol Spec:** [swt3.ai/spec](https://swt3.ai/spec) | **Registry:** [swt3.ai/registry](https://swt3.ai/registry) | **Verify:** [swt3.ai/verify](https://swt3.ai/verify)
 
+## v8.3.0 -- 189-Framework Crosswalk Engine + Task Outcome Attestation
+
+Two changes in this release matter for Kubernetes platform teams.
+
+**The crosswalk engine grew from 58 frameworks to 189.** Every hardware attestation anchor minted by the DaemonSet now maps to 189 regulatory frameworks via the bundled crosswalk data. When an auditor asks "does your GPU attestation satisfy DORA Article 11?" or "which NERC CIP controls does your infrastructure evidence cover?" the answer is a local JSON lookup in the Helm chart's config. No external API. No manual mapping. For multi-tenant clusters serving customers across jurisdictions, one DaemonSet deployment covers all of them.
+
+**AI-TASK.1 (Task Outcome Attestation)** witnesses composite tasks -- the multi-step ML pipelines that Kubernetes orchestrates. A training job that downloads a dataset, fine-tunes a model, evaluates it, and pushes to a registry is one task. AI-TASK.1 binds the outcome to every step via a Merkle rollup. Combined with the DaemonSet's AI-HW.1 hardware attestation, the evidence chain now covers both what the pipeline did and what hardware it ran on.
+
+**Also in this release:** Docker AI Governance crosswalk. Vendor model crosswalks for 5 major providers. 404 compliance guides. 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 v8.2.0 is the enterprise deployment release. The DaemonSet already covers hardware attestation on every node. This release adds the missing deployment patterns for teams that need governance across their entire Kubernetes and cloud footprint.
@@ -32,13 +44,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## What's New in v0.7.9
 
-v0.7.9 is the ecosystem adapter release. 47 adapters, 294 procedures, 98 frameworks.
+v0.7.9 is the ecosystem adapter release. 47 adapters, 294 procedures, 189 frameworks.
 
 ## What's New in v0.7.8
 
@@ -95,12 +107,12 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 - Underlying `@tenova/swt3-ai` SDK now at 0.7.2 with 280 procedures across 77 namespaces.
 - 5 new harness governance procedures: orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), eval gate (AI-GATE.1). The witness agent can now attest orchestration decisions for multi-agent Kubernetes workloads -- which agent ran on which node, whether context was truncated, and whether the eval gate passed before deployment.
 - Witness Middleware (`withSWT3(transport)`) available in the companion MCP package. Any MCP server running as a sidecar or service in your cluster gains cryptographic attestation by wrapping its transport -- no tool handler changes.
-- 68 MCP tools, 265 compliance guides, ~3,000 tests passing across 10 languages.
+- 68 MCP tools, 404 compliance guides, ~3,000 tests passing across 10 languages.
 
 ## What's New in v0.7.1
 
 - Aligned agent, container image, and Helm chart with SDK v0.7.1 "MCP Security" release.
-- Underlying `@tenova/swt3-ai` SDK now at 0.7.1 with 275 procedures across 77 namespaces.
+- Underlying `@tenova/swt3-ai` SDK now at 0.7.1 with 294 procedures across 77 namespaces.
 - 3 new MCP security procedures: tool integrity attestation (AI-MCP.2), server auth attestation (AI-MCP.3), server discovery attestation (AI-MCP.4). Full OWASP MCP Top 10 coverage with cryptographic evidence.
 - 68 MCP tools, ~3,000 tests passing across 10 languages.
 

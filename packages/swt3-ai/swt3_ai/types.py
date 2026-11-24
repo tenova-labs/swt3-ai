@@ -546,3 +546,46 @@ class LoadedConfig:
     merkle: Optional[MerkleConfig] = None
     policy: Optional[Dict[str, Any]] = None
     config_hash: str = ""
+
+
+# ── AI-TASK.1 Task Outcome Attestation (v8.3) ──────────────────────────
+
+TASK_TYPE_CODES: Dict[str, int] = {
+    "inference": 0,
+    "workflow": 1,
+    "agent_loop": 2,
+    "code_generation": 3,
+    "research": 4,
+    "assessment": 5,
+    "transformation": 6,
+    "orchestration": 7,
+    "custom": 8,
+}
+
+TASK_OUTCOME_CODES: Dict[str, int] = {
+    "completed": 0,
+    "partial": 1,
+    "failed": 2,
+    "timeout": 3,
+    "abandoned": 4,
+}
+
+COST_SOURCE_CODES: Dict[str, int] = {
+    "manual": 0,
+    "sdk_estimated": 1,
+    "provider_api": 2,
+    "invoice_verified": 3,
+}
+
+
+@dataclass
+class TaskReceipt:
+    """Receipt returned after a task is finalized (AI-TASK.1)."""
+
+    task_id: str
+    merkle_root: str
+    step_count: int
+    chain_id: str
+    duration_ms: int
+    cost_ratio: Optional[int]
+    anchor: "WitnessPayload"

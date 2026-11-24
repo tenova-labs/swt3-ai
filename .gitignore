@@ -13,8 +13,8 @@
 !.gitignore
 !README.md
 !LICENSE
-!glama.json
 !CONTRIBUTING.md
+!glama.json
 
 # --- ALLOW: GitHub community templates ---
 !.github/
@@ -39,6 +39,9 @@
 **/CLAUDE.md
 **/CHANGELOG.md
 
+# -- Internal policies (contain infrastructure references) --
+policies/
+
 # -- Build artifacts and caches --
 **/node_modules/
 **/__pycache__/
@@ -47,6 +50,8 @@
 **/.next/
 **/dist/
 **/build/
+**/.build/
+**/.swiftpm/
 **/.venv/
 **/venv/
 **/obj/
@@ -69,6 +74,7 @@
 
 # -- Environment and secrets --
 **/.env*
+!**/.env.example
 **/*.env
 
 # -- OS artifacts --
@@ -80,9 +86,16 @@
 **/*.tar.gz
 **/*.pdf
 
+# -- Proprietary packages --
+packages/swt3-sentinel/
+packages/swt3-gateway/
+
 # -- Internal SDK files --
 **/smoke_test.py
 **/.npmrc
+
+# -- Runtime witness cache --
+**/swt3-local/
 
 # -- docs/ allowlist (deny all, then permit specific) --
 docs/*
@@ -107,3 +120,9 @@ config/controls/*
 # config/modules: only YAML
 config/modules/*
 !config/modules/*.yaml
+mcp-registry-key.pem
+key.pem
+
+# Standalone Go repos (own .git, push to their own remotes)
+packages/swt3-ai-go/
+packages/swt3-infra-witness/

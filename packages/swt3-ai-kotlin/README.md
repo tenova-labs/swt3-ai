@@ -13,6 +13,18 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.3.0 -- 189-Framework Crosswalk Engine + Task Outcome Attestation
+
+Two changes in this release matter for JVM and Android teams.
+
+**The crosswalk engine grew from 58 frameworks to 189.** The bundled `crosswalks.json` now maps 294 procedures across EU AI Act, NIST AI RMF, DORA, FSB Sound Practices, MAS AI Risk Management, NERC CIP, 3GPP Release 19, and 150 more. For Spring Boot backends serving multi-tenant platforms, this means one `mintFingerprint` call satisfies whatever framework the customer's auditor requires -- SR 11-7 for US banks, DORA for European financial institutions, MAS SAFR for Singapore, CMMC for defense contractors. For Android apps calling cloud-hosted models, the crosswalk data is available offline, so framework resolution works even when the device has no connectivity.
+
+**AI-TASK.1 (Task Outcome Attestation)** witnesses composite tasks -- the multi-step workflows that JVM backends orchestrate daily. A loan underwriting service that pulls credit, runs a scoring model, checks compliance rules, and renders a decision is one task with four steps. AI-TASK.1 binds the declared outcome to every step via a Merkle rollup, with cost reconciliation built in. 9 task types, 5 outcome codes, 4 cost source trust levels.
+
+**Also in this release:** Docker AI Governance crosswalk. Vendor model crosswalks for 5 major providers. 404 compliance guides. 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes.
@@ -31,13 +43,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree. 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree. 294 procedures, 189 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -54,14 +66,14 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for Kotlin:** Android and JVM applications orchestrating inference across Groq, Together AI, DeepSeek, and Azure OpenAI can verify witness anchors with byte-identical output across all 11 SDK languages -- zero dependency changes via `Fingerprint.mint()`. Kotlin/JVM backends acting as MCP middleware can verify anchors collected by the `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) from any of the 47 adapters. Android apps combining on-device ML Kit inference with cloud calls get a unified attestation chain.
+**Why this matters for Kotlin:** Android and JVM applications orchestrating inference across Groq, Together AI, DeepSeek, and Azure OpenAI can verify witness anchors with byte-identical output across all 11 SDK languages -- zero dependency changes via `Fingerprint.mint()`. Kotlin/JVM backends acting as MCP middleware can verify anchors collected by the `@tenova/swt3-mcp` MCP server (75 tools, 189 frameworks) from any of the 47 adapters. Android apps combining on-device ML Kit inference with cloud calls get a unified attestation chain.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
+- 189 regulatory frameworks, 404 compliance guides, 47 adapters, 11 SDK languages
 
 ## Ecosystem: v0.7.8
 
@@ -95,7 +107,7 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides
+- 189 regulatory frameworks, 404 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## Ecosystem: v0.7.4
@@ -133,7 +145,7 @@ A2A (Google's Agent-to-Agent protocol) has 150+ supporting organizations, all th
 
 ## Ecosystem: v0.7.2
 
-Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. The SWT3 ecosystem now includes five new procedures for orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), and eval gating (AI-GATE.1) -- the decisions AI harnesses make before inference that have no audit trail today. The companion MCP package also ships a Witness Middleware (`withSWT3(transport)`) that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server with zero code changes. 280 procedures across 77 namespaces, 68 MCP tools, 265 compliance guides. All new anchor types verify with the existing `Fingerprint.mint()` method -- no library update required. Kotlin code stays at v0.1.1.
+Two gaps closed in one release: harness-layer governance and zero-code MCP compliance. The SWT3 ecosystem now includes five new procedures for orchestration topology (AI-ORCH.1), agent handoff (AI-ORCH.2), context window management (AI-CTX.1), sandbox enforcement (AI-SAND.1), and eval gating (AI-GATE.1) -- the decisions AI harnesses make before inference that have no audit trail today. The companion MCP package also ships a Witness Middleware (`withSWT3(transport)`) that auto-mints AI-TOOL.1 anchors for every tool call flowing through any MCP server with zero code changes. 280 procedures across 77 namespaces, 68 MCP tools, 404 compliance guides. All new anchor types verify with the existing `Fingerprint.mint()` method -- no library update required. Kotlin code stays at v0.1.1.
 
 ## Ecosystem: v0.7.1
 
@@ -337,7 +349,7 @@ The fingerprint is computed from `SHA256("WITNESS:{tenant}:{procedure}:{fa}:{fb}
 
 ## Regulatory Coverage
 
-294 procedures across 10 namespaces. 93 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
+294 procedures across 10 namespaces. 189 regulatory frameworks including EU AI Act, NIST AI RMF, CMMC, SR 11-7, ISO 42001, GDPR, and OWASP.
 
 ## Resources
 

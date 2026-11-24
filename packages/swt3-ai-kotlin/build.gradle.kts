@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.tenova"
-version = "8.2.0"
+version = "8.3.0"
 
 repositories {
     mavenCentral()
@@ -74,6 +74,22 @@ publishing {
         maven {
             name = "local"
             url = uri(layout.buildDirectory.dir("repo"))
+        }
+        maven {
+            name = "OSSRH"
+            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            credentials {
+                username = findProperty("ossrhUsername") as String? ?: ""
+                password = findProperty("ossrhPassword") as String? ?: ""
+            }
+        }
+        maven {
+            name = "CentralPortal"
+            url = uri("https://central.sonatype.com/api/v1/publisher/deployments/download/")
+            credentials {
+                username = findProperty("centralToken") as String? ?: ""
+                password = findProperty("centralTokenPassword") as String? ?: ""
+            }
         }
     }
 }

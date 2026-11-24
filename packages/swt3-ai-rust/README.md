@@ -13,6 +13,18 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.3.0 -- 189-Framework Crosswalk Engine + Task Outcome Attestation
+
+Two changes in this release matter for Rust verification services.
+
+**The crosswalk engine grew from 58 frameworks to 189.** The bundled `crosswalks.json` now maps 294 procedures across EU AI Act, NIST AI RMF, DORA, FSB Sound Practices, CFTC Know-Your-Agent, NERC CIP, 3GPP Release 19, and 150 more regulatory frameworks. For Rust services that validate anchors at the trust boundary, this means the framework context for any procedure is available as a local lookup -- no network call, no external dependency. A verification service can answer "which regulations does this anchor satisfy?" in the same call that verifies the fingerprint.
+
+**AI-TASK.1 (Task Outcome Attestation)** introduces composite task witnessing. A task wraps multiple inferences and tool calls into a single bounded unit with a Merkle rollup binding outcome to evidence. The `task_id` follows the same deterministic formula as other SWT3 identifiers, verifiable through `mint_fingerprint`. Rust services verifying task receipts reconstruct the step-level Merkle tree and confirm the rollup root matches -- same verification pattern, one more anchor type.
+
+**Also in this release:** Docker AI Governance crosswalk. Vendor model crosswalks for 5 major providers. 404 compliance guides. 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes. Kustomize overlays inject the sidecar into existing Kubernetes deployments. CloudWatch and Prometheus alarms provide production observability.
@@ -31,13 +43,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes (CloudTrail, Azure Activity Log, GCP Audit Logs via [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness)), and construction process accountability (CON [Construction] namespace, 5 new procedures). 294 procedures, 189 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -54,14 +66,14 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for Rust:** All 47 adapter-produced anchors verify with the existing `mint_fingerprint` function -- zero crate changes. Rust API gateways and Kubernetes operators verifying anchors from mixed-provider environments (Groq for speed, Azure OpenAI for enterprise, DeepSeek for cost) get byte-identical fingerprints. If you're building an MCP server in Rust, the `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all 47 adapters -- and every anchor it collects verifies against this crate.
+**Why this matters for Rust:** All 47 adapter-produced anchors verify with the existing `mint_fingerprint` function -- zero crate changes. Rust API gateways and Kubernetes operators verifying anchors from mixed-provider environments (Groq for speed, Azure OpenAI for enterprise, DeepSeek for cost) get byte-identical fingerprints. If you're building an MCP server in Rust, the `@tenova/swt3-mcp` MCP server (75 tools, 189 frameworks) aggregates anchors from all 47 adapters -- and every anchor it collects verifies against this crate.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
+- 189 regulatory frameworks, 404 compliance guides, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -95,7 +107,7 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026: 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides
+- 189 regulatory frameworks, 404 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -158,7 +170,7 @@ Two gaps closed in one release: harness-layer governance and zero-code MCP compl
 - 280 procedures across 77 namespaces (was 275/77)
 - 68 MCP tools (was 63)
 - 11 SDK languages with byte-identical output
-- 77 framework crosswalks, 265 compliance guides
+- 189 framework crosswalks, 404 compliance guides
 - ~3,000 tests passing across 10 languages
 
 ## What's New in v0.7.1

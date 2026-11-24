@@ -82,6 +82,8 @@ from .profile import (
     coverage_score, build_profile_message, RECOMMENDED_PROCEDURES,
 )
 from .chain import build_lookup, walk_chain, verify_chain_integrity
+from .task import TaskBuilder
+from .types import TaskReceipt, TASK_TYPE_CODES, TASK_OUTCOME_CODES, COST_SOURCE_CODES
 from .crosswalk import (
     resolve, resolve_framework, frameworks as crosswalk_frameworks,
     procedures as crosswalk_procedures, crosswalk_version,

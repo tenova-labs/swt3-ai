@@ -16,6 +16,52 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.3.0 -- Task Outcome Attestation + 189-Framework Crosswalk Engine
+
+Two things happened this release that change how platform teams think about AI governance.
+
+**First: the crosswalk engine grew from 58 frameworks to 189.** That is not a typo. Every major regulatory framework that touches AI -- from EU AI Act and NIST AI RMF to DORA, FSB Sound Practices, CFTC Know-Your-Agent, NERC CIP, and 3GPP Release 19 -- now has machine-readable procedure mappings in the SDK's bundled `crosswalks.json`. When your platform team asks "which of our witness procedures satisfy DORA Article 11?" the answer is a local JSON lookup. No network call. No manual spreadsheet. The crosswalk data ships with the package, and the registry at [swt3.ai/registry](https://swt3.ai/registry) stays in sync.
+
+This matters because platform engineers building multi-tenant AI systems need to map one set of witness procedures to whatever framework their customer's auditor cares about. A fintech customer needs SR 11-7 coverage. A defense contractor needs CMMC. A European insurer needs EU AI Act plus DORA. With 189 frameworks in one crosswalk file, your governance layer handles all of them without per-customer configuration.
+
+**Second: AI-TASK.1 (Task Outcome Attestation).** The AI billing model is shifting from token-based to task-based pricing. When providers charge per "task," sub-inferences become invisible, retries disappear from billing records, and cost reconciliation becomes guesswork. AI-TASK.1 witnesses composite tasks -- bounded units of work that may contain multiple inferences, tool calls, and agent loops -- and cryptographically binds the declared outcome to the evidence chain of every constituent step via a Merkle rollup.
+
+```python
+from swt3_ai import Witness
+
+witness = Witness(endpoint="https://sovereign.tenova.io", api_key="axm_live_...")
+client = witness.wrap(OpenAI())
+
+# Context manager pattern (recommended)
+async with witness.task("loan-underwriting", task_type="workflow") as task:
+    # Every inference inside the block is automatically captured as a step
+    r1 = await client.chat.completions.create(model="gpt-4o", messages=[...])
+    r2 = await client.chat.completions.create(model="gpt-4o", messages=[...])
+
+    task.declare_cost(declared=0.0042, source="sdk_estimated")
+    task.mark_steps_complete()  # AI work done; post-processing exceptions = "partial" not "abandoned"
+    task.declare_outcome("approved: DTI 32%, LTV 78%")
+
+# receipt.merkle_root cryptographically binds all step fingerprints
+# receipt.task_id is deterministic: SHA-256("TASK:{tenant}:{chain}:{ts}")[:16]
+
+# Manual pattern (for non-async or cross-system flows)
+task = witness.begin_task("fraud-detection", task_type="agent_loop")
+task.add_step(fingerprint="a1b2c3d4e5f6")  # from external system
+task.add_step(fingerprint="f6e5d4c3b2a1")
+task.declare_cost(declared=0.015, source="provider_api")
+receipt = task.complete()
+
+# Cost reconciliation: receipt.cost_ratio = witnessed/declared * 1000
+# 1000 = exact match, >1000 = overcharged, <1000 = undercharged
+```
+
+9 task types (inference, workflow, agent_loop, code_generation, research, assessment, transformation, orchestration, custom). 5 outcome codes (completed, partial, failed, timeout, abandoned). 4 cost source trust levels (manual, sdk_estimated, provider_api, invoice_verified). Clearing levels strip progressively: level 2 keeps only factors + merkle_root; level 3 keeps factors only. 65 tests across Python and TypeScript ensure cross-language parity.
+
+**Also in this release:** Docker AI Governance crosswalk (sandbox policies, MCP Gateway, DHI mapped to EU AI Act, NIST AI 600-1, PLD, SOC 2). Vendor model crosswalks for Google Gemma, Meta Llama, Apple Intelligence, Tencent Hunyuan, and Huawei Pangu. 404 compliance guides. Container governance procedures seeded with verdict rules.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 Enterprise AI governance has a last-mile problem. The SDK covers application code, but regulated infrastructure -- CloudTrail events, container orchestration, serverless functions -- requires a different deployment model. Teams running 50+ microservices cannot add `witness.wrap()` calls to every service. Platform engineers need Terraform modules, not code changes.
@@ -115,7 +161,7 @@ Zero network calls. Reads the bundled crosswalks to determine which frameworks a
   Zero network calls. Offline analysis from bundled crosswalks.json.
 ```
 
-**Coverage:** 294 procedures | 98 frameworks | 374 compliance guides | 47 adapters | 18 CLI commands
+**Coverage:** 294 procedures | 189 frameworks | 374 compliance guides | 47 adapters | 18 CLI commands
 
 ---
 
@@ -138,7 +184,7 @@ Robotics and machinery (EU Machinery Regulation, ISO 10218) are witnessed throug
 - CON (Construction) namespace activated (5 procedures: CON-SAF.1, CON-STR.1, CON-ENV.1, CON-FIN.1, CON-INS.1)
 - `swt3 watch` (live WAL tail), `swt3 test` (pipeline smoke test), colored CLI help
 - [`swt3-infra-witness`](https://github.com/tenova-labs/swt3-infra-witness) Go binary for CloudTrail evidence (CLI + server modes)
-- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages
 
 Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance) (the infra witness is Go-native).
 
@@ -178,9 +224,9 @@ client = witness.wrap(AzureOpenAI(azure_endpoint="https://myresource.openai.azur
 
 New witnessing guides: [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**MCP integration:** The `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all 47 Python and TypeScript adapters. MCP-connected AI assistants (Claude Desktop, ChatGPT, Cursor) can query, verify, and export compliance evidence from any provider without leaving the conversation. v0.7.9 also syncs all MCP discovery files (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts -- agent crawlers and MCP registries see consistent metadata everywhere.
+**MCP integration:** The `@tenova/swt3-mcp` MCP server (75 tools, 189 frameworks) aggregates anchors from all 47 Python and TypeScript adapters. MCP-connected AI assistants (Claude Desktop, ChatGPT, Cursor) can query, verify, and export compliance evidence from any provider without leaving the conversation. v0.7.9 also syncs all MCP discovery files (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts -- agent crawlers and MCP registries see consistent metadata everywhere.
 
-**Coverage:** 294 procedures | 98 frameworks | 348 compliance guides | 47 adapters | 18 CLI profiles
+**Coverage:** 294 procedures | 189 frameworks | 404 compliance guides | 47 adapters | 18 CLI profiles
 
 ## What's New in v0.7.8
 
@@ -288,7 +334,7 @@ rcw.process_entry({"entry_type": "action_proposal", "decision": "blocked", "reas
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 75 MCP tools, 348 compliance guides, 93 regulatory frameworks, 47 adapters
+- 75 MCP tools, 404 compliance guides, 189 regulatory frameworks, 47 adapters
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html) | [EU Art. 50 Watermarking](https://sovereign.tenova.io/guides/eu-article-50-code-of-practice.html)
 
 ## What's New in v0.7.4
@@ -394,8 +440,8 @@ witness.witness_eval_gate(total_evals=100, evals_passed=85)  # gate_score auto-c
 
 - 280 procedures (was 275)
 - 68 MCP tools (was 63)
-- 9 namespaces, 77 frameworks
-- 265 compliance guides (was 250)
+- 9 namespaces, 189 frameworks
+- 404 compliance guides (was 250)
 - ~3,000 tests passing across 10 languages
 
 ## What's New in v0.7.1
@@ -470,7 +516,7 @@ With AI-MCP.1 (v0.6.6) plus AI-MCP.2/3/4 (v0.7.1), SWT3 now maps to all 10 OWASP
 
 ### By the Numbers
 
-- 275 procedures across 77 namespaces (was 266/75)
+- 294 procedures across 77 namespaces (was 266/75)
 - 63 MCP tools (was 59)
 - ~2,950 tests passing across Python, TypeScript, Go, and MCP
 - 250 compliance guides (was 237)
@@ -952,8 +998,8 @@ Maps to: EU AI Act Art. 15 (post-market monitoring), OCC 2026-13 / SR 26-2 (chal
 ### v0.5.9
 
 - **Local Witness Mode** -- `Witness()` with no args. No account, no API key, no network. Anchors saved locally, framework coverage shown in console. Try witnessing in 10 seconds.
-- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 77 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
-- **Bundled Crosswalks** -- 77 frameworks and 275 procedures ship inside the package. Offline regulatory mapping with no API calls.
+- **Compliance Intelligence** -- `resolve("AI-FAIR.1")` returns every regulation that procedure satisfies across 189 frameworks, offline, zero dependencies. `coverage("EU-AI-ACT")` shows your session's covered/remaining controls with a score.
+- **Bundled Crosswalks** -- 189 frameworks and 294 procedures ship inside the package. Offline regulatory mapping with no API calls.
 - **Framework Coverage on Flush** -- after sending anchors, the SDK shows which regulations your evidence covers. Appears on first few flushes, then goes silent.
 - **[Crosswalk Explorer](https://sovereign.tenova.io/crosswalks/)** -- public interactive UI to search any procedure or framework control. Browse all controls for a framework, copy results, deep-link with `?procedure=AI-FAIR.1`. No login required.
 
@@ -1845,7 +1891,7 @@ resolve("AI-INF.1")
 # {"EU-AI-ACT": "Art.12(1)", "FIVE-EYES-AGENTIC": "FE-2,FE-4", ...}
 ```
 
-98 frameworks bundled. 294 procedures mapped. Updated with each SDK release.
+189 frameworks bundled. 294 procedures mapped. Updated with each SDK release.
 
 ## Local SDK vs Connected
 
@@ -2193,7 +2239,7 @@ Your prompts and responses **never leave your infrastructure**. The SDK computes
 - [Assessment Mapping](https://swt3.ai/registry) -- which procedures satisfy which regulatory requirements
 - [Assessor Hot Sheet](https://sovereign.tenova.io/guides/assessor-hot-sheet.html) -- 2-page printable guide to hand your assessor during compliance reviews
 - [Edge Attestation](https://sovereign.tenova.io/guides/edge-attestation.html) -- on-device AI witnessing for Apple platforms and edge K8s
-- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 98 frameworks
+- [Crosswalk Resolver API](https://sovereign.tenova.io/api/v1/crosswalks/resolve?procedure=AI-FAIR.1) -- query any procedure or framework control across 189 frameworks
 - [All 330 Guides](https://sovereign.tenova.io/guides/) -- regulatory crosswalks, assessor walkthroughs, integration guides
 
 ---

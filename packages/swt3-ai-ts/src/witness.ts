@@ -454,6 +454,7 @@ export class Witness {
   private _localMode: boolean;
   private _localCtaCount = 0;
   private _chainTrustLevels: number[] = [];
+  _activeTask: import("./task").TaskBuilder | null = null;
   private _onViolation?: (violation: ChainPolicyViolation) => void;
   private _walPath?: string;
   private _sampledSkipCounts: Record<string, number> = {};
@@ -7423,6 +7424,13 @@ export class Witness {
     }
 
     for (const p of payloads) this._enqueueSampled(p);
+
+    // Auto-capture: register each payload as a task step if active
+    if (this._activeTask !== null) {
+      for (const p of payloads) {
+        this._activeTask.addStep({ payload: p });
+      }
+    }
   }
 
   /**
@@ -7956,6 +7964,68 @@ export class Witness {
       throw new Error(`Invalid lifecycle chain ID: "${chainId}" (expected LC- + 16 hex chars)`);
     }
     return new LifecycleChain(this, procedureId, chainId, lastFingerprint, anchorCount);
+  }
+
+  // ── Task Outcome Attestation (AI-TASK.1) ────────────────────────────
+
+  /**
+   * Execute a witnessed task via callback pattern.
+   *
+   * All inferences made via wrap() inside the callback are automatically
+   * captured as task steps. On normal return, mints AI-TASK.1 with
+   * outcome_status=0 (completed). On exception, outcome depends on
+   * markStepsComplete() state.
+   */
+  async task(
+    name: string,
+    opts: { taskType?: string },
+    callback: (task: import("./task").TaskBuilder) => Promise<void>,
+  ): Promise<import("./types").TaskReceipt> {
+    const { TaskBuilder } = await import("./task");
+    const { TASK_OUTCOME_CODES: TOC } = await import("./types");
+    if (this._activeTask !== null) {
+      throw new Error("Nested tasks not supported in v8.3");
+    }
+    const chain = this.beginLifecycle("AI-TASK.1", 0, 0, 0);
+    const builder = new TaskBuilder(this, name, opts.taskType ?? "workflow", chain);
+    this._activeTask = builder;
+    try {
+      await callback(builder);
+      if (!chain.closed) return builder.complete();
+      return (builder as any)._lastReceipt!;
+    } catch (err) {
+      if (!chain.closed && !builder.explicitlyFailed) {
+        if (builder.stepsComplete) {
+          builder.setOutcomeStatus(TOC.partial);
+        } else {
+          builder.setOutcomeStatus(TOC.abandoned);
+        }
+        builder._finalize();
+      }
+      throw err;
+    } finally {
+      this._activeTask = null;
+    }
+  }
+
+  /**
+   * Start a manual task builder (non-callback pattern).
+   *
+   * Returns a TaskBuilder. Call task.complete() or task.fail() when done.
+   * While active, all inferences via wrap() are auto-captured as steps.
+   */
+  beginTask(
+    name: string,
+    opts?: { taskType?: string },
+  ): import("./task").TaskBuilder {
+    const { TaskBuilder } = require("./task");
+    if (this._activeTask !== null) {
+      throw new Error("Nested tasks not supported in v8.3");
+    }
+    const chain = this.beginLifecycle("AI-TASK.1", 0, 0, 0);
+    const builder = new TaskBuilder(this, name, opts?.taskType ?? "workflow", chain);
+    this._activeTask = builder;
+    return builder;
   }
 }
 

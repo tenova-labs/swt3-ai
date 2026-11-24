@@ -915,6 +915,18 @@
       "fingerprint_timestamp_ms": 1774800021000,
       "clearing_level": 1,
       "expected_fingerprint": "e878eec3563e"
+    },
+    {
+      "id": 77,
+      "description": "AI-TASK.1 Task Outcome - 3 steps, cost ratio 905, completed",
+      "tenant_id": "ENCLAVE_PROD",
+      "procedure_id": "AI-TASK.1",
+      "factor_a": 3,
+      "factor_b": 905,
+      "factor_c": 0,
+      "fingerprint_timestamp_ms": 1774800000000,
+      "clearing_level": 1,
+      "expected_fingerprint": "a9bf656c3ebd"
     }
   ],
   "signing_vectors": [

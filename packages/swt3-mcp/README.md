@@ -10,6 +10,20 @@ SWT3 (Sovereign Witness Traceability) works by hashing your AI's inputs and outp
 
 ---
 
+## v8.3.0 -- Task Outcome Attestation + 189-Framework Crosswalk Engine
+
+Two things happened this release that change what MCP agents can prove to auditors.
+
+**The crosswalk engine grew from 58 frameworks to 189.** Every major regulatory framework that touches AI -- EU AI Act, NIST AI RMF, DORA, FSB Sound Practices, CFTC Know-Your-Agent, NERC CIP, 3GPP Release 19, and 150 more -- now has machine-readable procedure mappings bundled with the server. When an MCP agent tool needs to answer "does this action satisfy DORA Article 11?" the lookup is local, instant, and offline-capable. No external API. No manual mapping.
+
+This matters because MCP agents are increasingly deployed across regulatory jurisdictions. The same agent that handles EU customer data (EU AI Act + GDPR) also processes US financial transactions (SR 11-7 + BSA/AML) and operates in Singapore (IMDA Agentic AI). With 189 frameworks in one crosswalk file, the `resolve_crosswalk` tool maps witness procedures to whatever framework the auditor needs -- without per-deployment configuration or separate compliance plugins.
+
+**AI-TASK.1 (Task Outcome Attestation)** witnesses composite tasks -- the bounded units of work that MCP agents actually execute. An agent that researches a topic, drafts a report, and emails it is one task with three tool calls. AI-TASK.1 binds the declared outcome to every constituent step via a Merkle rollup, capturing cost, duration, and completion status. 9 task types, 5 outcome codes, 4 cost source trust levels. When providers shift to task-based billing, the evidence chain shows exactly what happened inside each task.
+
+**Also in this release:** Docker AI Governance crosswalk (sandbox policies, MCP Gateway mapped to EU AI Act and NIST AI 600-1). Vendor model crosswalks for Google Gemma, Meta Llama, Apple Intelligence, Tencent Hunyuan, and Huawei Pangu. 404 compliance guides. 294 procedures, 189 frameworks, 75 MCP tools.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 Enterprise AI governance has a last-mile problem. MCP agents orchestrate tool calls, but the infrastructure those tools touch -- CloudTrail events, container orchestration, serverless functions -- was invisible to the witness protocol. Teams running 50+ microservices cannot add SDK calls to every service.
@@ -30,13 +44,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 98 frameworks, 75 MCP tools, 47 adapters
+- 294 procedures, 189 frameworks, 75 MCP tools, 47 adapters
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree: AI decisions (SDK/MCP), infrastructure changes (CloudTrail via `swt3-infra-witness`), and construction process accountability (CON namespace). 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Three evidence domains in one Merkle tree: AI decisions (SDK/MCP), infrastructure changes (CloudTrail via `swt3-infra-witness`), and construction process accountability (CON namespace). 294 procedures, 189 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -73,7 +87,7 @@ v0.7.9 also aligns all MCP discovery metadata. The `mcp.json`, `agent-card.json`
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 75 MCP tools, 348 compliance guides, 93 regulatory frameworks, 47 adapters, 11 SDK languages
+- 75 MCP tools, 404 compliance guides, 189 regulatory frameworks, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -114,7 +128,7 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026: 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 75 MCP tools, 348 compliance guides, 93 regulatory frameworks
+- 75 MCP tools, 404 compliance guides, 189 regulatory frameworks
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -208,7 +222,7 @@ The AI harness layer -- orchestration, delegation, context management, sandboxin
 - 68 MCP tools (was 63)
 - 280 procedures across 77 namespaces (was 275)
 - ~3,000 tests passing
-- 265 compliance guides (was 250)
+- 404 compliance guides (was 250)
 
 ## What's New in v0.7.1
 

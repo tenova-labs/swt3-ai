@@ -13,6 +13,18 @@ EU AI Act GPAI transparency obligations enforce **August 2, 2026**. High-risk en
 
 ---
 
+## v8.3.0 -- 189-Framework Crosswalk Engine + Task Outcome Attestation
+
+Two changes in this release matter for enterprise .NET teams.
+
+**The crosswalk engine grew from 58 frameworks to 189.** The bundled `crosswalks.json` now maps 294 procedures across EU AI Act, NIST AI RMF, DORA, FSB Sound Practices, OCC Bulletin 2026-54, NERC CIP, and 150 more. For .NET backends serving multi-tenant SaaS platforms, this is the difference between building per-customer framework mapping and shipping a single governance layer that handles all of them. A fintech tenant needs SR 11-7. An energy utility needs NERC CIP. A European bank needs DORA plus EU AI Act. One `crosswalks.json`, one `MintFingerprint` call, 189 frameworks resolved locally.
+
+**AI-TASK.1 (Task Outcome Attestation)** witnesses composite tasks -- bounded units of work containing multiple inferences, tool calls, and agent steps. The declared outcome is cryptographically bound to every constituent step via a Merkle rollup. 9 task types, 5 outcome codes, 4 cost source trust levels. When AI pricing shifts from per-token to per-task, the evidence chain shows exactly what happened inside each billing unit.
+
+**Also in this release:** Docker AI Governance crosswalk. Vendor model crosswalks for 5 major providers. 404 compliance guides. 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages.
+
+---
+
 ## v8.2.0 -- Terraform Enterprise Deployment
 
 v8.2.0 is the enterprise deployment release. 5 Terraform modules (AWS Lambda/ECS/EKS, Azure Function, GCP Cloud Function) deploy infrastructure witnesses natively into cloud environments. A passive tail sidecar enables log-based witnessing without SDK changes. Kustomize overlays inject the sidecar into existing Kubernetes deployments.
@@ -31,13 +43,13 @@ v8.0.0 put AI, infrastructure, and construction evidence into the same Merkle tr
 - Three-tier Merkle hashing with domain-separated prefixes
 - Phase-gate enforcement with emergency override and scope amendment support
 - Multi-tier inclusion proofs (milestone > phase > structure)
-- 294 procedures, 98 frameworks, 47 adapters, 11 SDK languages
+- 294 procedures, 189 frameworks, 47 adapters, 11 SDK languages
 
 ---
 
 ## v8.0.0 -- Full Stack Governance
 
-v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 98 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
+v8.0.0 grows SWT3 beyond AI inference into full stack governance. Your daily Merkle root now covers AI decisions, infrastructure changes, and construction process accountability. 294 procedures, 189 frameworks. Full details in the [Go SDK README](https://github.com/tenova-labs/swt3-ai-go#v080----full-stack-governance).
 
 ---
 
@@ -54,14 +66,14 @@ v0.7.9 is the ecosystem adapter release. Four new provider adapters (Groq, Toget
 
 New guides: [OpenAI GPT](https://sovereign.tenova.io/guides/openai-gpt-compliance-witnessing.html) | [Anthropic Claude](https://sovereign.tenova.io/guides/anthropic-claude-compliance-witnessing.html) | [Google Vertex/Gemini](https://sovereign.tenova.io/guides/google-vertex-gemini-compliance-witnessing.html) | [LangChain/LangGraph](https://sovereign.tenova.io/guides/langchain-langgraph-compliance-witnessing.html) | [DeepSeek](https://sovereign.tenova.io/guides/deepseek-gpai-compliance-witnessing.html) | [Groq](https://sovereign.tenova.io/guides/groq-compliance-witnessing.html)
 
-**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 98 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
+**Why this matters for .NET:** The Azure OpenAI adapter is particularly relevant for .NET shops. It preserves deployment names as `model_id` in the evidence chain, so enterprise environments running multiple Azure AI deployments (GPT-4o for customer-facing, GPT-4 for internal, GPT-3.5 for batch) get per-deployment attestation. All 47 adapter-produced anchors verify with the existing `MintFingerprint` function -- zero package changes. The `@tenova/swt3-mcp` MCP server (75 tools, 189 frameworks) aggregates anchors from all providers and every anchor it collects verifies against this NuGet package.
 
 v0.7.9 also aligns all MCP discovery metadata (`mcp.json`, `agent-card.json`, `llms.txt`, `server.json`) to report identical version numbers and counts. Agent discovery bots and MCP crawlers see consistent metadata everywhere.
 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides, 47 adapters, 11 SDK languages
+- 189 regulatory frameworks, 404 compliance guides, 47 adapters, 11 SDK languages
 
 ## What's New in v0.7.8
 
@@ -95,7 +107,7 @@ Five standards bodies converged on agent governance requirements in Q3-Q4 2026. 
 ### Updated Coverage
 
 - 294 procedures across 10 namespaces
-- 93 regulatory frameworks, 348 compliance guides
+- 189 regulatory frameworks, 404 compliance guides
 - [G7 AI-SBOM Crosswalk](https://sovereign.tenova.io/guides/g7-ai-sbom-minimum-elements-crosswalk.html) | [DORA + ECB Crosswalk](https://sovereign.tenova.io/guides/dora-ecb-ai-cyber-crosswalk.html)
 
 ## What's New in v0.7.4
@@ -158,7 +170,7 @@ Two gaps closed in one release: harness-layer governance and zero-code MCP compl
 - 280 procedures across 77 namespaces (was 275/77)
 - 68 MCP tools (was 63)
 - 11 SDK languages with byte-identical output
-- 77 framework crosswalks, 265 compliance guides
+- 189 framework crosswalks, 404 compliance guides
 - ~3,000 tests passing across 10 languages
 
 ## What's New in v0.7.1

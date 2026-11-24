@@ -1,6 +1,6 @@
 {
   "name": "@tenova/libswt3",
-  "version": "8.2.0",
+  "version": "8.3.0",
   "description": "SWT3 Protocol: Sovereign Witness Traceability for compliance evidence integrity",
   "license": "Apache-2.0",
   "author": "Tenable Nova LLC <engineering@tenovaai.com>",

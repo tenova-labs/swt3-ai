@@ -27,6 +27,7 @@ import functools
 import logging
 import os
 import time
+from contextlib import asynccontextmanager
 from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from .types import (
@@ -521,6 +522,7 @@ class Witness:
         sampling_rates: Optional[Dict[str, float]] = None,
     ) -> None:
         self._gateway_mode = gateway_mode
+        self._active_task: Optional["TaskBuilder"] = None
 
         # Gateway mode: SDK defers all witnessing to the SWT3 Gateway.
         # No endpoint, API key, or buffer needed.
@@ -6176,6 +6178,12 @@ class Witness:
         # Apply probabilistic sampling to each payload
         for p in payloads:
             self._enqueue_sampled(p)
+
+        # Auto-capture: register each payload as a task step if active
+        if self._active_task is not None:
+            for p in payloads:
+                self._active_task.add_step(payload=p)
+
         logger.debug(
             "Witnessed %s: %d payloads queued (buffer: %d)",
             inference.model_id, len(payloads), self._buffer.pending,
@@ -6598,6 +6606,73 @@ class Witness:
         if not chain_id.startswith("LC-") or len(chain_id) != 19:
             raise ValueError(f"Invalid lifecycle chain ID: {chain_id!r} (expected LC- + 16 hex chars)")
         return LifecycleChain(self, procedure_id, chain_id, last_fingerprint, anchor_count)
+
+    # ── Task Outcome Attestation (AI-TASK.1) ────────────────────────────
+
+    @asynccontextmanager
+    async def task(
+        self,
+        name: str,
+        *,
+        task_type: str = "workflow",
+    ):
+        """Async context manager for witnessed task execution.
+
+        All inferences made via wrap() inside the block are automatically
+        captured as task steps. On normal exit, mints AI-TASK.1 with
+        outcome_status=0 (completed). On exception, outcome depends on
+        mark_steps_complete() state.
+
+        Usage:
+            async with witness.task("loan-underwriting", task_type="workflow") as task:
+                result = await client.chat.completions.create(...)
+                task.declare_outcome("approved")
+        """
+        from .task import TaskBuilder
+        if self._active_task is not None:
+            raise RuntimeError("Nested tasks not supported in v8.3")
+        chain = self.begin_lifecycle("AI-TASK.1", 0.0, 0.0, 0.0)
+        builder = TaskBuilder(self, name, task_type, chain)
+        self._active_task = builder
+        try:
+            yield builder
+            if not chain.closed:
+                builder.complete()
+        except Exception:
+            if not chain.closed and not builder._explicitly_failed:
+                from .types import TASK_OUTCOME_CODES as _TOC
+                if builder._steps_complete:
+                    builder._outcome_status = _TOC["partial"]
+                else:
+                    builder._outcome_status = _TOC["abandoned"]
+                builder._finalize()
+            raise
+        finally:
+            self._active_task = None
+
+    def begin_task(
+        self,
+        name: str,
+        *,
+        task_type: str = "workflow",
+    ) -> "TaskBuilder":
+        """Start a manual task builder (non-context-manager pattern).
+
+        Returns a TaskBuilder. Call task.complete() or task.fail() when done.
+        While active, all inferences via wrap() are auto-captured as steps.
+
+        Usage:
+            task = witness.begin_task("fraud-detection", task_type="agent_loop")
+            task.add_step(fingerprint="a1b2c3d4e5f6")
+            receipt = task.complete()
+        """
+        from .task import TaskBuilder
+        if self._active_task is not None:
+            raise RuntimeError("Nested tasks not supported in v8.3")
+        chain = self.begin_lifecycle("AI-TASK.1", 0.0, 0.0, 0.0)
+        builder = TaskBuilder(self, name, task_type, chain)
+        self._active_task = builder
+        return builder
 
     # ── Risk Assessment (AI-RISK.1) ──────────────────────────────────────
 
